@@ -3,42 +3,23 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
-    const { data: link, error } = await supabase
-      .from('company_links')
-      .select('company_id, expires_at')
-      .eq('public_token', params.token)
-      .single();
+    const { data, error } = await supabase
+      .rpc('resolve_company_link', { _token: params.token })
+      .maybeSingle();
 
-    if (error || !link) {
+    if (error || !data) {
       throw redirect({ to: '/' });
     }
 
-    if (link.expires_at) {
-      const exp = link.expires_at as any;
-      if (new Date(exp).getTime() < Date.now()) {
-        throw redirect({ to: '/' });
-      }
-    }
-
-    const { data: company, error: compError } = await supabase
-      .from('companies')
-      .select('cnpj, nome_titular_exibicao, inicio_atividade')
-      .eq('id', link.company_id as string)
-      .single();
-
-    if (compError || !company) {
-      throw redirect({ to: '/' });
-    }
-
-    const searchParams = {
-      cnpj: (company as any).cnpj || '',
-      nome: (company as any).nome_titular_exibicao || '',
-      abertura: (company as any).inicio_atividade || '',
-    };
+    const row = data as { cnpj: string | null; nome: string | null; abertura: string | null };
 
     throw redirect({
       to: '/',
-      search: searchParams,
+      search: {
+        cnpj: row.cnpj || '',
+        nome: row.nome || '',
+        abertura: row.abertura || '',
+      },
     });
   },
 });

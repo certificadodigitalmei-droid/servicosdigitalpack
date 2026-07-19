@@ -762,7 +762,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      resolve_company_link: {
+        Args: { _token: string }
+        Returns: {
+          abertura: string
+          cnpj: string
+          nome: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
