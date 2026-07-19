@@ -43,7 +43,7 @@ function FilterMeiPage() {
           return;
         }
 
-        const filtered = rawData.filter(row => {
+        const filtered = rawData.filter((row: any) => {
           const val = String(row[meiColumn] || '').toLowerCase().trim();
           return ['sim', 's', 'true', '1', 'yes', 'mei', 'optante'].includes(val);
         });
