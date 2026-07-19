@@ -26,7 +26,7 @@ export const Route = createFileRoute('/_authenticated/painel/gerador-links')({
 });
 
 function GeradorLinksPage() {
-  const [step, setStep] = useState<'upload' | 'processing' | 'result'>('upload');
+  const [step, setStep] = useState<'upload' | 'processing' | 'result' | 'error'>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
@@ -37,6 +37,8 @@ function GeradorLinksPage() {
   const [remainingTime, setRemainingTime] = useState<string>('');
   const [generationId, setGenerationId] = useState<string | null>(null);
   const [finalData, setFinalData] = useState<any[]>([]);
+  const [errorDetails, setErrorDetails] = useState<{ message: string; stack?: string; step?: string } | null>(null);
+
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const selectedFile = acceptedFiles[0];
