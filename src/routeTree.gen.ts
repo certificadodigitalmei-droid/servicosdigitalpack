@@ -9,12 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermosDeUsoRouteImport } from './routes/termos-de-uso'
-import { Route as QuemSomosRouteImport } from './routes/quem-somos'
-import { Route as PoliticaDeReembolsoRouteImport } from './routes/politica-de-reembolso'
-import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-privacidade'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
@@ -25,34 +20,9 @@ import { Route as AuthenticatedPainelMonitorRouteImport } from './routes/_authen
 import { Route as AuthenticatedPainelEmpresasRouteImport } from './routes/_authenticated.painel.empresas'
 import { Route as AuthenticatedPainelConfiguracoesRouteImport } from './routes/_authenticated.painel.configuracoes'
 
-const TermosDeUsoRoute = TermosDeUsoRouteImport.update({
-  id: '/termos-de-uso',
-  path: '/termos-de-uso',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuemSomosRoute = QuemSomosRouteImport.update({
-  id: '/quem-somos',
-  path: '/quem-somos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PoliticaDeReembolsoRoute = PoliticaDeReembolsoRouteImport.update({
-  id: '/politica-de-reembolso',
-  path: '/politica-de-reembolso',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PoliticaDePrivacidadeRoute = PoliticaDePrivacidadeRouteImport.update({
-  id: '/politica-de-privacidade',
-  path: '/politica-de-privacidade',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContatoRoute = ContatoRouteImport.update({
-  id: '/contato',
-  path: '/contato',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -107,12 +77,7 @@ const AuthenticatedPainelConfiguracoesRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRoute
-  '/contato': typeof ContatoRoute
   '/login': typeof LoginRoute
-  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
-  '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
-  '/quem-somos': typeof QuemSomosRoute
-  '/termos-de-uso': typeof TermosDeUsoRoute
   '/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/painel/configuracoes': typeof AuthenticatedPainelConfiguracoesRoute
@@ -123,12 +88,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRoute
-  '/contato': typeof ContatoRoute
   '/login': typeof LoginRoute
-  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
-  '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
-  '/quem-somos': typeof QuemSomosRoute
-  '/termos-de-uso': typeof TermosDeUsoRoute
   '/c/$token': typeof CTokenRoute
   '/painel/configuracoes': typeof AuthenticatedPainelConfiguracoesRoute
   '/painel/empresas': typeof AuthenticatedPainelEmpresasRoute
@@ -140,12 +100,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/checkout': typeof CheckoutRoute
-  '/contato': typeof ContatoRoute
   '/login': typeof LoginRoute
-  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
-  '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
-  '/quem-somos': typeof QuemSomosRoute
-  '/termos-de-uso': typeof TermosDeUsoRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/_authenticated/painel/configuracoes': typeof AuthenticatedPainelConfiguracoesRoute
@@ -158,12 +113,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/checkout'
-    | '/contato'
     | '/login'
-    | '/politica-de-privacidade'
-    | '/politica-de-reembolso'
-    | '/quem-somos'
-    | '/termos-de-uso'
     | '/painel'
     | '/c/$token'
     | '/painel/configuracoes'
@@ -174,12 +124,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/checkout'
-    | '/contato'
     | '/login'
-    | '/politica-de-privacidade'
-    | '/politica-de-reembolso'
-    | '/quem-somos'
-    | '/termos-de-uso'
     | '/c/$token'
     | '/painel/configuracoes'
     | '/painel/empresas'
@@ -190,12 +135,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/checkout'
-    | '/contato'
     | '/login'
-    | '/politica-de-privacidade'
-    | '/politica-de-reembolso'
-    | '/quem-somos'
-    | '/termos-de-uso'
     | '/_authenticated/painel'
     | '/c/$token'
     | '/_authenticated/painel/configuracoes'
@@ -208,57 +148,17 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   CheckoutRoute: typeof CheckoutRoute
-  ContatoRoute: typeof ContatoRoute
   LoginRoute: typeof LoginRoute
-  PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
-  PoliticaDeReembolsoRoute: typeof PoliticaDeReembolsoRoute
-  QuemSomosRoute: typeof QuemSomosRoute
-  TermosDeUsoRoute: typeof TermosDeUsoRoute
   CTokenRoute: typeof CTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/termos-de-uso': {
-      id: '/termos-de-uso'
-      path: '/termos-de-uso'
-      fullPath: '/termos-de-uso'
-      preLoaderRoute: typeof TermosDeUsoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quem-somos': {
-      id: '/quem-somos'
-      path: '/quem-somos'
-      fullPath: '/quem-somos'
-      preLoaderRoute: typeof QuemSomosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/politica-de-reembolso': {
-      id: '/politica-de-reembolso'
-      path: '/politica-de-reembolso'
-      fullPath: '/politica-de-reembolso'
-      preLoaderRoute: typeof PoliticaDeReembolsoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/politica-de-privacidade': {
-      id: '/politica-de-privacidade'
-      path: '/politica-de-privacidade'
-      fullPath: '/politica-de-privacidade'
-      preLoaderRoute: typeof PoliticaDePrivacidadeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contato': {
-      id: '/contato'
-      path: '/contato'
-      fullPath: '/contato'
-      preLoaderRoute: typeof ContatoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout': {
@@ -360,12 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   CheckoutRoute: CheckoutRoute,
-  ContatoRoute: ContatoRoute,
   LoginRoute: LoginRoute,
-  PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
-  PoliticaDeReembolsoRoute: PoliticaDeReembolsoRoute,
-  QuemSomosRoute: QuemSomosRoute,
-  TermosDeUsoRoute: TermosDeUsoRoute,
   CTokenRoute: CTokenRoute,
 }
 export const routeTree = rootRouteImport
