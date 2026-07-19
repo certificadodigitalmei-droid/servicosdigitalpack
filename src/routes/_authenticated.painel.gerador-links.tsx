@@ -84,59 +84,20 @@ function GeradorLinksPage() {
     setErrorDetails(null);
 
     try {
-      // Security check before starting
-      console.log('🔍 Iniciando verificação profunda de sessão...');
+      console.log('🔍 Validando sessão administrativa...');
       
-      let { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      let { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
 
       console.log('--- Relatório de Autenticação ---');
-      console.log('Session:', session ? 'Presente' : 'Nula');
+      console.log('Session:', session ? 'Ativa' : 'Nula');
       console.log('User:', user ? `ID: ${user.id}` : 'Nulo');
-      console.log('Access Token:', session?.access_token ? 'Presente (tamanho: ' + session.access_token.length + ')' : 'Ausente');
-      console.log('Refresh Token:', session?.refresh_token ? 'Presente' : 'Ausente');
-      console.log('Expires At:', session?.expires_at ? new Date(session.expires_at * 1000).toLocaleString() : 'N/A');
       console.log('--------------------------------');
 
-      // Tenta renovar ou logar anonimamente se falhar
-      if (!session || sessionError) {
-        console.warn('Sessão nula ou erro. Tentando renovação/login anônimo...');
-        const { data: refreshData, error: refreshError } = await supabase.auth.signInAnonymously();
-        if (refreshError) {
-          console.error('Falha crítica na autenticação anônima:', refreshError);
-          const msg = 'Sessão expirada. Faça login novamente.';
-          setErrorDetails({ message: msg, step: 'Validação de Sessão (Login Anônimo Falhou)' });
-          setStep('error');
-          toast.error(msg);
-          return;
-        }
-        session = refreshData.session;
-        user = refreshData.user;
-        console.log('Sessão recuperada anonimamente.');
-      }
-
       if (!session || !user) {
-        console.warn('Sessão não encontrada no getSession. Tentando forçar recuperação do localStorage...');
-        const storageKey = Object.keys(localStorage).find(k => k.includes('auth-token') || k.startsWith('sb-'));
-        if (storageKey) {
-          const localSession = JSON.parse(localStorage.getItem(storageKey) || '{}');
-          if (localSession.access_token) {
-            console.log('Sessão recuperada manualmente do localStorage.');
-            await supabase.auth.setSession({
-              access_token: localSession.access_token,
-              refresh_token: localSession.refresh_token
-            });
-            const { data: retry } = await supabase.auth.getSession();
-            session = retry.session;
-            user = retry.session?.user || null;
-          }
-        }
-      }
-
-      if (!session || !user) {
-        const msg = 'Sessão expirada. Faça login novamente.';
-        console.error('Final session validation failed');
-        setErrorDetails({ message: msg, step: 'Validação de Sessão' });
+        const msg = 'Sessão expirada ou inválida. Faça login novamente.';
+        console.error('Acesso negado: Sessão não encontrada');
+        setErrorDetails({ message: msg, step: 'Validação de Sessão Administrativa' });
         setStep('error');
         toast.error(msg);
         return;
@@ -144,7 +105,7 @@ function GeradorLinksPage() {
 
       setStep('processing');
       setStartTime(Date.now());
-      console.log('Processamento iniciado');
+      console.log('Processamento de links iniciado por:', user.email);
       
       // 1. Create generation record
       console.log('Salvando registro de geração...');

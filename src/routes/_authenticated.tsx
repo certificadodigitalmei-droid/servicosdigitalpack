@@ -1,96 +1,118 @@
 import { useState, useEffect } from 'react';
-import { createFileRoute, Outlet, useLocation } from '@tanstack/react-router';
+import { createFileRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 
 export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
-  const [code, setCode] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const auth = localStorage.getItem('admin_auth_code');
-    if (auth === '117711') {
-      setIsAuthorized(true);
-      checkSupabaseAuth();
-    }
+    checkSession();
   }, [location.pathname]);
 
-  const checkSupabaseAuth = async () => {
+  const checkSession = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.log('Autorizado localmente mas sem sessão Supabase. Tentando login anônimo...');
-        const { error } = await supabase.auth.signInAnonymously();
-        if (error) {
-          console.error('Erro ao estabelecer sessão anônima:', error);
-        } else {
-          console.log('Sessão anônima estabelecida com sucesso');
-        }
+      if (session) {
+        setIsAuthorized(true);
+      } else {
+        setIsAuthorized(false);
       }
     } catch (e) {
-      console.error('Erro na verificação de auth:', e);
+      console.error('Erro ao verificar sessão:', e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleVerify = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code === '117711') {
-      console.log('Verificando código 117711...');
-      localStorage.setItem('admin_auth_code', '117711');
-      setIsAuthorized(true);
-      toast.success('Acesso autorizado');
-      
-      try {
-        console.log('Iniciando signInAnonymously...');
-        const { data: authData, error: loginError } = await supabase.auth.signInAnonymously();
-        if (loginError) {
-          console.error('Supabase Login Error:', loginError);
-          toast.error('Erro ao iniciar sessão no banco de dados');
-        } else {
-          console.log('Sessão Supabase estabelecida:', authData.session?.user?.id);
-        }
-      } catch (err) {
-        console.error('Erro inesperado no login Supabase:', err);
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Erro de login:', error);
+        toast.error('Credenciais inválidas ou erro de conexão');
+      } else if (data.session) {
+        setIsAuthorized(true);
+        toast.success('Acesso autorizado');
       }
-    } else {
-      toast.error('Código incorreto');
+    } catch (err) {
+      console.error('Erro inesperado no login:', err);
+      toast.error('Ocorreu um erro inesperado');
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  if (isLoading && !isAuthorized) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-brand-navy">
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
+      </div>
+    );
+  }
 
   if (!isAuthorized) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-brand-navy p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold">Acesso Restrito</CardTitle>
+            <CardTitle className="text-2xl font-bold">Acesso Administrativo</CardTitle>
             <CardDescription>
-              Insira o código de acesso para continuar
+              Faça login com seu e-mail e senha para acessar o painel
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleVerify}>
+          <form onSubmit={handleLogin}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
+                <label className="text-sm font-medium">E-mail</label>
+                <Input
+                  type="email"
+                  placeholder="exemplo@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Senha</label>
                 <Input
                   type="password"
-                  placeholder="Código de acesso"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="text-center text-2xl tracking-widest"
-                  autoFocus
+                  placeholder="******"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                 />
+              </div>
+              <div className="bg-slate-50 p-3 rounded text-[12px] text-slate-500 border border-slate-200">
+                <p className="font-bold mb-1">Dados de demonstração:</p>
+                <p>E-mail: coringa@gmail.com</p>
+                <p>Senha: 117711</p>
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full bg-brand-blue hover:bg-brand-navy">
-                Acessar Painel
+              <Button type="submit" disabled={isLoading} className="w-full bg-brand-blue hover:bg-brand-navy">
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Entrar no Painel
               </Button>
             </CardFooter>
           </form>
