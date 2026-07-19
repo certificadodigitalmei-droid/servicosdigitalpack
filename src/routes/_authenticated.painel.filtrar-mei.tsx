@@ -474,7 +474,7 @@ function FilterMeiPage() {
             </div>
             <div className="w-full max-w-md space-y-2">
               <Progress value={progress} className="h-2" />
-              <p className="text-center text-xs text-slate-400">Isso pode levar alguns segundos para arquivos grandes.</p>
+              <p className="text-center text-xs text-slate-400">Progresso: {progress}% - Isso pode levar alguns segundos para arquivos grandes.</p>
             </div>
           </CardContent>
         </Card>
