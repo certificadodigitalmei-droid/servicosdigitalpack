@@ -32,6 +32,7 @@ import {
   rowToVars,
   substitute,
   findMissingVars,
+  formatCnpj,
   type CampaignDesign,
 } from '@/lib/email-campaign/template';
 import {
@@ -590,7 +591,7 @@ function CampanhasEmail() {
               {current ? (
                 <>
                   <div className="text-xs text-muted-foreground">
-                    Para: <strong>{current.email}</strong> · CNPJ {current.cnpj} · Ref {current.reference_code}
+                    Para: <strong>{current.email}</strong> · CNPJ {formatCnpj(current.cnpj)} · Ref {current.reference_code}
                   </div>
                   <div className="text-sm"><strong>Assunto:</strong> {renderedSubject}</div>
                   <div className="text-xs text-muted-foreground"><strong>Preheader:</strong> {renderedPreheader}</div>
@@ -706,7 +707,7 @@ function CampanhasEmail() {
                         <td className="p-2"><input type="checkbox" checked={!!r.id && selectedIds.has(r.id)} onChange={() => r.id && toggleSel(r.id)} /></td>
                         <td className="p-2">{r.email}</td>
                         <td className="p-2">{r.company_name}</td>
-                        <td className="p-2">{r.cnpj}</td>
+                        <td className="p-2 whitespace-nowrap">{formatCnpj(r.cnpj)}</td>
                         <td className="p-2 font-mono">{r.reference_code}</td>
                         <td className="p-2"><a className="text-brand-blue underline" href={r.public_link} target="_blank" rel="noreferrer">abrir</a></td>
                         <td className="p-2 max-w-[200px] truncate">{r.personalized_subject}</td>
