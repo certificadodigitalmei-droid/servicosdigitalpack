@@ -134,6 +134,13 @@ function GeradorLinksPage() {
       }
 
       if (!session || !user) {
+        const msg = 'Sessão expirada. Faça login novamente.';
+        console.error('Final session validation failed');
+        setErrorDetails({ message: msg, step: 'Validação de Sessão' });
+        setStep('error');
+        toast.error(msg);
+        return;
+      }
 
       setStep('processing');
       setStartTime(Date.now());
