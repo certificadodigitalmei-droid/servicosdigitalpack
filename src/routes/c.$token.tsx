@@ -16,7 +16,7 @@ export const Route = createFileRoute('/c/$token')({
     }
 
     // 2. Verificar expiração
-    if (link.expires_at && new Date(link.expires_at) < new Date()) {
+    if (link.expires_at && new Date(link.expires_at).getTime() < Date.now()) {
       throw redirect({ to: '/' });
     }
 
@@ -33,7 +33,6 @@ export const Route = createFileRoute('/c/$token')({
     }
 
     // 4. Redirecionar para a home com os parâmetros
-    // Garantir que os valores não sejam nulos para o search param
     const cnpj = company.cnpj || '';
     const nome = company.nome_titular_exibicao || '';
     const abertura = company.inicio_atividade || '';
