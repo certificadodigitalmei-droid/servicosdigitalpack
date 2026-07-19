@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, User, ChevronDown, Home, ChevronRight, FileText } from "lucide-react";
+import { Menu, User, ChevronDown, Home, ChevronRight } from "lucide-react";
+import logoAsset from "@/assets/logo-2.webp.asset.json";
 import { formatCPFOrCNPJ } from "@/lib/format";
 import type { ReactNode } from "react";
 
