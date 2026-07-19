@@ -15,7 +15,27 @@ function DashboardIndex() {
         <p className="text-slate-500">Selecione uma ferramenta para começar.</p>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-2 hover:border-brand-blue transition-colors group">
+          <CardHeader>
+            <div className="h-12 w-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+              <Upload className="h-6 w-6" />
+            </div>
+            <CardTitle>Importar Empresas</CardTitle>
+            <CardDescription>
+              Envie um CSV para cadastrar/atualizar empresas na base pelo CNPJ.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full bg-brand-navy hover:bg-brand-blue">
+              <Link to="/painel/importar-empresas" className="flex items-center gap-2">
+                Abrir Ferramenta
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
         <Card className="border-2 hover:border-brand-blue transition-colors group">
           <CardHeader>
             <div className="h-12 w-12 rounded-lg bg-blue-50 text-brand-blue flex items-center justify-center mb-4 group-hover:bg-brand-blue group-hover:text-white transition-colors">
