@@ -1,102 +1,215 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { Filter, ArrowRight, Link2, History, Upload } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { createFileRoute } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { Link2, Eye, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 export const Route = createFileRoute('/_authenticated/painel/')({
-  component: DashboardIndex,
+  component: DashboardPage,
 });
 
-function DashboardIndex() {
+type EventRow = {
+  event_type: 'view_link' | 'view_checkout' | 'click_certificado' | 'click_guia';
+  browser: string | null;
+  os: string | null;
+  device: string | null;
+  visitor_id: string;
+  token: string;
+  created_at: string;
+};
+
+type Stats = {
+  linksTotal: number;
+  viewLink: number;
+  viewCheckout: number;
+  clickCert: number;
+  clickGuia: number;
+  byBrowser: Record<string, number>;
+  byDevice: Record<string, number>;
+  byOS: Record<string, number>;
+  conversion: number;
+};
+
+const EMPTY: Stats = {
+  linksTotal: 0,
+  viewLink: 0,
+  viewCheckout: 0,
+  clickCert: 0,
+  clickGuia: 0,
+  byBrowser: {},
+  byDevice: {},
+  byOS: {},
+  conversion: 0,
+};
+
+function DashboardPage() {
+  const [stats, setStats] = useState<Stats>(EMPTY);
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const [{ count: linksTotal }, evRes] = await Promise.all([
+        supabase.from('company_links').select('id', { count: 'exact', head: true }),
+        supabase.from('link_events').select('event_type,browser,os,device,visitor_id,token,created_at').limit(50000),
+      ]);
+      const events = (evRes.data ?? []) as EventRow[];
+      const s: Stats = { ...EMPTY, linksTotal: linksTotal ?? 0, byBrowser: {}, byDevice: {}, byOS: {} };
+      for (const e of events) {
+        if (e.event_type === 'view_link') s.viewLink++;
+        else if (e.event_type === 'view_checkout') s.viewCheckout++;
+        else if (e.event_type === 'click_certificado') s.clickCert++;
+        else if (e.event_type === 'click_guia') s.clickGuia++;
+        // Only count device/browser breakdown for page visits (not clicks)
+        if (e.event_type === 'view_link' || e.event_type === 'view_checkout') {
+          const b = e.browser || 'Desconhecido';
+          const d = e.device || 'Desconhecido';
+          const o = e.os || 'Desconhecido';
+          s.byBrowser[b] = (s.byBrowser[b] || 0) + 1;
+          s.byDevice[d] = (s.byDevice[d] || 0) + 1;
+          s.byOS[o] = (s.byOS[o] || 0) + 1;
+        }
+      }
+      s.conversion = s.viewLink > 0 ? Math.round((s.viewCheckout / s.viewLink) * 100) : 0;
+      setStats(s);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Bem-vindo ao Painel</h1>
-        <p className="text-slate-500">Selecione uma ferramenta para começar.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-slate-500">Acompanhe o desempenho dos links gerados.</p>
+        </div>
+        <Button variant="outline" onClick={load} disabled={loading}>
+          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+          Atualizar
+        </Button>
       </div>
-      
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-2 hover:border-brand-blue transition-colors group">
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <MetricCard icon={<Link2 className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-blue-50 text-brand-blue" />
+        <MetricCard icon={<Eye className="h-5 w-5" />} label="Visitas na página" value={stats.viewLink} color="bg-emerald-50 text-emerald-600" hint="Únicos por navegador/dispositivo" />
+        <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Visitas no checkout" value={stats.viewCheckout} color="bg-purple-50 text-purple-600" hint="Únicos por navegador/dispositivo" />
+        <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label='Cliques "Emitir Certificado"' value={stats.clickCert} color="bg-amber-50 text-amber-600" />
+        <MetricCard icon={<FileSignature className="h-5 w-5" />} label='Cliques "Gerar Guia"' value={stats.clickGuia} color="bg-rose-50 text-rose-600" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
           <CardHeader>
-            <div className="h-12 w-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-              <Upload className="h-6 w-6" />
-            </div>
-            <CardTitle>Importar Empresas</CardTitle>
-            <CardDescription>
-              Envie um CSV para cadastrar/atualizar empresas na base pelo CNPJ.
-            </CardDescription>
+            <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">Conversão</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full bg-brand-navy hover:bg-brand-blue">
-              <Link to="/painel/importar-empresas" className="flex items-center gap-2">
-                Abrir Ferramenta
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
+          <CardContent className="space-y-4">
+            <FunnelRow label="Visitas na página do link" value={stats.viewLink} total={Math.max(stats.viewLink, 1)} color="bg-emerald-500" />
+            <FunnelRow label="Clicou em Emitir Certificado" value={stats.clickCert} total={Math.max(stats.viewLink, 1)} color="bg-amber-500" />
+            <FunnelRow label="Chegou ao checkout" value={stats.viewCheckout} total={Math.max(stats.viewLink, 1)} color="bg-purple-500" />
+            <FunnelRow label="Clicou em Gerar Guia" value={stats.clickGuia} total={Math.max(stats.viewLink, 1)} color="bg-rose-500" />
+            <div className="pt-2 text-sm text-slate-500">
+              Taxa página → checkout: <span className="font-bold text-slate-900">{stats.conversion}%</span>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-2 hover:border-brand-blue transition-colors group">
+        <Card>
           <CardHeader>
-            <div className="h-12 w-12 rounded-lg bg-blue-50 text-brand-blue flex items-center justify-center mb-4 group-hover:bg-brand-blue group-hover:text-white transition-colors">
-              <Filter className="h-6 w-6" />
-            </div>
-            <CardTitle>Filtrar Empresas MEI</CardTitle>
-            <CardDescription>
-              Importe um CSV de empresas e gere um novo arquivo contendo apenas Microempreendedores Individuais.
-            </CardDescription>
+            <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">Dispositivos</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full bg-brand-navy hover:bg-brand-blue">
-              <Link to="/painel/filtrar-mei" className="flex items-center gap-2">
-                Abrir Ferramenta
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
+            <Breakdown data={stats.byDevice} iconFor={deviceIcon} />
           </CardContent>
         </Card>
 
-        <Card className="border-2 hover:border-brand-blue transition-colors group">
+        <Card>
           <CardHeader>
-            <div className="h-12 w-12 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-4 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-              <Link2 className="h-6 w-6" />
-            </div>
-            <CardTitle>Gerador de Links</CardTitle>
-            <CardDescription>
-              Gere links exclusivos de acesso e checkout para milhares de empresas via CSV.
-            </CardDescription>
+            <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">Navegadores</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full bg-brand-navy hover:bg-brand-blue">
-              <Link to="/painel/gerador-links" className="flex items-center gap-2">
-                Abrir Ferramenta
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
+            <Breakdown data={stats.byBrowser} />
           </CardContent>
         </Card>
 
-        <Card className="border-2 hover:border-brand-blue transition-colors group">
+        <Card>
           <CardHeader>
-            <div className="h-12 w-12 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center mb-4 group-hover:bg-slate-600 group-hover:text-white transition-colors">
-              <History className="h-6 w-6" />
-            </div>
-            <CardTitle>Histórico de Gerações</CardTitle>
-            <CardDescription>
-              Visualize e baixe novamente os links gerados em sessões anteriores.
-            </CardDescription>
+            <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">Sistemas operacionais</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="outline" className="w-full border-slate-200 hover:bg-slate-50">
-              <Link to="/painel/gerador-links/historico" className="flex items-center gap-2">
-                Ver Histórico
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
+            <Breakdown data={stats.byOS} />
           </CardContent>
         </Card>
-        
       </div>
     </div>
   );
+}
+
+function MetricCard({ icon, label, value, color, hint }: { icon: React.ReactNode; label: string; value: number; color: string; hint?: string }) {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${color}`}>{icon}</div>
+        <div className="mt-3 text-3xl font-bold text-slate-900">{value.toLocaleString('pt-BR')}</div>
+        <div className="text-sm font-medium text-slate-600">{label}</div>
+        {hint && <div className="mt-1 text-[11px] text-slate-400">{hint}</div>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function FunnelRow({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  return (
+    <div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-slate-600">{label}</span>
+        <span className="font-semibold text-slate-900">{value.toLocaleString('pt-BR')} <span className="text-slate-400 font-normal">({pct}%)</span></span>
+      </div>
+      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+        <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function Breakdown({ data, iconFor }: { data: Record<string, number>; iconFor?: (k: string) => React.ReactNode }) {
+  const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
+  const total = entries.reduce((s, [, v]) => s + v, 0);
+  if (entries.length === 0) {
+    return <div className="text-sm text-slate-400">Sem dados ainda.</div>;
+  }
+  return (
+    <div className="space-y-3">
+      {entries.map(([k, v]) => {
+        const pct = total > 0 ? Math.round((v / total) * 100) : 0;
+        return (
+          <div key={k}>
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-2 text-slate-700">
+                {iconFor?.(k)}
+                {k}
+              </span>
+              <span className="font-semibold text-slate-900">{v.toLocaleString('pt-BR')} <span className="text-slate-400 font-normal">({pct}%)</span></span>
+            </div>
+            <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full bg-brand-blue" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function deviceIcon(k: string) {
+  const s = k.toLowerCase();
+  if (s.includes('ipad') || s.includes('tablet')) return <Tablet className="h-4 w-4 text-slate-400" />;
+  if (s.includes('ios') || s.includes('android') || s.includes('mobile')) return <Smartphone className="h-4 w-4 text-slate-400" />;
+  return <Monitor className="h-4 w-4 text-slate-400" />;
 }
