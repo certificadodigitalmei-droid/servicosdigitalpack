@@ -156,7 +156,7 @@ function MonitorPage() {
                   onClick={() => toast.info("Funcionalidade de teste de consulta filtrada sendo implementada...")}
                 >
                   <RefreshCw className="h-4 w-4" />
-                  testar concção com api
+                  conctar chamada da api
                 </Button>
               </div>
             </div>
