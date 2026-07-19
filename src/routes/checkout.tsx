@@ -227,7 +227,7 @@ function CheckoutForm({
       {/* Dados do pagador */}
       <Card title="Dados do Pagador">
         <div className="space-y-3 p-4">
-          <Field label="Nome do titular" error={errors.nome} required>
+          <Field label="NOME DO TITULAR" error={errors.nome} required>
             <input
               type="text"
               value={form.nome}
@@ -245,8 +245,8 @@ function CheckoutForm({
               inputMode="numeric"
             />
           </Field>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="E-mail" error={errors.email} required>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="E-MAIL" error={errors.email} required>
               <input
                 type="email"
                 value={form.email}
@@ -256,7 +256,7 @@ function CheckoutForm({
                 maxLength={255}
               />
             </Field>
-            <Field label="Telefone" error={errors.phone} required>
+            <Field label="TELEFONE" error={errors.phone} required>
               <input
                 type="tel"
                 value={form.phone}
@@ -289,7 +289,7 @@ function CheckoutForm({
           <SummaryRow label="Tarifa de processamento" value="R$ 0,00" />
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-[14px] font-bold text-foreground">Total a pagar</span>
-            <span className="text-[18px] font-bold text-brand-blue">{brl(AMOUNT)}</span>
+            <span className="text-[18px] font-bold text-[#004884]">{brl(AMOUNT)}</span>
           </div>
         </div>
         <p className="border-t border-border p-3 text-[11.5px] text-muted-foreground">
@@ -422,8 +422,8 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-md border border-border bg-card">
-      <div className="border-b border-border px-4 py-2.5 text-[13px] font-semibold text-foreground">
+    <div className="overflow-hidden rounded-md border border-border bg-card shadow-sm">
+      <div className="bg-[#f8f9fa] border-b border-border px-4 py-2.5 text-[13px] font-bold text-[#004884] uppercase tracking-tight">
         {title}
       </div>
       {children}
