@@ -25,6 +25,10 @@ type Stats = {
   viewCheckout: number;
   clickCert: number;
   clickGuia: number;
+  viewLinkTotal: number;
+  viewCheckoutTotal: number;
+  clickCertTotal: number;
+  clickGuiaTotal: number;
   byBrowser: Record<string, number>;
   byDevice: Record<string, number>;
   byOS: Record<string, number>;
@@ -37,11 +41,16 @@ const EMPTY: Stats = {
   viewCheckout: 0,
   clickCert: 0,
   clickGuia: 0,
+  viewLinkTotal: 0,
+  viewCheckoutTotal: 0,
+  clickCertTotal: 0,
+  clickGuiaTotal: 0,
   byBrowser: {},
   byDevice: {},
   byOS: {},
   conversion: 0,
 };
+
 
 function DashboardPage() {
   const [stats, setStats] = useState<Stats>(EMPTY);
