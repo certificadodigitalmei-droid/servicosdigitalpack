@@ -18,6 +18,7 @@ import { Route as CertificadoMeiTokenRouteImport } from './routes/certificado-me
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
+import { Route as ApiPublicWebhookUniaopayRouteImport } from './routes/api/public/webhook-uniaopay'
 import { Route as AuthenticatedPainelImportarEmpresasRouteImport } from './routes/_authenticated.painel.importar-empresas'
 import { Route as AuthenticatedPainelGeradorLinksRouteImport } from './routes/_authenticated.painel.gerador-links'
 import { Route as AuthenticatedPainelFiltrarMeiRouteImport } from './routes/_authenticated.painel.filtrar-mei'
@@ -69,6 +70,12 @@ const AuthenticatedPainelIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const ApiPublicWebhookUniaopayRoute =
+  ApiPublicWebhookUniaopayRouteImport.update({
+    id: '/api/public/webhook-uniaopay',
+    path: '/api/public/webhook-uniaopay',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedPainelImportarEmpresasRoute =
   AuthenticatedPainelImportarEmpresasRouteImport.update({
     id: '/importar-empresas',
@@ -112,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
+  '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
 }
@@ -126,6 +134,7 @@ export interface FileRoutesByTo {
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
+  '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
 }
@@ -143,6 +152,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/_authenticated/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
+  '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
   '/_authenticated/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
 }
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel/importar-empresas'
+    | '/api/public/webhook-uniaopay'
     | '/painel/'
     | '/painel/gerador-links/historico'
   fileRoutesByTo: FileRoutesByTo
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel/importar-empresas'
+    | '/api/public/webhook-uniaopay'
     | '/painel'
     | '/painel/gerador-links/historico'
   id:
@@ -190,6 +202,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/filtrar-mei'
     | '/_authenticated/painel/gerador-links'
     | '/_authenticated/painel/importar-empresas'
+    | '/api/public/webhook-uniaopay'
     | '/_authenticated/painel/'
     | '/_authenticated/painel/gerador-links/historico'
   fileRoutesById: FileRoutesById
@@ -202,6 +215,7 @@ export interface RootRouteChildren {
   CTokenRoute: typeof CTokenRoute
   CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
   CheckoutTokenRoute: typeof CheckoutTokenRoute
+  ApiPublicWebhookUniaopayRoute: typeof ApiPublicWebhookUniaopayRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -268,6 +282,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/painel/'
       preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/api/public/webhook-uniaopay': {
+      id: '/api/public/webhook-uniaopay'
+      path: '/api/public/webhook-uniaopay'
+      fullPath: '/api/public/webhook-uniaopay'
+      preLoaderRoute: typeof ApiPublicWebhookUniaopayRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/painel/importar-empresas': {
       id: '/_authenticated/painel/importar-empresas'
@@ -364,6 +385,7 @@ const rootRouteChildren: RootRouteChildren = {
   CTokenRoute: CTokenRoute,
   CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
   CheckoutTokenRoute: CheckoutTokenRoute,
+  ApiPublicWebhookUniaopayRoute: ApiPublicWebhookUniaopayRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
