@@ -310,7 +310,8 @@ const currentDate = dateFormatter.format(new Date());
         <CardContent className="space-y-6">
           <div className="bg-slate-950 rounded-lg p-6 overflow-x-auto">
             <pre className="text-xs text-emerald-400 font-mono leading-relaxed whitespace-pre-wrap">
-{`Busca Simples Filtrada
+{`arrume agora e teste:
+Busca Simples Filtrada
 post /search/empresa/simple
 Retorna informações básicas das empresas que correspondem aos critérios enviados. Não consome créditos. Também pode ser usada para consultar um único CNPJ.
 
@@ -357,6 +358,16 @@ API Server
 https://api.aquicnpj.com
 Authentication
 HTTP Bearer in header
+Response Status: 403
+Took 35 milliseconds
+RESPONSE
+RESPONSE HEADERS
+CURL
+Copy
+{
+  "detail": "Authorization header must contain two space-delimited values",
+  "code": "bad_authorization_header"
+}
 RESPONSE
 200
 Sucesso
@@ -380,116 +391,7 @@ Copy
 "situacao_cadastral": "02"
 }
 ]
-}
-
-e
-
-Busca Simples Filtrada
-post /search/empresa/simple
-Retorna informações básicas das empresas que correspondem aos critérios enviados. Não consome créditos. Também pode ser usada para consultar um único CNPJ.
-
-HTTP Bearer
-REQUEST
-REQUEST BODY
-*
-application/json
-EXAMPLE
-SCHEMA
-object
-Multiline description
-Field
-Type
-Description
-- query
-object
-cnpj
-[string]
-razao_social
-[string]
-cnaes_principais_id
-[string]
-cnaes_secundarias_id
-[string]
-natureza_id
-[string]
-uf
-[string]
-municipio
-[string]
-bairro
-[string]
-cep
-[string]
-ddd
-[string]
-situacao_cadastral
-[string]
-phone_type
-string
-- range_query
-object
-- extras
-object
-somente_mei
-boolean
-excluir_mei
-boolean
-com_email
-boolean
-incluir_atividade_secundaria
-boolean
-com_contato_telefonico
-boolean
-somente_matriz
-boolean
-somente_filial
-boolean
-remove_contab
-boolean
-remove_already_downloaded
-boolean
-page
-integer
-page_size
-integer
-API Server
-https://api.aquicnpj.com
-Authentication
-HTTP Bearer in header
-RESPONSE
-200
-Sucesso
-
-EXAMPLE
-SCHEMA
-application/json
-object
-Multiline description
-Field
-Type
-Description
-total
-integer
-page
-integer
-page_size
-integer
-- results
-array of object
-id
-string
-cnpj
-string
-nome_fantasia
-string┃null
-razao_social
-string
-porte
-string
-inicio_atividade
-string
-situacao_cadastral
-string`}
+}`}
             </pre>
           </div>
         </CardContent>
