@@ -43,8 +43,8 @@ function PanelLayout() {
 
   const menuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, to: '/painel' },
-    { title: 'Importar Empresas', icon: Upload, to: '/painel/importar-empresas' },
     { title: 'Filtrar Empresas MEI', icon: Filter, to: '/painel/filtrar-mei' },
+    { title: 'Importar Empresas', icon: Upload, to: '/painel/importar-empresas' },
     { title: 'Gerador de Links', icon: Link2, to: '/painel/gerador-links' },
   ];
 

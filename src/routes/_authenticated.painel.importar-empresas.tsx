@@ -41,7 +41,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   nome_titular_exibicao: ['nome', 'nometitular', 'titular', 'nomefantasia'],
   nome_fantasia: ['nomefantasia', 'fantasia'],
   email: ['email', 'correioeletronico', 'emailempresa'],
-  inicio_atividade: ['dataabertura', 'datainicioatividade', 'inicioatividade', 'dataabertadaempresa', 'abertura'],
+  inicio_atividade: ['dataabertura', 'datainicioatividade', 'inicioatividade', 'dataabertadaempresa', 'abertura', 'datasituacaocadastral', 'situacaocadastraldata', 'datasitcadastral', 'datadasituacaocadastral'],
   uf: ['uf', 'estado', 'ufempresa'],
   municipio_descricao: ['municipio', 'cidade', 'municipionome', 'descricaomunicipio'],
   situacao_cadastral_desc: ['situacaocadastral', 'situacao', 'descricaosituacao'],
