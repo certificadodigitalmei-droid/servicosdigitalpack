@@ -19,6 +19,7 @@ import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
+import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
 
 const TermosDeUsoRoute = TermosDeUsoRouteImport.update({
   id: '/termos-de-uso',
@@ -69,6 +70,12 @@ const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPainelIndexRoute =
+  AuthenticatedPainelIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -79,7 +86,8 @@ export interface FileRoutesByFullPath {
   '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
   '/quem-somos': typeof QuemSomosRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
-  '/painel': typeof AuthenticatedPainelRoute
+  '/painel': typeof AuthenticatedPainelRouteWithChildren
+  '/painel/': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -90,7 +98,7 @@ export interface FileRoutesByTo {
   '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
   '/quem-somos': typeof QuemSomosRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
-  '/painel': typeof AuthenticatedPainelRoute
+  '/painel': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -103,7 +111,8 @@ export interface FileRoutesById {
   '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
   '/quem-somos': typeof QuemSomosRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
-  '/_authenticated/painel': typeof AuthenticatedPainelRoute
+  '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
+  '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/quem-somos'
     | '/termos-de-uso'
     | '/painel'
+    | '/painel/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/quem-somos'
     | '/termos-de-uso'
     | '/_authenticated/painel'
+    | '/_authenticated/painel/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -226,15 +237,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/painel/': {
+      id: '/_authenticated/painel/'
+      path: '/'
+      fullPath: '/painel/'
+      preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
   }
 }
 
+interface AuthenticatedPainelRouteChildren {
+  AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
+}
+
+const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
+  AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
+}
+
+const AuthenticatedPainelRouteWithChildren =
+  AuthenticatedPainelRoute._addFileChildren(AuthenticatedPainelRouteChildren)
+
 interface AuthenticatedRouteChildren {
-  AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
+  AuthenticatedPainelRoute: typeof AuthenticatedPainelRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedPainelRoute: AuthenticatedPainelRoute,
+  AuthenticatedPainelRoute: AuthenticatedPainelRouteWithChildren,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
