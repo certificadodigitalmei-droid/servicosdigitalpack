@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Save, RefreshCw, AlertTriangle, Braces, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useServerFn } from "@tanstack/react-start";
+import { getUsageStats } from "@/lib/aquicnpj/aquicnpj.functions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const Route = createFileRoute('/_authenticated/painel/monitor')({
@@ -19,6 +21,7 @@ function MonitorPage() {
   const [isAutoActive, setIsAutoActive] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const fetchUsageStats = useServerFn(getUsageStats);
 
   const handleSaveRange = () => {
     try {
@@ -162,18 +165,9 @@ function MonitorPage() {
                       setTestStatus('loading');
                       setErrorMessage(null);
                       try {
-                        // Simulated API check failure for demonstration if needed
-                        // In a real scenario, this would call a server function
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        
-                        // For demonstration purposes, we'll simulate a random failure 50% of the time 
-                        // to show the requested error details and recommended steps
-                        if (Math.random() > 0.5) {
-                          throw new Error("Token Inválido ou Expirado");
-                        }
-
+                        const stats = await fetchUsageStats();
                         setTestStatus('success');
-                        toast.success("Conexão com API AquiCNPJ validada com sucesso!");
+                        toast.success(`Conexão validada! Plano: ${stats.subscription?.plan?.name || 'Ativo'}`);
                         setTimeout(() => setTestStatus('idle'), 3000);
                       } catch (error: any) {
                         setTestStatus('error');
@@ -186,7 +180,7 @@ function MonitorPage() {
                     {testStatus === 'success' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
                     {testStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
                     {testStatus === 'idle' && <RefreshCw className="h-4 w-4" />}
-                    Exibir detalhes do erro e um passo recomendado quando a verificação falhar na página de Monitor Automático.
+                    Implementar o botão “testar concção com api” para chamar a Edge Function e exibir o resultado no Monitor Automático.
                   </Button>
 
                   {testStatus === 'error' && errorMessage && (
