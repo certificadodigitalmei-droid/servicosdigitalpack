@@ -119,6 +119,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   const rowsHtml = [
     ['Nome', vars.NOME_TITULAR || vars.NOME_EMPRESARIAL],
     ['CNPJ', formatCnpj(vars.CNPJ || '')],
+    ['Data de Abertura', vars.DATA_ABERTURA],
     ['Situação', vars.SITUACAO || 'CNPJ sem certificado ativo'],
   ]
     .filter(([, v]) => v)
@@ -211,6 +212,7 @@ export function renderText(d: CampaignDesign, vars: Vars): string {
     S(d.cardTitle),
     vars.NOME_TITULAR ? `- Nome: ${vars.NOME_TITULAR}` : '',
     vars.CNPJ ? `- CNPJ: ${formatCnpj(vars.CNPJ)}` : '',
+    vars.DATA_ABERTURA ? `- Data de Abertura: ${vars.DATA_ABERTURA}` : '',
     vars.SITUACAO ? `- Situação: ${vars.SITUACAO}` : '',
     '',
     `${S(d.buttonLabel)}: ${S(d.buttonHref)}`,
