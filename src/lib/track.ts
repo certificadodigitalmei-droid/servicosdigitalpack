@@ -39,19 +39,20 @@ function parseUA(ua: string) {
   return { browser, os, device };
 }
 
-const sent = new Set<string>();
+const sentViews = new Set<string>();
 
 export async function trackEvent(token: string, event_type: TrackEvent) {
   try {
     if (typeof window === 'undefined' || !token) return;
     const visitor_id = getVisitorId();
-    const dedupKey = `${token}:${event_type}:${visitor_id}`;
-    if (sent.has(dedupKey)) return;
-    sent.add(dedupKey);
-    // local session guard to also avoid re-fire in the same tab
-    const sessionKey = `cmd_evt_${dedupKey}`;
-    if (sessionStorage.getItem(sessionKey)) return;
-    sessionStorage.setItem(sessionKey, '1');
+
+    // Only dedupe view events within the current page load (avoid StrictMode/rerender double-fire).
+    // Clicks are never deduped — every click counts toward Total.
+    if (event_type === 'view_link' || event_type === 'view_checkout') {
+      const key = `${token}:${event_type}`;
+      if (sentViews.has(key)) return;
+      sentViews.add(key);
+    }
 
     const ua = navigator.userAgent || '';
     const { browser, os, device } = parseUA(ua);
