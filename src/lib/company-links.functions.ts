@@ -9,6 +9,5 @@ export const resolveCompanyLink = createServerFn({ method: 'GET' })
       .rpc('resolve_company_link', { _token: data.token })
       .maybeSingle();
     if (error || !row) return null;
-    const r = row as { cnpj: string | null; nome: string | null; abertura: string | null };
-    return { cnpj: r.cnpj ?? '', nome: r.nome ?? '', abertura: r.abertura ?? '' };
+    return row as { cnpj: string | null; nome: string | null; abertura: string | null; email: string | null; telefone: string | null };
   });
