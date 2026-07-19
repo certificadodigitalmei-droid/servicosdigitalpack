@@ -124,15 +124,13 @@ function HomePage() {
               </div>
               <div className="min-w-0">
                 <div className="text-[15px] font-semibold text-brand-blue">
-                  Serviço de Apoio Digital para MEI
+                  Certificado Digital MEI — Emissão Obrigatória 2026
                 </div>
                 <p className="mt-1 text-[13px] text-foreground">
-                  Conheça nosso serviço privado de apoio digital, organização documental e
-                  suporte ao microempreendedor.
+                  Seu CNPJ foi localizado e está aguardando a emissão do certificado. Prossiga agora para regularizar e receber seu certificado digital.
                 </p>
                 <p className="mt-2 text-[12.5px] text-muted-foreground">
-                  Confira todos os itens incluídos, valores, condições e prazo de atendimento
-                  antes de contratar.
+                  Não deixe para depois — CNPJs sem certificado ficam sujeitos a restrições operacionais.
                 </p>
               </div>
             </div>
@@ -143,7 +141,7 @@ function HomePage() {
                 className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md bg-brand-blue px-6 text-[13px] font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:brightness-110"
               >
                 <Lock className="h-4 w-4" />
-                Conhecer serviço
+                Emitir Certificado Digital
               </Link>
             </div>
           </div>
