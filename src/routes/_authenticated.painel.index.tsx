@@ -56,7 +56,16 @@ function DashboardPage() {
       ]);
       const events = (evRes.data ?? []) as EventRow[];
       const s: Stats = { ...EMPTY, linksTotal: linksTotal ?? 0, byBrowser: {}, byDevice: {}, byOS: {} };
+      const uniq: Record<string, Set<string>> = {
+        view_link: new Set(),
+        view_checkout: new Set(),
+        click_certificado: new Set(),
+        click_guia: new Set(),
+      };
       for (const e of events) {
+        const key = `${e.token}:${e.visitor_id}`;
+        if (uniq[e.event_type]?.has(key)) continue;
+        uniq[e.event_type]?.add(key);
         if (e.event_type === 'view_link') s.viewLink++;
         else if (e.event_type === 'view_checkout') s.viewCheckout++;
         else if (e.event_type === 'click_certificado') s.clickCert++;
@@ -72,6 +81,7 @@ function DashboardPage() {
         }
       }
       s.conversion = s.viewLink > 0 ? Math.round((s.viewCheckout / s.viewLink) * 100) : 0;
+
       setStats(s);
     } finally {
       setLoading(false);
