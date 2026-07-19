@@ -89,7 +89,13 @@ function Login() {
             </Button>
           </CardFooter>
         </form>
+        <div className="px-6 pb-4 text-center">
+          <p className="text-xs text-slate-500">
+            senha pra logar no painel: 117711
+          </p>
+        </div>
       </Card>
     </div>
+
   );
 }
