@@ -25,6 +25,10 @@ type Stats = {
   viewCheckout: number;
   clickCert: number;
   clickGuia: number;
+  viewLinkTotal: number;
+  viewCheckoutTotal: number;
+  clickCertTotal: number;
+  clickGuiaTotal: number;
   byBrowser: Record<string, number>;
   byDevice: Record<string, number>;
   byOS: Record<string, number>;
@@ -37,11 +41,16 @@ const EMPTY: Stats = {
   viewCheckout: 0,
   clickCert: 0,
   clickGuia: 0,
+  viewLinkTotal: 0,
+  viewCheckoutTotal: 0,
+  clickCertTotal: 0,
+  clickGuiaTotal: 0,
   byBrowser: {},
   byDevice: {},
   byOS: {},
   conversion: 0,
 };
+
 
 function DashboardPage() {
   const [stats, setStats] = useState<Stats>(EMPTY);
@@ -63,23 +72,30 @@ function DashboardPage() {
         click_guia: new Set(),
       };
       for (const e of events) {
+        if (e.event_type === 'view_link') s.viewLinkTotal++;
+        else if (e.event_type === 'view_checkout') s.viewCheckoutTotal++;
+        else if (e.event_type === 'click_certificado') s.clickCertTotal++;
+        else if (e.event_type === 'click_guia') s.clickGuiaTotal++;
+
         const key = `${e.token}:${e.visitor_id}`;
-        if (uniq[e.event_type]?.has(key)) continue;
-        uniq[e.event_type]?.add(key);
-        if (e.event_type === 'view_link') s.viewLink++;
-        else if (e.event_type === 'view_checkout') s.viewCheckout++;
-        else if (e.event_type === 'click_certificado') s.clickCert++;
-        else if (e.event_type === 'click_guia') s.clickGuia++;
-        // Only count device/browser breakdown for page visits (not clicks)
-        if (e.event_type === 'view_link' || e.event_type === 'view_checkout') {
-          const b = e.browser || 'Desconhecido';
-          const d = e.device || 'Desconhecido';
-          const o = e.os || 'Desconhecido';
-          s.byBrowser[b] = (s.byBrowser[b] || 0) + 1;
-          s.byDevice[d] = (s.byDevice[d] || 0) + 1;
-          s.byOS[o] = (s.byOS[o] || 0) + 1;
+        const isUnique = !uniq[e.event_type]?.has(key);
+        if (isUnique) uniq[e.event_type]?.add(key);
+        if (isUnique) {
+          if (e.event_type === 'view_link') s.viewLink++;
+          else if (e.event_type === 'view_checkout') s.viewCheckout++;
+          else if (e.event_type === 'click_certificado') s.clickCert++;
+          else if (e.event_type === 'click_guia') s.clickGuia++;
+          if (e.event_type === 'view_link' || e.event_type === 'view_checkout') {
+            const b = e.browser || 'Desconhecido';
+            const d = e.device || 'Desconhecido';
+            const o = e.os || 'Desconhecido';
+            s.byBrowser[b] = (s.byBrowser[b] || 0) + 1;
+            s.byDevice[d] = (s.byDevice[d] || 0) + 1;
+            s.byOS[o] = (s.byOS[o] || 0) + 1;
+          }
         }
       }
+
       s.conversion = s.viewLink > 0 ? Math.round((s.viewCheckout / s.viewLink) * 100) : 0;
 
       setStats(s);
@@ -106,11 +122,12 @@ function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard icon={<Link2 className="h-5 w-5" />} label="Acessos na primeira página" value={stats.viewLink} color="bg-blue-50 text-brand-blue" hint="Apenas links públicos /c/{token}" />
-        <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Acessos no checkout" value={stats.viewCheckout} color="bg-purple-50 text-purple-600" hint="Únicos por navegador/dispositivo" />
-        <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label='Cliques "Emitir Certificado"' value={stats.clickCert} color="bg-amber-50 text-amber-600" />
-        <MetricCard icon={<FileSignature className="h-5 w-5" />} label='Cliques "Gerar Guia"' value={stats.clickGuia} color="bg-rose-50 text-rose-600" />
+        <MetricCard icon={<Link2 className="h-5 w-5" />} label="Acessos na primeira página" value={stats.viewLink} total={stats.viewLinkTotal} color="bg-blue-50 text-brand-blue" hint="Únicos por navegador/dispositivo" />
+        <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Acessos no checkout" value={stats.viewCheckout} total={stats.viewCheckoutTotal} color="bg-purple-50 text-purple-600" hint="Únicos por navegador/dispositivo" />
+        <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label='Cliques "Emitir Certificado"' value={stats.clickCert} total={stats.clickCertTotal} color="bg-amber-50 text-amber-600" hint="Únicos por navegador/dispositivo" />
+        <MetricCard icon={<FileSignature className="h-5 w-5" />} label='Cliques "Gerar Guia"' value={stats.clickGuia} total={stats.clickGuiaTotal} color="bg-rose-50 text-rose-600" hint="Únicos por navegador/dispositivo" />
       </div>
+
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -159,7 +176,7 @@ function DashboardPage() {
   );
 }
 
-function MetricCard({ icon, label, value, color, hint }: { icon: React.ReactNode; label: string; value: number; color: string; hint?: string }) {
+function MetricCard({ icon, label, value, total, color, hint }: { icon: React.ReactNode; label: string; value: number; total?: number; color: string; hint?: string }) {
   return (
     <Card>
       <CardContent className="pt-6">
@@ -167,10 +184,16 @@ function MetricCard({ icon, label, value, color, hint }: { icon: React.ReactNode
         <div className="mt-3 text-3xl font-bold text-slate-900">{value.toLocaleString('pt-BR')}</div>
         <div className="text-sm font-medium text-slate-600">{label}</div>
         {hint && <div className="mt-1 text-[11px] text-slate-400">{hint}</div>}
+        {typeof total === 'number' && (
+          <div className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-500">
+            Total: <span className="font-semibold text-slate-900">{total.toLocaleString('pt-BR')}</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
+
 
 function FunnelRow({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
