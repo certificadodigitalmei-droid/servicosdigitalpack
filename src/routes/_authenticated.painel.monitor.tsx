@@ -63,11 +63,22 @@ function MonitorPage() {
               </div>
             </div>
             
-            <div className="p-3 bg-amber-50 rounded-md border border-amber-200 flex gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700">
-                O monitor automático "Abertas hoje" requer o range_query oficial configurado.
-              </p>
+            <div className="p-3 bg-amber-50 rounded-md border border-amber-200 flex flex-col gap-2">
+              <div className="flex gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700">
+                  O monitor automático "Abertas hoje" requer o range_query oficial configurado.
+                </p>
+              </div>
+              <div className="mt-1 p-2 bg-white rounded border border-amber-100 text-[10px] font-mono text-slate-600">
+                Usar data atual automaticamente: ATIVADO<br />
+                const today = new Intl.DateTimeFormat("en-CA", &#123;<br />
+                &nbsp;&nbsp;timeZone: "America/Sao_Paulo",<br />
+                &nbsp;&nbsp;year: "numeric",<br />
+                &nbsp;&nbsp;month: "2-digit",<br />
+                &nbsp;&nbsp;day: "2-digit",<br />
+                &#125;).format(new Date());
+              </div>
             </div>
 
             <div className="space-y-2">
