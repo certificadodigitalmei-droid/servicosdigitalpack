@@ -116,13 +116,24 @@ function GeradorLinksPage() {
       }
 
       if (!session || !user) {
-        const msg = 'Sessão expirada. Faça login novamente.';
-        console.error('Final session validation failed');
-        setErrorDetails({ message: msg, step: 'Validação de Sessão' });
-        setStep('error');
-        toast.error(msg);
-        return;
+        console.warn('Sessão não encontrada no getSession. Tentando forçar recuperação do localStorage...');
+        const storageKey = Object.keys(localStorage).find(k => k.includes('auth-token') || k.startsWith('sb-'));
+        if (storageKey) {
+          const localSession = JSON.parse(localStorage.getItem(storageKey) || '{}');
+          if (localSession.access_token) {
+            console.log('Sessão recuperada manualmente do localStorage.');
+            await supabase.auth.setSession({
+              access_token: localSession.access_token,
+              refresh_token: localSession.refresh_token
+            });
+            const { data: retry } = await supabase.auth.getSession();
+            session = retry.session;
+            user = retry.session?.user || null;
+          }
+        }
       }
+
+      if (!session || !user) {
 
       setStep('processing');
       setStartTime(Date.now());
