@@ -78,21 +78,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Central MEI Digital — Apoio digital ao microempreendedor" },
+      { title: "Portal do Empreendedor - Certificado Mei Digital" },
       {
         name: "description",
         content:
-          "Central privada de serviços para microempreendedores. Confira dados públicos da empresa e conheça os serviços privados e opcionais disponíveis.",
+          "Portal do Empreendedor - Certificado Mei Digital",
       },
-      { property: "og:title", content: "Central MEI Digital — Apoio digital ao microempreendedor" },
+      { property: "og:title", content: "Portal do Empreendedor - Certificado Mei Digital" },
       {
         property: "og:description",
-        content: "Central privada de serviços para microempreendedores. Confira dados públicos da empresa e conheça os serviços privados e opcionais disponíveis.",
+        content: "Portal do Empreendedor - Certificado Mei Digital",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Central MEI Digital — Apoio digital ao microempreendedor" },
-      { name: "twitter:description", content: "Central privada de serviços para microempreendedores. Confira dados públicos da empresa e conheça os serviços privados e opcionais disponíveis." },
+      { name: "twitter:title", content: "Portal do Empreendedor - Certificado Mei Digital" },
+      { name: "twitter:description", content: "Portal do Empreendedor - Certificado Mei Digital" },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c2d78d65-07fb-42a1-aabf-236eb5e1a90c/id-preview-602efbf3--f8c1590e-ab92-4a89-a2cd-7514096b6ec7.lovable.app-1784448552730.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c2d78d65-07fb-42a1-aabf-236eb5e1a90c/id-preview-602efbf3--f8c1590e-ab92-4a89-a2cd-7514096b6ec7.lovable.app-1784448552730.png" },
     ],

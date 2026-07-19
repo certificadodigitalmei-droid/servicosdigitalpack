@@ -14,16 +14,16 @@ export const Route = createFileRoute("/")({
   validateSearch: (s) => searchSchema.parse(s),
   head: () => ({
     meta: [
-      { title: "Central MEI Digital — Apoio digital ao microempreendedor" },
+      { title: "Portal do Empreendedor - Certificado Mei Digital" },
       {
         name: "description",
         content:
-          "Central privada de serviços para microempreendedores. Confira dados públicos da empresa e conheça os serviços privados e opcionais disponíveis.",
+          "Portal do Empreendedor - Certificado Mei Digital",
       },
-      { property: "og:title", content: "Central MEI Digital — Apoio digital ao microempreendedor" },
+      { property: "og:title", content: "Portal do Empreendedor - Certificado Mei Digital" },
       {
         property: "og:description",
-        content: "Central privada de serviços para microempreendedores. Confira dados públicos da empresa e conheça os serviços privados e opcionais disponíveis.",
+        content: "Portal do Empreendedor - Certificado Mei Digital",
       },
     ],
   }),
