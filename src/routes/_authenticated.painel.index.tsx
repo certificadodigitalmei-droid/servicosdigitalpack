@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Filter, FileText, ArrowRight, Link2, History } from 'lucide-react';
+import { Filter, FileText, ArrowRight, Link2, History, Shield } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -70,6 +70,26 @@ function DashboardIndex() {
             <Button asChild variant="outline" className="w-full border-slate-200 hover:bg-slate-50">
               <Link to="/painel/gerador-links/historico" className="flex items-center gap-2">
                 Ver Histórico
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-2 hover:border-brand-blue transition-colors group">
+          <CardHeader>
+            <div className="h-12 w-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+              <Shield className="h-6 w-6" />
+            </div>
+            <CardTitle>Auditoria de Segurança</CardTitle>
+            <CardDescription>
+              Visualize as diretrizes de segurança e o compromisso com a proteção de dados do sistema.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full border-slate-200 hover:bg-slate-50">
+              <Link to="/painel/seguranca" className="flex items-center gap-2">
+                Ver Diretrizes
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
