@@ -21,6 +21,7 @@ import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedPainelImportarEmpresasRouteImport } from './routes/_authenticated.painel.importar-empresas'
 import { Route as AuthenticatedPainelGeradorLinksRouteImport } from './routes/_authenticated.painel.gerador-links'
 import { Route as AuthenticatedPainelFiltrarMeiRouteImport } from './routes/_authenticated.painel.filtrar-mei'
+import { Route as AuthenticatedPainelCampanhasEmailRouteImport } from './routes/_authenticated.painel.campanhas-email'
 import { Route as AuthenticatedPainelGeradorLinksHistoricoRouteImport } from './routes/_authenticated.painel.gerador-links.historico'
 
 const LoginRoute = LoginRouteImport.update({
@@ -86,6 +87,12 @@ const AuthenticatedPainelFiltrarMeiRoute =
     path: '/filtrar-mei',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelCampanhasEmailRoute =
+  AuthenticatedPainelCampanhasEmailRouteImport.update({
+    id: '/campanhas-email',
+    path: '/campanhas-email',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 const AuthenticatedPainelGeradorLinksHistoricoRoute =
   AuthenticatedPainelGeradorLinksHistoricoRouteImport.update({
     id: '/historico',
@@ -101,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
+  '/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -114,6 +122,7 @@ export interface FileRoutesByTo {
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
+  '/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -130,6 +139,7 @@ export interface FileRoutesById {
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout_/$token': typeof CheckoutTokenRoute
+  '/_authenticated/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/_authenticated/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout/$token'
+    | '/painel/campanhas-email'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel/importar-empresas'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout/$token'
+    | '/painel/campanhas-email'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel/importar-empresas'
@@ -174,6 +186,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout_/$token'
+    | '/_authenticated/painel/campanhas-email'
     | '/_authenticated/painel/filtrar-mei'
     | '/_authenticated/painel/gerador-links'
     | '/_authenticated/painel/importar-empresas'
@@ -277,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelFiltrarMeiRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/campanhas-email': {
+      id: '/_authenticated/painel/campanhas-email'
+      path: '/campanhas-email'
+      fullPath: '/painel/campanhas-email'
+      preLoaderRoute: typeof AuthenticatedPainelCampanhasEmailRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
     '/_authenticated/painel/gerador-links/historico': {
       id: '/_authenticated/painel/gerador-links/historico'
       path: '/historico'
@@ -303,6 +323,7 @@ const AuthenticatedPainelGeradorLinksRouteWithChildren =
   )
 
 interface AuthenticatedPainelRouteChildren {
+  AuthenticatedPainelCampanhasEmailRoute: typeof AuthenticatedPainelCampanhasEmailRoute
   AuthenticatedPainelFiltrarMeiRoute: typeof AuthenticatedPainelFiltrarMeiRoute
   AuthenticatedPainelGeradorLinksRoute: typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   AuthenticatedPainelImportarEmpresasRoute: typeof AuthenticatedPainelImportarEmpresasRoute
@@ -310,6 +331,8 @@ interface AuthenticatedPainelRouteChildren {
 }
 
 const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
+  AuthenticatedPainelCampanhasEmailRoute:
+    AuthenticatedPainelCampanhasEmailRoute,
   AuthenticatedPainelFiltrarMeiRoute: AuthenticatedPainelFiltrarMeiRoute,
   AuthenticatedPainelGeradorLinksRoute:
     AuthenticatedPainelGeradorLinksRouteWithChildren,
