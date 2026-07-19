@@ -176,7 +176,7 @@ function DashboardPage() {
   );
 }
 
-function MetricCard({ icon, label, value, color, hint }: { icon: React.ReactNode; label: string; value: number; color: string; hint?: string }) {
+function MetricCard({ icon, label, value, total, color, hint }: { icon: React.ReactNode; label: string; value: number; total?: number; color: string; hint?: string }) {
   return (
     <Card>
       <CardContent className="pt-6">
@@ -184,10 +184,16 @@ function MetricCard({ icon, label, value, color, hint }: { icon: React.ReactNode
         <div className="mt-3 text-3xl font-bold text-slate-900">{value.toLocaleString('pt-BR')}</div>
         <div className="text-sm font-medium text-slate-600">{label}</div>
         {hint && <div className="mt-1 text-[11px] text-slate-400">{hint}</div>}
+        {typeof total === 'number' && (
+          <div className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-500">
+            Total: <span className="font-semibold text-slate-900">{total.toLocaleString('pt-BR')}</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
+
 
 function FunnelRow({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
