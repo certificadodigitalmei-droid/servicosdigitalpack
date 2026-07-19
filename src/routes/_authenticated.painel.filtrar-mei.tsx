@@ -168,102 +168,99 @@ function FilterMeiPage() {
         header: true,
         skipEmptyLines: true,
         encoding: "UTF-8",
-        chunkSize: 1024 * 1024, // 1MB chunks
-        chunk: (results: Papa.ParseStepResult<any>, parser: any) => {
+        complete: (results: Papa.ParseResult<any>) => {
           const raw = results.data;
+          const total = raw.length;
           
-          setResults(prev => {
-            const kept = [...prev.kept];
-            const removed = [...prev.removed];
-            const unknown = [...prev.unknown];
-            const invalid = [...prev.invalid];
-            
-            let removedNonMei = prev.summary?.removedNonMei || 0;
-            let removedInactive = prev.summary?.removedInactive || 0;
-            let removedNoEmail = prev.summary?.removedNoEmail || 0;
+          const kept: any[] = [];
+          const removed: any[] = [];
+          const unknown: any[] = [];
+          const invalid: any[] = [];
+          
+          let removedNonMei = 0;
+          let removedInactive = 0;
+          let removedNoEmail = 0;
 
-            raw.forEach((row: any) => {
-              if (!row || Object.keys(row).length < 2) {
-                invalid.push(row);
-                return;
-              }
+          // Simple progress simulation for small files
+          const updateProgressInterval = Math.max(1, Math.floor(total / 100));
 
-              const val = row[meiColumn];
-              const isMei = isMeiValue(val);
-              const isNotMei = isNotMeiValue(val);
-
-              if (!isMei && !isNotMei) {
-                unknown.push(row);
-                return;
-              }
-
-              if (!isMei) {
-                removedNonMei++;
-                removed.push({ ...row, motivo_remocao: 'NAO_MEI' });
-                return;
-              }
-
-              // Additional filters
-              if (filterActive) {
-                const sitCol = headers.find(h => {
-                  const n = normalizeString(h);
-                  return n.includes('situacaocadastral') || n.includes('status') || n.includes('situacao');
-                });
-                if (sitCol) {
-                  const sitVal = String(row[sitCol] || '').toUpperCase();
-                  if (sitVal !== '02' && !sitVal.includes('ATIVA')) {
-                    removedInactive++;
-                    removed.push({ ...row, motivo_remocao: 'SITUACAO_INATIVA' });
-                    return;
-                  }
-                }
-              }
-
-              if (filterEmail) {
-                const emailCol = headers.find(h => {
-                  const n = normalizeString(h);
-                  return n.includes('email') || n.includes('eletronico');
-                });
-                if (emailCol) {
-                  const emailVal = String(row[emailCol] || '').trim();
-                  if (!emailVal || !emailVal.includes('@') || emailVal.split('@')[1].length < 3) {
-                    removedNoEmail++;
-                    removed.push({ ...row, motivo_remocao: 'SEM_EMAIL' });
-                    return;
-                  }
-                }
-              }
-
-              kept.push(row);
-            });
-
-            // Update progress based on stream position
-            if (file) {
-              const currentPos = parser.streamer.cursor;
-              const newProgress = Math.round((currentPos / file.size) * 100);
-              setProgress(Math.min(newProgress, 99));
+          raw.forEach((row: any, index: number) => {
+            if (index % updateProgressInterval === 0) {
+              setProgress(Math.round((index / total) * 100));
             }
 
-            return {
-              kept,
-              removed,
-              unknown,
-              invalid,
-              summary: {
-                total: (prev.summary?.total || 0) + raw.length,
-                kept: kept.length,
-                removedNonMei,
-                removedInactive,
-                removedNoEmail,
-                unknown: unknown.length,
-                invalid: invalid.length,
-                startTime,
-                endTime: Date.now()
+            if (!row || Object.keys(row).length < 2) {
+              invalid.push(row);
+              return;
+            }
+
+            const val = row[meiColumn];
+            const isMei = isMeiValue(val);
+            const isNotMei = isNotMeiValue(val);
+
+            if (!isMei && !isNotMei) {
+              unknown.push(row);
+              return;
+            }
+
+            if (!isMei) {
+              removedNonMei++;
+              removed.push({ ...row, motivo_remocao: 'NAO_MEI' });
+              return;
+            }
+
+            // Additional filters
+            if (filterActive) {
+              const sitCol = headers.find(h => {
+                const n = normalizeString(h);
+                return n.includes('situacaocadastral') || n.includes('status') || n.includes('situacao');
+              });
+              if (sitCol) {
+                const sitVal = String(row[sitCol] || '').toUpperCase();
+                if (sitVal !== '02' && !sitVal.includes('ATIVA')) {
+                  removedInactive++;
+                  removed.push({ ...row, motivo_remocao: 'SITUACAO_INATIVA' });
+                  return;
+                }
               }
-            };
+            }
+
+            if (filterEmail) {
+              const emailCol = headers.find(h => {
+                const n = normalizeString(h);
+                return n.includes('email') || n.includes('eletronico');
+              });
+              if (emailCol) {
+                const emailVal = String(row[emailCol] || '').trim();
+                if (!emailVal || !emailVal.includes('@') || emailVal.split('@')[1].length < 3) {
+                  removedNoEmail++;
+                  removed.push({ ...row, motivo_remocao: 'SEM_EMAIL' });
+                  return;
+                }
+              }
+            }
+
+            kept.push(row);
           });
-        },
-        complete: () => {
+
+          setResults({
+            kept,
+            removed,
+            unknown,
+            invalid,
+            summary: {
+              total,
+              kept: kept.length,
+              removedNonMei,
+              removedInactive,
+              removedNoEmail,
+              unknown: unknown.length,
+              invalid: invalid.length,
+              startTime,
+              endTime: Date.now()
+            }
+          });
+
           setProcessStatus('completed');
           setProgress(100);
           setStep(5);
