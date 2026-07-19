@@ -355,10 +355,11 @@ function GeradorLinksPage() {
 
                 <div className="flex justify-end gap-3 pt-4">
                   <Button variant="outline" onClick={() => { setFile(null); setPreviewData([]); }}>Cancelar</Button>
-                  <Button onClick={processFile} className="bg-brand-navy hover:bg-brand-blue px-8">
+                  <Button onClick={(e) => processFile(e)} className="bg-brand-navy hover:bg-brand-blue px-8">
                     Gerar Links Agora
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
+
                 </div>
               </div>
             )}
