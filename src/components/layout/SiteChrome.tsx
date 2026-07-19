@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, User, ChevronDown, Home, ChevronRight, FileText } from "lucide-react";
+import { Menu, User, ChevronDown, Home, ChevronRight } from "lucide-react";
 import { formatCPFOrCNPJ } from "@/lib/format";
 import type { ReactNode } from "react";
+import logo from "@/assets/central-mei-digital-logo.png";
+
 
 interface HeaderProps {
   userName?: string;
