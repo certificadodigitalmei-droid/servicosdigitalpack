@@ -45,8 +45,8 @@ function HomePage() {
       <SiteHeader userName={nome} userDoc={cnpj} />
       <Breadcrumb
         items={[
-          { label: "Empresas e Negócios" },
-          { label: "Microempreendedor" },
+          { label: "Empresas & Negócios" },
+          { label: "Empreendedor" },
         ]}
       />
 
