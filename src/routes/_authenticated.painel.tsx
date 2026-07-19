@@ -56,6 +56,7 @@ function PanelLayout() {
     if (path === '/painel/importar-empresas') return 'Importar Empresas';
     if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
     if (path === '/painel/gerador-links') return 'Gerador de Links';
+    if (path === '/painel/campanhas-email') return 'Campanhas de E-mail';
     if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
     return 'Painel';
   };
