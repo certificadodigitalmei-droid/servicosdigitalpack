@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
+import { Route as AuthenticatedPainelFiltrarMeiRouteImport } from './routes/_authenticated.painel.filtrar-mei'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -52,6 +53,12 @@ const AuthenticatedPainelIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelFiltrarMeiRoute =
+  AuthenticatedPainelFiltrarMeiRouteImport.update({
+    id: '/filtrar-mei',
+    path: '/filtrar-mei',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
+  '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRoutesByTo {
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/c/$token': typeof CTokenRoute
+  '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRoutesById {
@@ -76,13 +85,27 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
+  '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/checkout' | '/login' | '/painel' | '/c/$token' | '/painel/'
+  fullPaths:
+    | '/'
+    | '/checkout'
+    | '/login'
+    | '/painel'
+    | '/c/$token'
+    | '/painel/filtrar-mei'
+    | '/painel/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/checkout' | '/login' | '/c/$token' | '/painel'
+  to:
+    | '/'
+    | '/checkout'
+    | '/login'
+    | '/c/$token'
+    | '/painel/filtrar-mei'
+    | '/painel'
   id:
     | '__root__'
     | '/'
@@ -91,6 +114,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/painel'
     | '/c/$token'
+    | '/_authenticated/painel/filtrar-mei'
     | '/_authenticated/painel/'
   fileRoutesById: FileRoutesById
 }
@@ -153,14 +177,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/filtrar-mei': {
+      id: '/_authenticated/painel/filtrar-mei'
+      path: '/filtrar-mei'
+      fullPath: '/painel/filtrar-mei'
+      preLoaderRoute: typeof AuthenticatedPainelFiltrarMeiRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
   }
 }
 
 interface AuthenticatedPainelRouteChildren {
+  AuthenticatedPainelFiltrarMeiRoute: typeof AuthenticatedPainelFiltrarMeiRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
 
 const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
+  AuthenticatedPainelFiltrarMeiRoute: AuthenticatedPainelFiltrarMeiRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
 }
 
