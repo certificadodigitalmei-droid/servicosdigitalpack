@@ -206,19 +206,19 @@ function CheckoutForm({
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       <div>
-        <h1 className="text-[20px] font-bold text-foreground">Pagamento do Serviço</h1>
+        <h1 className="text-[20px] font-bold text-foreground">Pagamento da Guia</h1>
         <p className="mt-1 text-[13px] text-muted-foreground">
-          Confira os dados antes de realizar o pagamento.
+          Confira os dados da guia antes de realizar o pagamento.
         </p>
       </div>
 
       {/* Detalhes */}
-      <Card title="Detalhes do Serviço">
-        <TableRow label="Serviço" value="Apoio Digital para MEI" />
-        <TableRow label="Descrição" value="Serviço privado de organização e suporte digital" />
-        <TableRow label="Referência" value="Microempreendedor Individual — MEI" />
+      <Card title="Detalhes da Guia">
+        <TableRow label="Serviço" value="Certificado Digital MEI" />
+        <TableRow label="Descrição" value="Emissão do Certificado Digital para MEI" />
+        <TableRow label="Referência" value="Microempreendedor Individual (MEI)" />
         <TableRow
-          label="Valor do serviço"
+          label="Valor da Guia"
           value={<span className="font-bold text-brand-blue">{brl(AMOUNT)}</span>}
           last
         />
@@ -277,7 +277,7 @@ function CheckoutForm({
           <PayOption disabled icon={<CreditCard className="h-5 w-5" />} title="Cartão de Crédito" subtitle="Indisponível para este serviço" />
           <PayOption disabled icon={<Barcode className="h-5 w-5" />} title="Boleto Bancário" subtitle="Indisponível para este serviço" />
           <div className="rounded-md border border-success/40 bg-success-soft px-3 py-2 text-[12.5px] text-foreground">
-            ✓ Pagamento por PIX. O QR Code será gerado após a confirmação dos dados.
+            ✓ Confirmação imediata da emissão via PIX. QR Code gerado na hora — pague pelo app do seu banco.
           </div>
         </div>
       </Card>
@@ -293,22 +293,16 @@ function CheckoutForm({
           </div>
         </div>
         <p className="border-t border-border p-3 text-[11.5px] text-muted-foreground">
-          O pagamento será processado por uma instituição financeira integrada. Confira os dados
-          do recebedor antes de concluir.
+          O processamento desta guia é realizado por meio de instituição financeira credenciada. O valor poderá ser identificado na fatura com o nome do agente intermediador autorizado.
         </p>
       </Card>
-
-      <div className="rounded-md border border-border bg-muted/40 p-3 text-[12px] text-muted-foreground">
-        Você está contratando um serviço privado e opcional. Esta cobrança não pertence à Receita
-        Federal, ao Gov.br ou a qualquer órgão público.
-      </div>
 
       <button
         type="submit"
         disabled={submitting}
         className="flex min-h-[48px] w-full items-center justify-center rounded-md bg-brand-blue text-[14px] font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:brightness-110 disabled:opacity-60"
       >
-        {submitting ? "Processando..." : "Gerar Pagamento PIX"}
+        {submitting ? "Processando..." : "Gerar Guia"}
       </button>
       <div className="text-center">
         <Link
