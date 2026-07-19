@@ -16,8 +16,9 @@ export const Route = createFileRoute('/c/$token')({
     }
 
     // 2. Verificar expiração
-    if (link.expires_at && typeof link.expires_at === 'string') {
-      if (new Date(link.expires_at).getTime() < Date.now()) {
+    if (link.expires_at) {
+      const expirationDate = new Date(link.expires_at as string);
+      if (expirationDate.getTime() < Date.now()) {
         throw redirect({ to: '/' });
       }
     }
