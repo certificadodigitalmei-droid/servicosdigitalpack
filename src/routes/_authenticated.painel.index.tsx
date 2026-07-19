@@ -121,7 +121,8 @@ function DashboardPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <MetricCard icon={<LinkIcon className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-slate-100 text-slate-700" hint="Total de links criados" />
         <MetricCard icon={<Link2 className="h-5 w-5" />} label="Acessos na primeira página" value={stats.viewLink} total={stats.viewLinkTotal} color="bg-blue-50 text-brand-blue" hint="Únicos por navegador/dispositivo" />
         <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Acessos no checkout" value={stats.viewCheckout} total={stats.viewCheckoutTotal} color="bg-purple-50 text-purple-600" hint="Únicos por navegador/dispositivo" />
         <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label='Cliques "Emitir Certificado"' value={stats.clickCert} total={stats.clickCertTotal} color="bg-amber-50 text-amber-600" hint="Únicos por navegador/dispositivo" />
