@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { Link2, Link as LinkIcon, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet, Trash2 } from 'lucide-react';
+import { formatCNPJ } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,11 +72,14 @@ function DashboardPage() {
   async function load() {
     setLoading(true);
     try {
-      const [{ count: linksTotal }, evRes] = await Promise.all([
+      const [{ count: linksTotal }, evRes, linksRes] = await Promise.all([
         supabase.from('company_links').select('id', { count: 'exact', head: true }),
         supabase.from('link_events').select('event_type,browser,os,device,visitor_id,token,created_at').limit(50000),
+        supabase.from('company_links').select('token, cnpj'),
       ]);
       const events = (evRes.data ?? []) as EventRow[];
+      const linkMap = new Map((linksRes.data ?? []).map((l: any) => [l.token, l.cnpj]));
+
       const s: Stats = { ...EMPTY, linksTotal: linksTotal ?? 0, byBrowser: {}, byDevice: {}, byOS: {} };
       const uniq: Record<string, Set<string>> = {
         view_link: new Set(),
@@ -136,7 +140,7 @@ function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-12">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
