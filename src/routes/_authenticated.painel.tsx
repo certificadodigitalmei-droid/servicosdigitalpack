@@ -1,16 +1,9 @@
 import { createFileRoute, Outlet, Link, useNavigate, useLocation } from '@tanstack/react-router';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   LayoutDashboard, 
-  Search, 
-  Settings, 
   LogOut, 
   Building2, 
-  Users, 
-  ExternalLink, 
-  Menu,
   ChevronRight,
-  Monitor
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -35,7 +28,6 @@ export const Route = createFileRoute('/_authenticated/painel')({
 });
 
 function PanelLayout() {
-  const navigate = useNavigate();
   const location = useLocation();
 
   const handleLogout = () => {
@@ -46,9 +38,6 @@ function PanelLayout() {
 
   const menuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, to: '/painel' },
-    { title: 'Monitor', icon: Monitor, to: '/painel/monitor' },
-    { title: 'Empresas', icon: Building2, to: '/painel/empresas' },
-    { title: 'Configurações', icon: Settings, to: '/painel/configuracoes' },
   ];
 
   return (
@@ -103,18 +92,12 @@ function PanelLayout() {
                 <span>Painel</span>
                 <ChevronRight className="mx-2 h-4 w-4" />
                 <span className="font-medium text-slate-900 capitalize">
-                  {location.pathname.split('/').filter(Boolean).pop() === 'painel' ? 'Dashboard' : location.pathname.split('/').filter(Boolean).pop()}
+                  Dashboard
                 </span>
               </nav>
             </div>
             
             <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/" target="_blank" className="flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  <span>Ver Site</span>
-                </Link>
-              </Button>
               <Avatar className="h-8 w-8 border border-slate-200">
                 <AvatarFallback className="bg-brand-blue text-xs text-white">AD</AvatarFallback>
               </Avatar>
