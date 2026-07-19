@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { createFileRoute, Outlet, useNavigate, useLocation } from '@tanstack/react-router';
+import { createFileRoute, Outlet, useLocation } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
@@ -12,22 +13,41 @@ export const Route = createFileRoute('/_authenticated')({
 function AuthenticatedLayout() {
   const [code, setCode] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     const auth = localStorage.getItem('admin_auth_code');
     if (auth === '117711') {
       setIsAuthorized(true);
+      // Ensure we have a Supabase session if authorized locally
+      checkSupabaseAuth();
     }
   }, [location.pathname]);
 
-  const handleVerify = (e: React.FormEvent) => {
+  const checkSupabaseAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.log('Autorizado localmente mas sem sessão Supabase. Tentando login anônimo para persistência...');
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) console.error('Erro ao estabelecer sessão anônima:', error);
+    }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (code === '117711') {
       localStorage.setItem('admin_auth_code', '117711');
       setIsAuthorized(true);
       toast.success('Acesso autorizado');
+      
+      // Establish Supabase session
+      const { data: { session }, error: loginError } = await supabase.auth.signInAnonymously();
+      if (loginError) {
+        console.error('Supabase Login Error:', loginError);
+        toast.error('Erro ao iniciar sessão no banco de dados');
+      } else {
+        console.log('Sessão Supabase estabelecida:', session?.user?.id);
+      }
     } else {
       toast.error('Código incorreto');
     }
