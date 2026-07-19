@@ -7,6 +7,7 @@ import {
   Filter,
   Link2,
   Upload,
+  Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
