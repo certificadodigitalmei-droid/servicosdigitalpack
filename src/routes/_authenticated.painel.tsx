@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Filter,
   Link2,
-  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -43,14 +42,14 @@ function PanelLayout() {
     { title: 'Dashboard', icon: LayoutDashboard, to: '/painel' },
     { title: 'Filtrar Empresas MEI', icon: Filter, to: '/painel/filtrar-mei' },
     { title: 'Gerador de Links', icon: Link2, to: '/painel/gerador-links' },
-    { title: 'Segurança', icon: Shield, to: '/painel/seguranca' },
+    
   ];
 
   const getBreadcrumbLabel = (path: string) => {
     if (path === '/painel') return 'Dashboard';
     if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
     if (path === '/painel/gerador-links') return 'Gerador de Links';
-    if (path === '/painel/seguranca') return 'Auditoria de Segurança';
+    
     if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
     return 'Painel';
   };
