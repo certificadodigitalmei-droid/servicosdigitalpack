@@ -18,6 +18,7 @@ import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
 import { Route as AuthenticatedPainelMonitorRouteImport } from './routes/_authenticated.painel.monitor'
@@ -68,6 +69,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CTokenRoute = CTokenRouteImport.update({
+  id: '/c/$token',
+  path: '/c/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   id: '/painel',
   path: '/painel',
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/quem-somos': typeof QuemSomosRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
   '/painel': typeof AuthenticatedPainelRouteWithChildren
+  '/c/$token': typeof CTokenRoute
   '/painel/configuracoes': typeof AuthenticatedPainelConfiguracoesRoute
   '/painel/empresas': typeof AuthenticatedPainelEmpresasRoute
   '/painel/monitor': typeof AuthenticatedPainelMonitorRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
   '/quem-somos': typeof QuemSomosRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
+  '/c/$token': typeof CTokenRoute
   '/painel/configuracoes': typeof AuthenticatedPainelConfiguracoesRoute
   '/painel/empresas': typeof AuthenticatedPainelEmpresasRoute
   '/painel/monitor': typeof AuthenticatedPainelMonitorRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/quem-somos': typeof QuemSomosRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
+  '/c/$token': typeof CTokenRoute
   '/_authenticated/painel/configuracoes': typeof AuthenticatedPainelConfiguracoesRoute
   '/_authenticated/painel/empresas': typeof AuthenticatedPainelEmpresasRoute
   '/_authenticated/painel/monitor': typeof AuthenticatedPainelMonitorRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/quem-somos'
     | '/termos-de-uso'
     | '/painel'
+    | '/c/$token'
     | '/painel/configuracoes'
     | '/painel/empresas'
     | '/painel/monitor'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/politica-de-reembolso'
     | '/quem-somos'
     | '/termos-de-uso'
+    | '/c/$token'
     | '/painel/configuracoes'
     | '/painel/empresas'
     | '/painel/monitor'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/quem-somos'
     | '/termos-de-uso'
     | '/_authenticated/painel'
+    | '/c/$token'
     | '/_authenticated/painel/configuracoes'
     | '/_authenticated/painel/empresas'
     | '/_authenticated/painel/monitor'
@@ -202,6 +214,7 @@ export interface RootRouteChildren {
   PoliticaDeReembolsoRoute: typeof PoliticaDeReembolsoRoute
   QuemSomosRoute: typeof QuemSomosRoute
   TermosDeUsoRoute: typeof TermosDeUsoRoute
+  CTokenRoute: typeof CTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/c/$token': {
+      id: '/c/$token'
+      path: '/c/$token'
+      fullPath: '/c/$token'
+      preLoaderRoute: typeof CTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/painel': {
@@ -346,6 +366,7 @@ const rootRouteChildren: RootRouteChildren = {
   PoliticaDeReembolsoRoute: PoliticaDeReembolsoRoute,
   QuemSomosRoute: QuemSomosRoute,
   TermosDeUsoRoute: TermosDeUsoRoute,
+  CTokenRoute: CTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
