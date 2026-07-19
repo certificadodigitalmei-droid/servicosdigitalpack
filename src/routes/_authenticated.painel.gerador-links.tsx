@@ -118,7 +118,7 @@ function GeradorLinksPage() {
 
           return {
             generation_id: gen.id,
-            token,
+            public_token: token,
             public_url,
             checkout_url,
             company_data: row,
