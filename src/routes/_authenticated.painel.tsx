@@ -36,6 +36,7 @@ export const Route = createFileRoute('/_authenticated/painel')({
 
 function PanelLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     localStorage.removeItem('admin_auth_code');
