@@ -69,8 +69,8 @@ function TokenHomePage() {
             </div>
             <DataRow label="CNPJ" value={cnpjFmt} />
             <DataRow label="TITULAR" value={nomeFmt} />
-            {row.razao_social && <DataRow label="RAZÃO SOCIAL" value={row.razao_social} />}
             <DataRow label="DATA DE ABERTURA" value={aberturaFmt} />
+
             {(row.municipio || row.uf) && (
               <DataRow label="MUNICÍPIO / UF" value={`${row.municipio ?? '—'} / ${row.uf ?? '—'}`} />
             )}
