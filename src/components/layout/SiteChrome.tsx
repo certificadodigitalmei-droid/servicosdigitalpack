@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, User, ChevronDown, Home, ChevronRight, FileText } from "lucide-react";
+import { Menu, User, ChevronDown, Home, ChevronRight } from "lucide-react";
+import logoAsset from "@/assets/logo-2.webp.asset.json";
 import { formatCPFOrCNPJ } from "@/lib/format";
 import type { ReactNode } from "react";
 
@@ -18,9 +19,11 @@ export function SiteHeader({ userName, userDoc }: HeaderProps) {
       <div className="border-b border-border bg-background">
         <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-4 py-2.5">
           <Link to="/" className="flex min-w-0 items-center gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-navy text-primary-foreground">
-              <FileText className="h-4 w-4" />
-            </div>
+            <img 
+              src={logoAsset.url} 
+              alt="Logo Central MEI" 
+              className="h-8 w-auto object-contain"
+            />
             <div className="hidden h-8 w-px bg-border sm:block" />
             <div className="min-w-0 leading-tight">
               <div className="truncate text-[13px] font-bold text-brand-navy">
