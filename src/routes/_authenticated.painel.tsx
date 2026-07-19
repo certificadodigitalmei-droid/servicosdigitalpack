@@ -37,10 +37,10 @@ export const Route = createFileRoute('/_authenticated/painel')({
 function PanelLayout() {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    localStorage.removeItem('admin_auth_code');
     toast.success('Sessão encerrada');
-    navigate({ to: '/login' });
+    window.location.href = '/';
   };
 
   const menuItems = [
