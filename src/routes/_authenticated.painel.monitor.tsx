@@ -162,6 +162,18 @@ function MonitorPage() {
                     className="w-full gap-2"
                     disabled={testStatus === 'loading'}
                     onClick={async () => {
+                      // Basic form validations before API call
+                      try {
+                        const parsedRange = JSON.parse(rangeQuery);
+                        if (Object.keys(parsedRange).length === 0) {
+                          toast.error("O JSON do range_query não pode estar vazio para o teste.");
+                          return;
+                        }
+                      } catch (e) {
+                        toast.error("JSON de range_query inválido. Verifique o formato.");
+                        return;
+                      }
+
                       setTestStatus('loading');
                       setErrorMessage(null);
                       try {
@@ -180,7 +192,7 @@ function MonitorPage() {
                     {testStatus === 'success' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
                     {testStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
                     {testStatus === 'idle' && <RefreshCw className="h-4 w-4" />}
-                    Implementar o botão “testar concção com api” para chamar a Edge Function e exibir o resultado no Monitor Automático.
+                    Adicionar validações completas do formulário do Monitor Automático antes de disparar a chamada para a API.
                   </Button>
 
                   {testStatus === 'error' && errorMessage && (
