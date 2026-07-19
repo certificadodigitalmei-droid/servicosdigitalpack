@@ -493,6 +493,46 @@ function GeradorLinksPage() {
           </CardFooter>
         </Card>
       )}
+      
+      {step === 'error' && (
+        <Card className="border-red-200 shadow-lg overflow-hidden">
+          <div className="bg-red-50 border-b border-red-100 p-8 text-center">
+            <div className="inline-flex h-16 w-16 bg-red-100 rounded-full items-center justify-center mb-4">
+              <AlertCircle className="h-8 w-8 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Falha no Processamento</h2>
+            <p className="text-red-700 mt-1">
+              Ocorreu um erro na etapa: <span className="font-bold">{errorDetails?.step}</span>
+            </p>
+          </div>
+          
+          <CardContent className="p-8 space-y-6">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Mensagem de Erro</AlertTitle>
+              <AlertDescription>{errorDetails?.message}</AlertDescription>
+            </Alert>
+
+            {errorDetails?.stack && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-slate-700">Detalhes Técnicos (Stack):</p>
+                <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg text-xs overflow-auto max-h-48">
+                  {errorDetails.stack}
+                </pre>
+              </div>
+            )}
+
+            <div className="flex justify-center gap-4 pt-4">
+              <Button onClick={() => setStep('upload')} variant="outline">
+                Tentar Novamente
+              </Button>
+              <Button onClick={(e) => processFile(e)} className="bg-brand-navy">
+                Repetir Etapa Atual
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
