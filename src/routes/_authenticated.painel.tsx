@@ -4,6 +4,7 @@ import {
   LogOut, 
   Building2, 
   ChevronRight,
+  Filter,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -38,6 +39,7 @@ function PanelLayout() {
 
   const menuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, to: '/painel' },
+    { title: 'Filtrar Empresas MEI', icon: Filter, to: '/painel/filtrar-mei' },
   ];
 
   return (
@@ -92,7 +94,7 @@ function PanelLayout() {
                 <span>Painel</span>
                 <ChevronRight className="mx-2 h-4 w-4" />
                 <span className="font-medium text-slate-900 capitalize">
-                  Dashboard
+                  {location.pathname === '/painel' ? 'Dashboard' : 'Filtrar Empresas MEI'}
                 </span>
               </nav>
             </div>
