@@ -517,6 +517,155 @@ export type Database = {
         }
         Relationships: []
       }
+      email_campaign_recipients: {
+        Row: {
+          campaign_id: string | null
+          checkout_link: string | null
+          cnpj: string | null
+          company_name: string | null
+          created_at: string | null
+          data_abertura: string | null
+          data_situacao: string | null
+          email: string
+          error_message: string | null
+          id: string
+          municipio: string | null
+          nome_titular: string | null
+          public_link: string | null
+          razao_social: string | null
+          reference_code: string | null
+          row_data: Json | null
+          sent_at: string | null
+          situacao: string | null
+          status: string | null
+          token: string | null
+          uf: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          checkout_link?: string | null
+          cnpj?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          data_abertura?: string | null
+          data_situacao?: string | null
+          email: string
+          error_message?: string | null
+          id?: string
+          municipio?: string | null
+          nome_titular?: string | null
+          public_link?: string | null
+          razao_social?: string | null
+          reference_code?: string | null
+          row_data?: Json | null
+          sent_at?: string | null
+          situacao?: string | null
+          status?: string | null
+          token?: string | null
+          uf?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          checkout_link?: string | null
+          cnpj?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          data_abertura?: string | null
+          data_situacao?: string | null
+          email?: string
+          error_message?: string | null
+          id?: string
+          municipio?: string | null
+          nome_titular?: string | null
+          public_link?: string | null
+          razao_social?: string | null
+          reference_code?: string | null
+          row_data?: Json | null
+          sent_at?: string | null
+          situacao?: string | null
+          status?: string | null
+          token?: string | null
+          uf?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_campaigns: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          design_json: Json | null
+          from_email: string | null
+          from_name: string | null
+          html_template: string | null
+          id: string
+          invalid_recipients: number | null
+          name: string
+          preheader_template: string | null
+          provider: string | null
+          reply_to: string | null
+          source_file_name: string | null
+          status: string | null
+          subject_template: string | null
+          text_template: string | null
+          total_rows: number | null
+          updated_at: string | null
+          valid_recipients: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          design_json?: Json | null
+          from_email?: string | null
+          from_name?: string | null
+          html_template?: string | null
+          id?: string
+          invalid_recipients?: number | null
+          name: string
+          preheader_template?: string | null
+          provider?: string | null
+          reply_to?: string | null
+          source_file_name?: string | null
+          status?: string | null
+          subject_template?: string | null
+          text_template?: string | null
+          total_rows?: number | null
+          updated_at?: string | null
+          valid_recipients?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          design_json?: Json | null
+          from_email?: string | null
+          from_name?: string | null
+          html_template?: string | null
+          id?: string
+          invalid_recipients?: number | null
+          name?: string
+          preheader_template?: string | null
+          provider?: string | null
+          reply_to?: string | null
+          source_file_name?: string | null
+          status?: string | null
+          subject_template?: string | null
+          text_template?: string | null
+          total_rows?: number | null
+          updated_at?: string | null
+          valid_recipients?: number | null
+        }
+        Relationships: []
+      }
       link_events: {
         Row: {
           browser: string | null
