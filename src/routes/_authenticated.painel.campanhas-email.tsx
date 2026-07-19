@@ -606,11 +606,32 @@ function CampanhasEmail() {
                       <TabsTrigger value="text">Texto simples</TabsTrigger>
                     </TabsList>
                     <TabsContent value="desktop">
-                      <iframe title="preview" srcDoc={renderedHtml} className="w-full h-[640px] bg-white border rounded" />
+                      <div className="bg-slate-100 p-4 rounded-md border">
+                        <div className="bg-white rounded shadow-sm overflow-hidden border">
+                          <div className="p-4 border-b bg-slate-50 space-y-1">
+                            <div className="text-xs text-muted-foreground"><strong>De:</strong> {fromName} &lt;{fromEmail}&gt;</div>
+                            <div className="text-xs text-muted-foreground"><strong>Para:</strong> {current.email}</div>
+                             <div className="text-sm font-semibold"><strong>Assunto:</strong> {renderedSubject}</div>
+                             <div className="text-xs text-muted-foreground line-clamp-1 italic"><strong>Preheader:</strong> {renderedPreheader}</div>
+                          </div>
+                          <iframe title="preview" srcDoc={renderedHtml} className="w-full h-[640px] border-none" />
+                        </div>
+                      </div>
                     </TabsContent>
                     <TabsContent value="mobile">
-                      <div className="flex justify-center">
-                        <iframe title="preview-mobile" srcDoc={renderedHtml} className="w-[380px] h-[640px] bg-white border rounded" />
+                      <div className="bg-slate-100 p-4 rounded-md border flex justify-center">
+                        <div className="bg-white rounded-[32px] shadow-xl overflow-hidden border-[8px] border-slate-800 w-[380px] h-[720px] relative">
+                          <div className="h-6 w-32 bg-slate-800 absolute top-0 left-1/2 -translate-x-1/2 rounded-b-xl z-10" />
+                          <div className="p-4 pt-8 border-b bg-slate-50 space-y-1">
+                            <div className="flex justify-between items-start">
+                              <div className="text-[10px] text-muted-foreground leading-tight"><strong>De:</strong> {fromName}</div>
+                              <div className="text-[9px] text-muted-foreground">Agora</div>
+                            </div>
+                            <div className="text-[11px] font-bold leading-tight line-clamp-2">{renderedSubject}</div>
+                            <div className="text-[10px] text-muted-foreground line-clamp-1 italic">{renderedPreheader}</div>
+                          </div>
+                          <iframe title="preview-mobile" srcDoc={renderedHtml} className="w-full h-[580px] border-none" />
+                        </div>
                       </div>
                     </TabsContent>
                     <TabsContent value="html">
