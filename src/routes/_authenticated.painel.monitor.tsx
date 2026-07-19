@@ -40,8 +40,12 @@ function MonitorPage() {
           <h1 className="text-2xl font-bold text-slate-900">Monitor Automático</h1>
           <p className="text-slate-500">Integração real com busca filtrada AquiCNPJ.</p>
         </div>
-        <div className="p-2 bg-slate-50 rounded border border-slate-200 text-[10px] font-mono text-slate-400 max-w-[200px] break-all opacity-50 hover:opacity-100 transition-opacity">
-          AQUICNPJ_TOKEN: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg3MDQ1NDUyLCJpYXQiOjE3ODQ0NTM0NTIsImp0aSI6ImNhZDFhMWIxMzY3ZDRmOGE5ZGRjMmUyMWI1NmFmYjRlIiwidXNlcl9pZCI6IjU0NiJ9.HTokt8FE8BuQOIfCFL0s7Z5cVVrIx1bB0ePqDRO4IEE
+        <div className="p-2 bg-slate-50 rounded border border-slate-200 text-[10px] font-mono text-slate-400 max-w-[200px] break-all opacity-50 hover:opacity-100 transition-opacity cursor-pointer group relative" onClick={() => {
+          navigator.clipboard.writeText("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg3MDQ1NDUyLCJpYXQiOjE3ODQ0NTM0NTIsImp0aSI6ImNhZDFhMWIxMzY3ZDRmOGE5ZGRjMmUyMWI1NmFmYjRlIiwidXNlcl9pZCI6IjU0NiJ9.HTokt8FE8BuQOIfCFL0s7Z5cVVrIx1bB0ePqDRO4IEE");
+          toast.success("Token copiado!");
+        }}>
+          <span className="group-hover:hidden">AQUICNPJ_TOKEN: eyJhbGciOiJIUzI1Ni...</span>
+          <span className="hidden group-hover:block">Clique para copiar o Token completo</span>
         </div>
       </div>
 
