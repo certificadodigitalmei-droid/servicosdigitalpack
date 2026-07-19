@@ -125,7 +125,7 @@ function CheckoutTokenPage() {
 
   return (
     <Page>
-      <SiteHeader userName={row.nome || row.razao_social || ''} userDoc={row.cnpj || ''} />
+      <SiteHeader userName={headerName || undefined} userDoc={row.cnpj || undefined} />
       <Breadcrumb
         items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }, { label: 'Pagamento' }]}
       />
