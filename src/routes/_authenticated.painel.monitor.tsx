@@ -310,88 +310,13 @@ const currentDate = dateFormatter.format(new Date());
         <CardContent className="space-y-6">
           <div className="bg-slate-950 rounded-lg p-6 overflow-x-auto">
             <pre className="text-xs text-emerald-400 font-mono leading-relaxed whitespace-pre-wrap">
-{`arrume agora e teste:
-Busca Simples Filtrada
-post /search/empresa/simple
-Retorna informações básicas das empresas que correspondem aos critérios enviados. Não consome créditos. Também pode ser usada para consultar um único CNPJ.
-
-HTTP Bearer
-REQUEST
-REQUEST BODY
-*
-application/json
-EXAMPLE
-SCHEMA
-{
-  "query": {
-    "cnpj": [
-      "58004198000161"
-    ],
-    "razao_social": [],
-    "cnaes_principais_id": [],
-    "cnaes_secundarias_id": [],
-    "natureza_id": [],
-    "uf": [],
-    "municipio": [],
-    "bairro": [],
-    "cep": [],
-    "ddd": [],
-    "situacao_cadastral": [],
-    "phone_type": "celular"
-  },
-  "range_query": {},
-  "extras": {
-    "somente_mei": false,
-    "excluir_mei": false,
-    "com_email": false,
-    "incluir_atividade_secundaria": false,
-    "com_contato_telefonico": false,
-    "somente_matriz": false,
-    "somente_filial": false,
-    "remove_contab": false,
-    "remove_already_downloaded": false
-  },
-  "page": 0,
-  "page_size": 0
-}
-API Server
-https://api.aquicnpj.com
-Authentication
-HTTP Bearer in header
-Response Status: 403
-Took 35 milliseconds
-RESPONSE
-RESPONSE HEADERS
-CURL
-Copy
-{
-  "detail": "Authorization header must contain two space-delimited values",
-  "code": "bad_authorization_header"
-}
-RESPONSE
-200
-Sucesso
-
-EXAMPLE
-SCHEMA
-application/json
-Copy
-{
-"total": 1,
-"page": 1,
-"page_size": 8,
-"results": [
-{
-"id": "63812082000199",
-"cnpj": "63812082000199",
-"nome_fantasia": "string",
-"razao_social": "63.812.082 WESLEY ARCELINO DE CARVALHO",
-"porte": "Micro Empresa",
-"inicio_atividade": "2025-11-25T00:00:00-03:00",
-"situacao_cadastral": "02"
-}
-]
-}`}
+{`content-length: 107
+content-type: application/json
+curl -X POST "https://api.aquicnpj.com/search/empresa/simple" \\
+ -H 'accept: application/json'\\
+ -H 'authorization: Bearer Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg3MDQ1NDUyLCJpYXQiOjE3ODQ0NTM0NTIsImp0aSI6ImNhZDFhMWIxMzY3ZDRmOGE5ZGRjMmUyMWI1NmFmYjRlIiwidXNlcl9pZCI6IjU0NiJ9.HTokt8FE8BuQOIfCFL0s7Z5cVVrIx1bB0ePqDRO4IEE'\\
+ -H 'content-type: application/json' \\
+ -d '{"query":{"cnpj":["58004198000161"],"razao_social":[],"cnaes_principais_id":[],"cnaes_secundarias_id":[],"natureza_id":[],"uf":[],"municipio":[],"bairro":[],"cep":[],"ddd":[],"situacao_cadastral":[],"phone_type":"celular"},"range_query":{},"extras":{"somente_mei":false,"excluir_mei":false,"com_email":false,"incluir_atividade_secundaria":false,"com_contato_telefonico":false,"somente_matriz":false,"somente_filial":false,"remove_contab":false,"remove_already_downloaded":false},"page":0,"page_size":0}'`}
             </pre>
           </div>
         </CardContent>
