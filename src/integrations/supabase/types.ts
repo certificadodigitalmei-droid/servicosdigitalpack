@@ -14,6 +14,350 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          nome: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          nome?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      api_logs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          endpoint: string | null
+          error_message: string | null
+          id: string
+          method: string | null
+          provider: string | null
+          request_summary: Json | null
+          response_summary: Json | null
+          status_code: number | null
+          success: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          method?: string | null
+          provider?: string | null
+          request_summary?: Json | null
+          response_summary?: Json | null
+          status_code?: number | null
+          success?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          method?: string | null
+          provider?: string | null
+          request_summary?: Json | null
+          response_summary?: Json | null
+          status_code?: number | null
+          success?: boolean | null
+        }
+        Relationships: []
+      }
+      aquicnpj_settings: {
+        Row: {
+          cnaes: Json | null
+          com_contato_telefonico: boolean | null
+          com_email: boolean | null
+          created_at: string
+          excluir_mei: boolean | null
+          id: string
+          interval_minutes: number | null
+          last_error: string | null
+          last_run_at: string | null
+          max_complete_credits_per_day: number | null
+          max_new_companies_per_run: number | null
+          max_pages_per_run: number | null
+          monitor_enabled: boolean | null
+          monitor_mode: Database["public"]["Enums"]["monitor_mode"] | null
+          municipio: Json | null
+          next_run_at: string | null
+          page_size: number | null
+          range_query: Json | null
+          remove_contab: boolean | null
+          situacao_cadastral: Json | null
+          somente_filial: boolean | null
+          somente_matriz: boolean | null
+          somente_mei: boolean | null
+          target_date: string | null
+          uf: Json | null
+          updated_at: string
+          use_current_date: boolean | null
+        }
+        Insert: {
+          cnaes?: Json | null
+          com_contato_telefonico?: boolean | null
+          com_email?: boolean | null
+          created_at?: string
+          excluir_mei?: boolean | null
+          id?: string
+          interval_minutes?: number | null
+          last_error?: string | null
+          last_run_at?: string | null
+          max_complete_credits_per_day?: number | null
+          max_new_companies_per_run?: number | null
+          max_pages_per_run?: number | null
+          monitor_enabled?: boolean | null
+          monitor_mode?: Database["public"]["Enums"]["monitor_mode"] | null
+          municipio?: Json | null
+          next_run_at?: string | null
+          page_size?: number | null
+          range_query?: Json | null
+          remove_contab?: boolean | null
+          situacao_cadastral?: Json | null
+          somente_filial?: boolean | null
+          somente_matriz?: boolean | null
+          somente_mei?: boolean | null
+          target_date?: string | null
+          uf?: Json | null
+          updated_at?: string
+          use_current_date?: boolean | null
+        }
+        Update: {
+          cnaes?: Json | null
+          com_contato_telefonico?: boolean | null
+          com_email?: boolean | null
+          created_at?: string
+          excluir_mei?: boolean | null
+          id?: string
+          interval_minutes?: number | null
+          last_error?: string | null
+          last_run_at?: string | null
+          max_complete_credits_per_day?: number | null
+          max_new_companies_per_run?: number | null
+          max_pages_per_run?: number | null
+          monitor_enabled?: boolean | null
+          monitor_mode?: Database["public"]["Enums"]["monitor_mode"] | null
+          municipio?: Json | null
+          next_run_at?: string | null
+          page_size?: number | null
+          range_query?: Json | null
+          remove_contab?: boolean | null
+          situacao_cadastral?: Json | null
+          somente_filial?: boolean | null
+          somente_matriz?: boolean | null
+          somente_mei?: boolean | null
+          target_date?: string | null
+          uf?: Json | null
+          updated_at?: string
+          use_current_date?: boolean | null
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          bairro: string | null
+          capital_social: number | null
+          cep: string | null
+          cnae_principal_codigo: string | null
+          cnae_principal_descricao: string | null
+          cnaes_secundarios: Json | null
+          cnpj: string
+          complemento: string | null
+          complete_data_fetched_at: string | null
+          created_at: string
+          ddd: string | null
+          email: string | null
+          first_found_at: string | null
+          fonte: string | null
+          id: string
+          inicio_atividade: string | null
+          is_filial: boolean | null
+          is_matriz: boolean | null
+          is_mei: boolean | null
+          is_simples: boolean | null
+          last_seen_at: string | null
+          logradouro: string | null
+          municipio_codigo: string | null
+          municipio_descricao: string | null
+          natureza_id: string | null
+          nivel_dados: Database["public"]["Enums"]["data_level"] | null
+          nome_fantasia: string | null
+          nome_titular_exibicao: string | null
+          numero: string | null
+          numero_socios: number | null
+          porte: string | null
+          possui_email: boolean | null
+          possui_telefone: boolean | null
+          razao_social_original: string | null
+          situacao_cadastral: string | null
+          situacao_cadastral_data: string | null
+          situacao_cadastral_desc: string | null
+          socios: Json | null
+          status: Database["public"]["Enums"]["company_status"] | null
+          telefones: Json | null
+          tipo_logradouro: string | null
+          tipo_telefone: string | null
+          uf: string | null
+          updated_at: string
+        }
+        Insert: {
+          bairro?: string | null
+          capital_social?: number | null
+          cep?: string | null
+          cnae_principal_codigo?: string | null
+          cnae_principal_descricao?: string | null
+          cnaes_secundarios?: Json | null
+          cnpj: string
+          complemento?: string | null
+          complete_data_fetched_at?: string | null
+          created_at?: string
+          ddd?: string | null
+          email?: string | null
+          first_found_at?: string | null
+          fonte?: string | null
+          id?: string
+          inicio_atividade?: string | null
+          is_filial?: boolean | null
+          is_matriz?: boolean | null
+          is_mei?: boolean | null
+          is_simples?: boolean | null
+          last_seen_at?: string | null
+          logradouro?: string | null
+          municipio_codigo?: string | null
+          municipio_descricao?: string | null
+          natureza_id?: string | null
+          nivel_dados?: Database["public"]["Enums"]["data_level"] | null
+          nome_fantasia?: string | null
+          nome_titular_exibicao?: string | null
+          numero?: string | null
+          numero_socios?: number | null
+          porte?: string | null
+          possui_email?: boolean | null
+          possui_telefone?: boolean | null
+          razao_social_original?: string | null
+          situacao_cadastral?: string | null
+          situacao_cadastral_data?: string | null
+          situacao_cadastral_desc?: string | null
+          socios?: Json | null
+          status?: Database["public"]["Enums"]["company_status"] | null
+          telefones?: Json | null
+          tipo_logradouro?: string | null
+          tipo_telefone?: string | null
+          uf?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bairro?: string | null
+          capital_social?: number | null
+          cep?: string | null
+          cnae_principal_codigo?: string | null
+          cnae_principal_descricao?: string | null
+          cnaes_secundarios?: Json | null
+          cnpj?: string
+          complemento?: string | null
+          complete_data_fetched_at?: string | null
+          created_at?: string
+          ddd?: string | null
+          email?: string | null
+          first_found_at?: string | null
+          fonte?: string | null
+          id?: string
+          inicio_atividade?: string | null
+          is_filial?: boolean | null
+          is_matriz?: boolean | null
+          is_mei?: boolean | null
+          is_simples?: boolean | null
+          last_seen_at?: string | null
+          logradouro?: string | null
+          municipio_codigo?: string | null
+          municipio_descricao?: string | null
+          natureza_id?: string | null
+          nivel_dados?: Database["public"]["Enums"]["data_level"] | null
+          nome_fantasia?: string | null
+          nome_titular_exibicao?: string | null
+          numero?: string | null
+          numero_socios?: number | null
+          porte?: string | null
+          possui_email?: boolean | null
+          possui_telefone?: boolean | null
+          razao_social_original?: string | null
+          situacao_cadastral?: string | null
+          situacao_cadastral_data?: string | null
+          situacao_cadastral_desc?: string | null
+          socios?: Json | null
+          status?: Database["public"]["Enums"]["company_status"] | null
+          telefones?: Json | null
+          tipo_logradouro?: string | null
+          tipo_telefone?: string | null
+          uf?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_links: {
+        Row: {
+          access_count: number | null
+          active: boolean | null
+          company_id: string | null
+          created_at: string
+          expires_at: string | null
+          first_access_at: string | null
+          id: string
+          last_access_at: string | null
+          public_token: string
+          updated_at: string
+        }
+        Insert: {
+          access_count?: number | null
+          active?: boolean | null
+          company_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          first_access_at?: string | null
+          id?: string
+          last_access_at?: string | null
+          public_token: string
+          updated_at?: string
+        }
+        Update: {
+          access_count?: number | null
+          active?: boolean | null
+          company_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          first_access_at?: string | null
+          id?: string
+          last_access_at?: string | null
+          public_token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_links_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consent_logs: {
         Row: {
           created_at: string
@@ -52,6 +396,72 @@ export type Database = {
           },
         ]
       }
+      contact_queue: {
+        Row: {
+          approved_at: string | null
+          company_id: string | null
+          company_link_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          message_html: string | null
+          message_text: string | null
+          provider_message_id: string | null
+          recipient_email: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["contact_status"] | null
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          company_id?: string | null
+          company_link_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_html?: string | null
+          message_text?: string | null
+          provider_message_id?: string | null
+          recipient_email?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["contact_status"] | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          company_id?: string | null
+          company_link_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_html?: string | null
+          message_text?: string | null
+          provider_message_id?: string | null
+          recipient_email?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["contact_status"] | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_queue_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_queue_company_link_id_fkey"
+            columns: ["company_link_id"]
+            isOneToOne: false
+            referencedRelation: "company_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           created_at: string
@@ -85,8 +495,13 @@ export type Database = {
       orders: {
         Row: {
           amount: number
+          company_id: string | null
           created_at: string
+          customer_document: string | null
+          customer_email: string | null
           customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
           external_transaction_id: string | null
           id: string
           paid_at: string | null
@@ -95,6 +510,7 @@ export type Database = {
           pix_expiration: string | null
           pix_qr_code: string | null
           product_name: string
+          public_link_id: string | null
           reference_cnpj: string | null
           reference_name: string | null
           status: Database["public"]["Enums"]["order_status"]
@@ -102,8 +518,13 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          company_id?: string | null
           created_at?: string
+          customer_document?: string | null
+          customer_email?: string | null
           customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           external_transaction_id?: string | null
           id?: string
           paid_at?: string | null
@@ -112,6 +533,7 @@ export type Database = {
           pix_expiration?: string | null
           pix_qr_code?: string | null
           product_name?: string
+          public_link_id?: string | null
           reference_cnpj?: string | null
           reference_name?: string | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -119,8 +541,13 @@ export type Database = {
         }
         Update: {
           amount?: number
+          company_id?: string | null
           created_at?: string
+          customer_document?: string | null
+          customer_email?: string | null
           customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           external_transaction_id?: string | null
           id?: string
           paid_at?: string | null
@@ -129,6 +556,7 @@ export type Database = {
           pix_expiration?: string | null
           pix_qr_code?: string | null
           product_name?: string
+          public_link_id?: string | null
           reference_cnpj?: string | null
           reference_name?: string | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -136,13 +564,168 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_public_link_id_fkey"
+            columns: ["public_link_id"]
+            isOneToOne: false
+            referencedRelation: "company_links"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      site_settings: {
+        Row: {
+          company_name: string | null
+          id: string
+          logo_url: string | null
+          private_service_notice: string | null
+          product_amount: number | null
+          product_description: string | null
+          product_name: string | null
+          support_email: string | null
+          support_phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_name?: string | null
+          id?: string
+          logo_url?: string | null
+          private_service_notice?: string | null
+          product_amount?: number | null
+          product_description?: string | null
+          product_name?: string | null
+          support_email?: string | null
+          support_phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string | null
+          id?: string
+          logo_url?: string | null
+          private_service_notice?: string | null
+          product_amount?: number | null
+          product_description?: string | null
+          product_name?: string | null
+          support_email?: string | null
+          support_phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      suppression_list: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          email: string | null
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      sync_runs: {
+        Row: {
+          complete_queries: number | null
+          created_at: string
+          credits_after: number | null
+          credits_before: number | null
+          duplicates_ignored: number | null
+          duration_ms: number | null
+          error_message: string | null
+          filters: Json | null
+          finished_at: string | null
+          id: string
+          mode: Database["public"]["Enums"]["monitor_mode"] | null
+          new_companies: number | null
+          pages_processed: number | null
+          started_at: string | null
+          status: string | null
+          total_returned: number | null
+          updated_companies: number | null
+        }
+        Insert: {
+          complete_queries?: number | null
+          created_at?: string
+          credits_after?: number | null
+          credits_before?: number | null
+          duplicates_ignored?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          filters?: Json | null
+          finished_at?: string | null
+          id?: string
+          mode?: Database["public"]["Enums"]["monitor_mode"] | null
+          new_companies?: number | null
+          pages_processed?: number | null
+          started_at?: string | null
+          status?: string | null
+          total_returned?: number | null
+          updated_companies?: number | null
+        }
+        Update: {
+          complete_queries?: number | null
+          created_at?: string
+          credits_after?: number | null
+          credits_before?: number | null
+          duplicates_ignored?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          filters?: Json | null
+          finished_at?: string | null
+          id?: string
+          mode?: Database["public"]["Enums"]["monitor_mode"] | null
+          new_companies?: number | null
+          pages_processed?: number | null
+          started_at?: string | null
+          status?: string | null
+          total_returned?: number | null
+          updated_companies?: number | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
       webhook_events: {
         Row: {
@@ -179,9 +762,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "user"
+      company_status:
+        | "encontrada"
+        | "dados_basicos"
+        | "aguardando_aprovacao"
+        | "dados_completos"
+        | "qualificada"
+        | "link_criado"
+        | "mensagem_preparada"
+        | "mensagem_aprovada"
+        | "mensagem_enviada"
+        | "link_acessado"
+        | "checkout_iniciado"
+        | "pagamento_pendente"
+        | "pagamento_confirmado"
+        | "falhou"
+        | "bloqueada"
+        | "descadastrada"
+      contact_status:
+        | "draft"
+        | "awaiting_approval"
+        | "approved"
+        | "sent"
+        | "failed"
+        | "blocked"
+        | "unsubscribed"
+      data_level: "simples" | "completo"
+      monitor_mode: "MANUAL" | "SEMIAUTOMATIC" | "AUTOMATIC"
       order_status:
         | "pending"
         | "awaiting_payment"
@@ -317,6 +934,36 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
+      company_status: [
+        "encontrada",
+        "dados_basicos",
+        "aguardando_aprovacao",
+        "dados_completos",
+        "qualificada",
+        "link_criado",
+        "mensagem_preparada",
+        "mensagem_aprovada",
+        "mensagem_enviada",
+        "link_acessado",
+        "checkout_iniciado",
+        "pagamento_pendente",
+        "pagamento_confirmado",
+        "falhou",
+        "bloqueada",
+        "descadastrada",
+      ],
+      contact_status: [
+        "draft",
+        "awaiting_approval",
+        "approved",
+        "sent",
+        "failed",
+        "blocked",
+        "unsubscribed",
+      ],
+      data_level: ["simples", "completo"],
+      monitor_mode: ["MANUAL", "SEMIAUTOMATIC", "AUTOMATIC"],
       order_status: [
         "pending",
         "awaiting_payment",
