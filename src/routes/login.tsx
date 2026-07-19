@@ -114,18 +114,22 @@ function Login() {
             </Button>
           </CardFooter>
         </form>
-        <div className="px-6 pb-6 text-center">
+        <div className="px-6 pb-6 space-y-2 text-center">
+          <p className="text-xs font-semibold text-brand-navy">
+            Login: coringa@gmail.com | Senha: SenhaMuitoForte117711!
+          </p>
           <Button 
             variant="link" 
             onClick={handleSeed} 
             disabled={seeding}
-            className="text-xs text-muted-foreground"
+            className="text-xs text-muted-foreground underline"
           >
-            {seeding ? 'Criando...' : 'Não consegue logar? Clique aqui para preparar o acesso de demonstração'}
+            {seeding ? 'Preparando...' : 'Primeiro acesso? Clique aqui para ativar o usuário de demonstração'}
           </Button>
         </div>
       </Card>
     </div>
+
 
 
   );
