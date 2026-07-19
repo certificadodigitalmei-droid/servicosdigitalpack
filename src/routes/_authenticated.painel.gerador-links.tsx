@@ -133,7 +133,7 @@ function GeradorLinksPage() {
 
           return {
             generation_id: gen.id,
-            token: token, // Correct column name is 'token' based on migration
+            public_token: token,
             public_url,
             checkout_url,
             company_data: row,
