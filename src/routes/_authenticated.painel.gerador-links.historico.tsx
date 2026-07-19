@@ -135,6 +135,27 @@ function HistoricoGeracoesPage() {
             <p className="text-slate-500">Visualize e baixe links gerados anteriormente.</p>
           </div>
         </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" disabled={generations.length === 0}>
+              <Trash2 className="mr-2 h-4 w-4" /> Apagar todos os links
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Apagar todos os links gerados?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação remove permanentemente todas as gerações e todos os links já criados. Os links públicos deixarão de funcionar. Não pode ser desfeito.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={deleteAll} className="bg-red-600 hover:bg-red-700">
+                Apagar tudo
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <Card className="border-slate-200">
