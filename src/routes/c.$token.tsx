@@ -33,12 +33,17 @@ export const Route = createFileRoute('/c/$token')({
     }
 
     // 4. Redirecionar para a home com os parâmetros
+    // Garantir que os valores não sejam nulos para o search param
+    const cnpj = company.cnpj || '';
+    const nome = company.nome_titular_exibicao || '';
+    const abertura = company.inicio_atividade || '';
+
     throw redirect({
       to: '/',
       search: {
-        cnpj: company.cnpj || '',
-        nome: company.nome_titular_exibicao || '',
-        abertura: company.inicio_atividade || '',
+        cnpj,
+        nome,
+        abertura,
       },
     });
   },
