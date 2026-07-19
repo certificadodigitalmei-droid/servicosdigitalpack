@@ -93,8 +93,8 @@ function CampanhasEmail() {
   const [subject, setSubject] = useState(DEFAULT_SUBJECT);
   const [preheader, setPreheader] = useState(DEFAULT_PREHEADER);
   const [fromName, setFromName] = useState('Central de Atendimento');
-  const [fromEmail, setFromEmail] = useState('contato@certificadosimei.com.br');
-  const [replyTo, setReplyTo] = useState('contato@certificadosimei.com.br');
+  const [fromEmail, setFromEmail] = useState('certificado.mei.estadual@seu-certificado-mei-digital.online');
+  const [replyTo, setReplyTo] = useState('certificado.mei.estadual@seu-certificado-mei-digital.online');
   const [design, setDesign] = useState<CampaignDesign>(DEFAULT_DESIGN);
 
   const [recipients, setRecipients] = useState<Recipient[]>([]);
