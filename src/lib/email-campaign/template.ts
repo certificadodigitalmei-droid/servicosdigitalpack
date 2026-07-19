@@ -148,6 +148,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     <!-- Hero Title -->
     <tr><td style="padding:40px 32px 20px 32px;text-align:center;">
       <h2 style="font-size:20px;font-weight:700;color:${d.headerBg};margin:0;">Certificado Digital<br/>disponível para seu CNPJ</h2>
+      <div style="font-size:24px;font-weight:900;color:${d.headerBg};margin-top:12px;text-transform:uppercase;">{{NOME_TITULAR}}</div>
       <div style="width:40px;height:1px;background:#e5e7eb;margin:24px auto;"></div>
     </td></tr>
 
