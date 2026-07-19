@@ -1,29 +1,31 @@
-import { createFileRoute, Outlet, Link, useNavigate, useLocation } from '@tanstack/react-router';
-import { 
-  LayoutDashboard, 
-  LogOut, 
-  Building2, 
+import { createFileRoute, Outlet, Link, useLocation, useNavigate } from '@tanstack/react-router';
+import {
+  LayoutDashboard,
+  LogOut,
+  Building2,
   ChevronRight,
   Filter,
   Link2,
+  Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { 
-  SidebarProvider, 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel, 
-  SidebarMenu, 
-  SidebarMenuButton, 
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem,
   SidebarTrigger,
   SidebarHeader,
-  SidebarFooter
+  SidebarFooter,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export const Route = createFileRoute('/_authenticated/painel')({
   component: PanelLayout,
@@ -31,28 +33,31 @@ export const Route = createFileRoute('/_authenticated/painel')({
 
 function PanelLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin_auth_code');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     toast.success('Sessão encerrada');
-    window.location.href = '/';
+    navigate({ to: '/' });
   };
 
   const menuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, to: '/painel' },
+    { title: 'Importar Empresas', icon: Upload, to: '/painel/importar-empresas' },
     { title: 'Filtrar Empresas MEI', icon: Filter, to: '/painel/filtrar-mei' },
     { title: 'Gerador de Links', icon: Link2, to: '/painel/gerador-links' },
-    
   ];
+
 
   const getBreadcrumbLabel = (path: string) => {
     if (path === '/painel') return 'Dashboard';
+    if (path === '/painel/importar-empresas') return 'Importar Empresas';
     if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
     if (path === '/painel/gerador-links') return 'Gerador de Links';
-    
     if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
     return 'Painel';
   };
+
 
   return (
     <SidebarProvider>
