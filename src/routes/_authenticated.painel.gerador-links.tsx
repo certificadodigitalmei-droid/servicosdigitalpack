@@ -260,6 +260,7 @@ function GeradorLinksPage() {
   }, [file]);
 
   const downloadCSV = () => {
+    console.log('Download iniciado');
     const csv = Papa.unparse(finalData);
     const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -269,7 +270,9 @@ function GeradorLinksPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    console.log('Download concluído');
   };
+
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
