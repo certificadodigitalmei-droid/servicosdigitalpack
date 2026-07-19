@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { Link2, Eye, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { Link2, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -95,10 +95,9 @@ function DashboardPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <MetricCard icon={<Link2 className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-blue-50 text-brand-blue" />
-        <MetricCard icon={<Eye className="h-5 w-5" />} label="Visitas na página" value={stats.viewLink} color="bg-emerald-50 text-emerald-600" hint="Únicos por navegador/dispositivo" />
-        <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Visitas no checkout" value={stats.viewCheckout} color="bg-purple-50 text-purple-600" hint="Únicos por navegador/dispositivo" />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <MetricCard icon={<Link2 className="h-5 w-5" />} label="Acessos na primeira página" value={stats.viewLink} color="bg-blue-50 text-brand-blue" hint="Apenas links públicos /c/{token}" />
+        <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Acessos no checkout" value={stats.viewCheckout} color="bg-purple-50 text-purple-600" hint="Únicos por navegador/dispositivo" />
         <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label='Cliques "Emitir Certificado"' value={stats.clickCert} color="bg-amber-50 text-amber-600" />
         <MetricCard icon={<FileSignature className="h-5 w-5" />} label='Cliques "Gerar Guia"' value={stats.clickGuia} color="bg-rose-50 text-rose-600" />
       </div>
