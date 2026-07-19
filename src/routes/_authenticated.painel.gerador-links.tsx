@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import {
   Link2,
   CheckCircle2,
@@ -7,11 +8,13 @@ import {
   Clock,
   Download,
   Loader2,
-  Building2,
+  Upload,
+  FileText,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Papa from 'papaparse';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,52 +28,132 @@ const generateToken = () =>
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 
+const norm = (s: string) =>
+  s.toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+
+const CNPJ_ALIASES = ['cnpj', 'cnpjbasico', 'numerocnpj', 'cnpjcompleto'];
+
+function cleanCNPJ(v: any): string | null {
+  if (!v) return null;
+  const digits = String(v).replace(/\D/g, '');
+  if (digits.length < 8) return null;
+  return digits.padStart(14, '0').slice(0, 14);
+}
+
+function detectCnpjColumn(headers: string[]): string | null {
+  for (const h of headers) if (CNPJ_ALIASES.includes(norm(h))) return h;
+  return null;
+}
+
 function GeradorLinksPage() {
-  const [step, setStep] = useState<'idle' | 'processing' | 'result' | 'error'>('idle');
-  const [companiesCount, setCompaniesCount] = useState<number | null>(null);
+  const [step, setStep] = useState<'upload' | 'ready' | 'processing' | 'result' | 'error'>('upload');
+  const [file, setFile] = useState<File | null>(null);
+  const [cnpjColumn, setCnpjColumn] = useState<string | null>(null);
+  const [cnpjsFromCsv, setCnpjsFromCsv] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [processed, setProcessed] = useState(0);
   const [linksCreated, setLinksCreated] = useState(0);
+  const [notFoundCount, setNotFoundCount] = useState(0);
   const [remainingTime, setRemainingTime] = useState('');
-  const [startedAt, setStartedAt] = useState<number | null>(null);
   const [finalRows, setFinalRows] = useState<any[]>([]);
   const [errorDetails, setErrorDetails] = useState<{ step: string; message: string; stack?: string } | null>(null);
   const [genId, setGenId] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const { count } = await supabase
-        .from('companies')
-        .select('id', { count: 'exact', head: true });
-      setCompaniesCount(count || 0);
-    })();
+  const onDrop = useCallback((accepted: File[]) => {
+    const f = accepted[0];
+    if (!f) return;
+    setFile(f);
+    setCnpjColumn(null);
+    setCnpjsFromCsv([]);
+    Papa.parse(f, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const headers = (results.meta.fields || []) as string[];
+        const col = detectCnpjColumn(headers);
+        setCnpjColumn(col);
+        if (!col) {
+          setStep('upload');
+          return;
+        }
+        const set = new Set<string>();
+        for (const raw of results.data as any[]) {
+          const c = cleanCNPJ(raw[col]);
+          if (c) set.add(c);
+        }
+        setCnpjsFromCsv(Array.from(set));
+        setStep('ready');
+      },
+      error: (err) => {
+        setErrorDetails({ step: 'Leitura do CSV', message: err.message });
+        setStep('error');
+      },
+    });
   }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'text/csv': ['.csv'] },
+    multiple: false,
+  });
+
+  function resetAll() {
+    setStep('upload');
+    setFile(null);
+    setCnpjColumn(null);
+    setCnpjsFromCsv([]);
+    setProgress(0);
+    setProcessed(0);
+    setLinksCreated(0);
+    setNotFoundCount(0);
+    setRemainingTime('');
+    setFinalRows([]);
+    setErrorDetails(null);
+    setGenId(null);
+  }
 
   async function generate() {
     setErrorDetails(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Sessão expirada. Faça login novamente.');
-
-      // 1. Load all companies
-      const { data: companies, error: cErr } = await supabase
-        .from('companies')
-        .select('id, cnpj, nome_titular_exibicao, razao_social_original, nome_fantasia, email, inicio_atividade, uf, municipio_descricao');
-      if (cErr) throw new Error(`Ao carregar empresas: ${cErr.message}`);
-      if (!companies || companies.length === 0) {
-        throw new Error('Nenhuma empresa importada. Use a aba "Importar Empresas" primeiro.');
-      }
+      if (cnpjsFromCsv.length === 0) throw new Error('Nenhum CNPJ válido no CSV.');
 
       setStep('processing');
-      setStartedAt(Date.now());
+      const startedAt = Date.now();
       setProcessed(0);
       setLinksCreated(0);
+      setNotFoundCount(0);
+      setProgress(0);
 
-      // 2. Create generation record
+      // Fetch matching companies in chunks (avoid huge IN clauses)
+      const QCHUNK = 500;
+      const companies: any[] = [];
+      for (let i = 0; i < cnpjsFromCsv.length; i += QCHUNK) {
+        const slice = cnpjsFromCsv.slice(i, i + QCHUNK);
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, cnpj, nome_titular_exibicao, razao_social_original, nome_fantasia, email, inicio_atividade, uf, municipio_descricao')
+          .in('cnpj', slice);
+        if (error) throw new Error(`Ao consultar empresas: ${error.message}`);
+        if (data) companies.push(...data);
+      }
+
+      const foundSet = new Set(companies.map((c) => c.cnpj));
+      const missing = cnpjsFromCsv.filter((c) => !foundSet.has(c));
+      setNotFoundCount(missing.length);
+
+      if (companies.length === 0) {
+        throw new Error(
+          `Nenhum dos ${cnpjsFromCsv.length} CNPJs do CSV foi encontrado no banco. Importe as empresas primeiro em "Importar Empresas".`,
+        );
+      }
+
+      // Create generation record
       const { data: gen, error: gErr } = await supabase
         .from('link_generations')
         .insert({
-          arquivo: `empresas_${new Date().toISOString().slice(0, 10)}`,
+          arquivo: file?.name || `upload_${new Date().toISOString().slice(0, 10)}`,
           total_empresas: companies.length,
           total_links: 0,
         })
@@ -128,21 +211,17 @@ function GeradorLinksPage() {
         setLinksCreated(created);
         setProgress(Math.round((created / companies.length) * 100));
 
-        if (startedAt) {
-          const elapsed = Date.now() - startedAt;
-          const perItem = elapsed / created;
-          const remaining = (companies.length - created) * perItem;
-          const seconds = Math.round(remaining / 1000);
-          setRemainingTime(seconds > 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`);
-        }
+        const elapsed = Date.now() - startedAt;
+        const perItem = elapsed / created;
+        const remaining = (companies.length - created) * perItem;
+        const seconds = Math.round(remaining / 1000);
+        setRemainingTime(seconds > 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`);
       }
 
       await supabase.from('link_generations').update({ total_links: created }).eq('id', gen.id);
       setFinalRows(results);
       setStep('result');
       toast.success(`${created} links gerados`);
-
-      // Auto-download
       setTimeout(() => downloadCSV(results), 300);
     } catch (err: any) {
       console.error('Generation error', err);
@@ -169,7 +248,7 @@ function GeradorLinksPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Gerador de Links</h1>
-          <p className="text-slate-500">Gera um link exclusivo para cada empresa já importada.</p>
+          <p className="text-slate-500">Faça upload de um CSV com CNPJs. Os links são gerados apenas para os CNPJs enviados.</p>
         </div>
         <Button variant="outline" asChild>
           <Link to="/painel/gerador-links/historico" className="flex items-center gap-2">
@@ -178,36 +257,66 @@ function GeradorLinksPage() {
         </Button>
       </div>
 
-      {step === 'idle' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5" /> Empresas disponíveis</CardTitle>
-            <CardDescription>
-              {companiesCount === null
-                ? 'Carregando...'
-                : `${companiesCount.toLocaleString('pt-BR')} empresas prontas para geração de links.`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {companiesCount === 0 ? (
-              <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-amber-600" />
-                <div className="flex-1 text-sm text-amber-900">
-                  Nenhuma empresa importada ainda.{' '}
-                  <Link to="/painel/importar-empresas" className="font-semibold underline">
-                    Ir para Importar Empresas
-                  </Link>
-                </div>
+      {step === 'upload' && (
+        <Card className="border-2 border-dashed border-slate-200 shadow-none">
+          <CardContent className="pt-10 pb-10">
+            <div
+              {...getRootProps()}
+              className={`flex flex-col items-center justify-center p-12 cursor-pointer transition-colors rounded-xl ${isDragActive ? 'bg-blue-50 border-brand-blue' : 'hover:bg-slate-50'}`}
+            >
+              <input {...getInputProps()} />
+              <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                <Upload className="h-8 w-8 text-brand-blue" />
               </div>
-            ) : (
-              <Button
-                onClick={generate}
-                disabled={!companiesCount}
-                className="bg-brand-navy hover:bg-brand-blue"
-              >
+              <h3 className="text-lg font-semibold text-slate-900">Arraste o CSV com os CNPJs</h3>
+              <p className="text-slate-500 text-center max-w-sm mt-2">
+                O sistema identifica automaticamente a coluna CNPJ e gera um link exclusivo para cada empresa da lista.
+              </p>
+              <Button className="mt-6 bg-brand-navy hover:bg-brand-blue">Selecionar Arquivo</Button>
+            </div>
+            {file && !cnpjColumn && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Coluna CNPJ não encontrada</AlertTitle>
+                <AlertDescription>
+                  Nenhuma coluna reconhecível como CNPJ foi encontrada em <b>{file.name}</b>. Ajuste o cabeçalho e envie novamente.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 'ready' && file && (
+        <Card>
+          <CardContent className="pt-6 space-y-6">
+            <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="h-12 w-12 bg-white rounded-lg flex items-center justify-center border border-slate-200">
+                <FileText className="h-6 w-6 text-slate-400" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-slate-900">{file.name}</p>
+                <p className="text-sm text-slate-500">
+                  {cnpjsFromCsv.length.toLocaleString('pt-BR')} CNPJs únicos • coluna detectada: <span className="font-mono">{cnpjColumn}</span>
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={resetAll} className="text-slate-400 hover:text-red-500">
+                Remover
+              </Button>
+            </div>
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Empresas precisam estar importadas</AlertTitle>
+              <AlertDescription>
+                Só serão gerados links para CNPJs já cadastrados em "Importar Empresas". CNPJs não encontrados serão ignorados.
+              </AlertDescription>
+            </Alert>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={resetAll}>Cancelar</Button>
+              <Button onClick={generate} className="bg-brand-navy hover:bg-brand-blue">
                 <Link2 className="mr-2 h-4 w-4" /> Gerar Links
               </Button>
-            )}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -216,7 +325,7 @@ function GeradorLinksPage() {
         <Card>
           <CardHeader className="text-center">
             <CardTitle>Gerando links exclusivos</CardTitle>
-            <CardDescription>Processando {companiesCount} empresas.</CardDescription>
+            <CardDescription>Processando {cnpjsFromCsv.length} CNPJs do CSV.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 py-8 text-center">
             <div className="flex justify-center">
@@ -246,6 +355,11 @@ function GeradorLinksPage() {
             <p className="text-green-700 mt-1">
               {linksCreated.toLocaleString('pt-BR')} links criados. O CSV foi baixado automaticamente.
             </p>
+            {notFoundCount > 0 && (
+              <p className="text-amber-700 mt-2 text-sm">
+                {notFoundCount.toLocaleString('pt-BR')} CNPJs do arquivo não estavam importados e foram ignorados.
+              </p>
+            )}
           </div>
           <CardContent className="p-8">
             <div className="grid grid-cols-3 gap-4">
@@ -260,7 +374,7 @@ function GeradorLinksPage() {
               <Button variant="outline" onClick={() => downloadCSV()}>
                 <Download className="mr-2 h-4 w-4" /> Baixar CSV novamente
               </Button>
-              <Button className="bg-brand-navy hover:bg-brand-blue" onClick={() => setStep('idle')}>
+              <Button className="bg-brand-navy hover:bg-brand-blue" onClick={resetAll}>
                 Nova geração
               </Button>
             </div>
@@ -282,7 +396,7 @@ function GeradorLinksPage() {
               </div>
             </div>
             <div className="mt-4 flex justify-end">
-              <Button variant="outline" onClick={() => setStep('idle')}>Voltar</Button>
+              <Button variant="outline" onClick={resetAll}>Voltar</Button>
             </div>
           </CardContent>
         </Card>
