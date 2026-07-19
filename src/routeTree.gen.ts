@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
+import { Route as AuthenticatedPainelGeradorLinksRouteImport } from './routes/_authenticated.painel.gerador-links'
 import { Route as AuthenticatedPainelFiltrarMeiRouteImport } from './routes/_authenticated.painel.filtrar-mei'
 
 const LoginRoute = LoginRouteImport.update({
@@ -53,6 +54,12 @@ const AuthenticatedPainelIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelGeradorLinksRoute =
+  AuthenticatedPainelGeradorLinksRouteImport.update({
+    id: '/gerador-links',
+    path: '/gerador-links',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 const AuthenticatedPainelFiltrarMeiRoute =
   AuthenticatedPainelFiltrarMeiRouteImport.update({
     id: '/filtrar-mei',
@@ -67,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
+  '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRoutesByTo {
@@ -75,6 +83,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/c/$token': typeof CTokenRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
+  '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRoutesById {
@@ -86,6 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
+  '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRouteTypes {
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/c/$token'
     | '/painel/filtrar-mei'
+    | '/painel/gerador-links'
     | '/painel/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/c/$token'
     | '/painel/filtrar-mei'
+    | '/painel/gerador-links'
     | '/painel'
   id:
     | '__root__'
@@ -115,6 +127,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel'
     | '/c/$token'
     | '/_authenticated/painel/filtrar-mei'
+    | '/_authenticated/painel/gerador-links'
     | '/_authenticated/painel/'
   fileRoutesById: FileRoutesById
 }
@@ -177,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/gerador-links': {
+      id: '/_authenticated/painel/gerador-links'
+      path: '/gerador-links'
+      fullPath: '/painel/gerador-links'
+      preLoaderRoute: typeof AuthenticatedPainelGeradorLinksRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
     '/_authenticated/painel/filtrar-mei': {
       id: '/_authenticated/painel/filtrar-mei'
       path: '/filtrar-mei'
@@ -189,11 +209,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelFiltrarMeiRoute: typeof AuthenticatedPainelFiltrarMeiRoute
+  AuthenticatedPainelGeradorLinksRoute: typeof AuthenticatedPainelGeradorLinksRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
 
 const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelFiltrarMeiRoute: AuthenticatedPainelFiltrarMeiRoute,
+  AuthenticatedPainelGeradorLinksRoute: AuthenticatedPainelGeradorLinksRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
 }
 
