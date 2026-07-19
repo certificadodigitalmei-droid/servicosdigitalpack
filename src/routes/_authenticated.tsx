@@ -19,17 +19,20 @@ function AuthenticatedLayout() {
     const auth = localStorage.getItem('admin_auth_code');
     if (auth === '117711') {
       setIsAuthorized(true);
-      // Ensure we have a Supabase session if authorized locally
       checkSupabaseAuth();
     }
   }, [location.pathname]);
 
   const checkSupabaseAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      console.log('Autorizado localmente mas sem sessão Supabase. Tentando login anônimo para persistência...');
-      const { error } = await supabase.auth.signInAnonymously();
-      if (error) console.error('Erro ao estabelecer sessão anônima:', error);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log('Autorizado localmente mas sem sessão Supabase. Tentando login anônimo...');
+        const { error } = await supabase.auth.signInAnonymously();
+        if (error) console.error('Erro ao estabelecer sessão anônima:', error);
+      }
+    } catch (e) {
+      console.error('Erro na verificação de auth:', e);
     }
   };
 
@@ -40,13 +43,16 @@ function AuthenticatedLayout() {
       setIsAuthorized(true);
       toast.success('Acesso autorizado');
       
-      // Establish Supabase session
-      const { data: { session }, error: loginError } = await supabase.auth.signInAnonymously();
-      if (loginError) {
-        console.error('Supabase Login Error:', loginError);
-        toast.error('Erro ao iniciar sessão no banco de dados');
-      } else {
-        console.log('Sessão Supabase estabelecida:', session?.user?.id);
+      try {
+        const { data: { session }, error: loginError } = await supabase.auth.signInAnonymously();
+        if (loginError) {
+          console.error('Supabase Login Error:', loginError);
+          toast.error('Erro ao iniciar sessão no banco de dados');
+        } else {
+          console.log('Sessão Supabase estabelecida:', session?.user?.id);
+        }
+      } catch (err) {
+        console.error('Erro inesperado no login Supabase:', err);
       }
     } else {
       toast.error('Código incorreto');
