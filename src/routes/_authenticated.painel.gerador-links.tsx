@@ -69,6 +69,18 @@ function GeradorLinksPage() {
   const processFile = async () => {
     if (!file) return;
 
+    // Security check before starting
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (sessionError || userError || !session || !user) {
+      console.error('Session/User validation failed:', { sessionError, userError, session, user });
+      toast.error('Sessão expirada. Faça login novamente.');
+      localStorage.removeItem('admin_auth_code');
+      window.location.href = '/';
+      return;
+    }
+
     setStep('processing');
     setStartTime(Date.now());
     
@@ -77,7 +89,7 @@ function GeradorLinksPage() {
       .from('link_generations')
       .insert({
         arquivo: file.name,
-        total_empresas: 0,
+        total_empresas: totalToProcess,
         total_links: 0
       })
       .select('id')
@@ -85,7 +97,7 @@ function GeradorLinksPage() {
 
     if (genError) {
       console.error('Erro detalhado ao criar geração:', genError);
-      toast.error(`Erro ao criar registro: ${genError.message || 'Erro desconhecido'}`);
+      toast.error(`Erro ao criar registro: ${genError.message || 'Erro de permissão RLS'}`);
       setStep('upload');
       return;
     }
@@ -103,6 +115,8 @@ function GeradorLinksPage() {
       chunk: async (results, parser) => {
         parser.pause();
         const chunk = results.data as any[];
+        
+        // Prepare batch insert
         const inserts = chunk.map(row => {
           const token = generateToken();
           const public_url = `${domain}/certificado-mei/${token}`;
@@ -119,7 +133,7 @@ function GeradorLinksPage() {
 
           return {
             generation_id: gen.id,
-            public_token: token,
+            token: token, // Correct column name is 'token' based on migration
             public_url,
             checkout_url,
             company_data: row,
@@ -132,8 +146,9 @@ function GeradorLinksPage() {
           .insert(inserts);
 
         if (insertError) {
-          console.error('Insert error:', insertError);
-          toast.error('Erro ao salvar links no banco');
+          console.error('Insert error details:', insertError);
+          toast.error(`Erro ao salvar links: ${insertError.message}`);
+          // We continue but log the error
         }
 
         processed += chunk.length;
@@ -156,20 +171,19 @@ function GeradorLinksPage() {
 
         parser.resume();
       },
-      beforeFirstChunk: () => {
-        // We need total count first to show progress
-        // PapaParse doesn't provide total count in chunk mode easily without reading twice
-        // For a quick estimate, we'll just show the processed count if total is unknown
-      },
       complete: async () => {
         // Update generation totals
-        await supabase
+        const { error: updateError } = await supabase
           .from('link_generations')
           .update({
             total_empresas: processed,
             total_links: processed
           })
           .eq('id', gen.id);
+
+        if (updateError) {
+          console.error('Error updating generation totals:', updateError);
+        }
 
         setFinalData(allResults);
         setStep('result');
