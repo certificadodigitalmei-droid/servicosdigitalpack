@@ -63,12 +63,12 @@ function HomePage() {
           </div>
 
           {/* Success locator card */}
-          <div className="flex items-center gap-4 rounded-md border border-border border-l-4 border-l-brand-blue bg-card p-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-blue-soft text-brand-blue">
+          <div className="flex items-center gap-4 rounded-md border border-border border-l-4 border-l-[#004884] bg-card p-4 shadow-sm">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f0f5ff] text-[#004884]">
               <FileCheck2 className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <div className="text-[15px] font-semibold text-brand-blue">
+              <div className="text-[15px] font-bold text-[#004884]">
                 Cadastro localizado com sucesso
               </div>
               <div className="text-[13px] text-muted-foreground">
@@ -100,15 +100,15 @@ function HomePage() {
           <div className="rounded-md border border-border bg-card p-4">
             <div className="flex items-center justify-between text-[13px]">
               <span className="text-muted-foreground">Progresso da contratação</span>
-              <span className="font-semibold text-brand-blue">Etapa 2 de 3 — quase lá</span>
+              <span className="font-semibold text-[#004884]">Etapa 2 de 3 — quase lá</span>
             </div>
             <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full w-[65%] rounded-full bg-brand-blue" />
+              <div className="h-full w-[65%] rounded-full bg-[#004884]" />
             </div>
             <div className="mt-3 flex flex-wrap justify-between gap-2 text-[12px]">
-              <span className="flex items-center gap-1 text-success"><span className="text-[8px]">●</span> Identificação</span>
-              <span className="flex items-center gap-1 text-success"><span className="text-[8px]">●</span> Dados confirmados</span>
-              <span className="flex items-center gap-1 text-brand-blue"><span className="text-[8px]">●</span> Emitir certificado</span>
+              <span className="flex items-center gap-1 text-[#138835]"><span className="text-[8px]">●</span> Identificação</span>
+              <span className="flex items-center gap-1 text-[#138835]"><span className="text-[8px]">●</span> Dados confirmados</span>
+              <span className="flex items-center gap-1 text-[#004884]"><span className="text-[8px]">●</span> Emitir certificado</span>
             </div>
           </div>
 
