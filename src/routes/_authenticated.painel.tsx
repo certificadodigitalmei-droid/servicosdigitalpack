@@ -101,7 +101,9 @@ function PanelLayout() {
               <nav className="flex items-center text-sm text-slate-500">
                 <span>Painel</span>
                 <ChevronRight className="mx-2 h-4 w-4" />
-                <span className="font-medium text-slate-900">Dashboard</span>
+                <span className="font-medium text-slate-900 capitalize">
+                  {window.location.pathname.split('/').pop() || 'Dashboard'}
+                </span>
               </nav>
             </div>
             
