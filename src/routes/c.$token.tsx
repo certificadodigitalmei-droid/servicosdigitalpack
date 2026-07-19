@@ -21,17 +21,24 @@ export const Route = createFileRoute('/c/$token')({
   component: TokenHomePage,
 });
 
+function cleanPersonName(v?: string | null): string {
+  if (!v) return '';
+  // remove digits and collapse whitespace
+  return v.replace(/\d+/g, '').replace(/\s+/g, ' ').trim();
+}
+
 function TokenHomePage() {
   const { row } = Route.useLoaderData() as { row: ResolvedCompany };
   const { token } = Route.useParams();
-  const nomeFmt = row.nome?.trim() || row.razao_social?.trim() || '—';
+  const nomeFmt = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '—';
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
   const aberturaFmt = row.abertura ? formatDateBR(row.abertura) : '—';
 
   return (
     <Page>
-      <SiteHeader userName={row.nome ?? undefined} userDoc={row.cnpj ?? undefined} />
+      <SiteHeader userName={nomeFmt !== '—' ? nomeFmt : undefined} userDoc={row.cnpj ?? undefined} />
       <Breadcrumb items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }]} />
+
 
       <main className="flex-1">
         <div className="mx-auto w-full max-w-[720px] px-3.5 py-6 space-y-4 sm:px-4">
