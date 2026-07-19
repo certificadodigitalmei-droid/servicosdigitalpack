@@ -4,6 +4,7 @@ import {
   LogOut, 
   Building2, 
   ChevronRight,
+  Filter,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
