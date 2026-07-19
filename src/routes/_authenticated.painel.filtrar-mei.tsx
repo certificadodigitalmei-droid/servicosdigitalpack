@@ -169,6 +169,7 @@ function FilterMeiPage() {
         header: true,
         skipEmptyLines: true,
         encoding: "UTF-8",
+        delimiter: "", // Auto-detect delimiter (essential for semicolon CSVs)
         complete: (results: Papa.ParseResult<any>) => {
           const raw = results.data;
           const total = raw.length;
