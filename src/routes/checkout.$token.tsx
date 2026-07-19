@@ -48,17 +48,25 @@ export const Route = createFileRoute('/checkout/$token')({
 const AMOUNT = 97.0;
 const brl = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`;
 
+function cleanPersonName(v?: string | null): string {
+  if (!v) return '';
+  return v.replace(/\d+/g, '').replace(/\s+/g, ' ').trim();
+}
+
 function CheckoutTokenPage() {
   const { row } = Route.useLoaderData() as { row: ResolvedCompany };
   const { token } = Route.useParams();
   const navigate = useNavigate();
 
+  const headerName = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '';
+
   const [form, setForm] = useState({
-    nome: row.nome || row.razao_social || '',
+    nome: cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '',
     doc: row.cnpj ? formatCPFOrCNPJ(row.cnpj) : '',
     email: row.email || '',
     phone: row.telefone ? maskPhone(row.telefone) : '',
   });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [pixOpen, setPixOpen] = useState(false);
