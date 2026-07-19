@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createFileRoute, Outlet, redirect, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Outlet, useNavigate, useLocation } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,13 +13,14 @@ function AuthenticatedLayout() {
   const [code, setCode] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const auth = localStorage.getItem('admin_auth_code');
     if (auth === '117711') {
       setIsAuthorized(true);
     }
-  }, []);
+  }, [location.pathname]);
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Outlet, Link, useNavigate, useLocation } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   LayoutDashboard, 
@@ -36,11 +36,12 @@ export const Route = createFileRoute('/_authenticated/painel')({
 
 function PanelLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    localStorage.removeItem('admin_auth_code');
     toast.success('Sessão encerrada');
-    navigate({ to: '/login' });
+    window.location.href = '/';
   };
 
   const menuItems = [
@@ -101,7 +102,9 @@ function PanelLayout() {
               <nav className="flex items-center text-sm text-slate-500">
                 <span>Painel</span>
                 <ChevronRight className="mx-2 h-4 w-4" />
-                <span className="font-medium text-slate-900">Dashboard</span>
+                <span className="font-medium text-slate-900 capitalize">
+                  {location.pathname.split('/').filter(Boolean).pop() === 'painel' ? 'Dashboard' : location.pathname.split('/').filter(Boolean).pop()}
+                </span>
               </nav>
             </div>
             
