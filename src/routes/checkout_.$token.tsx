@@ -16,7 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/track';
 import type { ResolvedCompany } from '@/lib/company-links.functions';
 
-export const Route = createFileRoute('/checkout/$token')({
+export const Route = createFileRoute('/checkout_/$token')({
   loader: async ({ params }) => {
     const row = await resolveCompanyLink({ data: { token: params.token } });
     if (!row) throw notFound();
