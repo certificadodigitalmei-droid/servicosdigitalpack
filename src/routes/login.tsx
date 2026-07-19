@@ -30,7 +30,7 @@ function Login() {
     try {
       const { error } = await supabase.auth.signUp({
         email: 'coringa@gmail.com',
-        password: '117711',
+        password: 'SenhaMuitoForte117711!',
       });
       if (error) {
         if (error.message.includes('already registered')) {
