@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
-import { Info, FileCheck2, Lock } from "lucide-react";
+import { Info, FileCheck2, Lock, User } from "lucide-react";
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from "@/components/layout/SiteChrome";
 import { formatCNPJ, formatDateBR } from "@/lib/format";
 
@@ -53,10 +53,10 @@ function HomePage() {
       <main className="flex-1">
         <div className="mx-auto w-full max-w-[720px] px-3.5 py-6 space-y-4 sm:px-4">
           {/* Yellow info card */}
-          <div className="flex gap-3 rounded-md border border-warning-border/60 border-l-4 border-l-warning bg-warning-soft p-4 text-[13px]">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-            <div className="leading-relaxed">
-              <p className="text-foreground">
+          <div className="flex gap-3 rounded-md border border-[#ffeeba] border-l-4 border-l-[#ffc107] bg-[#fcf4d4] p-4 text-[13px] shadow-sm">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#856404]" />
+            <div className="leading-relaxed text-[#856404]">
+              <p>
                 Seu MEI possui o <span className="font-bold">Certificado Digital 2026 pendente</span>. Sem a emissão, seu CNPJ pode ser bloqueado para emissão de notas fiscais e acesso a crédito. <span className="font-bold underline cursor-pointer">Regularize agora.</span>
               </p>
             </div>
