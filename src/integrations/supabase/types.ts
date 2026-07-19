@@ -315,37 +315,55 @@ export type Database = {
         Row: {
           access_count: number | null
           active: boolean | null
+          checkout_url: string | null
+          company_data: Json
           company_id: string | null
           created_at: string
           expires_at: string | null
           first_access_at: string | null
+          generation_id: string | null
           id: string
           last_access_at: string | null
           public_token: string
+          public_url: string | null
+          status: string | null
+          token: string | null
           updated_at: string
         }
         Insert: {
           access_count?: number | null
           active?: boolean | null
+          checkout_url?: string | null
+          company_data?: Json
           company_id?: string | null
           created_at?: string
           expires_at?: string | null
           first_access_at?: string | null
+          generation_id?: string | null
           id?: string
           last_access_at?: string | null
           public_token: string
+          public_url?: string | null
+          status?: string | null
+          token?: string | null
           updated_at?: string
         }
         Update: {
           access_count?: number | null
           active?: boolean | null
+          checkout_url?: string | null
+          company_data?: Json
           company_id?: string | null
           created_at?: string
           expires_at?: string | null
           first_access_at?: string | null
+          generation_id?: string | null
           id?: string
           last_access_at?: string | null
           public_token?: string
+          public_url?: string | null
+          status?: string | null
+          token?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -354,6 +372,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_links_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "link_generations"
             referencedColumns: ["id"]
           },
         ]
@@ -489,6 +514,30 @@ export type Database = {
           name?: string
           phone?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      link_generations: {
+        Row: {
+          arquivo: string
+          created_at: string
+          id: string
+          total_empresas: number
+          total_links: number
+        }
+        Insert: {
+          arquivo: string
+          created_at?: string
+          id?: string
+          total_empresas?: number
+          total_links?: number
+        }
+        Update: {
+          arquivo?: string
+          created_at?: string
+          id?: string
+          total_empresas?: number
+          total_links?: number
         }
         Relationships: []
       }
