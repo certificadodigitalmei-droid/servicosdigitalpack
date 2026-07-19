@@ -29,7 +29,11 @@ function AuthenticatedLayout() {
       if (!session) {
         console.log('Autorizado localmente mas sem sessão Supabase. Tentando login anônimo...');
         const { error } = await supabase.auth.signInAnonymously();
-        if (error) console.error('Erro ao estabelecer sessão anônima:', error);
+        if (error) {
+          console.error('Erro ao estabelecer sessão anônima:', error);
+        } else {
+          console.log('Sessão anônima estabelecida com sucesso');
+        }
       }
     } catch (e) {
       console.error('Erro na verificação de auth:', e);
@@ -39,17 +43,19 @@ function AuthenticatedLayout() {
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (code === '117711') {
+      console.log('Verificando código 117711...');
       localStorage.setItem('admin_auth_code', '117711');
       setIsAuthorized(true);
       toast.success('Acesso autorizado');
       
       try {
-        const { data: { session }, error: loginError } = await supabase.auth.signInAnonymously();
+        console.log('Iniciando signInAnonymously...');
+        const { data: authData, error: loginError } = await supabase.auth.signInAnonymously();
         if (loginError) {
           console.error('Supabase Login Error:', loginError);
           toast.error('Erro ao iniciar sessão no banco de dados');
         } else {
-          console.log('Sessão Supabase estabelecida:', session?.user?.id);
+          console.log('Sessão Supabase estabelecida:', authData.session?.user?.id);
         }
       } catch (err) {
         console.error('Erro inesperado no login Supabase:', err);
