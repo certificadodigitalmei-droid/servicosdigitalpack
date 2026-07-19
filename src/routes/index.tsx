@@ -8,6 +8,7 @@ const searchSchema = z.object({
   nome: z.string().optional(),
   cnpj: z.string().optional(),
   abertura: z.string().optional(),
+  token: z.string().optional(),
 });
 
 export const Route = createFileRoute("/")({
@@ -31,14 +32,18 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-  const { nome, cnpj, abertura } = Route.useSearch();
+  const { nome, cnpj, abertura, token } = Route.useSearch();
   const cnpjFmt = cnpj ? formatCNPJ(cnpj) : "—";
   const nomeFmt = nome?.trim() || "—";
   const aberturaFmt = abertura ? formatDateBR(abertura) : "—";
 
   const checkoutSearch: Record<string, string> = {};
-  if (cnpj) checkoutSearch.cnpj = cnpj;
-  if (nome) checkoutSearch.nome = nome;
+  if (token) {
+    checkoutSearch.token = token;
+  } else {
+    if (cnpj) checkoutSearch.cnpj = cnpj;
+    if (nome) checkoutSearch.nome = nome;
+  }
 
   return (
     <Page>
