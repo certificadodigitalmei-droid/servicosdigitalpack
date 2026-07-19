@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check, QrCode, CreditCard, Barcode, Copy, ArrowLeft, Clock } from "lucide-react";
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from "@/components/layout/SiteChrome";
 import {
@@ -10,10 +10,12 @@ import {
   isValidEmail,
 } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveCompanyLink } from "@/lib/company-links.functions";
 
 const searchSchema = z.object({
   cnpj: z.string().optional(),
   nome: z.string().optional(),
+  token: z.string().optional(),
 });
 
 export const Route = createFileRoute("/checkout")({
@@ -35,7 +37,7 @@ const AMOUNT = 97.0;
 const brl = (n: number) => `R$ ${n.toFixed(2).replace(".", ",")}`;
 
 function CheckoutPage() {
-  const { cnpj, nome } = Route.useSearch();
+  const { cnpj, nome, token } = Route.useSearch();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -48,6 +50,29 @@ function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [pixOpen, setPixOpen] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(!!token);
+
+  useEffect(() => {
+    const loadFromToken = async () => {
+      if (!token) return;
+      try {
+        const data = await resolveCompanyLink({ data: { token } });
+        if (data) {
+          setForm({
+            nome: data.nome || form.nome,
+            doc: data.cnpj ? formatCPFOrCNPJ(data.cnpj) : form.doc,
+            email: data.email || "",
+            phone: data.telefone || "",
+          });
+        }
+      } catch (err) {
+        console.error("Error loading checkout data from token:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadFromToken();
+  }, [token]);
 
   function validate() {
     const e: Record<string, string> = {};
@@ -111,12 +136,27 @@ function CheckoutPage() {
   }
 
   const backSearch: Record<string, string> = {};
-  if (nome) backSearch.nome = nome;
-  if (cnpj) backSearch.cnpj = cnpj;
+  if (token) {
+    backSearch.token = token;
+  } else {
+    if (nome) backSearch.nome = nome;
+    if (cnpj) backSearch.cnpj = cnpj;
+  }
+
+  if (loading) {
+    return (
+      <Page>
+        <SiteHeader />
+        <main className="flex-1 flex items-center justify-center p-12">
+          <Clock className="h-8 w-8 animate-spin text-brand-blue" />
+        </main>
+      </Page>
+    );
+  }
 
   return (
     <Page>
-      <SiteHeader userName={nome} userDoc={cnpj} />
+      <SiteHeader userName={form.nome} userDoc={form.doc} />
       <Breadcrumb
         items={[
           { label: "Empresas & Negócios" },
@@ -500,35 +540,23 @@ function PayOption({
           : "border-border bg-card")
       }
     >
-      <div
-        className={
-          "flex h-9 w-9 shrink-0 items-center justify-center rounded-md " +
-          (selected ? "bg-success text-primary-foreground" : "bg-muted text-muted-foreground")
-        }
-      >
-        {icon}
-      </div>
+      <div className={selected ? "text-brand-blue" : "text-muted-foreground"}>{icon}</div>
       <div className="min-w-0 flex-1">
-        <div className={"text-[13px] font-semibold " + (disabled ? "text-muted-foreground" : "text-foreground")}>
-          {title}
+        <div className="text-[13.5px] font-bold text-foreground">{title}</div>
+        <div className="truncate text-[11px] text-muted-foreground">{subtitle}</div>
+      </div>
+      {selected && (
+        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-blue text-white">
+          <Check className="h-3 w-3" />
         </div>
-        <div className="text-[11.5px] text-muted-foreground">{subtitle}</div>
-      </div>
-      <div
-        className={
-          "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 " +
-          (selected ? "border-brand-blue" : "border-border")
-        }
-      >
-        {selected && <div className="h-2 w-2 rounded-full bg-brand-blue" />}
-      </div>
+      )}
     </div>
   );
 }
 
-function inputCls(err?: string) {
+function inputCls(error?: string) {
   return (
-    "block w-full rounded-md border bg-background px-3 py-2 text-[13px] outline-none transition focus:ring-2 focus:ring-brand-blue/40 " +
-    (err ? "border-destructive" : "border-input")
+    "flex min-h-[40px] w-full rounded-md border bg-background px-3 py-2 text-[14px] ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 " +
+    (error ? "border-destructive" : "border-input")
   );
 }
