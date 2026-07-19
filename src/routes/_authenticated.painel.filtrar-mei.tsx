@@ -182,7 +182,7 @@ function FilterMeiPage() {
             let removedInactive = prev.summary?.removedInactive || 0;
             let removedNoEmail = prev.summary?.removedNoEmail || 0;
 
-            raw.forEach((row) => {
+            raw.forEach((row: any) => {
               if (!row || Object.keys(row).length < 2) {
                 invalid.push(row);
                 return;
