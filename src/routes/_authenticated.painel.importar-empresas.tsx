@@ -283,7 +283,7 @@ function ImportarEmpresasPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Apagar todas as empresas importadas?</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta ação remove permanentemente todas as empresas do banco, junto com todos os links e gerações associados. Não pode ser desfeito.
+                Esta ação remove permanentemente todas as empresas do banco, junto com todos os links, gerações e histórico do Dashboard associados. Não pode ser desfeito.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -293,6 +293,8 @@ function ImportarEmpresasPage() {
                   try {
                     toast.info('Apagando empresas...');
                     const emptyUuid = '00000000-0000-0000-0000-000000000000';
+                    const { error: e0 } = await supabase.from('link_events').delete().neq('id', emptyUuid);
+                    if (e0) throw e0;
                     const { error: e1 } = await supabase.from('company_links').delete().neq('id', emptyUuid);
                     if (e1) throw e1;
                     const { error: e2 } = await supabase.from('link_generations').delete().neq('id', emptyUuid);
