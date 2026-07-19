@@ -572,7 +572,7 @@ function FilterMeiPage() {
             <TabsContent value="unknown">
               <Card>
                 <CardHeader>
-                  <Alert variant="warning" className="bg-amber-50 border-amber-200 text-amber-800">
+                  <Alert className="bg-amber-50 border-amber-200 text-amber-800">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Valores não reconhecidos</AlertTitle>
                     <AlertDescription>
