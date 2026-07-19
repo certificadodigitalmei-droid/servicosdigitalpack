@@ -46,8 +46,8 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   buttonHref: '{{LINK_PUBLICO}}',
   footer: 'Atenciosamente,\nCentral de Atendimento\nCertificado Digital MEI',
   disclaimer:
-    'Você recebeu este e-mail pois seu CNPJ consta em nossa base de cadastros MEI. Para não receber mais comunicações, clique aqui.',
-  unsubText: 'clique aqui',
+    'Você recebeu este e-mail pois seu CNPJ consta em nossa base de cadastros MEI.',
+  unsubText: '',
   unsubHref: '#',
 };
 
@@ -174,11 +174,8 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
     <!-- Footer -->
     <tr><td style="padding:32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
-      <div style="color:${d.mutedColor};font-size:11px;line-height:1.6;margin-bottom:12px;">
+      <div style="color:${d.mutedColor};font-size:11px;line-height:1.6;">
         ${disclaimer}
-      </div>
-      <div style="color:${d.mutedColor};font-size:11px;">
-        Para não receber mais comunicações, <a href="${esc(S(d.unsubHref))}" style="color:${d.headerBg};text-decoration:underline;">${esc(S(d.unsubText))}</a>.
       </div>
     </td></tr>
   </table>
