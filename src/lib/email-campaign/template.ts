@@ -167,7 +167,7 @@ export function renderText(d: CampaignDesign, vars: Vars): string {
     .join('\n');
 }
 
-export function rowToVars(row: Record<string, string>, sender: { name: string; company: string; reference: string }): Vars {
+export function rowToVars(row: Record<string, any>, sender: { name: string; company: string; reference: string }): Vars {
   return {
     NOME_EMPRESARIAL: row.NOME_EMPRESARIAL || row.RAZAO_SOCIAL || '',
     RAZAO_SOCIAL: row.RAZAO_SOCIAL || '',
