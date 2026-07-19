@@ -102,7 +102,7 @@ function PanelLayout() {
                 <span>Painel</span>
                 <ChevronRight className="mx-2 h-4 w-4" />
                 <span className="font-medium text-slate-900 capitalize">
-                  {window.location.pathname.split('/').pop() || 'Dashboard'}
+                  {window.location.pathname.split('/').filter(Boolean).pop() === 'painel' ? 'Dashboard' : window.location.pathname.split('/').filter(Boolean).pop()}
                 </span>
               </nav>
             </div>
