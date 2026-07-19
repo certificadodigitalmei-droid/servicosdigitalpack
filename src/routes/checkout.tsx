@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { useState, useEffect } from "react";
-import { Check, QrCode, CreditCard, Barcode, Copy, ArrowLeft, Clock } from "lucide-react";
+import { Check, QrCode, CreditCard, Barcode, Copy, ArrowLeft, Clock, Loader2 } from "lucide-react";
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from "@/components/layout/SiteChrome";
 import {
   formatCPFOrCNPJ,
@@ -11,6 +11,8 @@ import {
 } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveCompanyLink } from "@/lib/company-links.functions";
+import { createPixCharge } from "@/lib/payments/uniaopay.functions";
+import { toast } from "sonner";
 
 const searchSchema = z.object({
   cnpj: z.string().optional(),
@@ -50,6 +52,7 @@ function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [pixOpen, setPixOpen] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [pixData, setPixData] = useState<{ qrcode: string; transaction_id: string } | null>(null);
   const [loading, setLoading] = useState(!!token);
 
   useEffect(() => {
@@ -90,7 +93,7 @@ function CheckoutPage() {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      const { data: customer } = await supabase
+      const { data: customer, error: custErr } = await supabase
         .from("customers")
         .insert({
           name: form.nome,
@@ -100,8 +103,10 @@ function CheckoutPage() {
         })
         .select("id")
         .single();
+      
+      if (custErr) throw custErr;
 
-      const { data: order } = await supabase
+      const { data: order, error: orderErr } = await supabase
         .from("orders")
         .insert({
           customer_id: customer?.id,
@@ -114,6 +119,8 @@ function CheckoutPage() {
         .select("id")
         .single();
 
+      if (orderErr) throw orderErr;
+
       if (order?.id) {
         setOrderId(order.id);
         await supabase.from("consent_logs").insert({
@@ -124,12 +131,26 @@ function CheckoutPage() {
           user_agent:
             typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 500) : null,
         });
+
+        // Integrar UniaoPay
+        const pix = await createPixCharge({
+          data: {
+            amount: AMOUNT,
+            description: `Apoio Digital MEI - ${form.nome}`,
+            external_id: order.id,
+            webhook_url: `${window.location.origin}/api/public/webhook-uniaopay`
+          }
+        });
+
+        if (pix?.qrcode) {
+          setPixData({ qrcode: pix.qrcode, transaction_id: pix.transaction_id });
+        }
       }
       setPixOpen(true);
       if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       console.error(err);
-      setPixOpen(true); // still show demo screen
+      toast.error("Erro ao processar pagamento. Tente novamente.");
     } finally {
       setSubmitting(false);
     }
@@ -191,6 +212,7 @@ function CheckoutPage() {
                 orderId={orderId}
                 nome={form.nome}
                 doc={form.doc}
+                pixData={pixData}
                 onBack={() => navigate({ to: "/", search: backSearch })}
               />
             )}
