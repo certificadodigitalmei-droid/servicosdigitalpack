@@ -1,15 +1,25 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState, useEffect } from 'react';
-import { 
-  History, 
-  Calendar, 
-  FileText, 
-  Download, 
+import {
+  History,
+  Calendar,
+  FileText,
+  Download,
   ArrowLeft,
   Search,
-  ChevronRight,
-  Database
+  Trash2,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,7 +101,23 @@ function HistoricoGeracoesPage() {
     }
   };
 
-  const filteredGenerations = generations.filter(gen => 
+  const deleteAll = async () => {
+    try {
+      toast.info('Apagando todos os links...');
+      const emptyUuid = '00000000-0000-0000-0000-000000000000';
+      const { error: e1 } = await supabase.from('company_links').delete().neq('id', emptyUuid);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from('link_generations').delete().neq('id', emptyUuid);
+      if (e2) throw e2;
+      setGenerations([]);
+      toast.success('Todos os links foram apagados');
+    } catch (error: any) {
+      toast.error(`Erro ao apagar: ${error.message}`);
+      console.error(error);
+    }
+  };
+
+  const filteredGenerations = generations.filter(gen =>
     gen.arquivo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -109,6 +135,27 @@ function HistoricoGeracoesPage() {
             <p className="text-slate-500">Visualize e baixe links gerados anteriormente.</p>
           </div>
         </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" disabled={generations.length === 0}>
+              <Trash2 className="mr-2 h-4 w-4" /> Apagar todos os links
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Apagar todos os links gerados?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação remove permanentemente todas as gerações e todos os links já criados. Os links públicos deixarão de funcionar. Não pode ser desfeito.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={deleteAll} className="bg-red-600 hover:bg-red-700">
+                Apagar tudo
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <Card className="border-slate-200">
