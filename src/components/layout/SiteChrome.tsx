@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, User, ChevronDown, Home, ChevronRight, FileText } from "lucide-react";
+import { Menu, User, ChevronDown, Home, ChevronRight } from "lucide-react";
 import { formatCPFOrCNPJ } from "@/lib/format";
 import type { ReactNode } from "react";
+import logo from "@/assets/central-mei-digital-logo.png";
+
 
 interface HeaderProps {
   userName?: string;
@@ -18,19 +20,21 @@ export function SiteHeader({ userName, userDoc }: HeaderProps) {
       <div className="border-b border-border bg-background">
         <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-4 py-2.5">
           <Link to="/" className="flex min-w-0 items-center gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-navy text-primary-foreground">
-              <FileText className="h-4 w-4" />
-            </div>
+            <img
+              src={logo}
+              alt="Central MEI Digital"
+              width={1152}
+              height={576}
+              className="h-8 w-auto shrink-0"
+            />
             <div className="hidden h-8 w-px bg-border sm:block" />
-            <div className="min-w-0 leading-tight">
-              <div className="truncate text-[13px] font-bold text-brand-navy">
-                Central MEI Digital
-              </div>
-              <div className="hidden truncate text-[11px] text-muted-foreground sm:block">
+            <div className="min-w-0 leading-tight hidden sm:block">
+              <div className="truncate text-[11px] text-muted-foreground">
                 Central privada de serviços empresariais
               </div>
             </div>
           </Link>
+
 
           <div className="flex min-w-0 shrink-0 items-center gap-2 text-right">
             <div className="hidden min-w-0 sm:block">
