@@ -20,6 +20,8 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
+import { Route as AuthenticatedPainelMonitorRouteImport } from './routes/_authenticated.painel.monitor'
+import { Route as AuthenticatedPainelConfiguracoesRouteImport } from './routes/_authenticated.painel.configuracoes'
 
 const TermosDeUsoRoute = TermosDeUsoRouteImport.update({
   id: '/termos-de-uso',
@@ -76,6 +78,18 @@ const AuthenticatedPainelIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelMonitorRoute =
+  AuthenticatedPainelMonitorRouteImport.update({
+    id: '/monitor',
+    path: '/monitor',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
+const AuthenticatedPainelConfiguracoesRoute =
+  AuthenticatedPainelConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -87,6 +101,8 @@ export interface FileRoutesByFullPath {
   '/quem-somos': typeof QuemSomosRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
   '/painel': typeof AuthenticatedPainelRouteWithChildren
+  '/painel/configuracoes': typeof AuthenticatedPainelConfiguracoesRoute
+  '/painel/monitor': typeof AuthenticatedPainelMonitorRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRoutesByTo {
@@ -98,6 +114,8 @@ export interface FileRoutesByTo {
   '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
   '/quem-somos': typeof QuemSomosRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
+  '/painel/configuracoes': typeof AuthenticatedPainelConfiguracoesRoute
+  '/painel/monitor': typeof AuthenticatedPainelMonitorRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRoutesById {
@@ -112,6 +130,8 @@ export interface FileRoutesById {
   '/quem-somos': typeof QuemSomosRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
+  '/_authenticated/painel/configuracoes': typeof AuthenticatedPainelConfiguracoesRoute
+  '/_authenticated/painel/monitor': typeof AuthenticatedPainelMonitorRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRouteTypes {
@@ -126,6 +146,8 @@ export interface FileRouteTypes {
     | '/quem-somos'
     | '/termos-de-uso'
     | '/painel'
+    | '/painel/configuracoes'
+    | '/painel/monitor'
     | '/painel/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -137,6 +159,8 @@ export interface FileRouteTypes {
     | '/politica-de-reembolso'
     | '/quem-somos'
     | '/termos-de-uso'
+    | '/painel/configuracoes'
+    | '/painel/monitor'
     | '/painel'
   id:
     | '__root__'
@@ -150,6 +174,8 @@ export interface FileRouteTypes {
     | '/quem-somos'
     | '/termos-de-uso'
     | '/_authenticated/painel'
+    | '/_authenticated/painel/configuracoes'
+    | '/_authenticated/painel/monitor'
     | '/_authenticated/painel/'
   fileRoutesById: FileRoutesById
 }
@@ -244,14 +270,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/monitor': {
+      id: '/_authenticated/painel/monitor'
+      path: '/monitor'
+      fullPath: '/painel/monitor'
+      preLoaderRoute: typeof AuthenticatedPainelMonitorRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/_authenticated/painel/configuracoes': {
+      id: '/_authenticated/painel/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/painel/configuracoes'
+      preLoaderRoute: typeof AuthenticatedPainelConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
   }
 }
 
 interface AuthenticatedPainelRouteChildren {
+  AuthenticatedPainelConfiguracoesRoute: typeof AuthenticatedPainelConfiguracoesRoute
+  AuthenticatedPainelMonitorRoute: typeof AuthenticatedPainelMonitorRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
 
 const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
+  AuthenticatedPainelConfiguracoesRoute: AuthenticatedPainelConfiguracoesRoute,
+  AuthenticatedPainelMonitorRoute: AuthenticatedPainelMonitorRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
 }
 
