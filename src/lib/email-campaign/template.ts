@@ -87,6 +87,15 @@ function nl2br(s: string): string {
   return esc(s).replace(/\n/g, '<br/>');
 }
 
+function cleanPersonName(v: string): string {
+  if (!v) return '';
+  return v
+    .replace(/\d+/g, '')
+    .replace(/[.\-/]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function formatCnpj(cnpj: string): string {
   if (!cnpj) return '';
   const clean = cnpj.replace(/\D/g, '');
@@ -214,10 +223,13 @@ export function renderText(d: CampaignDesign, vars: Vars): string {
 }
 
 export function rowToVars(row: Record<string, any>, sender: { name: string; company: string; reference: string }): Vars {
+  const nomeEmpresarial = row.NOME_EMPRESARIAL || row.RAZAO_SOCIAL || '';
+  const nomeTitular = row.NOME_TITULAR || nomeEmpresarial;
+
   return {
-    NOME_EMPRESARIAL: row.NOME_EMPRESARIAL || row.RAZAO_SOCIAL || '',
-    RAZAO_SOCIAL: row.RAZAO_SOCIAL || '',
-    NOME_TITULAR: row.NOME_TITULAR || row.NOME_EMPRESARIAL || '',
+    NOME_EMPRESARIAL: cleanPersonName(nomeEmpresarial),
+    RAZAO_SOCIAL: cleanPersonName(row.RAZAO_SOCIAL || ''),
+    NOME_TITULAR: cleanPersonName(nomeTitular),
     CNPJ: row.CNPJ || '',
     DATA_ABERTURA: row.DATA_ABERTURA || '',
     DATA_SITUACAO: row.DATA_SITUACAO || '',
