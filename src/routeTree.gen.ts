@@ -13,10 +13,12 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CheckoutTokenRouteImport } from './routes/checkout.$token'
 import { Route as CertificadoMeiTokenRouteImport } from './routes/certificado-mei.$token'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
+import { Route as AuthenticatedPainelImportarEmpresasRouteImport } from './routes/_authenticated.painel.importar-empresas'
 import { Route as AuthenticatedPainelGeradorLinksRouteImport } from './routes/_authenticated.painel.gerador-links'
 import { Route as AuthenticatedPainelFiltrarMeiRouteImport } from './routes/_authenticated.painel.filtrar-mei'
 import { Route as AuthenticatedPainelGeradorLinksHistoricoRouteImport } from './routes/_authenticated.painel.gerador-links.historico'
@@ -40,6 +42,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckoutTokenRoute = CheckoutTokenRouteImport.update({
+  id: '/$token',
+  path: '/$token',
+  getParentRoute: () => CheckoutRoute,
+} as any)
 const CertificadoMeiTokenRoute = CertificadoMeiTokenRouteImport.update({
   id: '/certificado-mei/$token',
   path: '/certificado-mei/$token',
@@ -59,6 +66,12 @@ const AuthenticatedPainelIndexRoute =
   AuthenticatedPainelIndexRouteImport.update({
     id: '/',
     path: '/',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
+const AuthenticatedPainelImportarEmpresasRoute =
+  AuthenticatedPainelImportarEmpresasRouteImport.update({
+    id: '/importar-empresas',
+    path: '/importar-empresas',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelGeradorLinksRoute =
@@ -82,24 +95,28 @@ const AuthenticatedPainelGeradorLinksHistoricoRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/checkout': typeof CheckoutRoute
+  '/checkout': typeof CheckoutRouteWithChildren
   '/login': typeof LoginRoute
   '/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
+  '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
+  '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/checkout': typeof CheckoutRoute
+  '/checkout': typeof CheckoutRouteWithChildren
   '/login': typeof LoginRoute
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
+  '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
+  '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
 }
@@ -107,13 +124,15 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/checkout': typeof CheckoutRoute
+  '/checkout': typeof CheckoutRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
+  '/checkout/$token': typeof CheckoutTokenRoute
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
+  '/_authenticated/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
   '/_authenticated/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
 }
@@ -126,8 +145,10 @@ export interface FileRouteTypes {
     | '/painel'
     | '/c/$token'
     | '/certificado-mei/$token'
+    | '/checkout/$token'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
+    | '/painel/importar-empresas'
     | '/painel/'
     | '/painel/gerador-links/historico'
   fileRoutesByTo: FileRoutesByTo
@@ -137,8 +158,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/c/$token'
     | '/certificado-mei/$token'
+    | '/checkout/$token'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
+    | '/painel/importar-empresas'
     | '/painel'
     | '/painel/gerador-links/historico'
   id:
@@ -150,8 +173,10 @@ export interface FileRouteTypes {
     | '/_authenticated/painel'
     | '/c/$token'
     | '/certificado-mei/$token'
+    | '/checkout/$token'
     | '/_authenticated/painel/filtrar-mei'
     | '/_authenticated/painel/gerador-links'
+    | '/_authenticated/painel/importar-empresas'
     | '/_authenticated/painel/'
     | '/_authenticated/painel/gerador-links/historico'
   fileRoutesById: FileRoutesById
@@ -159,7 +184,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  CheckoutRoute: typeof CheckoutRoute
+  CheckoutRoute: typeof CheckoutRouteWithChildren
   LoginRoute: typeof LoginRoute
   CTokenRoute: typeof CTokenRoute
   CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
@@ -195,6 +220,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checkout/$token': {
+      id: '/checkout/$token'
+      path: '/$token'
+      fullPath: '/checkout/$token'
+      preLoaderRoute: typeof CheckoutTokenRouteImport
+      parentRoute: typeof CheckoutRoute
+    }
     '/certificado-mei/$token': {
       id: '/certificado-mei/$token'
       path: '/certificado-mei/$token'
@@ -221,6 +253,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/painel/'
       preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/_authenticated/painel/importar-empresas': {
+      id: '/_authenticated/painel/importar-empresas'
+      path: '/importar-empresas'
+      fullPath: '/painel/importar-empresas'
+      preLoaderRoute: typeof AuthenticatedPainelImportarEmpresasRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/gerador-links': {
@@ -265,6 +304,7 @@ const AuthenticatedPainelGeradorLinksRouteWithChildren =
 interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelFiltrarMeiRoute: typeof AuthenticatedPainelFiltrarMeiRoute
   AuthenticatedPainelGeradorLinksRoute: typeof AuthenticatedPainelGeradorLinksRouteWithChildren
+  AuthenticatedPainelImportarEmpresasRoute: typeof AuthenticatedPainelImportarEmpresasRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
 
@@ -272,6 +312,8 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelFiltrarMeiRoute: AuthenticatedPainelFiltrarMeiRoute,
   AuthenticatedPainelGeradorLinksRoute:
     AuthenticatedPainelGeradorLinksRouteWithChildren,
+  AuthenticatedPainelImportarEmpresasRoute:
+    AuthenticatedPainelImportarEmpresasRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
 }
 
@@ -290,10 +332,22 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface CheckoutRouteChildren {
+  CheckoutTokenRoute: typeof CheckoutTokenRoute
+}
+
+const CheckoutRouteChildren: CheckoutRouteChildren = {
+  CheckoutTokenRoute: CheckoutTokenRoute,
+}
+
+const CheckoutRouteWithChildren = CheckoutRoute._addFileChildren(
+  CheckoutRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
-  CheckoutRoute: CheckoutRoute,
+  CheckoutRoute: CheckoutRouteWithChildren,
   LoginRoute: LoginRoute,
   CTokenRoute: CTokenRoute,
   CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,

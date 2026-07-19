@@ -816,7 +816,15 @@ export type Database = {
         Returns: {
           abertura: string
           cnpj: string
+          email: string
+          municipio: string
+          natureza_juridica: string
           nome: string
+          nome_fantasia: string
+          razao_social: string
+          situacao: string
+          telefone: string
+          uf: string
         }[]
       }
     }

@@ -1,23 +1,18 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { useDropzone } from 'react-dropzone';
-import Papa from 'papaparse';
-import { 
-  Upload, 
-  FileText, 
-  ArrowRight, 
-  CheckCircle2, 
-  Loader2, 
-  Download, 
+import { useState, useEffect } from 'react';
+import {
+  Link2,
+  CheckCircle2,
   AlertCircle,
   Clock,
-  ExternalLink,
-  Table as TableIcon
+  Download,
+  Loader2,
+  Building2,
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Papa from 'papaparse';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -25,519 +20,282 @@ export const Route = createFileRoute('/_authenticated/painel/gerador-links')({
   component: GeradorLinksPage,
 });
 
+const generateToken = () =>
+  Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+
 function GeradorLinksPage() {
-  const [step, setStep] = useState<'upload' | 'processing' | 'result' | 'error'>('upload');
-  const [file, setFile] = useState<File | null>(null);
-  const [previewData, setPreviewData] = useState<any[]>([]);
-  const [columns, setColumns] = useState<string[]>([]);
+  const [step, setStep] = useState<'idle' | 'processing' | 'result' | 'error'>('idle');
+  const [companiesCount, setCompaniesCount] = useState<number | null>(null);
   const [progress, setProgress] = useState(0);
-  const [processedCount, setProcessedCount] = useState(0);
-  const [totalToProcess, setTotalToProcess] = useState(0);
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [remainingTime, setRemainingTime] = useState<string>('');
-  const [generationId, setGenerationId] = useState<string | null>(null);
-  const [finalData, setFinalData] = useState<any[]>([]);
-  const [errorDetails, setErrorDetails] = useState<{ message: string; stack?: string; step?: string } | null>(null);
+  const [processed, setProcessed] = useState(0);
+  const [linksCreated, setLinksCreated] = useState(0);
+  const [remainingTime, setRemainingTime] = useState('');
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [finalRows, setFinalRows] = useState<any[]>([]);
+  const [errorDetails, setErrorDetails] = useState<{ step: string; message: string; stack?: string } | null>(null);
+  const [genId, setGenId] = useState<string | null>(null);
 
-
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const selectedFile = acceptedFiles[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      Papa.parse(selectedFile, {
-        header: true,
-        preview: 5,
-        skipEmptyLines: true,
-        complete: (results) => {
-          setPreviewData(results.data);
-          setColumns(results.meta.fields || []);
-        },
-      });
-    }
+  useEffect(() => {
+    (async () => {
+      const { count } = await supabase
+        .from('companies')
+        .select('id', { count: 'exact', head: true });
+      setCompaniesCount(count || 0);
+    })();
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'text/csv': ['.csv'] },
-    multiple: false,
-  });
-
-  const generateToken = () => {
-    return Array.from(crypto.getRandomValues(new Uint8Array(16)))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-  };
-
-  const processFile = async (e?: React.FormEvent) => {
-    // 1. Prevenir submit tradicional
-    if (e) {
-      e.preventDefault();
-      console.log('Formulário interceptado (preventDefault)');
-    }
-
-    if (!file) {
-      console.error('Nenhum arquivo selecionado');
-      return;
-    }
-
-    console.log('Upload iniciado:', file.name);
+  async function generate() {
     setErrorDetails(null);
-
     try {
-      console.log('🔍 Validando sessão administrativa...');
-      
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sessão expirada. Faça login novamente.');
 
-      console.log('--- Relatório de Autenticação ---');
-      console.log('Session:', session ? 'Ativa' : 'Nula');
-      console.log('User:', user ? `ID: ${user.id}` : 'Nulo');
-      console.log('--------------------------------');
-
-      if (!session || !user) {
-        const msg = 'Sessão expirada ou inválida. Faça login novamente.';
-        console.error('Acesso negado: Sessão não encontrada');
-        setErrorDetails({ message: msg, step: 'Validação de Sessão Administrativa' });
-        setStep('error');
-        toast.error(msg);
-        return;
+      // 1. Load all companies
+      const { data: companies, error: cErr } = await supabase
+        .from('companies')
+        .select('id, cnpj, nome_titular_exibicao, razao_social_original, nome_fantasia, email, inicio_atividade, uf, municipio_descricao');
+      if (cErr) throw new Error(`Ao carregar empresas: ${cErr.message}`);
+      if (!companies || companies.length === 0) {
+        throw new Error('Nenhuma empresa importada. Use a aba "Importar Empresas" primeiro.');
       }
 
       setStep('processing');
-      setStartTime(Date.now());
-      console.log('Processamento de links iniciado por:', user.email);
-      
-      // 1. Create generation record
-      console.log('Salvando registro de geração...');
-      const { data: gen, error: genError } = await supabase
+      setStartedAt(Date.now());
+      setProcessed(0);
+      setLinksCreated(0);
+
+      // 2. Create generation record
+      const { data: gen, error: gErr } = await supabase
         .from('link_generations')
         .insert({
-          arquivo: file.name,
-          total_empresas: totalToProcess,
-          total_links: 0
+          arquivo: `empresas_${new Date().toISOString().slice(0, 10)}`,
+          total_empresas: companies.length,
+          total_links: 0,
         })
         .select('id')
         .single();
+      if (gErr) throw new Error(`Ao criar registro de geração: ${gErr.message}`);
+      setGenId(gen.id);
 
-      if (genError) {
-        console.error('Erro detalhado ao criar geração:', genError);
-        setErrorDetails({ 
-          message: genError.message || 'Erro de permissão RLS', 
-          stack: JSON.stringify(genError, null, 2),
-          step: 'Salvando registro de geração'
+      const domain = typeof window !== 'undefined' ? window.location.origin : '';
+      const BATCH = 500;
+      const results: any[] = [];
+      let created = 0;
+
+      for (let i = 0; i < companies.length; i += BATCH) {
+        const chunk = companies.slice(i, i + BATCH);
+        const inserts = chunk.map((c: any) => {
+          const token = generateToken();
+          const public_url = `${domain}/c/${token}`;
+          const checkout_url = `${domain}/checkout/${token}`;
+          results.push({
+            CNPJ: c.cnpj,
+            NOME: c.nome_titular_exibicao || c.razao_social_original || '',
+            RAZAO_SOCIAL: c.razao_social_original || '',
+            NOME_FANTASIA: c.nome_fantasia || '',
+            EMAIL: c.email || '',
+            UF: c.uf || '',
+            MUNICIPIO: c.municipio_descricao || '',
+            INICIO_ATIVIDADE: c.inicio_atividade || '',
+            TOKEN: token,
+            LINK_PUBLICO: public_url,
+            LINK_CHECKOUT: checkout_url,
+            DATA_GERACAO: new Date().toISOString(),
+          });
+          return {
+            generation_id: gen.id,
+            company_id: c.id,
+            public_token: token,
+            public_url,
+            checkout_url,
+            company_data: {
+              cnpj: c.cnpj,
+              nome: c.nome_titular_exibicao || c.razao_social_original,
+              razao_social: c.razao_social_original,
+            },
+            active: true,
+            status: 'active',
+          };
         });
-        setStep('error');
-        return;
+
+        const { error: insErr } = await supabase.from('company_links').insert(inserts);
+        if (insErr) throw new Error(`Ao salvar links: ${insErr.message}`);
+
+        created += chunk.length;
+        setProcessed(created);
+        setLinksCreated(created);
+        setProgress(Math.round((created / companies.length) * 100));
+
+        if (startedAt) {
+          const elapsed = Date.now() - startedAt;
+          const perItem = elapsed / created;
+          const remaining = (companies.length - created) * perItem;
+          const seconds = Math.round(remaining / 1000);
+          setRemainingTime(seconds > 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`);
+        }
       }
 
-      setGenerationId(gen.id);
-      console.log('Registro de geração criado ID:', gen.id);
+      await supabase.from('link_generations').update({ total_links: created }).eq('id', gen.id);
+      setFinalRows(results);
+      setStep('result');
+      toast.success(`${created} links gerados`);
 
-      // 2. Process CSV in chunks
-      console.log('CSV carregado para processamento');
-      const domain = window.location.origin;
-      const allResults: any[] = [];
-      let processed = 0;
-
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        chunk: async (results, parser) => {
-          parser.pause();
-          const chunk = results.data as any[];
-          console.log(`Processando lote de ${chunk.length} empresas...`);
-          
-          // Prepare batch insert
-          console.log('Geração dos tokens...');
-          const inserts = chunk.map(row => {
-            const token = generateToken();
-            const public_url = `${domain}/certificado-mei/${token}`;
-            const checkout_url = `${domain}/checkout/${token}`;
-            
-            const resultRow = {
-              ...row,
-              TOKEN: token,
-              LINK_PUBLICO: public_url,
-              LINK_CHECKOUT: checkout_url,
-              DATA_GERACAO: new Date().toLocaleString('pt-BR'),
-            };
-            allResults.push(resultRow);
-
-            return {
-              generation_id: gen.id,
-              public_token: token,
-              public_url,
-              checkout_url,
-              company_data: row,
-              status: 'active'
-            };
-          });
-
-          console.log('Salvando registros no banco...');
-          const { error: insertError } = await supabase
-            .from('company_links')
-            .insert(inserts);
-
-          if (insertError) {
-            console.error('Insert error details:', insertError);
-            setErrorDetails({ 
-              message: insertError.message, 
-              stack: JSON.stringify(insertError, null, 2),
-              step: 'Salvando registros de links'
-            });
-            setStep('error');
-            parser.abort();
-            return;
-          }
-
-          processed += chunk.length;
-          setProcessedCount(processed);
-          
-          // Update progress
-          if (totalToProcess > 0) {
-            const p = Math.round((processed / totalToProcess) * 100);
-            setProgress(p);
-
-            // Calculate remaining time
-            if (startTime) {
-              const elapsed = Date.now() - startTime;
-              const perItem = elapsed / processed;
-              const remaining = (totalToProcess - processed) * perItem;
-              const seconds = Math.round(remaining / 1000);
-              setRemainingTime(seconds > 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`);
-            }
-          }
-
-          parser.resume();
-        },
-        complete: async () => {
-          console.log('Exportando CSV final...');
-          // Update generation totals
-          const { error: updateError } = await supabase
-            .from('link_generations')
-            .update({
-              total_empresas: processed,
-              total_links: processed
-            })
-            .eq('id', gen.id);
-
-          if (updateError) {
-            console.error('Error updating generation totals:', updateError);
-          }
-
-          setFinalData(allResults);
-          setStep('result');
-          console.log('Processamento concluído');
-          toast.success('Links gerados com sucesso!');
-        },
-        error: (err) => {
-          console.error('Erro no parser do CSV:', err);
-          setErrorDetails({ 
-            message: err.message, 
-            step: 'Leitura do CSV (Parser)'
-          });
-          setStep('error');
-        }
-      });
+      // Auto-download
+      setTimeout(() => downloadCSV(results), 300);
     } catch (err: any) {
-      console.error('Erro inesperado no fluxo:', err);
-      setErrorDetails({ 
-        message: err.message || 'Erro inesperado', 
-        stack: err.stack,
-        step: 'Fluxo Geral'
-      });
+      console.error('Generation error', err);
+      setErrorDetails({ step: 'Geração de Links', message: err.message, stack: err.stack });
       setStep('error');
     }
-  };
+  }
 
-
-  // Effect to get total count before processing if file changes
-  useEffect(() => {
-    if (file) {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          setTotalToProcess(results.data.length);
-        }
-      });
-    }
-  }, [file]);
-
-  const downloadCSV = () => {
-    console.log('Download iniciado');
-    const csv = Papa.unparse(finalData);
-    const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+  function downloadCSV(rows: any[] = finalRows) {
+    const csv = Papa.unparse(rows);
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `links_${file?.name || 'gerados'}`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    console.log('Download concluído');
-  };
-
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `links_gerados_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Gerador de Links</h1>
-          <p className="text-slate-500">Importe empresas e gere links exclusivos de acesso e checkout.</p>
+          <p className="text-slate-500">Gera um link exclusivo para cada empresa já importada.</p>
         </div>
         <Button variant="outline" asChild>
           <Link to="/painel/gerador-links/historico" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Ver Histórico
+            <Clock className="h-4 w-4" /> Histórico
           </Link>
         </Button>
       </div>
 
-      {step === 'upload' && (
-        <Card className="border-2 border-dashed border-slate-200 shadow-none">
-          <CardContent className="pt-10 pb-10">
-            {!file ? (
-              <div 
-                {...getRootProps()} 
-                className={`flex flex-col items-center justify-center p-12 cursor-pointer transition-colors rounded-xl ${isDragActive ? 'bg-blue-50 border-brand-blue' : 'hover:bg-slate-50'}`}
-              >
-                <input {...getInputProps()} />
-                <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                  <Upload className="h-8 w-8 text-brand-blue" />
+      {step === 'idle' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5" /> Empresas disponíveis</CardTitle>
+            <CardDescription>
+              {companiesCount === null
+                ? 'Carregando...'
+                : `${companiesCount.toLocaleString('pt-BR')} empresas prontas para geração de links.`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {companiesCount === 0 ? (
+              <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+                <div className="flex-1 text-sm text-amber-900">
+                  Nenhuma empresa importada ainda.{' '}
+                  <Link to="/painel/importar-empresas" className="font-semibold underline">
+                    Ir para Importar Empresas
+                  </Link>
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900">Arraste seu arquivo CSV</h3>
-                <p className="text-slate-500 text-center max-w-sm mt-2">
-                  O sistema identificará automaticamente colunas e separadores (vírgula ou ponto e vírgula).
-                </p>
-                <Button className="mt-6 bg-brand-navy hover:bg-brand-blue">Selecionar Arquivo</Button>
               </div>
             ) : (
-              <div className="space-y-6">
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                  <div className="h-12 w-12 bg-white rounded-lg flex items-center justify-center border border-slate-200">
-                    <FileText className="h-6 w-6 text-slate-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-slate-900">{file.name}</p>
-                    <p className="text-sm text-slate-500">
-                      {totalToProcess} empresas encontradas • {columns.length} colunas detectadas
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => { setFile(null); setPreviewData([]); }} className="text-slate-400 hover:text-red-500">
-                    Remover
-                  </Button>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <TableIcon className="h-4 w-4" />
-                    Pré-visualização
-                  </h4>
-                  <div className="overflow-x-auto rounded-lg border border-slate-200">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-slate-50 border-b border-slate-200">
-                        <tr>
-                          {columns.slice(0, 4).map(col => (
-                            <th key={col} className="px-4 py-2 font-semibold text-slate-700">{col}</th>
-                          ))}
-                          {columns.length > 4 && <th className="px-4 py-2 font-semibold text-slate-700">...</th>}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {previewData.map((row, i) => (
-                          <tr key={i} className="border-b border-slate-100 last:border-0">
-                            {columns.slice(0, 4).map(col => (
-                              <td key={col} className="px-4 py-2 text-slate-600 truncate max-w-[150px]">{row[col]}</td>
-                            ))}
-                            {columns.length > 4 && <td className="px-4 py-2 text-slate-400">...</td>}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button variant="outline" onClick={() => { setFile(null); setPreviewData([]); }}>Cancelar</Button>
-                  <Button onClick={(e) => processFile(e)} className="bg-brand-navy hover:bg-brand-blue px-8">
-                    Gerar Links Agora
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-
-                </div>
-              </div>
+              <Button
+                onClick={generate}
+                disabled={!companiesCount}
+                className="bg-brand-navy hover:bg-brand-blue"
+              >
+                <Link2 className="mr-2 h-4 w-4" /> Gerar Links
+              </Button>
             )}
           </CardContent>
         </Card>
       )}
 
       {step === 'processing' && (
-        <Card className="border-slate-200 shadow-lg">
-          <CardHeader className="text-center pb-2">
-            <CardTitle>Gerando Links Exclusivos</CardTitle>
-            <CardDescription>Processando {totalToProcess} registros em lote para máxima performance.</CardDescription>
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle>Gerando links exclusivos</CardTitle>
+            <CardDescription>Processando {companiesCount} empresas.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 py-8 text-center">
             <div className="flex justify-center">
-              <div className="relative h-24 w-24">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-brand-blue">{progress}%</span>
-                </div>
-                <svg className="h-24 w-24 -rotate-90">
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r="40"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    fill="transparent"
-                    className="text-slate-100"
-                  />
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r="40"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    fill="transparent"
-                    strokeDasharray={251.2}
-                    strokeDashoffset={251.2 - (251.2 * progress) / 100}
-                    className="text-brand-blue transition-all duration-300"
-                  />
-                </svg>
-              </div>
+              <Loader2 className="h-10 w-10 animate-spin text-brand-blue" />
             </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-slate-600 mb-1">
-                <span>Progresso</span>
-                <span>{processedCount} de {totalToProcess} empresas</span>
-              </div>
-              <Progress value={progress} className="h-3" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="text-3xl font-bold text-brand-blue">{progress}%</div>
+            <Progress value={progress} className="h-3" />
+            <div className="grid grid-cols-3 gap-4 pt-4">
+              <Stat label="Processadas" value={processed} />
+              <Stat label="Links Criados" value={linksCreated} />
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <p className="text-xs text-slate-500 uppercase font-bold">Links Criados</p>
-                <p className="text-xl font-bold text-slate-900">{processedCount}</p>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <p className="text-xs text-slate-500 uppercase font-bold">Tempo Restante</p>
-                <p className="text-xl font-bold text-slate-900">{remainingTime || 'Calculando...'}</p>
+                <p className="text-xs text-slate-500 uppercase font-bold">Tempo restante</p>
+                <p className="text-lg font-bold text-slate-900">{remainingTime || '—'}</p>
               </div>
             </div>
-            
-            <p className="text-sm text-slate-500 animate-pulse">
-              Não feche esta página enquanto o processamento estiver ativo.
-            </p>
           </CardContent>
         </Card>
       )}
 
       {step === 'result' && (
-        <Card className="border-slate-200 shadow-xl overflow-hidden">
+        <Card>
           <div className="bg-green-50 border-b border-green-100 p-8 text-center">
             <div className="inline-flex h-16 w-16 bg-green-100 rounded-full items-center justify-center mb-4">
               <CheckCircle2 className="h-8 w-8 text-green-600" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">Processamento Concluído!</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Links gerados com sucesso</h2>
             <p className="text-green-700 mt-1">
-              Todos os {totalToProcess} links foram gerados e salvos com sucesso.
+              {linksCreated.toLocaleString('pt-BR')} links criados. O CSV foi baixado automaticamente.
             </p>
           </div>
-          
-          <CardContent className="p-8 space-y-8">
-            <div className="grid grid-cols-3 gap-6">
-              <div className="text-center space-y-1">
-                <p className="text-sm text-slate-500">Total de Empresas</p>
-                <p className="text-2xl font-bold text-slate-900">{totalToProcess}</p>
-              </div>
-              <div className="text-center space-y-1">
-                <p className="text-sm text-slate-500">Links Gerados</p>
-                <p className="text-2xl font-bold text-slate-900">{processedCount}</p>
-              </div>
-              <div className="text-center space-y-1">
-                <p className="text-sm text-slate-500">Tempo Total</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {startTime ? `${Math.round((Date.now() - startTime) / 1000)}s` : '-'}
-                </p>
+          <CardContent className="p-8">
+            <div className="grid grid-cols-3 gap-4">
+              <Stat label="Empresas" value={processed} />
+              <Stat label="Links Criados" value={linksCreated} />
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
+                <p className="text-xs text-slate-500 uppercase font-bold">ID da Geração</p>
+                <p className="text-sm font-mono text-slate-900 truncate">{genId?.slice(0, 12)}...</p>
               </div>
             </div>
-
-            <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-slate-900">Arquivo de Links Gerado</h3>
-                  <p className="text-sm text-slate-500">Contém todas as colunas originais + TOKEN e LINKS.</p>
-                </div>
-                <Button onClick={downloadCSV} className="bg-green-600 hover:bg-green-700 px-6">
-                  <Download className="mr-2 h-4 w-4" />
-                  Baixar CSV Final
-                </Button>
-              </div>
-            </div>
-
-            <Alert className="bg-blue-50 border-blue-100 text-blue-800">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertTitle>Importante</AlertTitle>
-              <AlertDescription className="text-blue-700">
-                Os links já estão ativos. Você pode testar qualquer link clicando no botão abaixo para ver um exemplo de como o cliente visualizará a página.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-          <CardFooter className="bg-slate-50 border-t border-slate-200 p-6 flex justify-between">
-            <Button variant="ghost" onClick={() => setStep('upload')}>
-              Gerar Novos Links
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to="/painel/gerador-links/historico">
-                Ver Histórico de Gerações
-              </Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      )}
-      
-      {step === 'error' && (
-        <Card className="border-red-200 shadow-lg overflow-hidden">
-          <div className="bg-red-50 border-b border-red-100 p-8 text-center">
-            <div className="inline-flex h-16 w-16 bg-red-100 rounded-full items-center justify-center mb-4">
-              <AlertCircle className="h-8 w-8 text-red-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-900">Falha no Processamento</h2>
-            <p className="text-red-700 mt-1">
-              Ocorreu um erro na etapa: <span className="font-bold">{errorDetails?.step}</span>
-            </p>
-          </div>
-          
-          <CardContent className="p-8 space-y-6">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Mensagem de Erro</AlertTitle>
-              <AlertDescription>{errorDetails?.message}</AlertDescription>
-            </Alert>
-
-            {errorDetails?.stack && (
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-slate-700">Detalhes Técnicos (Stack):</p>
-                <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg text-xs overflow-auto max-h-48">
-                  {errorDetails.stack}
-                </pre>
-              </div>
-            )}
-
-            <div className="flex justify-center gap-4 pt-4">
-              <Button onClick={() => setStep('upload')} variant="outline">
-                Tentar Novamente
+            <div className="mt-6 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => downloadCSV()}>
+                <Download className="mr-2 h-4 w-4" /> Baixar CSV novamente
               </Button>
-              <Button onClick={(e) => processFile(e)} className="bg-brand-navy">
-                Repetir Etapa Atual
+              <Button className="bg-brand-navy hover:bg-brand-blue" onClick={() => setStep('idle')}>
+                Nova geração
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
+
+      {step === 'error' && errorDetails && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-6">
+            <div className="flex gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-bold text-red-900">Erro em: {errorDetails.step}</h3>
+                <p className="text-red-800 mt-1">{errorDetails.message}</p>
+                {errorDetails.stack && (
+                  <pre className="mt-3 text-xs bg-red-100 p-3 rounded overflow-auto text-red-900 max-h-40">{errorDetails.stack}</pre>
+                )}
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button variant="outline" onClick={() => setStep('idle')}>Voltar</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
+      <p className="text-xs text-slate-500 uppercase font-bold">{label}</p>
+      <p className="text-2xl font-bold text-slate-900">{value.toLocaleString('pt-BR')}</p>
     </div>
   );
 }
