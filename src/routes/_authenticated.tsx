@@ -49,8 +49,12 @@ function AuthenticatedLayout() {
       });
 
       if (error) {
-        console.error('Erro de login:', error);
-        toast.error('Credenciais inválidas ou erro de conexão');
+        console.error('Erro de login detalhado:', {
+          code: error.code,
+          message: error.message,
+          status: error.status
+        });
+        toast.error(`Credenciais inválidas ou erro de conexão: ${error.message} (${error.code || 'sem código'})`);
       } else if (data.session) {
         setIsAuthorized(true);
         toast.success('Acesso autorizado');
