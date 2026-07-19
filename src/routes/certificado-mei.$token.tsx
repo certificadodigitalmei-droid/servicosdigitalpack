@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { resolveCompanyLink } from '@/lib/company-links.functions';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -15,27 +15,20 @@ function TokenResolutionPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const resolveToken = async () => {
+    const resolve = async () => {
       try {
-        const { data, error: rpcError } = await supabase.rpc('resolve_company_link', {
-          p_token: token
-        });
+        const data = await resolveCompanyLink({ data: { token } });
 
-        if (rpcError) throw rpcError;
-
-        if (data && data.length > 0) {
-          const companyData = data[0].company_data as any;
-          
-          // Build search params from company data
-          const params = new URLSearchParams();
-          if (companyData.cnpj || companyData.CNPJ) params.set('cnpj', companyData.cnpj || companyData.CNPJ);
-          if (companyData.razao_social || companyData['Razao Social']) params.set('nome', companyData.razao_social || companyData['Razao Social']);
-          if (companyData.data_abertura || companyData['Data de Abertura']) params.set('abertura', companyData.data_abertura || companyData['Data de Abertura']);
-          
+        if (data) {
           // Add the token to pass it to the home page so it can wire up the checkout button
-          params.set('token', token);
+          const search: Record<string, string> = {
+            cnpj: data.cnpj,
+            nome: data.nome,
+            abertura: data.abertura,
+            token: token
+          };
 
-          navigate({ to: '/', search: Object.fromEntries(params.entries()), replace: true });
+          navigate({ to: '/', search, replace: true });
         } else {
           setError('Link inválido ou indisponível.');
         }
@@ -45,7 +38,7 @@ function TokenResolutionPage() {
       }
     };
 
-    resolveToken();
+    resolve();
   }, [token, navigate]);
 
   if (error) {
