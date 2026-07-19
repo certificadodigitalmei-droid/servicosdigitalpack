@@ -21,8 +21,33 @@ function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const navigate = useNavigate();
   const search = useSearch({ from: '/login' });
+
+  const handleSeed = async () => {
+    setSeeding(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: 'coringa@gmail.com',
+        password: 'SenhaMuitoForte117711!',
+      });
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast.info('Usuário já existe, pode logar.');
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success('Usuário de demonstração criado com sucesso!');
+      }
+    } catch (error: any) {
+      toast.error('Erro ao criar usuário: ' + error.message);
+    } finally {
+      setSeeding(false);
+    }
+  };
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,9 +114,23 @@ function Login() {
             </Button>
           </CardFooter>
         </form>
-        {/* Ajuda removida conforme solicitado */}
+        <div className="px-6 pb-6 space-y-2 text-center">
+          <p className="text-xs font-semibold text-brand-navy">
+            Login: coringa@gmail.com | Senha: SenhaMuitoForte117711!
+          </p>
+          <Button 
+            variant="link" 
+            onClick={handleSeed} 
+            disabled={seeding}
+            className="text-xs text-muted-foreground underline"
+          >
+            {seeding ? 'Preparando...' : 'Primeiro acesso? Clique aqui para ativar o usuário de demonstração'}
+          </Button>
+        </div>
       </Card>
     </div>
+
+
 
   );
 }
