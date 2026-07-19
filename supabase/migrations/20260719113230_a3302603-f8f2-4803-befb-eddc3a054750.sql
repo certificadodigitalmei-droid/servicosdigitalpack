@@ -1,0 +1,1 @@
+ALTER POLICY "user_roles_read_admin" ON public.user_roles RENAME TO "Users can read their own role";
