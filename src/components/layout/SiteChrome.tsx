@@ -10,59 +10,50 @@ interface HeaderProps {
 }
 
 export function SiteHeader({ userName, userDoc }: HeaderProps) {
-  const displayName = userName?.trim() || "Visitante";
+  const displayName = userName?.trim().toUpperCase() || "Visitante";
   const displayDoc = userDoc ? formatCPFOrCNPJ(userDoc) : "—";
 
   return (
     <header className="w-full">
-      {/* Top white bar with brand + user */}
+      {/* 1. Top white bar with gov.br brand + user session info */}
       <div className="border-b border-border bg-background">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-4 py-2.5">
-          <Link to="/" className="flex min-w-0 items-center gap-3">
+        <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-4 py-1.5">
+          <Link to="/" className="flex shrink-0 items-center">
             <img 
               src={logoAsset.url} 
-              alt="Logo Central MEI" 
-              className="h-8 w-auto object-contain"
+              alt="gov.br" 
+              className="h-10 w-auto object-contain"
             />
-            <div className="hidden h-8 w-px bg-border sm:block" />
-            <div className="min-w-0 leading-tight">
-              <div className="truncate text-[13px] font-bold text-brand-navy">
-                Central MEI Digital
-              </div>
-              <div className="hidden truncate text-[11px] text-muted-foreground sm:block">
-                Central privada de serviços empresariais
-              </div>
-            </div>
           </Link>
 
-          <div className="flex min-w-0 shrink-0 items-center gap-2 text-right">
-            <div className="hidden min-w-0 sm:block">
-              <div className="truncate text-[12px] font-semibold text-foreground">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="hidden text-right sm:block">
+              <div className="truncate text-[10.5px] font-bold text-foreground">
                 {displayName}
               </div>
-              <div className="truncate text-[11px] text-muted-foreground">{displayDoc}</div>
+              <div className="truncate text-[9px] text-muted-foreground">{displayDoc}</div>
             </div>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-blue-soft text-brand-blue">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-blue-soft text-brand-blue">
               <User className="h-4 w-4" />
             </div>
-            <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
+            <ChevronDown className="h-3 w-3 text-muted-foreground" />
           </div>
         </div>
       </div>
 
-      {/* Dark navy bar */}
-      <div className="bg-brand-navy text-primary-foreground">
-        <div className="mx-auto flex max-w-[1280px] items-center gap-3 px-4 py-3">
-          <Menu className="h-5 w-5" />
-          <span className="text-sm font-medium">Área do Microempreendedor</span>
+      {/* 2. Dark navy bar: Portal do Empreendedor */}
+      <div className="bg-[#002a4d] text-primary-foreground shadow-sm">
+        <div className="mx-auto flex max-w-[1280px] items-center gap-3 px-4 py-2.5">
+          <Menu className="h-5 w-5 cursor-pointer" />
+          <span className="text-[15px] font-bold tracking-tight">Portal do Empreendedor</span>
         </div>
       </div>
 
-      {/* Blue bar */}
-      <div className="bg-brand-blue text-primary-foreground">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-2.5">
-          <span className="text-[13px]">Ambiente de Serviços Empresariais</span>
-          <User className="h-4 w-4" />
+      {/* 3. Bright blue bar: Context title */}
+      <div className="bg-[#004884] text-primary-foreground">
+        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-2">
+          <span className="text-[12.5px] font-medium opacity-95">Ambiente do Microempreendedor Individual</span>
+          <User className="h-4 w-4 opacity-80" />
         </div>
       </div>
     </header>
@@ -71,18 +62,20 @@ export function SiteHeader({ userName, userDoc }: HeaderProps) {
 
 export function Breadcrumb({ items }: { items: { label: string; to?: string }[] }) {
   return (
-    <div className="border-b border-border bg-background">
-      <div className="mx-auto flex max-w-[1280px] items-center gap-1.5 px-4 py-2.5 text-[13px] text-muted-foreground">
-        <Home className="h-3.5 w-3.5" />
+    <div className="bg-[#f8f9fa] border-b border-border/50">
+      <div className="mx-auto flex max-w-[1280px] items-center gap-1 px-4 py-2 text-[11px] text-[#005690]">
+        <Link to="/" className="hover:underline">
+          <Home className="h-3 w-3" />
+        </Link>
         {items.map((it, i) => (
-          <span key={i} className="flex items-center gap-1.5">
-            <ChevronRight className="h-3 w-3" />
+          <span key={i} className="flex items-center gap-1">
+            <ChevronRight className="h-2.5 w-2.5 text-muted-foreground/60" />
             {it.to ? (
-              <Link to={it.to} className="text-brand-blue hover:underline">
+              <Link to={it.to} className="hover:underline">
                 {it.label}
               </Link>
             ) : (
-              <span>{it.label}</span>
+              <span className="text-muted-foreground">{it.label}</span>
             )}
           </span>
         ))}
