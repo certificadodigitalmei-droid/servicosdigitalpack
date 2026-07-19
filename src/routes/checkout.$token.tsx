@@ -13,6 +13,7 @@ import { Check, QrCode, CreditCard, Barcode, Copy, ArrowLeft, Clock } from 'luci
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { formatCPFOrCNPJ, maskCPFCNPJ, maskPhone, isValidEmail } from '@/lib/format';
 import { supabase } from '@/integrations/supabase/client';
+import { trackEvent } from '@/lib/track';
 import type { ResolvedCompany } from '@/lib/company-links.functions';
 
 export const Route = createFileRoute('/checkout/$token')({
@@ -72,6 +73,11 @@ function CheckoutTokenPage() {
   const [pixOpen, setPixOpen] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
 
+  useEffect(() => {
+    trackEvent(token, 'view_checkout');
+  }, [token]);
+
+
   function validate() {
     const e: Record<string, string> = {};
     if (!form.nome.trim()) e.nome = 'Informe o nome do titular';
@@ -86,6 +92,7 @@ function CheckoutTokenPage() {
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     if (!validate()) return;
+    trackEvent(token, 'click_guia');
     setSubmitting(true);
     try {
       const { data: customer } = await supabase
