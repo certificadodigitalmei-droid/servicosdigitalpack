@@ -51,7 +51,7 @@ function DashboardIndex() {
   });
 
   const searchMutation = useMutation({
-    mutationFn: (cnpj: string) => simpleSearch({ cnpj }),
+    mutationFn: (cnpj: string) => simpleSearch({ data: { cnpj } }),
     onSuccess: (data: any) => {
       if (data.error) {
         toast.error(data.error);
@@ -71,7 +71,7 @@ function DashboardIndex() {
       if (!confirm("Esta consulta consome crédito de lead da AquiCNPJ. Deseja continuar?")) {
         throw new Error("Cancelado pelo usuário");
       }
-      return completeSearch({ cnpj });
+      return completeSearch({ data: { cnpj } });
     },
     onSuccess: (data: any) => {
       if (data.error) {
