@@ -268,9 +268,50 @@ function ImportarEmpresasPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Importar Empresas</h1>
-        <p className="text-slate-500">Carregue um CSV UTF-8 com as empresas. O CNPJ é a chave — registros existentes serão atualizados.</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Importar Empresas</h1>
+          <p className="text-slate-500">Carregue um CSV UTF-8 com as empresas. O CNPJ é a chave — registros existentes serão atualizados.</p>
+        </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
+              <Trash2 className="mr-2 h-4 w-4" /> Apagar todas as empresas
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Apagar todas as empresas importadas?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação remove permanentemente todas as empresas do banco, junto com todos os links e gerações associados. Não pode ser desfeito.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  try {
+                    toast.info('Apagando empresas...');
+                    const emptyUuid = '00000000-0000-0000-0000-000000000000';
+                    const { error: e1 } = await supabase.from('company_links').delete().neq('id', emptyUuid);
+                    if (e1) throw e1;
+                    const { error: e2 } = await supabase.from('link_generations').delete().neq('id', emptyUuid);
+                    if (e2) throw e2;
+                    const { error: e3 } = await supabase.from('companies').delete().neq('id', emptyUuid);
+                    if (e3) throw e3;
+                    toast.success('Todas as empresas foram apagadas');
+                  } catch (err: any) {
+                    toast.error(`Erro ao apagar: ${err.message}`);
+                    console.error(err);
+                  }
+                }}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Apagar tudo
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {step === 'upload' && (
