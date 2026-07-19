@@ -91,8 +91,8 @@ function CheckoutTokenPage() {
 
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
-    if (!validate()) return;
     trackEvent(token, 'click_guia');
+    if (!validate()) return;
     setSubmitting(true);
     try {
       const { data: customer } = await supabase
