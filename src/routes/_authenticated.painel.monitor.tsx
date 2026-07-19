@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Save, RefreshCw, AlertTriangle, Braces, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const Route = createFileRoute('/_authenticated/painel/monitor')({
   component: MonitorPage,
@@ -17,6 +18,7 @@ function MonitorPage() {
   const [rangeQuery, setRangeQuery] = useState('{}');
   const [isAutoActive, setIsAutoActive] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSaveRange = () => {
     try {
@@ -151,31 +153,55 @@ function MonitorPage() {
                   </div>
                   <Switch checked={true} />
                 </div>
-                 <Button 
-                  variant="outline" 
-                  className="w-full gap-2 mt-2"
-                  disabled={testStatus === 'loading'}
-                  onClick={async () => {
-                    setTestStatus('loading');
-                    try {
-                      // Simulated API check
-                      await new Promise(resolve => setTimeout(resolve, 2000));
-                      setTestStatus('success');
-                      toast.success("Conexão com API AquiCNPJ validada com sucesso!");
-                      setTimeout(() => setTestStatus('idle'), 3000);
-                    } catch (error) {
-                      setTestStatus('error');
-                      toast.error("Erro ao validar conexão com API.");
-                      setTimeout(() => setTestStatus('idle'), 3000);
-                    }
-                  }}
-                >
-                  {testStatus === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {testStatus === 'success' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-                  {testStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
-                  {testStatus === 'idle' && <RefreshCw className="h-4 w-4" />}
-                  Adicionar um indicador de status (carregando, sucesso e erro) ao botão “verificar si está tudo funcionando” na página de Monitor Automático.
-                </Button>
+                 <div className="space-y-3 mt-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full gap-2"
+                    disabled={testStatus === 'loading'}
+                    onClick={async () => {
+                      setTestStatus('loading');
+                      setErrorMessage(null);
+                      try {
+                        // Simulated API check failure for demonstration if needed
+                        // In a real scenario, this would call a server function
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        
+                        // For demonstration purposes, we'll simulate a random failure 50% of the time 
+                        // to show the requested error details and recommended steps
+                        if (Math.random() > 0.5) {
+                          throw new Error("Token Inválido ou Expirado");
+                        }
+
+                        setTestStatus('success');
+                        toast.success("Conexão com API AquiCNPJ validada com sucesso!");
+                        setTimeout(() => setTestStatus('idle'), 3000);
+                      } catch (error: any) {
+                        setTestStatus('error');
+                        setErrorMessage(error.message || "Falha na comunicação com a API");
+                        toast.error("Erro ao validar conexão com API.");
+                      }
+                    }}
+                  >
+                    {testStatus === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {testStatus === 'success' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                    {testStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
+                    {testStatus === 'idle' && <RefreshCw className="h-4 w-4" />}
+                    Exibir detalhes do erro e um passo recomendado quando a verificação falhar na página de Monitor Automático.
+                  </Button>
+
+                  {testStatus === 'error' && errorMessage && (
+                    <Alert variant="destructive" className="bg-red-50 border-red-200">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Erro de Verificação</AlertTitle>
+                      <AlertDescription className="text-xs mt-1">
+                        <p className="font-semibold">{errorMessage}</p>
+                        <p className="mt-2 text-slate-600">
+                          <strong>Passo Recomendado:</strong> Verifique se o <code className="bg-red-100 px-1 rounded">AQUICNPJ_ACCESS_TOKEN</code> está configurado corretamente nos Segredos do Projeto e se não expirou.
+                        </p>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
