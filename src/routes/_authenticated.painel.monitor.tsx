@@ -150,9 +150,13 @@ function MonitorPage() {
                   </div>
                   <Switch checked={true} />
                 </div>
-                <Button variant="outline" className="w-full gap-2 mt-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2 mt-2"
+                  onClick={() => toast.info("Funcionalidade de teste de consulta filtrada sendo implementada...")}
+                >
                   <RefreshCw className="h-4 w-4" />
-                  Testar Consulta Filtrada Agora
+                  implementar busca simples
                 </Button>
               </div>
             </div>
