@@ -517,6 +517,53 @@ export type Database = {
         }
         Relationships: []
       }
+      link_events: {
+        Row: {
+          browser: string | null
+          company_link_id: string | null
+          created_at: string
+          device: string | null
+          event_type: string
+          id: string
+          os: string | null
+          token: string
+          user_agent: string | null
+          visitor_id: string
+        }
+        Insert: {
+          browser?: string | null
+          company_link_id?: string | null
+          created_at?: string
+          device?: string | null
+          event_type: string
+          id?: string
+          os?: string | null
+          token: string
+          user_agent?: string | null
+          visitor_id: string
+        }
+        Update: {
+          browser?: string | null
+          company_link_id?: string | null
+          created_at?: string
+          device?: string | null
+          event_type?: string
+          id?: string
+          os?: string | null
+          token?: string
+          user_agent?: string | null
+          visitor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_events_company_link_id_fkey"
+            columns: ["company_link_id"]
+            isOneToOne: false
+            referencedRelation: "company_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       link_generations: {
         Row: {
           arquivo: string
