@@ -39,6 +39,7 @@ function PanelLayout() {
 
   const menuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, to: '/painel' },
+    { title: 'Filtrar Empresas MEI', icon: Filter, to: '/painel/filtrar-mei' },
   ];
 
   return (
