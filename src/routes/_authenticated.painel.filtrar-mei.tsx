@@ -159,108 +159,107 @@ function FilterMeiPage() {
     setProgress(0);
     const startTime = Date.now();
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      chunk: (results: Papa.ParseResult<any>, parser) => {
-        // In a real browser implementation, chunks help with memory
-        // But for < 20MB we can usually handle it. 
-        // We'll simulate progress for UX
-      },
-      complete: (results: Papa.ParseResult<any>) => {
-        const raw = results.data;
-        const total = raw.length;
-        
-        const kept: any[] = [];
-        const removed: any[] = [];
-        const unknown: any[] = [];
-        const invalid: any[] = [];
-        
-        let removedNonMei = 0;
-        let removedInactive = 0;
-        let removedNoEmail = 0;
-
-        raw.forEach((row, index) => {
-          const val = row[meiColumn];
+    // Use a small timeout to let the UI update to "Processing"
+    setTimeout(() => {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        encoding: "UTF-8",
+        complete: (results: Papa.ParseResult<any>) => {
+          const raw = results.data;
+          const total = raw.length;
           
-          if (!row || Object.keys(row).length < 2) {
-            invalid.push(row);
-            return;
-          }
+          const kept: any[] = [];
+          const removed: any[] = [];
+          const unknown: any[] = [];
+          const invalid: any[] = [];
+          
+          let removedNonMei = 0;
+          let removedInactive = 0;
+          let removedNoEmail = 0;
 
-          const isMei = isMeiValue(val);
-          const isNotMei = isNotMeiValue(val);
+          raw.forEach((row) => {
+            if (!row || Object.keys(row).length < 2) {
+              invalid.push(row);
+              return;
+            }
 
-          if (!isMei && !isNotMei) {
-            unknown.push(row);
-            // Default behavior: exclude unknowns
-            return;
-          }
+            const val = row[meiColumn];
+            const isMei = isMeiValue(val);
+            const isNotMei = isNotMeiValue(val);
 
-          if (!isMei) {
-            removedNonMei++;
-            removed.push({ ...row, motivo_remocao: 'NAO_MEI' });
-            return;
-          }
+            if (!isMei && !isNotMei) {
+              unknown.push(row);
+              return;
+            }
 
-          // Additional filters
-          if (filterActive) {
-            const sitCol = headers.find(h => {
-              const n = normalizeString(h);
-              return n.includes('situacaocadastral') || n.includes('status') || n.includes('situacao');
-            });
-            if (sitCol) {
-              const sitVal = String(row[sitCol] || '').toUpperCase();
-              if (sitVal !== '02' && !sitVal.includes('ATIVA')) {
-                removedInactive++;
-                removed.push({ ...row, motivo_remocao: 'SITUACAO_INATIVA' });
-                return;
+            if (!isMei) {
+              removedNonMei++;
+              removed.push({ ...row, motivo_remocao: 'NAO_MEI' });
+              return;
+            }
+
+            // Additional filters
+            if (filterActive) {
+              const sitCol = headers.find(h => {
+                const n = normalizeString(h);
+                return n.includes('situacaocadastral') || n.includes('status') || n.includes('situacao');
+              });
+              if (sitCol) {
+                const sitVal = String(row[sitCol] || '').toUpperCase();
+                // 02 = Ativa in RFB standards
+                if (sitVal !== '02' && !sitVal.includes('ATIVA')) {
+                  removedInactive++;
+                  removed.push({ ...row, motivo_remocao: 'SITUACAO_INATIVA' });
+                  return;
+                }
               }
             }
-          }
 
-          if (filterEmail) {
-            const emailCol = headers.find(h => {
-              const n = normalizeString(h);
-              return n.includes('email') || n.includes('eletronico');
-            });
-            if (emailCol) {
-              const emailVal = String(row[emailCol] || '').trim();
-              if (!emailVal || !emailVal.includes('@')) {
-                removedNoEmail++;
-                removed.push({ ...row, motivo_remocao: 'SEM_EMAIL' });
-                return;
+            if (filterEmail) {
+              const emailCol = headers.find(h => {
+                const n = normalizeString(h);
+                return n.includes('email') || n.includes('eletronico');
+              });
+              if (emailCol) {
+                const emailVal = String(row[emailCol] || '').trim();
+                // Basic email validation: must have @ and something after it
+                if (!emailVal || !emailVal.includes('@') || emailVal.split('@')[1].length < 3) {
+                  removedNoEmail++;
+                  removed.push({ ...row, motivo_remocao: 'SEM_EMAIL' });
+                  return;
+                }
               }
             }
-          }
 
-          kept.push(row);
-        });
+            kept.push(row);
+          });
 
-        setResults({
-          kept,
-          removed,
-          unknown,
-          invalid,
-          summary: {
-            total,
-            kept: kept.length,
-            removedNonMei,
-            removedInactive,
-            removedNoEmail,
-            unknown: unknown.length,
-            invalid: invalid.length,
-            startTime,
-            endTime: Date.now()
-          }
-        });
+          setResults({
+            kept,
+            removed,
+            unknown,
+            invalid,
+            summary: {
+              total,
+              kept: kept.length,
+              removedNonMei,
+              removedInactive,
+              removedNoEmail,
+              unknown: unknown.length,
+              invalid: invalid.length,
+              startTime,
+              endTime: Date.now()
+            }
+          });
 
-        setProcessStatus('completed');
-        setProgress(100);
-        setStep(5);
-        toast.success('Processamento concluído!');
-      }
-    });
+          setProcessStatus('completed');
+          setProgress(100);
+          setStep(5);
+          toast.success('Processamento concluído!');
+        }
+      });
+    }, 500);
   };
 
   const downloadFile = (data: any[], filename: string) => {
