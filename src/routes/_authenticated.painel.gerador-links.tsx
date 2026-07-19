@@ -68,131 +68,183 @@ function GeradorLinksPage() {
       .join('');
   };
 
-  const processFile = async () => {
-    if (!file) return;
+  const processFile = async (e?: React.FormEvent) => {
+    // 1. Prevenir submit tradicional
+    if (e) {
+      e.preventDefault();
+      console.log('Formulário interceptado (preventDefault)');
+    }
 
-    // Security check before starting
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (sessionError || userError || !session || !user) {
-      console.error('Session/User validation failed:', { sessionError, userError, session, user });
-      toast.error('Sessão expirada. Faça login novamente.');
-      localStorage.removeItem('admin_auth_code');
-      window.location.href = '/';
+    if (!file) {
+      console.error('Nenhum arquivo selecionado');
       return;
     }
 
-    setStep('processing');
-    setStartTime(Date.now());
-    
-    // 1. Create generation record
-    const { data: gen, error: genError } = await supabase
-      .from('link_generations')
-      .insert({
-        arquivo: file.name,
-        total_empresas: totalToProcess,
-        total_links: 0
-      })
-      .select('id')
-      .single();
+    console.log('Upload iniciado:', file.name);
+    setErrorDetails(null);
 
-    if (genError) {
-      console.error('Erro detalhado ao criar geração:', genError);
-      toast.error(`Erro ao criar registro: ${genError.message || 'Erro de permissão RLS'}`);
-      setStep('upload');
-      return;
-    }
+    try {
+      // Security check before starting
+      console.log('Validando sessão do usuário...');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    setGenerationId(gen.id);
-
-    // 2. Process CSV in chunks
-    const domain = window.location.origin;
-    const allResults: any[] = [];
-    let processed = 0;
-
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      chunk: async (results, parser) => {
-        parser.pause();
-        const chunk = results.data as any[];
-        
-        // Prepare batch insert
-        const inserts = chunk.map(row => {
-          const token = generateToken();
-          const public_url = `${domain}/certificado-mei/${token}`;
-          const checkout_url = `${domain}/checkout/${token}`;
-          
-          const resultRow = {
-            ...row,
-            TOKEN: token,
-            LINK_PUBLICO: public_url,
-            LINK_CHECKOUT: checkout_url,
-            DATA_GERACAO: new Date().toLocaleString('pt-BR'),
-          };
-          allResults.push(resultRow);
-
-          return {
-            generation_id: gen.id,
-            public_token: token,
-            public_url,
-            checkout_url,
-            company_data: row,
-            status: 'active'
-          };
-        });
-
-        const { error: insertError } = await supabase
-          .from('company_links')
-          .insert(inserts);
-
-        if (insertError) {
-          console.error('Insert error details:', insertError);
-          toast.error(`Erro ao salvar links: ${insertError.message}`);
-          // We continue but log the error
-        }
-
-        processed += chunk.length;
-        setProcessedCount(processed);
-        
-        // Update progress
-        if (totalToProcess > 0) {
-          const p = Math.round((processed / totalToProcess) * 100);
-          setProgress(p);
-
-          // Calculate remaining time
-          if (startTime) {
-            const elapsed = Date.now() - startTime;
-            const perItem = elapsed / processed;
-            const remaining = (totalToProcess - processed) * perItem;
-            const seconds = Math.round(remaining / 1000);
-            setRemainingTime(seconds > 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`);
-          }
-        }
-
-        parser.resume();
-      },
-      complete: async () => {
-        // Update generation totals
-        const { error: updateError } = await supabase
-          .from('link_generations')
-          .update({
-            total_empresas: processed,
-            total_links: processed
-          })
-          .eq('id', gen.id);
-
-        if (updateError) {
-          console.error('Error updating generation totals:', updateError);
-        }
-
-        setFinalData(allResults);
-        setStep('result');
-        toast.success('Links gerados com sucesso!');
+      if (sessionError || userError || !session || !user) {
+        const msg = 'Sessão expirada. Faça login novamente.';
+        console.error('Session/User validation failed:', { sessionError, userError, session, user });
+        setErrorDetails({ message: msg, step: 'Validação de Sessão' });
+        setStep('error');
+        toast.error(msg);
+        return;
       }
-    });
+
+      setStep('processing');
+      setStartTime(Date.now());
+      console.log('Processamento iniciado');
+      
+      // 1. Create generation record
+      console.log('Salvando registro de geração...');
+      const { data: gen, error: genError } = await supabase
+        .from('link_generations')
+        .insert({
+          arquivo: file.name,
+          total_empresas: totalToProcess,
+          total_links: 0
+        })
+        .select('id')
+        .single();
+
+      if (genError) {
+        console.error('Erro detalhado ao criar geração:', genError);
+        setErrorDetails({ 
+          message: genError.message || 'Erro de permissão RLS', 
+          stack: JSON.stringify(genError, null, 2),
+          step: 'Salvando registro de geração'
+        });
+        setStep('error');
+        return;
+      }
+
+      setGenerationId(gen.id);
+      console.log('Registro de geração criado ID:', gen.id);
+
+      // 2. Process CSV in chunks
+      console.log('CSV carregado para processamento');
+      const domain = window.location.origin;
+      const allResults: any[] = [];
+      let processed = 0;
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        chunk: async (results, parser) => {
+          parser.pause();
+          const chunk = results.data as any[];
+          console.log(`Processando lote de ${chunk.length} empresas...`);
+          
+          // Prepare batch insert
+          console.log('Geração dos tokens...');
+          const inserts = chunk.map(row => {
+            const token = generateToken();
+            const public_url = `${domain}/certificado-mei/${token}`;
+            const checkout_url = `${domain}/checkout/${token}`;
+            
+            const resultRow = {
+              ...row,
+              TOKEN: token,
+              LINK_PUBLICO: public_url,
+              LINK_CHECKOUT: checkout_url,
+              DATA_GERACAO: new Date().toLocaleString('pt-BR'),
+            };
+            allResults.push(resultRow);
+
+            return {
+              generation_id: gen.id,
+              public_token: token,
+              public_url,
+              checkout_url,
+              company_data: row,
+              status: 'active'
+            };
+          });
+
+          console.log('Salvando registros no banco...');
+          const { error: insertError } = await supabase
+            .from('company_links')
+            .insert(inserts);
+
+          if (insertError) {
+            console.error('Insert error details:', insertError);
+            setErrorDetails({ 
+              message: insertError.message, 
+              stack: JSON.stringify(insertError, null, 2),
+              step: 'Salvando registros de links'
+            });
+            setStep('error');
+            parser.abort();
+            return;
+          }
+
+          processed += chunk.length;
+          setProcessedCount(processed);
+          
+          // Update progress
+          if (totalToProcess > 0) {
+            const p = Math.round((processed / totalToProcess) * 100);
+            setProgress(p);
+
+            // Calculate remaining time
+            if (startTime) {
+              const elapsed = Date.now() - startTime;
+              const perItem = elapsed / processed;
+              const remaining = (totalToProcess - processed) * perItem;
+              const seconds = Math.round(remaining / 1000);
+              setRemainingTime(seconds > 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`);
+            }
+          }
+
+          parser.resume();
+        },
+        complete: async () => {
+          console.log('Exportando CSV final...');
+          // Update generation totals
+          const { error: updateError } = await supabase
+            .from('link_generations')
+            .update({
+              total_empresas: processed,
+              total_links: processed
+            })
+            .eq('id', gen.id);
+
+          if (updateError) {
+            console.error('Error updating generation totals:', updateError);
+          }
+
+          setFinalData(allResults);
+          setStep('result');
+          console.log('Processamento concluído');
+          toast.success('Links gerados com sucesso!');
+        },
+        error: (err) => {
+          console.error('Erro no parser do CSV:', err);
+          setErrorDetails({ 
+            message: err.message, 
+            step: 'Leitura do CSV (Parser)'
+          });
+          setStep('error');
+        }
+      });
+    } catch (err: any) {
+      console.error('Erro inesperado no fluxo:', err);
+      setErrorDetails({ 
+        message: err.message || 'Erro inesperado', 
+        stack: err.stack,
+        step: 'Fluxo Geral'
+      });
+      setStep('error');
+    }
   };
+
 
   // Effect to get total count before processing if file changes
   useEffect(() => {
