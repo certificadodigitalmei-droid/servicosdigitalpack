@@ -5,6 +5,7 @@ import {
   Building2, 
   ChevronRight,
   Filter,
+  Link2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -40,7 +41,16 @@ function PanelLayout() {
   const menuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, to: '/painel' },
     { title: 'Filtrar Empresas MEI', icon: Filter, to: '/painel/filtrar-mei' },
+    { title: 'Gerador de Links', icon: Link2, to: '/painel/gerador-links' },
   ];
+
+  const getBreadcrumbLabel = (path: string) => {
+    if (path === '/painel') return 'Dashboard';
+    if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
+    if (path === '/painel/gerador-links') return 'Gerador de Links';
+    if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
+    return 'Painel';
+  };
 
   return (
     <SidebarProvider>
@@ -61,7 +71,7 @@ function PanelLayout() {
                 <SidebarMenu>
                   {menuItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
+                      <SidebarMenuButton asChild isActive={location.pathname === item.to}>
                         <Link to={item.to} className="flex items-center gap-3">
                           <item.icon className="h-4 w-4" />
                           <span>{item.title}</span>
@@ -93,8 +103,8 @@ function PanelLayout() {
               <nav className="flex items-center text-sm text-slate-500">
                 <span>Painel</span>
                 <ChevronRight className="mx-2 h-4 w-4" />
-                <span className="font-medium text-slate-900 capitalize">
-                  {location.pathname === '/painel' ? 'Dashboard' : 'Filtrar Empresas MEI'}
+                <span className="font-medium text-slate-900">
+                  {getBreadcrumbLabel(location.pathname)}
                 </span>
               </nav>
             </div>
