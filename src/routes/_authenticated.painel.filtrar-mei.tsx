@@ -153,7 +153,7 @@ function FilterMeiPage() {
   };
 
   const startProcessing = () => {
-    if (!file || !meiColumn) return;
+    if (!file) return;
     
     setStep(4);
     setProcessStatus('processing');
@@ -169,7 +169,7 @@ function FilterMeiPage() {
         header: true,
         skipEmptyLines: true,
         encoding: "UTF-8",
-        delimiter: "", // Auto-detect delimiter (essential for semicolon CSVs)
+        delimiter: "", // Auto-detect delimiter
         complete: (results: Papa.ParseResult<any>) => {
           const raw = results.data;
           const total = raw.length;
@@ -183,7 +183,7 @@ function FilterMeiPage() {
           let removedInactive = 0;
           let removedNoEmail = 0;
 
-          // Simple progress simulation for small files
+          // Simple progress simulation
           const updateProgressInterval = Math.max(1, Math.floor(total / 100));
 
           raw.forEach((row: any, index: number) => {
@@ -196,50 +196,70 @@ function FilterMeiPage() {
               return;
             }
 
-            const val = row[meiColumn];
-            const isMei = isMeiValue(val);
-            const isNotMei = isNotMeiValue(val);
+            // 1. Filter by Natureza Juridica: "EMPRESÁRIO (INDIVIDUAL)"
+            const njCol = headers.find(h => {
+              const n = normalizeString(h);
+              return n.includes('naturezajuridica') || n.includes('natureza_juridica') || n.includes('codigonaturezajuridica');
+            });
 
-            if (!isMei && !isNotMei) {
-              unknown.push(row);
-              return;
+            // Fallback check for "EMPRESÁRIO (INDIVIDUAL)" or code "2135"
+            let isIndividual = false;
+            if (njCol) {
+              const njVal = String(row[njCol] || '').toUpperCase();
+              if (njVal.includes('EMPRESARIO (INDIVIDUAL)') || njVal.includes('EMPRESARIO INDIVIDUAL') || njVal === '2135') {
+                isIndividual = true;
+              }
+            } else {
+              // Try to find by content if column name didn't match
+              const njValByContent = Object.values(row).some(v => String(v).toUpperCase().includes('EMPRESARIO (INDIVIDUAL)'));
+              if (njValByContent) isIndividual = true;
             }
 
-            if (!isMei) {
+            if (!isIndividual) {
               removedNonMei++;
-              removed.push({ ...row, motivo_remocao: 'NAO_MEI' });
+              removed.push({ ...row, motivo_remocao: 'NAO_INDIVIDUAL' });
               return;
             }
 
-            // Additional filters
-            if (filterActive) {
-              const sitCol = headers.find(h => {
-                const n = normalizeString(h);
-                return n.includes('situacaocadastral') || n.includes('status') || n.includes('situacao');
-              });
-              if (sitCol) {
-                const sitVal = String(row[sitCol] || '').toUpperCase();
-                if (sitVal !== '02' && !sitVal.includes('ATIVA')) {
-                  removedInactive++;
-                  removed.push({ ...row, motivo_remocao: 'SITUACAO_INATIVA' });
-                  return;
-                }
+            // 2. Filter by Situation: "ATIVA"
+            const sitCol = headers.find(h => {
+              const n = normalizeString(h);
+              return n.includes('situacaocadastral') || n.includes('status') || n.includes('situacao');
+            });
+            
+            let isActive = false;
+            if (sitCol) {
+              const sitVal = String(row[sitCol] || '').toUpperCase();
+              // 02 = Ativa in RFB standards
+              if (sitVal === '02' || sitVal.includes('ATIVA')) {
+                isActive = true;
+              }
+            }
+            
+            if (!isActive) {
+              removedInactive++;
+              removed.push({ ...row, motivo_remocao: 'SITUACAO_INATIVA' });
+              return;
+            }
+
+            // 3. Filter by Email: Presence check
+            const emailCol = headers.find(h => {
+              const n = normalizeString(h);
+              return n.includes('email') || n.includes('eletronico');
+            });
+            
+            let hasEmail = false;
+            if (emailCol) {
+              const emailVal = String(row[emailCol] || '').trim();
+              if (emailVal && emailVal.includes('@') && emailVal.split('@')[1].length >= 3) {
+                hasEmail = true;
               }
             }
 
-            if (filterEmail) {
-              const emailCol = headers.find(h => {
-                const n = normalizeString(h);
-                return n.includes('email') || n.includes('eletronico');
-              });
-              if (emailCol) {
-                const emailVal = String(row[emailCol] || '').trim();
-                if (!emailVal || !emailVal.includes('@') || emailVal.split('@')[1].length < 3) {
-                  removedNoEmail++;
-                  removed.push({ ...row, motivo_remocao: 'SEM_EMAIL' });
-                  return;
-                }
-              }
+            if (!hasEmail) {
+              removedNoEmail++;
+              removed.push({ ...row, motivo_remocao: 'SEM_EMAIL' });
+              return;
             }
 
             kept.push(row);
