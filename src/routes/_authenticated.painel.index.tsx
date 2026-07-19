@@ -67,6 +67,7 @@ const EMPTY: Stats = {
 
 function DashboardPage() {
   const [stats, setStats] = useState<Stats>(EMPTY);
+  const [recent, setRecent] = useState<(EventRow & { cnpj?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -113,8 +114,8 @@ function DashboardPage() {
       }
 
       s.conversion = s.viewLink > 0 ? Math.round((s.viewCheckout / s.viewLink) * 100) : 0;
-
       setStats(s);
+      setRecent(events.slice(-10).reverse().map(e => ({ ...e, cnpj: linkMap.get(e.token) })));
     } finally {
       setLoading(false);
     }
@@ -227,6 +228,50 @@ function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">Últimos Acessos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-50 border-b">
+                <tr>
+                  <th className="p-2 text-left">Data/Hora</th>
+                  <th className="p-2 text-left">CNPJ</th>
+                  <th className="p-2 text-left">Evento</th>
+                  <th className="p-2 text-left">Dispositivo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recent.map((r, i) => (
+                  <tr key={i} className="border-b last:border-0 hover:bg-slate-50">
+                    <td className="p-2 text-slate-500">{new Date(r.created_at).toLocaleString('pt-BR')}</td>
+                    <td className="p-2 font-mono font-semibold">{r.cnpj ? formatCNPJ(r.cnpj) : '—'}</td>
+                    <td className="p-2">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        r.event_type.includes('click') ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {r.event_type.replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                    <td className="p-2 text-slate-500 flex items-center gap-1">
+                      {deviceIcon(r.device || '')}
+                      {r.os} ({r.browser})
+                    </td>
+                  </tr>
+                ))}
+                {recent.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="p-4 text-center text-slate-400">Nenhum acesso registrado.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
