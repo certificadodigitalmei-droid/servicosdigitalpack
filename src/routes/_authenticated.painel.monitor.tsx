@@ -225,6 +225,74 @@ function MonitorPage() {
         </Card>
       </div>
 
+      <Card className="border-blue-200 bg-blue-50/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-800">
+            <Braces className="h-5 w-5" />
+            Análise Técnica do range_query
+          </CardTitle>
+          <CardDescription>Instruções para configurar a busca automática por data de abertura.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm text-slate-700">
+          <div className="prose prose-slate max-w-none prose-sm prose-headings:mb-2 prose-p:mb-3">
+            <p>O <strong>JSON exato ainda não apareceu na documentação</strong> que você mandou. O ponto desconhecido é justamente o conteúdo de:</p>
+            <pre className="bg-slate-900 text-emerald-400 p-3 rounded-md"><code>"range_query": &#123;&#125;</code></pre>
+            
+            <p>A estrutura provável seria algo neste formato:</p>
+            <pre className="bg-slate-900 text-emerald-400 p-3 rounded-md text-[10px] leading-tight"><code>&#123;
+  "query": &#123;
+    "cnpj": [],
+    "razao_social": [],
+    "situacao_cadastral": ["02"],
+    "phone_type": "celular"
+  &#125;,
+  "range_query": &#123;
+    "inicio_atividade": &#123;
+      "gte": "2026-07-19T00:00:00-03:00",
+      "lte": "2026-07-19T23:59:59-03:00"
+    &#125;
+  &#125;,
+  "extras": &#123;
+    "somente_mei": true,
+    "com_email": true,
+    "somente_matriz": true,
+    "remove_contab": true
+  &#125;,
+  "page": 1,
+  "page_size": 50
+&#125;</code></pre>
+
+            <p className="text-amber-700 bg-amber-50 p-2 rounded border border-amber-100">
+              Mas atenção: <strong><code>inicio_atividade</code>, <code>gte</code> e <code>lte</code> ainda são uma hipótese técnica</strong>, não estão confirmados na documentação pública da AquiCNPJ.
+            </p>
+
+            <h3 className="text-blue-800 font-bold mt-4">## Para pegar o JSON correto em 1 minuto</h3>
+            <p>Na própria plataforma AquiCNPJ:</p>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>Abra a tela de pesquisa de empresas.</li>
+              <li>Pressione <code>F12</code>.</li>
+              <li>Clique em <strong>Network</strong> ou <strong>Rede</strong>.</li>
+              <li>Marque <strong>Fetch/XHR</strong>.</li>
+              <li>No site, selecione: abertura (hoje), situação (ativa), somente MEI, com e-mail.</li>
+              <li>Clique em pesquisar e abra a requisição <code>/search/empresa/simple</code>.</li>
+              <li>Clique em <strong>Payload</strong> e copie o <strong>Request Payload</strong>.</li>
+            </ol>
+
+            <h3 className="text-blue-800 font-bold mt-4">## Troca automática da data</h3>
+            <p>Depois de descobrirmos os nomes corretos, a Lovable não deve salvar <code>2026-07-19</code> fixo. Ela deve gerar a data em cada execução:</p>
+            <pre className="bg-slate-900 text-emerald-400 p-3 rounded-md text-[10px]"><code>const dateFormatter = new Intl.DateTimeFormat("en-CA", &#123;
+  timeZone: "America/Sao_Paulo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+&#125;);
+
+const currentDate = dateFormatter.format(new Date());
+// Gera: 2026-07-19T00:00:00-03:00</code></pre>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Documentação da API AquiCNPJ</CardTitle>
