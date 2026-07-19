@@ -46,8 +46,8 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   buttonHref: '{{LINK_PUBLICO}}',
   footer: 'Atenciosamente,\nCentral de Atendimento\nCertificado Digital MEI',
   disclaimer:
-    'Você recebeu este e-mail pois seu CNPJ consta em nossa base de cadastros MEI. Para não receber mais comunicações, clique aqui.',
-  unsubText: 'clique aqui',
+    'Você recebeu este e-mail pois seu CNPJ consta em nossa base de cadastros MEI.',
+  unsubText: '',
   unsubHref: '#',
 };
 
