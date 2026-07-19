@@ -1,0 +1,1 @@
+CREATE POLICY "Admins delete link_events" ON public.link_events FOR DELETE TO authenticated USING (private.has_role(auth.uid(), 'admin'::app_role));
