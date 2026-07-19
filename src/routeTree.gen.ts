@@ -13,7 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as CheckoutTokenRouteImport } from './routes/checkout.$token'
+import { Route as CheckoutTokenRouteImport } from './routes/checkout_.$token'
 import { Route as CertificadoMeiTokenRouteImport } from './routes/certificado-mei.$token'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
@@ -43,9 +43,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutTokenRoute = CheckoutTokenRouteImport.update({
-  id: '/$token',
-  path: '/$token',
-  getParentRoute: () => CheckoutRoute,
+  id: '/checkout_/$token',
+  path: '/checkout/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const CertificadoMeiTokenRoute = CertificadoMeiTokenRouteImport.update({
   id: '/certificado-mei/$token',
@@ -95,7 +95,7 @@ const AuthenticatedPainelGeradorLinksHistoricoRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/checkout': typeof CheckoutRouteWithChildren
+  '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
@@ -109,7 +109,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/checkout': typeof CheckoutRouteWithChildren
+  '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
@@ -124,12 +124,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/checkout': typeof CheckoutRouteWithChildren
+  '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
-  '/checkout/$token': typeof CheckoutTokenRoute
+  '/checkout_/$token': typeof CheckoutTokenRoute
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/_authenticated/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -173,7 +173,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel'
     | '/c/$token'
     | '/certificado-mei/$token'
-    | '/checkout/$token'
+    | '/checkout_/$token'
     | '/_authenticated/painel/filtrar-mei'
     | '/_authenticated/painel/gerador-links'
     | '/_authenticated/painel/importar-empresas'
@@ -184,10 +184,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  CheckoutRoute: typeof CheckoutRouteWithChildren
+  CheckoutRoute: typeof CheckoutRoute
   LoginRoute: typeof LoginRoute
   CTokenRoute: typeof CTokenRoute
   CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
+  CheckoutTokenRoute: typeof CheckoutTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -220,12 +221,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/checkout/$token': {
-      id: '/checkout/$token'
-      path: '/$token'
+    '/checkout_/$token': {
+      id: '/checkout_/$token'
+      path: '/checkout/$token'
       fullPath: '/checkout/$token'
       preLoaderRoute: typeof CheckoutTokenRouteImport
-      parentRoute: typeof CheckoutRoute
+      parentRoute: typeof rootRouteImport
     }
     '/certificado-mei/$token': {
       id: '/certificado-mei/$token'
@@ -332,25 +333,14 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
-interface CheckoutRouteChildren {
-  CheckoutTokenRoute: typeof CheckoutTokenRoute
-}
-
-const CheckoutRouteChildren: CheckoutRouteChildren = {
-  CheckoutTokenRoute: CheckoutTokenRoute,
-}
-
-const CheckoutRouteWithChildren = CheckoutRoute._addFileChildren(
-  CheckoutRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
-  CheckoutRoute: CheckoutRouteWithChildren,
+  CheckoutRoute: CheckoutRoute,
   LoginRoute: LoginRoute,
   CTokenRoute: CTokenRoute,
   CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
+  CheckoutTokenRoute: CheckoutTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

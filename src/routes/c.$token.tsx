@@ -25,8 +25,8 @@ export const Route = createFileRoute('/c/$token')({
 
 function cleanPersonName(v?: string | null): string {
   if (!v) return '';
-  // remove digits and collapse whitespace
-  return v.replace(/\d+/g, '').replace(/\s+/g, ' ').trim();
+  // remove digits, strip stray punctuation from formatted CNPJ prefixes, collapse whitespace
+  return v.replace(/\d+/g, '').replace(/[.\-/]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function TokenHomePage() {
