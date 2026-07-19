@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CertificadoMeiTokenRouteImport } from './routes/certificado-mei.$token'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
@@ -37,6 +38,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CertificadoMeiTokenRoute = CertificadoMeiTokenRouteImport.update({
+  id: '/certificado-mei/$token',
+  path: '/certificado-mei/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CTokenRoute = CTokenRouteImport.update({
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
+  '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/': typeof AuthenticatedPainelIndexRoute
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/c/$token': typeof CTokenRoute
+  '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel': typeof AuthenticatedPainelIndexRoute
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
+  '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/painel'
     | '/c/$token'
+    | '/certificado-mei/$token'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel/'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/login'
     | '/c/$token'
+    | '/certificado-mei/$token'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/painel'
     | '/c/$token'
+    | '/certificado-mei/$token'
     | '/_authenticated/painel/filtrar-mei'
     | '/_authenticated/painel/gerador-links'
     | '/_authenticated/painel/'
@@ -150,6 +162,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   LoginRoute: typeof LoginRoute
   CTokenRoute: typeof CTokenRoute
+  CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -180,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/certificado-mei/$token': {
+      id: '/certificado-mei/$token'
+      path: '/certificado-mei/$token'
+      fullPath: '/certificado-mei/$token'
+      preLoaderRoute: typeof CertificadoMeiTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/c/$token': {
@@ -276,6 +296,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   LoginRoute: LoginRoute,
   CTokenRoute: CTokenRoute,
+  CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
