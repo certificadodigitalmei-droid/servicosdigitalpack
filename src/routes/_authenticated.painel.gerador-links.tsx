@@ -11,6 +11,7 @@ import {
   Upload,
   FileText,
 } from 'lucide-react';
+import { formatCNPJ } from '@/lib/format';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -174,7 +175,7 @@ function GeradorLinksPage() {
           const public_url = `${domain}/c/${token}`;
           const checkout_url = `${domain}/checkout/${token}`;
           results.push({
-            CNPJ: c.cnpj,
+            CNPJ: formatCNPJ(c.cnpj),
             NOME: c.nome_titular_exibicao || c.razao_social_original || '',
             RAZAO_SOCIAL: c.razao_social_original || '',
             NOME_FANTASIA: c.nome_fantasia || '',

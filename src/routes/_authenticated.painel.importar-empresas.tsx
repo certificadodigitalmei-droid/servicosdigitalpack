@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import Papa from 'papaparse';
+import { formatCNPJ } from '@/lib/format';
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -349,6 +350,29 @@ function ImportarEmpresasPage() {
                   <Button variant="ghost" size="sm" onClick={() => { setFile(null); setPreviewData([]); setColumns([]); setMapping({}); }} className="text-slate-400 hover:text-red-500">
                     Remover
                   </Button>
+                </div>
+
+                <div className="overflow-x-auto rounded border">
+                  <table className="w-full text-xs">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="p-2 text-left">CNPJ</th>
+                        <th className="p-2 text-left">Razão Social</th>
+                        <th className="p-2 text-left">E-mail</th>
+                        <th className="p-2 text-left">UF</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewData.map((row, i) => (
+                        <tr key={i} className="border-t">
+                          <td className="p-2 font-mono whitespace-nowrap">{formatCNPJ(String(row[mapping.cnpj] || ''))}</td>
+                          <td className="p-2 truncate max-w-[200px]">{String(row[mapping.razao_social_original] || '')}</td>
+                          <td className="p-2">{String(row[mapping.email] || '')}</td>
+                          <td className="p-2">{String(row[mapping.uf] || '')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
                 <div>

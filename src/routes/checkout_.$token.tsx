@@ -132,7 +132,7 @@ function CheckoutTokenPage() {
 
   return (
     <Page>
-      <SiteHeader userName={headerName || undefined} userDoc={row.cnpj || undefined} />
+      <SiteHeader userName={headerName || undefined} userDoc={row.cnpj ? formatCPFOrCNPJ(row.cnpj) : undefined} />
       <Breadcrumb
         items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }, { label: 'Pagamento' }]}
       />
@@ -160,7 +160,7 @@ function CheckoutTokenPage() {
                 <Card title="Detalhes da Guia">
                   <TableRow label="Serviço" value="Certificado Digital MEI" />
                   <TableRow label="Descrição" value="Emissão do Certificado Digital para MEI" />
-                  <TableRow label="Referência" value={row.razao_social || row.nome || '—'} />
+                  <TableRow label="Referência" value={`${row.razao_social || row.nome || '—'} (CNPJ: ${formatCPFOrCNPJ(row.cnpj || '')})`} />
                   <TableRow
                     label="Valor da Guia"
                     value={<span className="font-bold text-brand-blue">{brl(AMOUNT)}</span>}

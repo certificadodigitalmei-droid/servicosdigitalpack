@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useMemo } from 'react';
 import Papa from 'papaparse';
+import { formatCNPJ } from '@/lib/format';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -558,11 +559,14 @@ function FilterMeiPage() {
                     <TableBody>
                       {results.kept.slice(0, 50).map((row, i) => (
                         <TableRow key={i}>
-                          {headers.slice(0, 8).map(h => (
-                            <TableCell key={h} className="text-xs truncate max-w-[150px]">
-                              {String(row[h] || '')}
-                            </TableCell>
-                          ))}
+                          {headers.slice(0, 8).map(h => {
+                            const isCnpj = normalizeString(h) === 'cnpj';
+                            return (
+                              <TableCell key={h} className={`text-xs truncate max-w-[150px] ${isCnpj ? 'font-mono' : ''}`}>
+                                {isCnpj ? formatCNPJ(String(row[h] || '')) : String(row[h] || '')}
+                              </TableCell>
+                            );
+                          })}
                         </TableRow>
                       ))}
                     </TableBody>
