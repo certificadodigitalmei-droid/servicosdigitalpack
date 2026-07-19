@@ -20,10 +20,10 @@ export const Route = createFileRoute("/")({
         content:
           "Central privada de serviços para microempreendedores. Confira dados públicos da empresa e conheça os serviços privados e opcionais disponíveis.",
       },
-      { property: "og:title", content: "Central MEI Digital" },
+      { property: "og:title", content: "Central MEI Digital — Apoio digital ao microempreendedor" },
       {
         property: "og:description",
-        content: "Central privada de serviços para microempreendedores.",
+        content: "Central privada de serviços para microempreendedores. Confira dados públicos da empresa e conheça os serviços privados e opcionais disponíveis.",
       },
     ],
   }),
