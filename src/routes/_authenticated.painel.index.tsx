@@ -120,6 +120,21 @@ function DashboardPage() {
     load();
   }, []);
 
+  const [clearing, setClearing] = useState(false);
+  async function clearAll() {
+    setClearing(true);
+    try {
+      const { error } = await supabase.from('link_events').delete().not('id', 'is', null);
+      if (error) throw error;
+      toast.success('Dados do Dashboard apagados');
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao limpar dados');
+    } finally {
+      setClearing(false);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -127,11 +142,34 @@ function DashboardPage() {
           <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
           <p className="text-slate-500">Acompanhe o desempenho dos links gerados.</p>
         </div>
-        <Button variant="outline" onClick={load} disabled={loading}>
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="text-red-600 hover:text-red-700" disabled={clearing || loading}>
+                {clearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Limpar dados
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Limpar dados do Dashboard?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Isso apaga todos os eventos de visitas e cliques registrados. Os links e empresas não serão afetados. Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={clearAll} className="bg-red-600 hover:bg-red-700">Apagar tudo</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button variant="outline" onClick={load} disabled={loading}>
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Atualizar
+          </Button>
+        </div>
       </div>
+
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <MetricCard icon={<LinkIcon className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-slate-100 text-slate-700" hint="Total de links criados" />
