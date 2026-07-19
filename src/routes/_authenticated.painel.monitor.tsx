@@ -310,7 +310,8 @@ const currentDate = dateFormatter.format(new Date());
         <CardContent className="space-y-6">
           <div className="bg-slate-950 rounded-lg p-6 overflow-x-auto">
             <pre className="text-xs text-emerald-400 font-mono leading-relaxed whitespace-pre-wrap">
-{`content-length: 107
+{`e agora faz consulta ? sozinho ?
+content-length: 107
 content-type: application/json
 curl -X POST "https://api.aquicnpj.com/search/empresa/simple" \\
  -H 'accept: application/json'\\
