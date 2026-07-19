@@ -3,14 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
-    // 1. Buscar o link pelo token
+    // 1. Buscar o link pelo token público
     const { data: link, error } = await supabase
       .from('company_links')
       .select('company_id, expires_at')
-      .eq('token', params.token)
+      .eq('public_token', params.token)
       .single();
 
     if (error || !link) {
+      console.error('Erro ao buscar link:', error);
       throw redirect({ to: '/' });
     }
 
@@ -20,13 +21,14 @@ export const Route = createFileRoute('/c/$token')({
     }
 
     // 3. Buscar dados da empresa
-    const { data: company } = await supabase
+    const { data: company, error: compError } = await supabase
       .from('companies')
       .select('cnpj, nome_titular, data_abertura')
       .eq('id', link.company_id)
       .single();
 
-    if (!company) {
+    if (compError || !company) {
+      console.error('Erro ao buscar empresa:', compError);
       throw redirect({ to: '/' });
     }
 
@@ -34,9 +36,9 @@ export const Route = createFileRoute('/c/$token')({
     throw redirect({
       to: '/',
       search: {
-        cnpj: company.cnpj,
-        nome: company.nome_titular,
-        abertura: company.data_abertura,
+        cnpj: company.cnpj || '',
+        nome: company.nome_titular || '',
+        abertura: company.data_abertura || '',
       },
     });
   },
