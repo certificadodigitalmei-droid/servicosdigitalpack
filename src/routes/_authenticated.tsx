@@ -13,13 +13,14 @@ function AuthenticatedLayout() {
   const [code, setCode] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const auth = localStorage.getItem('admin_auth_code');
     if (auth === '117711') {
       setIsAuthorized(true);
     }
-  }, []);
+  }, [location.pathname]);
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
