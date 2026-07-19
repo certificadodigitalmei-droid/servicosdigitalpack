@@ -124,8 +124,9 @@ function FilterMeiPage() {
     
     Papa.parse(selectedFile, {
       header: true,
-      preview: 100, // Preview first 100 rows to detect columns
+      preview: 100,
       skipEmptyLines: true,
+      delimiter: "", // Auto-detect delimiter
       complete: (results: Papa.ParseResult<any>) => {
         if (results.errors.length > 0 && results.data.length === 0) {
           toast.error('Erro ao ler o arquivo CSV');
@@ -168,6 +169,7 @@ function FilterMeiPage() {
         header: true,
         skipEmptyLines: true,
         encoding: "UTF-8",
+        delimiter: "", // Auto-detect delimiter (essential for semicolon CSVs)
         complete: (results: Papa.ParseResult<any>) => {
           const raw = results.data;
           const total = raw.length;
