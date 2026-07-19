@@ -7,6 +7,7 @@ import {
   Filter,
   Link2,
   Upload,
+  Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,6 +47,7 @@ function PanelLayout() {
     { title: 'Filtrar Empresas MEI', icon: Filter, to: '/painel/filtrar-mei' },
     { title: 'Importar Empresas', icon: Upload, to: '/painel/importar-empresas' },
     { title: 'Gerador de Links', icon: Link2, to: '/painel/gerador-links' },
+    { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
   ];
 
 
@@ -54,6 +56,7 @@ function PanelLayout() {
     if (path === '/painel/importar-empresas') return 'Importar Empresas';
     if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
     if (path === '/painel/gerador-links') return 'Gerador de Links';
+    if (path === '/painel/campanhas-email') return 'Campanhas de E-mail';
     if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
     return 'Painel';
   };
