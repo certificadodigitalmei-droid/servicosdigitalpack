@@ -159,6 +159,199 @@ function MonitorPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Documentação da API AquiCNPJ</CardTitle>
+          <CardDescription>Referência técnica para o endpoint de Busca Simples Filtrada.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="bg-slate-950 rounded-lg p-6 overflow-x-auto">
+            <pre className="text-xs text-emerald-400 font-mono leading-relaxed whitespace-pre-wrap">
+{`Busca Simples Filtrada
+post /search/empresa/simple
+Retorna informações básicas das empresas que correspondem aos critérios enviados. Não consome créditos. Também pode ser usada para consultar um único CNPJ.
+
+HTTP Bearer
+REQUEST
+REQUEST BODY
+*
+application/json
+EXAMPLE
+SCHEMA
+{
+  "query": {
+    "cnpj": [
+      "58004198000161"
+    ],
+    "razao_social": [],
+    "cnaes_principais_id": [],
+    "cnaes_secundarias_id": [],
+    "natureza_id": [],
+    "uf": [],
+    "municipio": [],
+    "bairro": [],
+    "cep": [],
+    "ddd": [],
+    "situacao_cadastral": [],
+    "phone_type": "celular"
+  },
+  "range_query": {},
+  "extras": {
+    "somente_mei": false,
+    "excluir_mei": false,
+    "com_email": false,
+    "incluir_atividade_secundaria": false,
+    "com_contato_telefonico": false,
+    "somente_matriz": false,
+    "somente_filial": false,
+    "remove_contab": false,
+    "remove_already_downloaded": false
+  },
+  "page": 0,
+  "page_size": 0
+}
+API Server
+https://api.aquicnpj.com
+Authentication
+HTTP Bearer in header
+RESPONSE
+200
+Sucesso
+
+EXAMPLE
+SCHEMA
+application/json
+Copy
+{
+"total": 1,
+"page": 1,
+"page_size": 8,
+"results": [
+{
+"id": "63812082000199",
+"cnpj": "63812082000199",
+"nome_fantasia": "string",
+"razao_social": "63.812.082 WESLEY ARCELINO DE CARVALHO",
+"porte": "Micro Empresa",
+"inicio_atividade": "2025-11-25T00:00:00-03:00",
+"situacao_cadastral": "02"
+}
+]
+}
+
+e
+
+Busca Simples Filtrada
+post /search/empresa/simple
+Retorna informações básicas das empresas que correspondem aos critérios enviados. Não consome créditos. Também pode ser usada para consultar um único CNPJ.
+
+HTTP Bearer
+REQUEST
+REQUEST BODY
+*
+application/json
+EXAMPLE
+SCHEMA
+object
+Multiline description
+Field
+Type
+Description
+- query
+object
+cnpj
+[string]
+razao_social
+[string]
+cnaes_principais_id
+[string]
+cnaes_secundarias_id
+[string]
+natureza_id
+[string]
+uf
+[string]
+municipio
+[string]
+bairro
+[string]
+cep
+[string]
+ddd
+[string]
+situacao_cadastral
+[string]
+phone_type
+string
+- range_query
+object
+- extras
+object
+somente_mei
+boolean
+excluir_mei
+boolean
+com_email
+boolean
+incluir_atividade_secundaria
+boolean
+com_contato_telefonico
+boolean
+somente_matriz
+boolean
+somente_filial
+boolean
+remove_contab
+boolean
+remove_already_downloaded
+boolean
+page
+integer
+page_size
+integer
+API Server
+https://api.aquicnpj.com
+Authentication
+HTTP Bearer in header
+RESPONSE
+200
+Sucesso
+
+EXAMPLE
+SCHEMA
+application/json
+object
+Multiline description
+Field
+Type
+Description
+total
+integer
+page
+integer
+page_size
+integer
+- results
+array of object
+id
+string
+cnpj
+string
+nome_fantasia
+string┃null
+razao_social
+string
+porte
+string
+inicio_atividade
+string
+situacao_cadastral
+string`}
+            </pre>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
