@@ -13,10 +13,13 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CertificadoMeiTokenRouteImport } from './routes/certificado-mei.$token'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
+import { Route as AuthenticatedPainelGeradorLinksRouteImport } from './routes/_authenticated.painel.gerador-links'
 import { Route as AuthenticatedPainelFiltrarMeiRouteImport } from './routes/_authenticated.painel.filtrar-mei'
+import { Route as AuthenticatedPainelGeradorLinksHistoricoRouteImport } from './routes/_authenticated.painel.gerador-links.historico'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -37,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CertificadoMeiTokenRoute = CertificadoMeiTokenRouteImport.update({
+  id: '/certificado-mei/$token',
+  path: '/certificado-mei/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CTokenRoute = CTokenRouteImport.update({
   id: '/c/$token',
   path: '/c/$token',
@@ -53,11 +61,23 @@ const AuthenticatedPainelIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelGeradorLinksRoute =
+  AuthenticatedPainelGeradorLinksRouteImport.update({
+    id: '/gerador-links',
+    path: '/gerador-links',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 const AuthenticatedPainelFiltrarMeiRoute =
   AuthenticatedPainelFiltrarMeiRouteImport.update({
     id: '/filtrar-mei',
     path: '/filtrar-mei',
     getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
+const AuthenticatedPainelGeradorLinksHistoricoRoute =
+  AuthenticatedPainelGeradorLinksHistoricoRouteImport.update({
+    id: '/historico',
+    path: '/historico',
+    getParentRoute: () => AuthenticatedPainelGeradorLinksRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -66,16 +86,22 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
+  '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
+  '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/': typeof AuthenticatedPainelIndexRoute
+  '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/c/$token': typeof CTokenRoute
+  '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
+  '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel': typeof AuthenticatedPainelIndexRoute
+  '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,8 +111,11 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
+  '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
+  '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
+  '/_authenticated/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,16 +125,22 @@ export interface FileRouteTypes {
     | '/login'
     | '/painel'
     | '/c/$token'
+    | '/certificado-mei/$token'
     | '/painel/filtrar-mei'
+    | '/painel/gerador-links'
     | '/painel/'
+    | '/painel/gerador-links/historico'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/checkout'
     | '/login'
     | '/c/$token'
+    | '/certificado-mei/$token'
     | '/painel/filtrar-mei'
+    | '/painel/gerador-links'
     | '/painel'
+    | '/painel/gerador-links/historico'
   id:
     | '__root__'
     | '/'
@@ -114,8 +149,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/painel'
     | '/c/$token'
+    | '/certificado-mei/$token'
     | '/_authenticated/painel/filtrar-mei'
+    | '/_authenticated/painel/gerador-links'
     | '/_authenticated/painel/'
+    | '/_authenticated/painel/gerador-links/historico'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -124,6 +162,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   LoginRoute: typeof LoginRoute
   CTokenRoute: typeof CTokenRoute
+  CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -156,6 +195,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/certificado-mei/$token': {
+      id: '/certificado-mei/$token'
+      path: '/certificado-mei/$token'
+      fullPath: '/certificado-mei/$token'
+      preLoaderRoute: typeof CertificadoMeiTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/c/$token': {
       id: '/c/$token'
       path: '/c/$token'
@@ -177,6 +223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/gerador-links': {
+      id: '/_authenticated/painel/gerador-links'
+      path: '/gerador-links'
+      fullPath: '/painel/gerador-links'
+      preLoaderRoute: typeof AuthenticatedPainelGeradorLinksRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
     '/_authenticated/painel/filtrar-mei': {
       id: '/_authenticated/painel/filtrar-mei'
       path: '/filtrar-mei'
@@ -184,16 +237,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelFiltrarMeiRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/gerador-links/historico': {
+      id: '/_authenticated/painel/gerador-links/historico'
+      path: '/historico'
+      fullPath: '/painel/gerador-links/historico'
+      preLoaderRoute: typeof AuthenticatedPainelGeradorLinksHistoricoRouteImport
+      parentRoute: typeof AuthenticatedPainelGeradorLinksRoute
+    }
   }
 }
 
+interface AuthenticatedPainelGeradorLinksRouteChildren {
+  AuthenticatedPainelGeradorLinksHistoricoRoute: typeof AuthenticatedPainelGeradorLinksHistoricoRoute
+}
+
+const AuthenticatedPainelGeradorLinksRouteChildren: AuthenticatedPainelGeradorLinksRouteChildren =
+  {
+    AuthenticatedPainelGeradorLinksHistoricoRoute:
+      AuthenticatedPainelGeradorLinksHistoricoRoute,
+  }
+
+const AuthenticatedPainelGeradorLinksRouteWithChildren =
+  AuthenticatedPainelGeradorLinksRoute._addFileChildren(
+    AuthenticatedPainelGeradorLinksRouteChildren,
+  )
+
 interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelFiltrarMeiRoute: typeof AuthenticatedPainelFiltrarMeiRoute
+  AuthenticatedPainelGeradorLinksRoute: typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
 
 const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelFiltrarMeiRoute: AuthenticatedPainelFiltrarMeiRoute,
+  AuthenticatedPainelGeradorLinksRoute:
+    AuthenticatedPainelGeradorLinksRouteWithChildren,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
 }
 
@@ -218,7 +296,18 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   LoginRoute: LoginRoute,
   CTokenRoute: CTokenRoute,
+  CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
