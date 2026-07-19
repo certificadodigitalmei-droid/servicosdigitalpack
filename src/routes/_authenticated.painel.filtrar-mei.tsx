@@ -138,7 +138,7 @@ function FilterMeiPage() {
         // Identify possible MEI columns
         const candidates = cols.filter(h => {
           const n = normalizeString(h);
-          return n.includes('mei') || n.includes('optante') || n.includes('is_mei') || n.includes('microempreendedorindividual') || n.includes('opcaopelomei') || n.includes('simplesmei');
+          return n.includes('mei') || n.includes('optante') || n.includes('is_mei') || n.includes('microempreendedorindividual') || n.includes('opcaopelomei') || n.includes('simplesmei') || n.includes('opcao_mei');
         });
 
         setPossibleMeiColumns(candidates);
