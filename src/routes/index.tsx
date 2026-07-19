@@ -79,7 +79,7 @@ function HomePage() {
 
           {/* Data card */}
           <div className="overflow-hidden rounded-md border border-border bg-card">
-            <div className="border-b border-border px-4 py-3 text-[14px] font-semibold text-brand-blue">
+            <div className="bg-[#f8f9fa] border-b border-border px-4 py-2.5 text-[14px] font-bold text-[#004884] uppercase tracking-tight">
               Dados do Microempreendedor Individual
             </div>
             <DataRow label="CNPJ" value={cnpjFmt} />
@@ -88,7 +88,7 @@ function HomePage() {
             <DataRow
               label="SITUAÇÃO CADASTRAL"
               value={
-                <span className="inline-flex items-center rounded-full bg-success px-3 py-0.5 text-[11px] font-bold uppercase text-primary-foreground">
+                <span className="inline-flex items-center rounded-sm bg-[#138835] px-2 py-0.5 text-[10px] font-bold uppercase text-white">
                   Ativa
                 </span>
               }
@@ -113,28 +113,28 @@ function HomePage() {
           </div>
 
           {/* Service card */}
-          <div className="rounded-md border border-border bg-card p-5">
-            <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-blue-soft text-brand-blue">
-                <Lock className="h-5 w-5" />
+          <div className="rounded-md border border-border bg-card p-0 overflow-hidden shadow-sm">
+            <div className="flex items-start gap-4 p-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#f0f5ff] text-[#004884]">
+                <User className="h-6 w-6" />
               </div>
-              <div className="min-w-0">
-                <div className="text-[15px] font-semibold text-brand-blue">
+              <div className="min-w-0 flex-1">
+                <div className="text-[16px] font-bold text-[#004884] leading-snug">
                   Certificado Digital MEI — Emissão Obrigatória 2026
                 </div>
-                <p className="mt-1 text-[13px] text-foreground">
-                  Seu CNPJ foi localizado e está aguardando a emissão do certificado. Prossiga agora para regularizar e receber seu certificado digital.
+                <p className="mt-1.5 text-[13px] text-foreground/90 leading-relaxed">
+                  Seu CNPJ foi localizado e está <span className="font-bold">aguardando a emissão do certificado</span>. Prossiga agora para regularizar e receber seu certificado digital.
                 </p>
-                <p className="mt-2 text-[12.5px] text-muted-foreground">
+                <p className="mt-2.5 text-[12.5px] text-muted-foreground">
                   Não deixe para depois — CNPJs sem certificado ficam sujeitos a restrições operacionais.
                 </p>
               </div>
             </div>
-            <div className="mt-4 flex justify-center">
+            <div className="bg-[#f8f9fa] border-t border-border p-4 flex justify-center">
               <Link
                 to="/checkout"
                 search={checkoutSearch}
-                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md bg-brand-blue px-6 text-[13px] font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:brightness-110"
+                className="inline-flex min-h-[44px] w-full max-w-[280px] items-center justify-center gap-2 rounded-md bg-[#1351b4] px-6 text-[13px] font-bold uppercase tracking-wide text-white transition-all hover:bg-[#004884] active:scale-[0.98]"
               >
                 <Lock className="h-4 w-4" />
                 Emitir Certificado Digital

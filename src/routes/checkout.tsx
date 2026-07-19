@@ -300,7 +300,7 @@ function CheckoutForm({
       <button
         type="submit"
         disabled={submitting}
-        className="flex min-h-[48px] w-full items-center justify-center rounded-md bg-brand-blue text-[14px] font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:brightness-110 disabled:opacity-60"
+        className="flex min-h-[48px] w-full items-center justify-center rounded-md bg-[#1351b4] text-[15px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[#004884] active:scale-[0.98] shadow-md"
       >
         {submitting ? "Processando..." : "Gerar Guia"}
       </button>
