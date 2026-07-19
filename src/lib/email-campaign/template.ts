@@ -87,6 +87,13 @@ function nl2br(s: string): string {
   return esc(s).replace(/\n/g, '<br/>');
 }
 
+export function formatCnpj(cnpj: string): string {
+  if (!cnpj) return '';
+  const clean = cnpj.replace(/\D/g, '');
+  if (clean.length !== 14) return cnpj;
+  return clean.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+}
+
 export function renderHtml(d: CampaignDesign, vars: Vars): string {
   const S = (t: string) => substitute(t, vars);
   const title = esc(S(d.title));
@@ -102,7 +109,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
   const rowsHtml = [
     ['Nome', vars.NOME_TITULAR || vars.NOME_EMPRESARIAL],
-    ['CNPJ', vars.CNPJ],
+    ['CNPJ', formatCnpj(vars.CNPJ || '')],
     ['Situação', vars.SITUACAO || 'CNPJ sem certificado ativo'],
   ]
     .filter(([, v]) => v)
@@ -193,7 +200,7 @@ export function renderText(d: CampaignDesign, vars: Vars): string {
     '',
     S(d.cardTitle),
     vars.NOME_TITULAR ? `- Nome: ${vars.NOME_TITULAR}` : '',
-    vars.CNPJ ? `- CNPJ: ${vars.CNPJ}` : '',
+    vars.CNPJ ? `- CNPJ: ${formatCnpj(vars.CNPJ)}` : '',
     vars.SITUACAO ? `- Situação: ${vars.SITUACAO}` : '',
     '',
     `${S(d.buttonLabel)}: ${S(d.buttonHref)}`,
