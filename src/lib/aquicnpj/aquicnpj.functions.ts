@@ -11,16 +11,13 @@ type CompanyUpsert = Database['public']['Tables']['companies']['Insert'];
 async function logApiCall(endpoint: string, method: string, status: number, duration: number, count: number = 0, error?: string) {
   try {
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-    const logData: ApiLogInsert = {
+    await supabaseAdmin.from('api_logs').insert({
       endpoint: endpoint,
       method: method,
       status_code: status,
       duration_ms: duration,
-      results_count: count as any, // The type definition for results_count seems to be missing in some versions or mapped to never
       error_message: error || null
-    };
-    // Workaround for strict type mapping if needed
-    await supabaseAdmin.from('api_logs').insert(logData as any);
+    } as any);
   } catch (e) {
     console.error("Failed to log API call:", e);
   }
@@ -163,7 +160,7 @@ export const completeSearch = createServerFn({ method: "POST" })
         is_mei: isMei || false,
         situacao_cadastral: companyData.situacao_cadastral,
         inicio_atividade: companyData.inicio_atividade?.split('T')[0] || null,
-        nivel_dados: 'complete'
+        nivel_dados: 'completo'
       };
 
       const { data: saved, error: dbError } = await supabaseAdmin.from('companies').upsert(upsertData as any, { onConflict: 'cnpj' }).select().single();
