@@ -352,6 +352,29 @@ function ImportarEmpresasPage() {
                   </Button>
                 </div>
 
+                <div className="overflow-x-auto rounded border">
+                  <table className="w-full text-xs">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="p-2 text-left">CNPJ</th>
+                        <th className="p-2 text-left">Razão Social</th>
+                        <th className="p-2 text-left">E-mail</th>
+                        <th className="p-2 text-left">UF</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewData.map((row, i) => (
+                        <tr key={i} className="border-t">
+                          <td className="p-2 font-mono whitespace-nowrap">{formatCNPJ(String(row[mapping.cnpj] || ''))}</td>
+                          <td className="p-2 truncate max-w-[200px]">{String(row[mapping.razao_social_original] || '')}</td>
+                          <td className="p-2">{String(row[mapping.email] || '')}</td>
+                          <td className="p-2">{String(row[mapping.uf] || '')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
                 <div>
                   <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Mapeamento automático</h4>
                   <div className="grid grid-cols-2 gap-2 text-sm">
