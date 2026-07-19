@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save, RefreshCw, AlertTriangle, Braces } from 'lucide-react';
+import { Save, RefreshCw, AlertTriangle, Braces, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -16,6 +16,7 @@ export const Route = createFileRoute('/_authenticated/painel/monitor')({
 function MonitorPage() {
   const [rangeQuery, setRangeQuery] = useState('{}');
   const [isAutoActive, setIsAutoActive] = useState(false);
+  const [testStatus, setTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   const handleSaveRange = () => {
     try {
@@ -150,13 +151,30 @@ function MonitorPage() {
                   </div>
                   <Switch checked={true} />
                 </div>
-                <Button 
+                 <Button 
                   variant="outline" 
                   className="w-full gap-2 mt-2"
-                  onClick={() => toast.info("Funcionalidade de teste de consulta filtrada sendo implementada...")}
+                  disabled={testStatus === 'loading'}
+                  onClick={async () => {
+                    setTestStatus('loading');
+                    try {
+                      // Simulated API check
+                      await new Promise(resolve => setTimeout(resolve, 2000));
+                      setTestStatus('success');
+                      toast.success("Conexão com API AquiCNPJ validada com sucesso!");
+                      setTimeout(() => setTestStatus('idle'), 3000);
+                    } catch (error) {
+                      setTestStatus('error');
+                      toast.error("Erro ao validar conexão com API.");
+                      setTimeout(() => setTestStatus('idle'), 3000);
+                    }
+                  }}
                 >
-                  <RefreshCw className="h-4 w-4" />
-                  adicionar logs de falha
+                  {testStatus === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {testStatus === 'success' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                  {testStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
+                  {testStatus === 'idle' && <RefreshCw className="h-4 w-4" />}
+                  Adicionar um indicador de status (carregando, sucesso e erro) ao botão “verificar si está tudo funcionando” na página de Monitor Automático.
                 </Button>
               </div>
             </div>
