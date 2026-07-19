@@ -103,11 +103,7 @@ function AuthenticatedLayout() {
                   required
                 />
               </div>
-              <div className="bg-slate-50 p-3 rounded text-[12px] text-slate-500 border border-slate-200">
-                <p className="font-bold mb-1">Dados de demonstração:</p>
-                <p>E-mail: coringa@gmail.com</p>
-                <p>Senha: 117711</p>
-              </div>
+              {/* Removidos dados de demonstração hardcoded */}
             </CardContent>
             <CardFooter>
               <Button type="submit" disabled={isLoading} className="w-full bg-brand-blue hover:bg-brand-navy">
