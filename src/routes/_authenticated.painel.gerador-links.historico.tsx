@@ -101,7 +101,23 @@ function HistoricoGeracoesPage() {
     }
   };
 
-  const filteredGenerations = generations.filter(gen => 
+  const deleteAll = async () => {
+    try {
+      toast.info('Apagando todos os links...');
+      const emptyUuid = '00000000-0000-0000-0000-000000000000';
+      const { error: e1 } = await supabase.from('company_links').delete().neq('id', emptyUuid);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from('link_generations').delete().neq('id', emptyUuid);
+      if (e2) throw e2;
+      setGenerations([]);
+      toast.success('Todos os links foram apagados');
+    } catch (error: any) {
+      toast.error(`Erro ao apagar: ${error.message}`);
+      console.error(error);
+    }
+  };
+
+  const filteredGenerations = generations.filter(gen =>
     gen.arquivo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
