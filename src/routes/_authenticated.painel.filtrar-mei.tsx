@@ -29,7 +29,7 @@ function FilterMeiPage() {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
+      complete: (results: Papa.ParseResult<any>) => {
         const rawData = results.data;
         
         // Simple logic: find column that looks like MEI
