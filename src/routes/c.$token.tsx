@@ -16,8 +16,10 @@ export const Route = createFileRoute('/c/$token')({
     }
 
     // 2. Verificar expiração
-    if (link.expires_at && new Date(link.expires_at).getTime() < Date.now()) {
-      throw redirect({ to: '/' });
+    if (link.expires_at && typeof link.expires_at === 'string') {
+      if (new Date(link.expires_at).getTime() < Date.now()) {
+        throw redirect({ to: '/' });
+      }
     }
 
     // 3. Buscar dados da empresa
