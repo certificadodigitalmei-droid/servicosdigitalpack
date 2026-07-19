@@ -92,39 +92,7 @@ export function Breadcrumb({ items }: { items: { label: string; to?: string }[] 
 }
 
 export function SiteFooter() {
-  return (
-    <footer className="mt-12 border-t border-border bg-background">
-      <div className="mx-auto max-w-[1080px] px-4 py-8 text-[12px] text-muted-foreground">
-        <p className="mb-3 leading-relaxed">
-          <strong className="text-foreground">Central MEI Digital</strong> é uma empresa privada
-          de apoio ao microempreendedor. A contratação é opcional. Serviço privado e opcional. A
-          Central MEI Digital não possui vínculo com a Receita Federal, Gov.br, Portal do
-          Empreendedor ou qualquer órgão público.
-        </p>
-        <div className="mb-3 space-y-0.5">
-          <div>Razão social: <em>INFORMAÇÃO PENDENTE DE CONFIGURAÇÃO</em></div>
-          <div>CNPJ: <em>INFORMAÇÃO PENDENTE DE CONFIGURAÇÃO</em></div>
-          <div>Endereço: <em>INFORMAÇÃO PENDENTE DE CONFIGURAÇÃO</em></div>
-          <div>E-mail: <em>INFORMAÇÃO PENDENTE DE CONFIGURAÇÃO</em></div>
-          <div>Telefone: <em>INFORMAÇÃO PENDENTE DE CONFIGURAÇÃO</em></div>
-        </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-1">
-          <Link to="/politica-de-privacidade" className="text-brand-blue hover:underline">Política de Privacidade</Link>
-          <Link to="/termos-de-uso" className="text-brand-blue hover:underline">Termos de Uso</Link>
-          <Link to="/politica-de-reembolso" className="text-brand-blue hover:underline">Política de Reembolso</Link>
-          <Link to="/contato" className="text-brand-blue hover:underline">Contato</Link>
-          <Link to="/quem-somos" className="text-brand-blue hover:underline">Quem Somos</Link>
-        </div>
-            <div>
-              <h4 className="mb-4 font-semibold text-white">Administrativo</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/login" className="hover:text-white transition-colors">Acesso Restrito</Link></li>
-              </ul>
-            </div>
-          </div>
-
-    </footer>
-  );
+  return null;
 }
 
 export function Page({ children }: { children: ReactNode }) {
