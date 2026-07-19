@@ -14,7 +14,166 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      consent_logs: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string | null
+          privacy_accepted: boolean
+          service_private_acknowledged: boolean
+          terms_accepted: boolean
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          privacy_accepted?: boolean
+          service_private_acknowledged?: boolean
+          terms_accepted?: boolean
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          privacy_accepted?: boolean
+          service_private_acknowledged?: boolean
+          terms_accepted?: boolean
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consent_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          created_at: string
+          document: string
+          email: string
+          id: string
+          name: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document: string
+          email: string
+          id?: string
+          name: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string | null
+          external_transaction_id: string | null
+          id: string
+          paid_at: string | null
+          payment_provider: string | null
+          pix_code: string | null
+          pix_expiration: string | null
+          pix_qr_code: string | null
+          product_name: string
+          reference_cnpj: string | null
+          reference_name: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          customer_id?: string | null
+          external_transaction_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_provider?: string | null
+          pix_code?: string | null
+          pix_expiration?: string | null
+          pix_qr_code?: string | null
+          product_name?: string
+          reference_cnpj?: string | null
+          reference_name?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string | null
+          external_transaction_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_provider?: string | null
+          pix_code?: string | null
+          pix_expiration?: string | null
+          pix_qr_code?: string | null
+          product_name?: string
+          reference_cnpj?: string | null
+          reference_name?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_events: {
+        Row: {
+          created_at: string
+          external_event_id: string | null
+          id: string
+          payload: Json
+          processed_at: string | null
+          processing_status: string
+          provider: string
+        }
+        Insert: {
+          created_at?: string
+          external_event_id?: string | null
+          id?: string
+          payload: Json
+          processed_at?: string | null
+          processing_status?: string
+          provider: string
+        }
+        Update: {
+          created_at?: string
+          external_event_id?: string | null
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          processing_status?: string
+          provider?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +182,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      order_status:
+        | "pending"
+        | "awaiting_payment"
+        | "paid"
+        | "expired"
+        | "cancelled"
+        | "refunded"
+        | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +316,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      order_status: [
+        "pending",
+        "awaiting_payment",
+        "paid",
+        "expired",
+        "cancelled",
+        "refunded",
+        "failed",
+      ],
+    },
   },
 } as const
