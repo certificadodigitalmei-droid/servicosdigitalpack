@@ -9,8 +9,44 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermosDeUsoRouteImport } from './routes/termos-de-uso'
+import { Route as QuemSomosRouteImport } from './routes/quem-somos'
+import { Route as PoliticaDeReembolsoRouteImport } from './routes/politica-de-reembolso'
+import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-privacidade'
+import { Route as ContatoRouteImport } from './routes/contato'
+import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TermosDeUsoRoute = TermosDeUsoRouteImport.update({
+  id: '/termos-de-uso',
+  path: '/termos-de-uso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuemSomosRoute = QuemSomosRouteImport.update({
+  id: '/quem-somos',
+  path: '/quem-somos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PoliticaDeReembolsoRoute = PoliticaDeReembolsoRouteImport.update({
+  id: '/politica-de-reembolso',
+  path: '/politica-de-reembolso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PoliticaDePrivacidadeRoute = PoliticaDePrivacidadeRouteImport.update({
+  id: '/politica-de-privacidade',
+  path: '/politica-de-privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContatoRoute = ContatoRouteImport.update({
+  id: '/contato',
+  path: '/contato',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +55,116 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/checkout': typeof CheckoutRoute
+  '/contato': typeof ContatoRoute
+  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
+  '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
+  '/quem-somos': typeof QuemSomosRoute
+  '/termos-de-uso': typeof TermosDeUsoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/checkout': typeof CheckoutRoute
+  '/contato': typeof ContatoRoute
+  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
+  '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
+  '/quem-somos': typeof QuemSomosRoute
+  '/termos-de-uso': typeof TermosDeUsoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/checkout': typeof CheckoutRoute
+  '/contato': typeof ContatoRoute
+  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
+  '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
+  '/quem-somos': typeof QuemSomosRoute
+  '/termos-de-uso': typeof TermosDeUsoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/checkout'
+    | '/contato'
+    | '/politica-de-privacidade'
+    | '/politica-de-reembolso'
+    | '/quem-somos'
+    | '/termos-de-uso'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/checkout'
+    | '/contato'
+    | '/politica-de-privacidade'
+    | '/politica-de-reembolso'
+    | '/quem-somos'
+    | '/termos-de-uso'
+  id:
+    | '__root__'
+    | '/'
+    | '/checkout'
+    | '/contato'
+    | '/politica-de-privacidade'
+    | '/politica-de-reembolso'
+    | '/quem-somos'
+    | '/termos-de-uso'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CheckoutRoute: typeof CheckoutRoute
+  ContatoRoute: typeof ContatoRoute
+  PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
+  PoliticaDeReembolsoRoute: typeof PoliticaDeReembolsoRoute
+  QuemSomosRoute: typeof QuemSomosRoute
+  TermosDeUsoRoute: typeof TermosDeUsoRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/termos-de-uso': {
+      id: '/termos-de-uso'
+      path: '/termos-de-uso'
+      fullPath: '/termos-de-uso'
+      preLoaderRoute: typeof TermosDeUsoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quem-somos': {
+      id: '/quem-somos'
+      path: '/quem-somos'
+      fullPath: '/quem-somos'
+      preLoaderRoute: typeof QuemSomosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/politica-de-reembolso': {
+      id: '/politica-de-reembolso'
+      path: '/politica-de-reembolso'
+      fullPath: '/politica-de-reembolso'
+      preLoaderRoute: typeof PoliticaDeReembolsoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/politica-de-privacidade': {
+      id: '/politica-de-privacidade'
+      path: '/politica-de-privacidade'
+      fullPath: '/politica-de-privacidade'
+      preLoaderRoute: typeof PoliticaDePrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contato': {
+      id: '/contato'
+      path: '/contato'
+      fullPath: '/contato'
+      preLoaderRoute: typeof ContatoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +177,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CheckoutRoute: CheckoutRoute,
+  ContatoRoute: ContatoRoute,
+  PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
+  PoliticaDeReembolsoRoute: PoliticaDeReembolsoRoute,
+  QuemSomosRoute: QuemSomosRoute,
+  TermosDeUsoRoute: TermosDeUsoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
