@@ -112,7 +112,14 @@ export function SiteFooter() {
           <Link to="/contato" className="text-brand-blue hover:underline">Contato</Link>
           <Link to="/quem-somos" className="text-brand-blue hover:underline">Quem Somos</Link>
         </div>
-      </div>
+            <div>
+              <h4 className="mb-4 font-semibold text-white">Administrativo</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/login" className="hover:text-white transition-colors">Acesso Restrito</Link></li>
+              </ul>
+            </div>
+          </div>
+
     </footer>
   );
 }
