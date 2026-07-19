@@ -23,7 +23,7 @@ export const Route = createFileRoute('/c/$token')({
     const { data: company, error: compError } = await supabase
       .from('companies')
       .select('cnpj, nome_titular_exibicao, inicio_atividade')
-      .eq('id', link.company_id)
+      .eq('id', link.company_id as string)
       .single();
 
     if (compError || !company) {
