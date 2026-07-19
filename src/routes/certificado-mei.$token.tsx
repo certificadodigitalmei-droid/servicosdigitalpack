@@ -22,9 +22,9 @@ function TokenResolutionPage() {
         if (data) {
           // Add the token to pass it to the home page so it can wire up the checkout button
           const search: Record<string, string> = {
-            cnpj: data.cnpj,
-            nome: data.nome,
-            abertura: data.abertura,
+            cnpj: data.cnpj || '',
+            nome: data.nome || '',
+            abertura: data.abertura || '',
             token: token
           };
 
