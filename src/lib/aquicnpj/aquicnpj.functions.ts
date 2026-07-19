@@ -13,7 +13,7 @@ async function logApiCall(endpoint: string, method: string, status: number, dura
       status_code: status,
       duration_ms: duration,
       results_count: count,
-      error_message: error
+      error_message: error || null
     });
   } catch (e) {
     console.error("Failed to log API call:", e);
@@ -97,11 +97,14 @@ export const simpleSearch = createServerFn({ method: "POST" })
         razao_social: companyData.razao_social,
         nome_titular_exibicao: extractTitularName(companyData.razao_social),
         situacao_cadastral: companyData.situacao_cadastral,
-        inicio_atividade: companyData.inicio_atividade,
+        inicio_atividade: companyData.inicio_atividade?.split('T')[0] || null,
         raw_data: companyData
       }, { onConflict: 'cnpj' }).select().single();
 
-      if (dbError) console.error("Database upsert error:", dbError);
+      if (dbError) {
+        console.error("Database upsert error:", dbError);
+        throw new Error(dbError.message);
+      }
       
       return saved;
     } catch (error: any) {
@@ -147,15 +150,18 @@ export const completeSearch = createServerFn({ method: "POST" })
         cnpj: companyData.cnpj,
         razao_social: companyData.razao_social,
         nome_titular_exibicao: extractTitularName(companyData.razao_social),
-        email: companyData.email,
+        email: companyData.email || null,
         telefones: telefones,
-        is_mei: isMei,
+        is_mei: isMei || false,
         situacao_cadastral: companyData.situacao_cadastral,
-        inicio_atividade: companyData.inicio_atividade,
+        inicio_atividade: companyData.inicio_atividade?.split('T')[0] || null,
         raw_data: companyData
       }, { onConflict: 'cnpj' }).select().single();
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Database upsert error:", dbError);
+        throw new Error(dbError.message);
+      }
       return saved;
     } catch (error: any) {
       throw error;
