@@ -72,23 +72,30 @@ function DashboardPage() {
         click_guia: new Set(),
       };
       for (const e of events) {
+        if (e.event_type === 'view_link') s.viewLinkTotal++;
+        else if (e.event_type === 'view_checkout') s.viewCheckoutTotal++;
+        else if (e.event_type === 'click_certificado') s.clickCertTotal++;
+        else if (e.event_type === 'click_guia') s.clickGuiaTotal++;
+
         const key = `${e.token}:${e.visitor_id}`;
-        if (uniq[e.event_type]?.has(key)) continue;
-        uniq[e.event_type]?.add(key);
-        if (e.event_type === 'view_link') s.viewLink++;
-        else if (e.event_type === 'view_checkout') s.viewCheckout++;
-        else if (e.event_type === 'click_certificado') s.clickCert++;
-        else if (e.event_type === 'click_guia') s.clickGuia++;
-        // Only count device/browser breakdown for page visits (not clicks)
-        if (e.event_type === 'view_link' || e.event_type === 'view_checkout') {
-          const b = e.browser || 'Desconhecido';
-          const d = e.device || 'Desconhecido';
-          const o = e.os || 'Desconhecido';
-          s.byBrowser[b] = (s.byBrowser[b] || 0) + 1;
-          s.byDevice[d] = (s.byDevice[d] || 0) + 1;
-          s.byOS[o] = (s.byOS[o] || 0) + 1;
+        const isUnique = !uniq[e.event_type]?.has(key);
+        if (isUnique) uniq[e.event_type]?.add(key);
+        if (isUnique) {
+          if (e.event_type === 'view_link') s.viewLink++;
+          else if (e.event_type === 'view_checkout') s.viewCheckout++;
+          else if (e.event_type === 'click_certificado') s.clickCert++;
+          else if (e.event_type === 'click_guia') s.clickGuia++;
+          if (e.event_type === 'view_link' || e.event_type === 'view_checkout') {
+            const b = e.browser || 'Desconhecido';
+            const d = e.device || 'Desconhecido';
+            const o = e.os || 'Desconhecido';
+            s.byBrowser[b] = (s.byBrowser[b] || 0) + 1;
+            s.byDevice[d] = (s.byDevice[d] || 0) + 1;
+            s.byOS[o] = (s.byOS[o] || 0) + 1;
+          }
         }
       }
+
       s.conversion = s.viewLink > 0 ? Math.round((s.viewCheckout / s.viewLink) * 100) : 0;
 
       setStats(s);
