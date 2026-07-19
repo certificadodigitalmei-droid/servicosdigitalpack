@@ -84,7 +84,8 @@ function GeradorLinksPage() {
       .single();
 
     if (genError) {
-      toast.error('Erro ao criar registro de geração');
+      console.error('Erro detalhado ao criar geração:', genError);
+      toast.error(`Erro ao criar registro: ${genError.message || 'Erro desconhecido'}`);
       setStep('upload');
       return;
     }
