@@ -23,7 +23,7 @@ export const Route = createFileRoute('/c/$token')({
     // 3. Buscar dados da empresa
     const { data: company, error: compError } = await supabase
       .from('companies')
-      .select('cnpj, nome_titular, data_abertura')
+      .select('cnpj, nome_titular_exibicao, inicio_atividade')
       .eq('id', link.company_id)
       .single();
 
@@ -37,8 +37,8 @@ export const Route = createFileRoute('/c/$token')({
       to: '/',
       search: {
         cnpj: company.cnpj || '',
-        nome: company.nome_titular || '',
-        abertura: company.data_abertura || '',
+        nome: company.nome_titular_exibicao || '',
+        abertura: company.inicio_atividade || '',
       },
     });
   },
