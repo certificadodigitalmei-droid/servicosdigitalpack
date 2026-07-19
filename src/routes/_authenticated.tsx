@@ -16,6 +16,7 @@ function AuthenticatedLayout() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [debugError, setDebugError] = useState<any>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -43,25 +44,56 @@ function AuthenticatedLayout() {
     setIsLoading(true);
     
     try {
+      setDebugError(null);
+      
+      const config = {
+        url: (supabase as any).supabaseUrl || 'Não encontrada',
+        initialized: !!supabase
+      };
+
+      console.log('Iniciando tentativa de login:', { email, config });
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error('Erro de login detalhado:', {
+        console.error('Erro de login retornado pelo Supabase:', error);
+        
+        const sessionRes = await supabase.auth.getSession();
+        const userRes = await supabase.auth.getUser();
+
+        const errorDetails = {
           code: error.code,
           message: error.message,
-          status: error.status
-        });
-        toast.error(`Credenciais inválidas ou erro de conexão: ${error.message} (${error.code || 'sem código'})`);
+          status: error.status,
+          name: error.name,
+          supabaseConfig: {
+            url: config.url.replace(/(https:\/\/).{4}/, '$1****'),
+            initialized: config.initialized
+          },
+          authCheck: {
+            session: !!sessionRes.data.session,
+            user: !!userRes.data.user
+          }
+        };
+
+        setDebugError(errorDetails);
+        toast.error(`Erro: ${error.message}`);
       } else if (data.session) {
         setIsAuthorized(true);
         toast.success('Acesso autorizado');
       }
-    } catch (err) {
-      console.error('Erro inesperado no login:', err);
-      toast.error('Ocorreu um erro inesperado');
+    } catch (err: any) {
+      console.error('Erro crítico no fluxo de login:', err);
+      setDebugError({
+        message: err.message,
+        name: err.name,
+        stack: err.stack,
+        type: 'Exceção não tratada'
+      });
+      toast.error('Erro crítico no processamento do login');
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +139,14 @@ function AuthenticatedLayout() {
                   required
                 />
               </div>
-              {/* Removidos dados de demonstração hardcoded */}
+              {debugError && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-xs font-mono overflow-auto max-h-60">
+                  <p className="font-bold text-red-700 mb-1 uppercase tracking-wider text-[10px]">Diagnóstico de Erro Supabase</p>
+                  <pre className="text-red-600 whitespace-pre-wrap">
+                    {JSON.stringify(debugError, null, 2)}
+                  </pre>
+                </div>
+              )}
             </CardContent>
             <CardFooter>
               <Button type="submit" disabled={isLoading} className="w-full bg-brand-blue hover:bg-brand-navy">
