@@ -17,7 +17,6 @@ import { Route as CertificadoMeiTokenRouteImport } from './routes/certificado-me
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
-import { Route as AuthenticatedPainelSegurancaRouteImport } from './routes/_authenticated.painel.seguranca'
 import { Route as AuthenticatedPainelGeradorLinksRouteImport } from './routes/_authenticated.painel.gerador-links'
 import { Route as AuthenticatedPainelFiltrarMeiRouteImport } from './routes/_authenticated.painel.filtrar-mei'
 import { Route as AuthenticatedPainelGeradorLinksHistoricoRouteImport } from './routes/_authenticated.painel.gerador-links.historico'
@@ -62,12 +61,6 @@ const AuthenticatedPainelIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
-const AuthenticatedPainelSegurancaRoute =
-  AuthenticatedPainelSegurancaRouteImport.update({
-    id: '/seguranca',
-    path: '/seguranca',
-    getParentRoute: () => AuthenticatedPainelRoute,
-  } as any)
 const AuthenticatedPainelGeradorLinksRoute =
   AuthenticatedPainelGeradorLinksRouteImport.update({
     id: '/gerador-links',
@@ -96,7 +89,6 @@ export interface FileRoutesByFullPath {
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
-  '/painel/seguranca': typeof AuthenticatedPainelSegurancaRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
 }
@@ -108,7 +100,6 @@ export interface FileRoutesByTo {
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
-  '/painel/seguranca': typeof AuthenticatedPainelSegurancaRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
 }
@@ -123,7 +114,6 @@ export interface FileRoutesById {
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
-  '/_authenticated/painel/seguranca': typeof AuthenticatedPainelSegurancaRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
   '/_authenticated/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
 }
@@ -138,7 +128,6 @@ export interface FileRouteTypes {
     | '/certificado-mei/$token'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
-    | '/painel/seguranca'
     | '/painel/'
     | '/painel/gerador-links/historico'
   fileRoutesByTo: FileRoutesByTo
@@ -150,7 +139,6 @@ export interface FileRouteTypes {
     | '/certificado-mei/$token'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
-    | '/painel/seguranca'
     | '/painel'
     | '/painel/gerador-links/historico'
   id:
@@ -164,7 +152,6 @@ export interface FileRouteTypes {
     | '/certificado-mei/$token'
     | '/_authenticated/painel/filtrar-mei'
     | '/_authenticated/painel/gerador-links'
-    | '/_authenticated/painel/seguranca'
     | '/_authenticated/painel/'
     | '/_authenticated/painel/gerador-links/historico'
   fileRoutesById: FileRoutesById
@@ -236,13 +223,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
-    '/_authenticated/painel/seguranca': {
-      id: '/_authenticated/painel/seguranca'
-      path: '/seguranca'
-      fullPath: '/painel/seguranca'
-      preLoaderRoute: typeof AuthenticatedPainelSegurancaRouteImport
-      parentRoute: typeof AuthenticatedPainelRoute
-    }
     '/_authenticated/painel/gerador-links': {
       id: '/_authenticated/painel/gerador-links'
       path: '/gerador-links'
@@ -285,7 +265,6 @@ const AuthenticatedPainelGeradorLinksRouteWithChildren =
 interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelFiltrarMeiRoute: typeof AuthenticatedPainelFiltrarMeiRoute
   AuthenticatedPainelGeradorLinksRoute: typeof AuthenticatedPainelGeradorLinksRouteWithChildren
-  AuthenticatedPainelSegurancaRoute: typeof AuthenticatedPainelSegurancaRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
 
@@ -293,7 +272,6 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelFiltrarMeiRoute: AuthenticatedPainelFiltrarMeiRoute,
   AuthenticatedPainelGeradorLinksRoute:
     AuthenticatedPainelGeradorLinksRouteWithChildren,
-  AuthenticatedPainelSegurancaRoute: AuthenticatedPainelSegurancaRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
 }
 
