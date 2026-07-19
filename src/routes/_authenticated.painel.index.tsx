@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Filter, FileText, ArrowRight, Link2, History } from 'lucide-react';
+import { Filter, ArrowRight, Link2, History, Upload } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 

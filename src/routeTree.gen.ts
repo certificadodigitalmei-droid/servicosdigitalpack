@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CheckoutTokenRouteImport } from './routes/checkout.$token'
 import { Route as CertificadoMeiTokenRouteImport } from './routes/certificado-mei.$token'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutTokenRoute = CheckoutTokenRouteImport.update({
+  id: '/$token',
+  path: '/$token',
+  getParentRoute: () => CheckoutRoute,
 } as any)
 const CertificadoMeiTokenRoute = CertificadoMeiTokenRouteImport.update({
   id: '/certificado-mei/$token',
@@ -82,11 +88,12 @@ const AuthenticatedPainelGeradorLinksHistoricoRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/checkout': typeof CheckoutRoute
+  '/checkout': typeof CheckoutRouteWithChildren
   '/login': typeof LoginRoute
   '/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
+  '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/': typeof AuthenticatedPainelIndexRoute
@@ -94,10 +101,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/checkout': typeof CheckoutRoute
+  '/checkout': typeof CheckoutRouteWithChildren
   '/login': typeof LoginRoute
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
+  '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel': typeof AuthenticatedPainelIndexRoute
@@ -107,11 +115,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/checkout': typeof CheckoutRoute
+  '/checkout': typeof CheckoutRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
+  '/checkout/$token': typeof CheckoutTokenRoute
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/c/$token'
     | '/certificado-mei/$token'
+    | '/checkout/$token'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel/'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/c/$token'
     | '/certificado-mei/$token'
+    | '/checkout/$token'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel'
     | '/c/$token'
     | '/certificado-mei/$token'
+    | '/checkout/$token'
     | '/_authenticated/painel/filtrar-mei'
     | '/_authenticated/painel/gerador-links'
     | '/_authenticated/painel/'
@@ -159,7 +171,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  CheckoutRoute: typeof CheckoutRoute
+  CheckoutRoute: typeof CheckoutRouteWithChildren
   LoginRoute: typeof LoginRoute
   CTokenRoute: typeof CTokenRoute
   CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
@@ -194,6 +206,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/checkout/$token': {
+      id: '/checkout/$token'
+      path: '/$token'
+      fullPath: '/checkout/$token'
+      preLoaderRoute: typeof CheckoutTokenRouteImport
+      parentRoute: typeof CheckoutRoute
     }
     '/certificado-mei/$token': {
       id: '/certificado-mei/$token'
@@ -290,10 +309,22 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface CheckoutRouteChildren {
+  CheckoutTokenRoute: typeof CheckoutTokenRoute
+}
+
+const CheckoutRouteChildren: CheckoutRouteChildren = {
+  CheckoutTokenRoute: CheckoutTokenRoute,
+}
+
+const CheckoutRouteWithChildren = CheckoutRoute._addFileChildren(
+  CheckoutRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
-  CheckoutRoute: CheckoutRoute,
+  CheckoutRoute: CheckoutRouteWithChildren,
   LoginRoute: LoginRoute,
   CTokenRoute: CTokenRoute,
   CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
