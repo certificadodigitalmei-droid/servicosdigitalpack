@@ -13,9 +13,17 @@ import { Route as TermosDeUsoRouteImport } from './routes/termos-de-uso'
 import { Route as QuemSomosRouteImport } from './routes/quem-somos'
 import { Route as PoliticaDeReembolsoRouteImport } from './routes/politica-de-reembolso'
 import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-privacidade'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CTokenRouteImport } from './routes/c.$token'
+import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
+import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
+import { Route as AuthenticatedPainelMonitorRouteImport } from './routes/_authenticated.painel.monitor'
+import { Route as AuthenticatedPainelEmpresasRouteImport } from './routes/_authenticated.painel.empresas'
+import { Route as AuthenticatedPainelConfiguracoesRouteImport } from './routes/_authenticated.painel.configuracoes'
 
 const TermosDeUsoRoute = TermosDeUsoRouteImport.update({
   id: '/termos-de-uso',
@@ -37,6 +45,11 @@ const PoliticaDePrivacidadeRoute = PoliticaDePrivacidadeRouteImport.update({
   path: '/politica-de-privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContatoRoute = ContatoRouteImport.update({
   id: '/contato',
   path: '/contato',
@@ -47,39 +60,98 @@ const CheckoutRoute = CheckoutRouteImport.update({
   path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CTokenRoute = CTokenRouteImport.update({
+  id: '/c/$token',
+  path: '/c/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
+  id: '/painel',
+  path: '/painel',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPainelIndexRoute =
+  AuthenticatedPainelIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
+const AuthenticatedPainelMonitorRoute =
+  AuthenticatedPainelMonitorRouteImport.update({
+    id: '/monitor',
+    path: '/monitor',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
+const AuthenticatedPainelEmpresasRoute =
+  AuthenticatedPainelEmpresasRouteImport.update({
+    id: '/empresas',
+    path: '/empresas',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
+const AuthenticatedPainelConfiguracoesRoute =
+  AuthenticatedPainelConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRoute
   '/contato': typeof ContatoRoute
+  '/login': typeof LoginRoute
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
   '/quem-somos': typeof QuemSomosRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
+  '/painel': typeof AuthenticatedPainelRouteWithChildren
+  '/c/$token': typeof CTokenRoute
+  '/painel/configuracoes': typeof AuthenticatedPainelConfiguracoesRoute
+  '/painel/empresas': typeof AuthenticatedPainelEmpresasRoute
+  '/painel/monitor': typeof AuthenticatedPainelMonitorRoute
+  '/painel/': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRoute
   '/contato': typeof ContatoRoute
+  '/login': typeof LoginRoute
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
   '/quem-somos': typeof QuemSomosRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
+  '/c/$token': typeof CTokenRoute
+  '/painel/configuracoes': typeof AuthenticatedPainelConfiguracoesRoute
+  '/painel/empresas': typeof AuthenticatedPainelEmpresasRoute
+  '/painel/monitor': typeof AuthenticatedPainelMonitorRoute
+  '/painel': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/checkout': typeof CheckoutRoute
   '/contato': typeof ContatoRoute
+  '/login': typeof LoginRoute
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/politica-de-reembolso': typeof PoliticaDeReembolsoRoute
   '/quem-somos': typeof QuemSomosRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
+  '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
+  '/c/$token': typeof CTokenRoute
+  '/_authenticated/painel/configuracoes': typeof AuthenticatedPainelConfiguracoesRoute
+  '/_authenticated/painel/empresas': typeof AuthenticatedPainelEmpresasRoute
+  '/_authenticated/painel/monitor': typeof AuthenticatedPainelMonitorRoute
+  '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,38 +159,62 @@ export interface FileRouteTypes {
     | '/'
     | '/checkout'
     | '/contato'
+    | '/login'
     | '/politica-de-privacidade'
     | '/politica-de-reembolso'
     | '/quem-somos'
     | '/termos-de-uso'
+    | '/painel'
+    | '/c/$token'
+    | '/painel/configuracoes'
+    | '/painel/empresas'
+    | '/painel/monitor'
+    | '/painel/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/checkout'
     | '/contato'
+    | '/login'
     | '/politica-de-privacidade'
     | '/politica-de-reembolso'
     | '/quem-somos'
     | '/termos-de-uso'
+    | '/c/$token'
+    | '/painel/configuracoes'
+    | '/painel/empresas'
+    | '/painel/monitor'
+    | '/painel'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/checkout'
     | '/contato'
+    | '/login'
     | '/politica-de-privacidade'
     | '/politica-de-reembolso'
     | '/quem-somos'
     | '/termos-de-uso'
+    | '/_authenticated/painel'
+    | '/c/$token'
+    | '/_authenticated/painel/configuracoes'
+    | '/_authenticated/painel/empresas'
+    | '/_authenticated/painel/monitor'
+    | '/_authenticated/painel/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   CheckoutRoute: typeof CheckoutRoute
   ContatoRoute: typeof ContatoRoute
+  LoginRoute: typeof LoginRoute
   PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
   PoliticaDeReembolsoRoute: typeof PoliticaDeReembolsoRoute
   QuemSomosRoute: typeof QuemSomosRoute
   TermosDeUsoRoute: typeof TermosDeUsoRoute
+  CTokenRoute: typeof CTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -151,6 +247,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PoliticaDePrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contato': {
       id: '/contato'
       path: '/contato'
@@ -165,6 +268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -172,17 +282,91 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$token': {
+      id: '/c/$token'
+      path: '/c/$token'
+      fullPath: '/c/$token'
+      preLoaderRoute: typeof CTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/painel': {
+      id: '/_authenticated/painel'
+      path: '/painel'
+      fullPath: '/painel'
+      preLoaderRoute: typeof AuthenticatedPainelRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/painel/': {
+      id: '/_authenticated/painel/'
+      path: '/'
+      fullPath: '/painel/'
+      preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/_authenticated/painel/monitor': {
+      id: '/_authenticated/painel/monitor'
+      path: '/monitor'
+      fullPath: '/painel/monitor'
+      preLoaderRoute: typeof AuthenticatedPainelMonitorRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/_authenticated/painel/empresas': {
+      id: '/_authenticated/painel/empresas'
+      path: '/empresas'
+      fullPath: '/painel/empresas'
+      preLoaderRoute: typeof AuthenticatedPainelEmpresasRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/_authenticated/painel/configuracoes': {
+      id: '/_authenticated/painel/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/painel/configuracoes'
+      preLoaderRoute: typeof AuthenticatedPainelConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
   }
 }
 
+interface AuthenticatedPainelRouteChildren {
+  AuthenticatedPainelConfiguracoesRoute: typeof AuthenticatedPainelConfiguracoesRoute
+  AuthenticatedPainelEmpresasRoute: typeof AuthenticatedPainelEmpresasRoute
+  AuthenticatedPainelMonitorRoute: typeof AuthenticatedPainelMonitorRoute
+  AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
+}
+
+const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
+  AuthenticatedPainelConfiguracoesRoute: AuthenticatedPainelConfiguracoesRoute,
+  AuthenticatedPainelEmpresasRoute: AuthenticatedPainelEmpresasRoute,
+  AuthenticatedPainelMonitorRoute: AuthenticatedPainelMonitorRoute,
+  AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
+}
+
+const AuthenticatedPainelRouteWithChildren =
+  AuthenticatedPainelRoute._addFileChildren(AuthenticatedPainelRouteChildren)
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedPainelRoute: typeof AuthenticatedPainelRouteWithChildren
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedPainelRoute: AuthenticatedPainelRouteWithChildren,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   CheckoutRoute: CheckoutRoute,
   ContatoRoute: ContatoRoute,
+  LoginRoute: LoginRoute,
   PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
   PoliticaDeReembolsoRoute: PoliticaDeReembolsoRoute,
   QuemSomosRoute: QuemSomosRoute,
   TermosDeUsoRoute: TermosDeUsoRoute,
+  CTokenRoute: CTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
