@@ -611,7 +611,8 @@ function CampanhasEmail() {
                           <div className="p-4 border-b bg-slate-50 space-y-1">
                             <div className="text-xs text-muted-foreground"><strong>De:</strong> {fromName} &lt;{fromEmail}&gt;</div>
                             <div className="text-xs text-muted-foreground"><strong>Para:</strong> {current.email}</div>
-                            <div className="text-sm font-semibold"><strong>Assunto:</strong> {renderedSubject}</div>
+                             <div className="text-sm font-semibold"><strong>Assunto:</strong> {renderedSubject}</div>
+                             <div className="text-xs text-muted-foreground line-clamp-1 italic"><strong>Preheader:</strong> {renderedPreheader}</div>
                           </div>
                           <iframe title="preview" srcDoc={renderedHtml} className="w-full h-[640px] border-none" />
                         </div>
