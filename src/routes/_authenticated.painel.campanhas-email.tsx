@@ -669,7 +669,33 @@ function CampanhasEmail() {
               <div className="grid grid-cols-2 gap-2">
                 <Field label="De (nome)"><Input value={fromName} onChange={(e) => setFromName(e.target.value)} /></Field>
                 <Field label="De (e-mail)"><Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} /></Field>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Documentação da API GemMail</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-[10px] text-muted-foreground leading-tight italic">
+                Campos informativos para registro da documentação oficial antes da ativação técnica.
+              </p>
+              <Field label="URL-base oficial">
+                <Input placeholder="https://..." disabled className="bg-slate-50 opacity-70" />
+              </Field>
+              <Field label="Endpoint de teste">
+                <Input placeholder="/health ou /me" disabled className="bg-slate-50 opacity-70" />
+              </Field>
+              <Field label="Formato Autenticação">
+                <Input placeholder="Bearer Token / X-API-Key" disabled className="bg-slate-50 opacity-70" />
+              </Field>
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex justify-between text-[10px]"><span>Endpoint Listas:</span> <span className="text-slate-400">Pendente</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Inscritos:</span> <span className="text-slate-400">Pendente</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Campanhas:</span> <span className="text-slate-400">Pendente</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Envio:</span> <span className="text-slate-400">Pendente</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Relatórios:</span> <span className="text-slate-400">Pendente</span></div>
               </div>
+            </CardContent>
+          </Card>
+        </div>
               <Field label="Reply-to"><Input value={replyTo} onChange={(e) => setReplyTo(e.target.value)} /></Field>
             </CardContent>
           </Card>
