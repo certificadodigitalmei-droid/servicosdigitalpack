@@ -707,11 +707,11 @@ function CampanhasEmail() {
                 <Input placeholder="publicKey + privateKey (GemMailApi_Config)" disabled className="bg-slate-50 opacity-70" />
               </Field>
               <div className="space-y-2 pt-2 border-t">
-                <div className="flex justify-between text-[10px]"><span>Endpoint Listas:</span> <span className="text-slate-400">Pendente</span></div>
-                <div className="flex justify-between text-[10px]"><span>Endpoint Inscritos:</span> <span className="text-slate-400">Pendente</span></div>
-                <div className="flex justify-between text-[10px]"><span>Endpoint Campanhas:</span> <span className="text-slate-400">Pendente</span></div>
-                <div className="flex justify-between text-[10px]"><span>Endpoint Envio:</span> <span className="text-slate-400">Pendente</span></div>
-                <div className="flex justify-between text-[10px]"><span>Endpoint Relatórios:</span> <span className="text-slate-400">Pendente</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Listas:</span> <span className="text-blue-500 font-bold uppercase">Confirmado (Lists)</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Inscritos:</span> <span className="text-blue-500 font-bold uppercase">Confirmado (ListSubscribers)</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Campanhas:</span> <span className="text-blue-500 font-bold uppercase">Confirmado (Campaigns)</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Templates:</span> <span className="text-blue-500 font-bold uppercase">Confirmado (Templates)</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Envio:</span> <span className="text-blue-500 font-bold uppercase">Confirmado (TransactionalEmails)</span></div>
               </div>
             </CardContent>
           </Card>
