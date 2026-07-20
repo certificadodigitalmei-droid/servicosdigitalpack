@@ -112,7 +112,81 @@ function CampanhasEmail() {
   const [search, setSearch] = useState('');
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [gemStatus, setGemStatus] = useState<{ connected: boolean; message?: string; testing?: boolean }>({ connected: false });
+  const [emailSettings, setEmailSettings] = useState<any>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const testConnectionFn = useServerFn(testGemMailConnection);
+  const syncCampaignFn = useServerFn(syncCampaignToGemMail);
+  const sendCampaignFn = useServerFn(sendGemMailCampaign);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    const { data } = await supabase.from('email_settings').select('*').single();
+    if (data) {
+      setEmailSettings(data);
+      setFromName(data.from_name || fromName);
+      setFromEmail(data.from_email || fromEmail);
+      setReplyTo(data.reply_to || replyTo);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setGemStatus({ ...gemStatus, testing: true });
+    try {
+      const res = await testConnectionFn();
+      setGemStatus({ connected: res.success, message: res.message, testing: false });
+      if (res.success) toast.success('Conexão GemMail aprovada!');
+      else toast.error('Falha na conexão: ' + res.message);
+    } catch (e: any) {
+      setGemStatus({ connected: false, message: e.message, testing: false });
+      toast.error('Erro ao testar conexão');
+    }
+  };
+
+  const handleSyncCampaign = async () => {
+    if (!campaignId) return toast.error('Campanha não importada');
+    setIsSyncing(true);
+    try {
+      await syncCampaignFn({ data: { campaignId } });
+      toast.success('Campanha sincronizada com GemMail');
+      // Refresh campaign status
+      const { data } = await supabase.from('email_campaigns').select('provider_status').eq('id', campaignId).single();
+      if (data) setStep('editor'); // Trigger re-render of button states
+    } catch (e: any) {
+      toast.error('Erro na sincronização: ' + e.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleSendCampaign = async () => {
+    if (!campaignId) return;
+    setIsSending(true);
+    try {
+      await sendCampaignFn({ data: { campaignId } });
+      toast.success('Disparo iniciado via GemMail!');
+    } catch (e: any) {
+      toast.error('Erro ao enviar: ' + e.message);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const updateSettings = async (updates: any) => {
+    if (!emailSettings?.id) return;
+    const { error } = await supabase.from('email_settings').update(updates).eq('id', emailSettings.id);
+    if (error) toast.error(error.message);
+    else {
+      setEmailSettings({ ...emailSettings, ...updates });
+      toast.success('Configurações salvas');
+    }
+  };
 
   // ================= Upload =================
   const handleFile = async (f: File) => {
