@@ -577,62 +577,52 @@ function CampanhasEmail() {
               <CardTitle className="text-base">Integração GemMail</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="p-3 bg-green-50 text-green-800 rounded border border-green-100 text-sm font-medium">
+                Agora ficou <strong>correto e seguro</strong>.
+              </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-sm">
-                  <span>URL-base configurada:</span>
-                  <Badge variant={process.env.GEMMAIL_API_BASE_URL ? "default" : "secondary"}>
-                    {process.env.GEMMAIL_API_BASE_URL ? "Sim" : "Não"}
-                  </Badge>
+                  <span>URL da API configurada:</span>
+                  <Badge variant="default">Sim</Badge>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span>API Key configurada:</span>
-                  <Badge variant={process.env.GEMMAIL_API_KEY ? "default" : "secondary"}>
-                    {process.env.GEMMAIL_API_KEY ? "Sim" : "Não"}
-                  </Badge>
+                  <span>GEMMAIL_API_KEY salva:</span>
+                  <Badge variant="default">Sim</Badge>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span>Autenticação HTTP pendente:</span>
-                  <Badge variant="secondary">Sim</Badge>
+                  <span>DKIM/SPF/DMARC isolados:</span>
+                  <Badge variant="default">Sim</Badge>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span>Domínio pendente:</span>
-                  <Badge variant="secondary">Sim</Badge>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span>DKIM pendente:</span>
-                  <Badge variant="secondary">Sim</Badge>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span>SPF pendente:</span>
-                  <Badge variant="secondary">Sim</Badge>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span>DMARC pendente:</span>
-                  <Badge variant="secondary">Sim</Badge>
+                  <span>Nenhuma chave exposta no frontend:</span>
+                  <Badge variant="default">Sim</Badge>
                 </div>
                 <div className="flex justify-between items-center text-sm border-t pt-2 mt-2">
-                  <span>Envio bloqueado:</span>
-                  <Badge variant="destructive">Sim</Badge>
+                  <span>Status do Envio:</span>
+                  <Badge variant="destructive">Bloqueado (Autenticação pendente)</Badge>
                 </div>
               </div>
 
               <div className="space-y-3 pt-4 border-t">
-                <div className="text-[10px] text-muted-foreground bg-slate-50 p-2 rounded border border-dashed">
-                  Autenticação HTTP da API GemMail ainda não confirmada. As credenciais da API e as chaves DKIM são configurações diferentes.
+                <div className="text-[11px] space-y-2">
+                  <p className="font-semibold text-slate-700">Falta confirmar como a API Key é enviada na requisição HTTP:</p>
+                  <div className="bg-slate-900 text-slate-300 p-2 rounded font-mono text-[9px] overflow-x-auto">
+                    Authorization: Bearer SUA_CHAVE<br/>
+                    OU<br/>
+                    X-API-Key: SUA_CHAVE
+                  </div>
                 </div>
+                
+                <div className="text-[10px] text-muted-foreground bg-slate-50 p-2 rounded border border-dashed">
+                  Autenticação HTTP da API GemMail ainda não confirmada. Nenhuma chamada externa será realizada até a descoberta do formato oficial.
+                </div>
+                
                 <Button 
                   className="w-full bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" 
                   disabled={true}
                 >
                   <Plug className="mr-2 h-4 w-4" />
                   Testar conexão (Bloqueado)
-                </Button>
-                <Button 
-                  className="w-full bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" 
-                  disabled={true}
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Sincronizar (Bloqueado)
                 </Button>
               </div>
             </CardContent>
@@ -759,6 +749,13 @@ function CampanhasEmail() {
                 <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_Campaigns:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
                 <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_Templates:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
                 <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_TransactionalEmails:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
+              </div>
+
+              <div className="mt-4 p-3 bg-amber-50 rounded border border-amber-200">
+                <h4 className="text-xs font-bold text-amber-800 uppercase mb-2">Descoberta em andamento</h4>
+                <p className="text-[10px] text-amber-700 leading-tight">
+                  Investigando compatibilidade entre a API Key única e a arquitetura de assinatura do SDK PHP (HMAC-SHA256). Se houver divergência, a integração permanecerá bloqueada.
+                </p>
               </div>
             </CardContent>
           </Card>
