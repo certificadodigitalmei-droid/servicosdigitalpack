@@ -116,6 +116,7 @@ function CampanhasEmail() {
   const [emailSettings, setEmailSettings] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [discoveryStatus, setDiscoveryStatus] = useState<string>('pending');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const testConnectionFn = useServerFn(testGemMailConnection);
