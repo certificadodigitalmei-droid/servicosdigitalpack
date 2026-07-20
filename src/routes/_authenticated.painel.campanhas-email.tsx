@@ -579,8 +579,20 @@ function CampanhasEmail() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-sm">
                   <span>URL-base configurada:</span>
-                  <Badge variant={process.env.GEMMAIL_API_BASE_URL ? "default" : "secondary"}>
+                  <Badge variant={process.env.GEMMAIL_API_BASE_URL && process.env.GEMMAIL_PUBLIC_KEY && process.env.GEMMAIL_PRIVATE_KEY ? "default" : "secondary"}>
                     {process.env.GEMMAIL_API_BASE_URL ? "Sim" : "Não"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span>publicKey configurada:</span>
+                  <Badge variant={process.env.GEMMAIL_PUBLIC_KEY ? "default" : "secondary"}>
+                    {process.env.GEMMAIL_PUBLIC_KEY ? "Sim" : "Não"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span>privateKey configurada:</span>
+                  <Badge variant={process.env.GEMMAIL_PRIVATE_KEY ? "default" : "secondary"}>
+                    {process.env.GEMMAIL_PRIVATE_KEY ? "Sim" : "Não"}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center text-sm">
@@ -689,10 +701,10 @@ function CampanhasEmail() {
                 <Input value="https://gerenciador.gemmail.com.br/api" disabled className="bg-slate-50 opacity-70" />
               </Field>
               <Field label="Endpoint de teste">
-                <Input placeholder="/health ou /me" disabled className="bg-slate-50 opacity-70" />
+                <Input placeholder="GemMailApi_Endpoint_TransactionalEmails" disabled className="bg-slate-50 opacity-70" />
               </Field>
               <Field label="Formato Autenticação">
-                <Input placeholder="Bearer Token / X-API-Key" disabled className="bg-slate-50 opacity-70" />
+                <Input placeholder="publicKey + privateKey (GemMailApi_Config)" disabled className="bg-slate-50 opacity-70" />
               </Field>
               <div className="space-y-2 pt-2 border-t">
                 <div className="flex justify-between text-[10px]"><span>Endpoint Listas:</span> <span className="text-slate-400">Pendente</span></div>
