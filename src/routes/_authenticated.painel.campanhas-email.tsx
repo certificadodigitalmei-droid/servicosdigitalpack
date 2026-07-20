@@ -560,12 +560,12 @@ function CampanhasEmail() {
             <Download className="mr-2 h-4 w-4" /> XLSX
           </Button>
           <Button 
-            onClick={handleTestConnection} 
-            disabled={gemStatus.testing}
-            className={gemStatus.connected ? "bg-green-600 hover:bg-green-700" : "bg-brand-navy hover:bg-brand-blue"}
+            variant="outline"
+            disabled={true}
+            className="bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed"
           >
             <Plug className="mr-2 h-4 w-4" /> 
-            {gemStatus.testing ? 'Testando...' : gemStatus.connected ? 'GemMail Conectado' : 'Testar GemMail'}
+            Documentação oficial da API GemMail necessária
           </Button>
         </div>
 
