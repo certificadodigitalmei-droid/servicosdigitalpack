@@ -865,6 +865,27 @@ function CampanhasEmail() {
 
           <Card>
             <CardHeader className="pb-2">
+              <CardTitle className="text-base">Resultados da Campanha</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <ResultBox label="Sincronizados" value={recipients.length} />
+                <ResultBox label="Enviados" value={0} />
+                <ResultBox label="Entregues" value={0} tone="ok" />
+                <ResultBox label="Falhas" value={0} tone="warn" />
+                <ResultBox label="Aberturas" value={0} />
+                <ResultBox label="Cliques" value={0} />
+                <ResultBox label="Descadastros" value={0} tone="warn" />
+                <ResultBox label="Pendentes" value={recipients.length} />
+              </div>
+              <Button size="sm" variant="outline" className="w-full mt-4">
+                <RefreshCw className="mr-2 h-4 w-4" /> ATUALIZAR STATUS REAL
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle className="text-base">Fila preparada ({recipients.length})</CardTitle>
                 <div className="flex flex-wrap gap-2">
