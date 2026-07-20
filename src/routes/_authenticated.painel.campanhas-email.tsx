@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useServerFn } from '@tanstack/react-start';
+import {
+  testGemMailConnection,
+  syncCampaignToGemMail,
+  sendGemMailCampaign,
+} from '@/lib/email-campaign/gemmail.functions';
 import {
   parseFile,
   autoMap,
@@ -48,6 +54,9 @@ import {
   Trash2,
   Ban,
   CheckCircle2,
+  RefreshCw,
+  Send,
+  Zap,
 } from 'lucide-react';
 import {
   AlertDialog,
