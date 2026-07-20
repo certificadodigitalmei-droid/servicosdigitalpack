@@ -618,9 +618,9 @@ function CampanhasEmail() {
                 <Input value={emailSettings?.sending_domain || ''} onChange={(e) => setEmailSettings({ ...emailSettings, sending_domain: e.target.value })} onBlur={() => updateSettings({ sending_domain: emailSettings.sending_domain })} />
               </Field>
               <div className="text-[10px] text-muted-foreground pt-1 space-y-1">
-                <div className="flex justify-between"><span>Status do Domínio:</span> <span className="font-bold text-amber-600">PENDENTE</span></div>
-                <div className="flex justify-between"><span>DKIM:</span> <span className="font-bold text-amber-600">PENDENTE</span></div>
-                <div className="flex justify-between"><span>SPF:</span> <span className="font-bold text-amber-600">PENDENTE</span></div>
+                <div className="flex justify-between"><span>Status do Domínio:</span> <span className="font-bold text-slate-400 uppercase">Não configurado</span></div>
+                <div className="flex justify-between"><span>DKIM:</span> <span className="font-bold text-slate-400 uppercase">Não configurado</span></div>
+                <div className="flex justify-between"><span>SPF:</span> <span className="font-bold text-slate-400 uppercase">Não configurado</span></div>
               </div>
             </CardContent>
           </Card>
