@@ -973,23 +973,29 @@ export type Database = {
         Row: {
           cnpj: string | null
           created_at: string
+          created_by: string | null
           email: string | null
           id: string
           reason: string | null
+          source: string | null
         }
         Insert: {
           cnpj?: string | null
           created_at?: string
+          created_by?: string | null
           email?: string | null
           id?: string
           reason?: string | null
+          source?: string | null
         }
         Update: {
           cnpj?: string | null
           created_at?: string
+          created_by?: string | null
           email?: string | null
           id?: string
           reason?: string | null
+          source?: string | null
         }
         Relationships: []
       }
