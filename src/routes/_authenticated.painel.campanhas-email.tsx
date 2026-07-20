@@ -585,44 +585,20 @@ function CampanhasEmail() {
 
               <div className="space-y-3 pt-2">
                 <Button 
-                  className="w-full bg-brand-navy" 
-                  onClick={handleSyncCampaign}
-                  disabled={isSyncing || !campaignId}
+                  className="w-full bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" 
+                  disabled={true}
                 >
-                  {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  Sincronizar com GemMail
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Sincronização desativada (Aguardando Doc)
                 </Button>
 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      className="w-full bg-green-600 hover:bg-green-700" 
-                      disabled={isSending || !campaignId}
-                    >
-                      {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                      ENVIAR CAMPANHA
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Confirmar disparo de e-mails?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta ação enviará e-mails reais para a lista sincronizada na GemMail.
-                        <div className="mt-4 p-3 bg-slate-50 rounded border text-sm space-y-1 text-slate-700">
-                          <div><strong>Campanha:</strong> {campaignName}</div>
-                          <div><strong>Destinatários:</strong> {recipients.filter(r => r.status === 'ready').length}</div>
-                          <div><strong>Remetente:</strong> {fromEmail}</div>
-                        </div>
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleSendCampaign} className="bg-green-600 hover:bg-green-700">
-                        Confirmar Envio
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <Button 
+                  className="w-full bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" 
+                  disabled={true}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  ENVIAR CAMPANHA (Bloqueado)
+                </Button>
               </div>
             </CardContent>
           </Card>
