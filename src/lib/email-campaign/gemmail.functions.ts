@@ -8,68 +8,50 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * All guessed endpoints are disabled to prevent unauthorized/incorrect calls.
  */
 class GemMailProviderPlaceholder {
-  private apiKey: string;
+  private publicKey: string;
+  private privateKey: string;
   private baseUrl: string;
 
-  constructor(apiKey: string, baseUrl: string) {
+  constructor(publicKey: string, privateKey: string, baseUrl: string) {
     if (!baseUrl) {
       throw new Error("URL oficial da API GemMail ainda não configurada.");
     }
-    this.apiKey = apiKey;
+    this.publicKey = publicKey;
+    this.privateKey = privateKey;
     this.baseUrl = baseUrl.replace(/\/$/, "");
   }
 
   private async request(path: string, options: RequestInit = {}) {
-    // Disabled until official documentation is confirmed
-    throw new Error("Ação desativada: Documentação oficial da API GemMail necessária.");
+    // Implementação HTTP verificada ou Microserviço PHP necessária
+    throw new Error("Ação desativada: Formato HTTP oficial do SDK GemMail ainda não confirmado.");
   }
 
   async testConnection() {
-    // Disabled: /health was a guessed endpoint
-    throw new Error("Ação desativada: Documentação oficial da API GemMail necessária.");
+    throw new Error("Ação desativada: Endpoint oficial para teste ou autenticação necessário.");
   }
 
   async getLists() {
-    // Disabled: /lists was a guessed endpoint
-    throw new Error("Ação desativada: Documentação oficial da API GemMail necessária.");
+    throw new Error("Ação desativada: Recurso GemMailApi_Endpoint_Lists necessário.");
   }
 
-  async createList(name: string) {
-    // Disabled: /lists was a guessed endpoint
-    throw new Error("Ação desativada: Documentação oficial da API GemMail necessária.");
+  async createList(data: any) {
+    throw new Error("Ação desativada: Recurso GemMailApi_Endpoint_Lists necessário.");
   }
 
-  async addSubscribersBulk(listId: string, subscribers: any[]) {
-    // Disabled: /subscribers/bulk was a guessed endpoint
-    throw new Error("Ação desativada: Documentação oficial da API GemMail necessária.");
+  async addSubscribers(listUid: string, subscribers: any[]) {
+    throw new Error("Ação desativada: Recurso GemMailApi_Endpoint_ListSubscribers necessário.");
   }
 
-  async createTemplate(data: { name: string; html: string; text?: string }) {
-    // Disabled: /templates was a guessed endpoint
-    throw new Error("Ação desativada: Documentação oficial da API GemMail necessária.");
+  async createTemplate(data: any) {
+    throw new Error("Ação desativada: Recurso GemMailApi_Endpoint_Templates necessário.");
   }
 
-  async createCampaign(data: {
-    name: string;
-    list_id: string;
-    template_id: string;
-    subject: string;
-    from_name: string;
-    from_email: string;
-    reply_to: string;
-  }) {
-    // Disabled: /campaigns was a guessed endpoint
-    throw new Error("Ação desativada: Documentação oficial da API GemMail necessária.");
+  async createCampaign(data: any) {
+    throw new Error("Ação desativada: Recurso GemMailApi_Endpoint_Campaigns necessário.");
   }
 
-  async sendCampaign(campaignId: string) {
-    // Disabled: /send was a guessed endpoint
-    throw new Error("Ação desativada: Documentação oficial da API GemMail necessária.");
-  }
-
-  async getCampaignStats(campaignId: string) {
-    // Disabled: /stats was a guessed endpoint
-    throw new Error("Ação desativada: Documentação oficial da API GemMail necessária.");
+  async sendTransactionalEmail(data: any) {
+    throw new Error("Ação desativada: Recurso GemMailApi_Endpoint_TransactionalEmails necessário.");
   }
 }
 
@@ -90,19 +72,20 @@ export const testGemMailConnection = createServerFn({ method: "POST" })
       throw new Error("Unauthorized: Only admins can perform this action");
     }
 
-    const apiKey = process.env.GEMMAIL_API_KEY;
+    const publicKey = process.env.GEMMAIL_PUBLIC_KEY;
+    const privateKey = process.env.GEMMAIL_PRIVATE_KEY;
     const baseUrl = process.env.GEMMAIL_API_BASE_URL;
 
     if (!baseUrl) {
-      return { success: false, message: "URL oficial da API GemMail ainda não configurada." };
+      return { success: false, message: "GEMMAIL_API_BASE_URL não configurada." };
     }
 
-    if (!apiKey) {
-      return { success: false, message: "GEMMAIL_API_KEY não configurada nos Secrets" };
+    if (!publicKey || !privateKey) {
+      return { success: false, message: "GEMMAIL_PUBLIC_KEY ou GEMMAIL_PRIVATE_KEY não configuradas." };
     }
 
     try {
-      const provider = new GemMailProviderPlaceholder(apiKey, baseUrl);
+      const provider = new GemMailProviderPlaceholder(publicKey, privateKey, baseUrl);
       await provider.testConnection();
       return { success: true, message: "Conexão aprovada" };
     } catch (error: any) {
@@ -124,12 +107,13 @@ export const syncCampaignToGemMail = createServerFn({ method: "POST" })
 
     if (!roleData) throw new Error("Unauthorized");
 
-    const apiKey = process.env.GEMMAIL_API_KEY!;
+    const publicKey = process.env.GEMMAIL_PUBLIC_KEY!;
+    const privateKey = process.env.GEMMAIL_PRIVATE_KEY!;
     const baseUrl = process.env.GEMMAIL_API_BASE_URL;
 
-    if (!baseUrl) throw new Error("URL oficial da API GemMail ainda não configurada.");
+    if (!baseUrl) throw new Error("GEMMAIL_API_BASE_URL não configurada.");
 
-    const provider = new GemMailProviderPlaceholder(apiKey, baseUrl);
+    const provider = new GemMailProviderPlaceholder(publicKey, privateKey, baseUrl);
 
     try {
       // Disabled functionality until documentation is provided
@@ -156,12 +140,13 @@ export const sendGemMailCampaign = createServerFn({ method: "POST" })
 
     if (!roleData) throw new Error("Unauthorized");
 
-    const apiKey = process.env.GEMMAIL_API_KEY!;
+    const publicKey = process.env.GEMMAIL_PUBLIC_KEY!;
+    const privateKey = process.env.GEMMAIL_PRIVATE_KEY!;
     const baseUrl = process.env.GEMMAIL_API_BASE_URL;
     
-    if (!baseUrl) throw new Error("URL oficial da API GemMail ainda não configurada.");
+    if (!baseUrl) throw new Error("GEMMAIL_API_BASE_URL não configurada.");
 
-    const provider = new GemMailProviderPlaceholder(apiKey, baseUrl);
+    const provider = new GemMailProviderPlaceholder(publicKey, privateKey, baseUrl);
 
     // Disabled functionality until documentation is provided
     throw new Error("Envio desativado: Documentação oficial da API GemMail necessária.");
