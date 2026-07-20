@@ -112,7 +112,7 @@ function CampanhasEmail() {
   const [search, setSearch] = useState('');
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
-  const [gemStatus, setGemStatus] = useState<{ connected: boolean; message?: string; testing?: boolean }>({ connected: !!import.meta.env.GEMMAIL_API_KEY });
+  const [gemStatus, setGemStatus] = useState<{ connected: boolean; message?: string; testing?: boolean }>({ connected: false });
   const [emailSettings, setEmailSettings] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -560,12 +560,12 @@ function CampanhasEmail() {
             <Download className="mr-2 h-4 w-4" /> XLSX
           </Button>
           <Button 
-            onClick={handleTestConnection} 
-            disabled={gemStatus.testing}
-            className={gemStatus.connected ? "bg-green-600 hover:bg-green-700" : "bg-brand-navy hover:bg-brand-blue"}
+            variant="outline"
+            disabled={true}
+            className="bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed"
           >
             <Plug className="mr-2 h-4 w-4" /> 
-            {gemStatus.testing ? 'Testando...' : gemStatus.connected ? 'GemMail Conectado' : 'Testar GemMail'}
+            Documentação oficial da API GemMail necessária
           </Button>
         </div>
 
@@ -585,44 +585,20 @@ function CampanhasEmail() {
 
               <div className="space-y-3 pt-2">
                 <Button 
-                  className="w-full bg-brand-navy" 
-                  onClick={handleSyncCampaign}
-                  disabled={isSyncing || !campaignId}
+                  className="w-full bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" 
+                  disabled={true}
                 >
-                  {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  Sincronizar com GemMail
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Sincronização desativada (Aguardando Doc)
                 </Button>
 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      className="w-full bg-green-600 hover:bg-green-700" 
-                      disabled={isSending || !campaignId}
-                    >
-                      {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                      ENVIAR CAMPANHA
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Confirmar disparo de e-mails?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta ação enviará e-mails reais para a lista sincronizada na GemMail.
-                        <div className="mt-4 p-3 bg-slate-50 rounded border text-sm space-y-1 text-slate-700">
-                          <div><strong>Campanha:</strong> {campaignName}</div>
-                          <div><strong>Destinatários:</strong> {recipients.filter(r => r.status === 'ready').length}</div>
-                          <div><strong>Remetente:</strong> {fromEmail}</div>
-                        </div>
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleSendCampaign} className="bg-green-600 hover:bg-green-700">
-                        Confirmar Envio
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <Button 
+                  className="w-full bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" 
+                  disabled={true}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  ENVIAR CAMPANHA (Bloqueado)
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -642,9 +618,9 @@ function CampanhasEmail() {
                 <Input value={emailSettings?.sending_domain || ''} onChange={(e) => setEmailSettings({ ...emailSettings, sending_domain: e.target.value })} onBlur={() => updateSettings({ sending_domain: emailSettings.sending_domain })} />
               </Field>
               <div className="text-[10px] text-muted-foreground pt-1 space-y-1">
-                <div className="flex justify-between"><span>Status do Domínio:</span> <span className="font-bold text-amber-600">PENDENTE</span></div>
-                <div className="flex justify-between"><span>DKIM:</span> <span className="font-bold text-amber-600">PENDENTE</span></div>
-                <div className="flex justify-between"><span>SPF:</span> <span className="font-bold text-amber-600">PENDENTE</span></div>
+                <div className="flex justify-between"><span>Status do Domínio:</span> <span className="font-bold text-slate-400 uppercase">Não configurado</span></div>
+                <div className="flex justify-between"><span>DKIM:</span> <span className="font-bold text-slate-400 uppercase">Não configurado</span></div>
+                <div className="flex justify-between"><span>SPF:</span> <span className="font-bold text-slate-400 uppercase">Não configurado</span></div>
               </div>
             </CardContent>
           </Card>
@@ -672,12 +648,6 @@ function CampanhasEmail() {
 
       </div>
       
-      {gemStatus.message && (
-        <p className={`text-xs p-2 border rounded ${gemStatus.connected ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-          <strong>Provedor:</strong> GemMail · <strong>Status:</strong> {gemStatus.message}
-        </p>
-      )}
-
       <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
 
         {/* ====== Editor ====== */}
@@ -695,6 +665,33 @@ function CampanhasEmail() {
                 <Field label="De (e-mail)"><Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} /></Field>
               </div>
               <Field label="Reply-to"><Input value={replyTo} onChange={(e) => setReplyTo(e.target.value)} /></Field>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Documentação da API GemMail</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-[10px] text-muted-foreground leading-tight italic">
+                Campos informativos para registro da documentação oficial antes da ativação técnica.
+              </p>
+              <Field label="URL-base oficial">
+                <Input placeholder="https://..." disabled className="bg-slate-50 opacity-70" />
+              </Field>
+              <Field label="Endpoint de teste">
+                <Input placeholder="/health ou /me" disabled className="bg-slate-50 opacity-70" />
+              </Field>
+              <Field label="Formato Autenticação">
+                <Input placeholder="Bearer Token / X-API-Key" disabled className="bg-slate-50 opacity-70" />
+              </Field>
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex justify-between text-[10px]"><span>Endpoint Listas:</span> <span className="text-slate-400">Pendente</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Inscritos:</span> <span className="text-slate-400">Pendente</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Campanhas:</span> <span className="text-slate-400">Pendente</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Envio:</span> <span className="text-slate-400">Pendente</span></div>
+                <div className="flex justify-between text-[10px]"><span>Endpoint Relatórios:</span> <span className="text-slate-400">Pendente</span></div>
+              </div>
             </CardContent>
           </Card>
 
@@ -843,17 +840,11 @@ function CampanhasEmail() {
                     <Button size="sm" variant="outline" onClick={downloadHtml}><Download className="mr-2 h-4 w-4" />Baixar HTML</Button>
                     <Button 
                       size="sm" 
-                      className="bg-brand-navy hover:bg-brand-blue" 
-                      onClick={async () => {
-                        const email = prompt("Digite o e-mail de teste:");
-                        if (email) {
-                          toast.info("Enviando teste...");
-                          // Simulating test send for now or we could create a server function for single send
-                          toast.success("E-mail de teste enviado!");
-                        }
-                      }}
+                      variant="ghost"
+                      disabled={true}
+                      className="bg-slate-50 text-slate-400 cursor-not-allowed"
                     >
-                      <Send className="mr-2 h-4 w-4" /> ENVIAR TESTE
+                      <Send className="mr-2 h-4 w-4" /> ENVIAR TESTE (Bloqueado)
                     </Button>
                   </div>
                 </>
@@ -865,22 +856,17 @@ function CampanhasEmail() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Resultados da Campanha</CardTitle>
+              <CardTitle className="text-base">Status da Integração</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <ResultBox label="Sincronizados" value={recipients.length} />
-                <ResultBox label="Enviados" value={0} />
-                <ResultBox label="Entregues" value={0} tone="ok" />
-                <ResultBox label="Falhas" value={0} tone="warn" />
-                <ResultBox label="Aberturas" value={0} />
-                <ResultBox label="Cliques" value={0} />
-                <ResultBox label="Descadastros" value={0} tone="warn" />
-                <ResultBox label="Pendentes" value={recipients.length} />
+              <div className="p-4 bg-slate-50 rounded border border-dashed text-center">
+                <p className="text-sm font-medium text-slate-500">
+                  GemMail ainda não conectada.
+                </p>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Métricas em tempo real serão exibidas após configuração oficial.
+                </p>
               </div>
-              <Button size="sm" variant="outline" className="w-full mt-4">
-                <RefreshCw className="mr-2 h-4 w-4" /> ATUALIZAR STATUS REAL
-              </Button>
             </CardContent>
           </Card>
 
