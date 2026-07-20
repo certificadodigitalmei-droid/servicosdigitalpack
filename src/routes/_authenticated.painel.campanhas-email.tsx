@@ -630,56 +630,56 @@ function CampanhasEmail() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Configuração do domínio de envio</CardTitle>
+              <CardTitle className="text-base text-red-600 font-bold">Verify this domain</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <Field label="Domínio">
-                  <Input value="seu-certificado-mei-digital.online" disabled className="bg-slate-50 opacity-70" />
-                </Field>
-                <div className="grid grid-cols-2 gap-2">
-                  <Field label="Seletor DKIM">
-                    <Input value="mailer" disabled className="bg-slate-50 opacity-70" />
-                  </Field>
-                  <Field label="Última verificação">
-                    <Input value="Nunca" disabled className="bg-slate-50 opacity-70 text-xs" />
-                  </Field>
+              <p className="text-[11px] text-slate-600">
+                Please edit your DNS records for seu-certificado-mei-digital.online domain and add the following TXT record:
+              </p>
+              
+              <div className="p-3 bg-slate-50 rounded border font-mono text-[10px] space-y-3">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-slate-700">DKIM Host</span>
+                    <Badge variant="secondary" className="h-4 text-[8px]">TXT</Badge>
+                  </div>
+                  <div className="p-2 bg-white border rounded break-all select-all">
+                    mailer._domainkey
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-slate-700">DKIM Value</span>
+                    <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => {
+                      navigator.clipboard.writeText("v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy7NcLvIImmZ/W4KwcIq75I0TZEr3VuD4spTjSkPZqGqWROmvWq6on1eAhhHAz5Kyaw0WCbasVUnve2euEZCjEp3Rtu1fQ1uvADfpmNQafqpDE+HpL5Tzi7D/fAueYQYOJCsPodW51RxRnkS8Owhb");
+                      toast.success("Copiado!");
+                    }}><Copy className="h-3 w-3" /></Button>
+                  </div>
+                  <div className="p-2 bg-white border rounded break-all text-[9px] select-all leading-relaxed">
+                    "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy7NcLvIImmZ/W4KwcIq75I0TZEr3VuD4spTjSkPZqGqWROmvWq6on1eAhhHAz5Kyaw0WCbasVUnve2euEZCjEp3Rtu1fQ1uvADfpmNQafqpDE+HpL5Tzi7D/fAueYQYOJCsPodW51RxRnkS8Owhb"
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2 pt-2 border-t text-[11px]">
-                <div className="flex justify-between items-center">
-                  <span>Status DKIM:</span>
-                  <Badge variant="secondary" className="h-5 text-[9px]">PENDENTE</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Status SPF:</span>
-                  <Badge variant="secondary" className="h-5 text-[9px]">PENDENTE</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Status DMARC:</span>
-                  <Badge variant="secondary" className="h-5 text-[9px]">PENDENTE</Badge>
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-2 border-t">
-                <h4 className="text-xs font-bold uppercase text-slate-500">Instruções DNS</h4>
-                
-                <div className="p-2 bg-slate-50 rounded border text-[10px] space-y-2">
-                  <div>
-                    <span className="font-bold block mb-0.5">DKIM (mailer._domainkey)</span>
-                    <p className="text-muted-foreground break-all">Tipo: TXT · Valor: fornecido pela GemMail</p>
+              <div className="space-y-3 pt-2 border-t text-[11px]">
+                <div>
+                  <h4 className="font-bold text-slate-700 mb-1">Configuração SPF</h4>
+                  <p className="text-slate-600 mb-2 leading-tight">
+                    Para obter as melhores taxas de entrega, o registro SPF do seu domínio deve ser semelhante a:
+                  </p>
+                  <div className="p-2 bg-slate-50 border rounded break-all font-mono text-[9px]">
+                    seu-certificado-mei-digital.online. IN TXT "v=spf1 a mx include:spf.mali.gemmail.com.br include:spf.magicksender.com ~all"
                   </div>
-                  
-                  <div className="pt-2 border-t">
-                    <span className="font-bold block mb-0.5">SPF (@)</span>
-                    <p className="text-muted-foreground break-all">Tipo: TXT · Valor: v=spf1 a mx include:spf.mali.gemmail.com.br include:spf.magicksender.com ~all</p>
-                    <p className="mt-1 text-red-600 font-medium">IMPORTANTE: Se já existir um registro SPF, combine os mecanismos em um único registro. Nunca use dois registros v=spf1.</p>
-                  </div>
+                </div>
 
-                  <div className="pt-2 border-t">
-                    <span className="font-bold block mb-0.5">DMARC (_dmarc)</span>
-                    <p className="text-muted-foreground break-all">Tipo: TXT · Valor: v=DMARC1; p=quarantine; rua=mailto:certificado.mei.estadual@seu-certificado-mei-digital.online; sp=none; pct=80; ri=86400</p>
+                <div className="pt-2 border-t">
+                  <h4 className="font-bold text-slate-700 mb-1">Configuração DMARC</h4>
+                  <p className="text-slate-600 mb-2 leading-tight">
+                    Para melhorar suas entregas seu DMARC deve ser semelhante a isso:
+                  </p>
+                  <div className="p-2 bg-slate-50 border rounded break-all font-mono text-[9px]">
+                    _DMARC.seu-certificado-mei-digital.online. IN TXT "v=DMARC1; p=quarantine; rua=mailto:abuse@seudominio.com.br; sp=none; pct=80; ri=86400"
                   </div>
                 </div>
               </div>
