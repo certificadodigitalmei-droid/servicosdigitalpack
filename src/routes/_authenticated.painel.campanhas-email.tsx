@@ -568,6 +568,108 @@ function CampanhasEmail() {
             {gemStatus.testing ? 'Testando...' : gemStatus.connected ? 'GemMail Conectado' : 'Testar GemMail'}
           </Button>
         </div>
+
+        {/* ====== Configurações do Provedor ====== */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Integração GemMail</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <div className="text-sm font-medium">Chave configurada:</div>
+                <Badge variant={process.env.GEMMAIL_API_KEY ? "default" : "secondary"}>
+                  {process.env.GEMMAIL_API_KEY ? "Sim" : "Não (Configure nos Secrets)"}
+                </Badge>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <Button 
+                  className="w-full bg-brand-navy" 
+                  onClick={handleSyncCampaign}
+                  disabled={isSyncing || !campaignId}
+                >
+                  {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                  Sincronizar com GemMail
+                </Button>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700" 
+                      disabled={isSending || !campaignId}
+                    >
+                      {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                      ENVIAR CAMPANHA
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmar disparo de e-mails?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação enviará e-mails reais para a lista sincronizada na GemMail.
+                        <div className="mt-4 p-3 bg-slate-50 rounded border text-sm space-y-1 text-slate-700">
+                          <div><strong>Campanha:</strong> {campaignName}</div>
+                          <div><strong>Destinatários:</strong> {recipients.filter(r => r.status === 'ready').length}</div>
+                          <div><strong>Remetente:</strong> {fromEmail}</div>
+                        </div>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleSendCampaign} className="bg-green-600 hover:bg-green-700">
+                        Confirmar Envio
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Configurações do Remetente</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Field label="Nome do Remetente">
+                <Input value={fromName} onChange={(e) => setFromName(e.target.value)} onBlur={() => updateSettings({ from_name: fromName })} />
+              </Field>
+              <Field label="E-mail do Remetente">
+                <Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} onBlur={() => updateSettings({ from_email: fromEmail })} />
+              </Field>
+              <Field label="Domínio de Envio">
+                <Input value={emailSettings?.sending_domain || ''} onChange={(e) => setEmailSettings({ ...emailSettings, sending_domain: e.target.value })} onBlur={() => updateSettings({ sending_domain: emailSettings.sending_domain })} />
+              </Field>
+              <div className="text-[10px] text-muted-foreground pt-1 space-y-1">
+                <div className="flex justify-between"><span>Status do Domínio:</span> <span className="font-bold text-amber-600">PENDENTE</span></div>
+                <div className="flex justify-between"><span>DKIM:</span> <span className="font-bold text-amber-600">PENDENTE</span></div>
+                <div className="flex justify-between"><span>SPF:</span> <span className="font-bold text-amber-600">PENDENTE</span></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Limites do Plano</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Limite Mensal">
+                  <Input type="number" value={emailSettings?.monthly_limit || 0} onChange={(e) => setEmailSettings({ ...emailSettings, monthly_limit: Number(e.target.value) })} onBlur={() => updateSettings({ monthly_limit: emailSettings.monthly_limit })} />
+                </Field>
+                <Field label="Limite Hora">
+                  <Input type="number" value={emailSettings?.hourly_limit || 0} onChange={(e) => setEmailSettings({ ...emailSettings, hourly_limit: Number(e.target.value) })} onBlur={() => updateSettings({ hourly_limit: emailSettings.hourly_limit })} />
+                </Field>
+              </div>
+              <div className="text-xs p-2 bg-blue-50 text-blue-700 rounded border border-blue-100 flex items-center gap-2">
+                <Zap className="h-3 w-3" />
+                <span>Saldo restante: {emailSettings?.monthly_limit || 12000} envios</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
       </div>
       
       {gemStatus.message && (
