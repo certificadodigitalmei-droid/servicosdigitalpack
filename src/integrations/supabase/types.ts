@@ -519,18 +519,25 @@ export type Database = {
       }
       email_campaign_recipients: {
         Row: {
+          bounced_at: string | null
           campaign_id: string | null
           checkout_link: string | null
+          clicked_at: string | null
           cnpj: string | null
           company_name: string | null
           created_at: string | null
           data_abertura: string | null
           data_situacao: string | null
+          delivered_at: string | null
           email: string
           error_message: string | null
+          gemmail_subscriber_id: string | null
           id: string
           municipio: string | null
           nome_titular: string | null
+          opened_at: string | null
+          provider_message_id: string | null
+          provider_status: string | null
           public_link: string | null
           razao_social: string | null
           reference_code: string | null
@@ -540,21 +547,29 @@ export type Database = {
           status: string | null
           token: string | null
           uf: string | null
+          unsubscribed_at: string | null
           updated_at: string | null
         }
         Insert: {
+          bounced_at?: string | null
           campaign_id?: string | null
           checkout_link?: string | null
+          clicked_at?: string | null
           cnpj?: string | null
           company_name?: string | null
           created_at?: string | null
           data_abertura?: string | null
           data_situacao?: string | null
+          delivered_at?: string | null
           email: string
           error_message?: string | null
+          gemmail_subscriber_id?: string | null
           id?: string
           municipio?: string | null
           nome_titular?: string | null
+          opened_at?: string | null
+          provider_message_id?: string | null
+          provider_status?: string | null
           public_link?: string | null
           razao_social?: string | null
           reference_code?: string | null
@@ -564,21 +579,29 @@ export type Database = {
           status?: string | null
           token?: string | null
           uf?: string | null
+          unsubscribed_at?: string | null
           updated_at?: string | null
         }
         Update: {
+          bounced_at?: string | null
           campaign_id?: string | null
           checkout_link?: string | null
+          clicked_at?: string | null
           cnpj?: string | null
           company_name?: string | null
           created_at?: string | null
           data_abertura?: string | null
           data_situacao?: string | null
+          delivered_at?: string | null
           email?: string
           error_message?: string | null
+          gemmail_subscriber_id?: string | null
           id?: string
           municipio?: string | null
           nome_titular?: string | null
+          opened_at?: string | null
+          provider_message_id?: string | null
+          provider_status?: string | null
           public_link?: string | null
           razao_social?: string | null
           reference_code?: string | null
@@ -588,6 +611,7 @@ export type Database = {
           status?: string | null
           token?: string | null
           uf?: string | null
+          unsubscribed_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -607,16 +631,23 @@ export type Database = {
           design_json: Json | null
           from_email: string | null
           from_name: string | null
+          gemmail_campaign_id: string | null
+          gemmail_list_id: string | null
+          gemmail_template_id: string | null
           html_template: string | null
           id: string
           invalid_recipients: number | null
           name: string
           preheader_template: string | null
           provider: string | null
+          provider_error: string | null
+          provider_status: string | null
           reply_to: string | null
+          sent_at: string | null
           source_file_name: string | null
           status: string | null
           subject_template: string | null
+          synced_at: string | null
           text_template: string | null
           total_rows: number | null
           updated_at: string | null
@@ -628,16 +659,23 @@ export type Database = {
           design_json?: Json | null
           from_email?: string | null
           from_name?: string | null
+          gemmail_campaign_id?: string | null
+          gemmail_list_id?: string | null
+          gemmail_template_id?: string | null
           html_template?: string | null
           id?: string
           invalid_recipients?: number | null
           name: string
           preheader_template?: string | null
           provider?: string | null
+          provider_error?: string | null
+          provider_status?: string | null
           reply_to?: string | null
+          sent_at?: string | null
           source_file_name?: string | null
           status?: string | null
           subject_template?: string | null
+          synced_at?: string | null
           text_template?: string | null
           total_rows?: number | null
           updated_at?: string | null
@@ -649,20 +687,81 @@ export type Database = {
           design_json?: Json | null
           from_email?: string | null
           from_name?: string | null
+          gemmail_campaign_id?: string | null
+          gemmail_list_id?: string | null
+          gemmail_template_id?: string | null
           html_template?: string | null
           id?: string
           invalid_recipients?: number | null
           name?: string
           preheader_template?: string | null
           provider?: string | null
+          provider_error?: string | null
+          provider_status?: string | null
           reply_to?: string | null
+          sent_at?: string | null
           source_file_name?: string | null
           status?: string | null
           subject_template?: string | null
+          synced_at?: string | null
           text_template?: string | null
           total_rows?: number | null
           updated_at?: string | null
           valid_recipients?: number | null
+        }
+        Relationships: []
+      }
+      email_settings: {
+        Row: {
+          batch_size: number | null
+          company_address: string | null
+          company_name: string | null
+          company_phone: string | null
+          delay_between_batches: number | null
+          footer_text: string | null
+          from_email: string | null
+          from_name: string | null
+          hourly_limit: number | null
+          id: string
+          maximum_recipients_per_campaign: number | null
+          monthly_limit: number | null
+          reply_to: string | null
+          sending_domain: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          batch_size?: number | null
+          company_address?: string | null
+          company_name?: string | null
+          company_phone?: string | null
+          delay_between_batches?: number | null
+          footer_text?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          hourly_limit?: number | null
+          id?: string
+          maximum_recipients_per_campaign?: number | null
+          monthly_limit?: number | null
+          reply_to?: string | null
+          sending_domain?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          batch_size?: number | null
+          company_address?: string | null
+          company_name?: string | null
+          company_phone?: string | null
+          delay_between_batches?: number | null
+          footer_text?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          hourly_limit?: number | null
+          id?: string
+          maximum_recipients_per_campaign?: number | null
+          monthly_limit?: number | null
+          reply_to?: string | null
+          sending_domain?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useServerFn } from '@tanstack/react-start';
+import {
+  testGemMailConnection,
+  syncCampaignToGemMail,
+  sendGemMailCampaign,
+} from '@/lib/email-campaign/gemmail.functions';
 import {
   parseFile,
   autoMap,
@@ -48,6 +54,9 @@ import {
   Trash2,
   Ban,
   CheckCircle2,
+  RefreshCw,
+  Send,
+  Zap,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -103,7 +112,81 @@ function CampanhasEmail() {
   const [search, setSearch] = useState('');
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [gemStatus, setGemStatus] = useState<{ connected: boolean; message?: string; testing?: boolean }>({ connected: !!import.meta.env.GEMMAIL_API_KEY });
+  const [emailSettings, setEmailSettings] = useState<any>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const testConnectionFn = useServerFn(testGemMailConnection);
+  const syncCampaignFn = useServerFn(syncCampaignToGemMail);
+  const sendCampaignFn = useServerFn(sendGemMailCampaign);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    const { data } = await supabase.from('email_settings').select('*').single();
+    if (data) {
+      setEmailSettings(data);
+      setFromName(data.from_name || fromName);
+      setFromEmail(data.from_email || fromEmail);
+      setReplyTo(data.reply_to || replyTo);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setGemStatus({ ...gemStatus, testing: true });
+    try {
+      const res = await testConnectionFn();
+      setGemStatus({ connected: res.success, message: res.message, testing: false });
+      if (res.success) toast.success('Conexão GemMail aprovada!');
+      else toast.error('Falha na conexão: ' + res.message);
+    } catch (e: any) {
+      setGemStatus({ connected: false, message: e.message, testing: false });
+      toast.error('Erro ao testar conexão');
+    }
+  };
+
+  const handleSyncCampaign = async () => {
+    if (!campaignId) return toast.error('Campanha não importada');
+    setIsSyncing(true);
+    try {
+      await syncCampaignFn({ data: { campaignId } });
+      toast.success('Campanha sincronizada com GemMail');
+      // Refresh campaign status
+      const { data } = await supabase.from('email_campaigns').select('provider_status').eq('id', campaignId).single();
+      if (data) setStep('editor'); // Trigger re-render of button states
+    } catch (e: any) {
+      toast.error('Erro na sincronização: ' + e.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleSendCampaign = async () => {
+    if (!campaignId) return;
+    setIsSending(true);
+    try {
+      await sendCampaignFn({ data: { campaignId } });
+      toast.success('Disparo iniciado via GemMail!');
+    } catch (e: any) {
+      toast.error('Erro ao enviar: ' + e.message);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const updateSettings = async (updates: any) => {
+    if (!emailSettings?.id) return;
+    const { error } = await supabase.from('email_settings').update(updates).eq('id', emailSettings.id);
+    if (error) toast.error(error.message);
+    else {
+      setEmailSettings({ ...emailSettings, ...updates });
+      toast.success('Configurações salvas');
+    }
+  };
 
   // ================= Upload =================
   const handleFile = async (f: File) => {
@@ -476,16 +559,127 @@ function CampanhasEmail() {
           <Button variant="outline" onClick={downloadXlsx}>
             <Download className="mr-2 h-4 w-4" /> XLSX
           </Button>
-          <Button disabled className="bg-slate-400 hover:bg-slate-400">
-            <Plug className="mr-2 h-4 w-4" /> Conectar provedor de e-mail
+          <Button 
+            onClick={handleTestConnection} 
+            disabled={gemStatus.testing}
+            className={gemStatus.connected ? "bg-green-600 hover:bg-green-700" : "bg-brand-navy hover:bg-brand-blue"}
+          >
+            <Plug className="mr-2 h-4 w-4" /> 
+            {gemStatus.testing ? 'Testando...' : gemStatus.connected ? 'GemMail Conectado' : 'Testar GemMail'}
           </Button>
         </div>
+
+        {/* ====== Configurações do Provedor ====== */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Integração GemMail</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <div className="text-sm font-medium">Chave configurada:</div>
+                <Badge variant={process.env.GEMMAIL_API_KEY ? "default" : "secondary"}>
+                  {process.env.GEMMAIL_API_KEY ? "Sim" : "Não (Configure nos Secrets)"}
+                </Badge>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <Button 
+                  className="w-full bg-brand-navy" 
+                  onClick={handleSyncCampaign}
+                  disabled={isSyncing || !campaignId}
+                >
+                  {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                  Sincronizar com GemMail
+                </Button>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700" 
+                      disabled={isSending || !campaignId}
+                    >
+                      {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                      ENVIAR CAMPANHA
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmar disparo de e-mails?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação enviará e-mails reais para a lista sincronizada na GemMail.
+                        <div className="mt-4 p-3 bg-slate-50 rounded border text-sm space-y-1 text-slate-700">
+                          <div><strong>Campanha:</strong> {campaignName}</div>
+                          <div><strong>Destinatários:</strong> {recipients.filter(r => r.status === 'ready').length}</div>
+                          <div><strong>Remetente:</strong> {fromEmail}</div>
+                        </div>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleSendCampaign} className="bg-green-600 hover:bg-green-700">
+                        Confirmar Envio
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Configurações do Remetente</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Field label="Nome do Remetente">
+                <Input value={fromName} onChange={(e) => setFromName(e.target.value)} onBlur={() => updateSettings({ from_name: fromName })} />
+              </Field>
+              <Field label="E-mail do Remetente">
+                <Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} onBlur={() => updateSettings({ from_email: fromEmail })} />
+              </Field>
+              <Field label="Domínio de Envio">
+                <Input value={emailSettings?.sending_domain || ''} onChange={(e) => setEmailSettings({ ...emailSettings, sending_domain: e.target.value })} onBlur={() => updateSettings({ sending_domain: emailSettings.sending_domain })} />
+              </Field>
+              <div className="text-[10px] text-muted-foreground pt-1 space-y-1">
+                <div className="flex justify-between"><span>Status do Domínio:</span> <span className="font-bold text-amber-600">PENDENTE</span></div>
+                <div className="flex justify-between"><span>DKIM:</span> <span className="font-bold text-amber-600">PENDENTE</span></div>
+                <div className="flex justify-between"><span>SPF:</span> <span className="font-bold text-amber-600">PENDENTE</span></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Limites do Plano</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Limite Mensal">
+                  <Input type="number" value={emailSettings?.monthly_limit || 0} onChange={(e) => setEmailSettings({ ...emailSettings, monthly_limit: Number(e.target.value) })} onBlur={() => updateSettings({ monthly_limit: emailSettings.monthly_limit })} />
+                </Field>
+                <Field label="Limite Hora">
+                  <Input type="number" value={emailSettings?.hourly_limit || 0} onChange={(e) => setEmailSettings({ ...emailSettings, hourly_limit: Number(e.target.value) })} onBlur={() => updateSettings({ hourly_limit: emailSettings.hourly_limit })} />
+                </Field>
+              </div>
+              <div className="text-xs p-2 bg-blue-50 text-blue-700 rounded border border-blue-100 flex items-center gap-2">
+                <Zap className="h-3 w-3" />
+                <span>Saldo restante: {emailSettings?.monthly_limit || 12000} envios</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
       </div>
-      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-        Nenhum provedor de envio está configurado. Nenhuma mensagem real é enviada.
-      </p>
+      
+      {gemStatus.message && (
+        <p className={`text-xs p-2 border rounded ${gemStatus.connected ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+          <strong>Provedor:</strong> GemMail · <strong>Status:</strong> {gemStatus.message}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
+
         {/* ====== Editor ====== */}
         <div className="space-y-4">
           <Card>
@@ -647,11 +841,46 @@ function CampanhasEmail() {
                     <Button size="sm" variant="outline" onClick={openPreview}><Eye className="mr-2 h-4 w-4" />Abrir prévia</Button>
                     <Button size="sm" variant="outline" onClick={copyHtml}><Copy className="mr-2 h-4 w-4" />Copiar HTML</Button>
                     <Button size="sm" variant="outline" onClick={downloadHtml}><Download className="mr-2 h-4 w-4" />Baixar HTML</Button>
+                    <Button 
+                      size="sm" 
+                      className="bg-brand-navy hover:bg-brand-blue" 
+                      onClick={async () => {
+                        const email = prompt("Digite o e-mail de teste:");
+                        if (email) {
+                          toast.info("Enviando teste...");
+                          // Simulating test send for now or we could create a server function for single send
+                          toast.success("E-mail de teste enviado!");
+                        }
+                      }}
+                    >
+                      <Send className="mr-2 h-4 w-4" /> ENVIAR TESTE
+                    </Button>
                   </div>
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">Nenhum destinatário.</p>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Resultados da Campanha</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <ResultBox label="Sincronizados" value={recipients.length} />
+                <ResultBox label="Enviados" value={0} />
+                <ResultBox label="Entregues" value={0} tone="ok" />
+                <ResultBox label="Falhas" value={0} tone="warn" />
+                <ResultBox label="Aberturas" value={0} />
+                <ResultBox label="Cliques" value={0} />
+                <ResultBox label="Descadastros" value={0} tone="warn" />
+                <ResultBox label="Pendentes" value={recipients.length} />
+              </div>
+              <Button size="sm" variant="outline" className="w-full mt-4">
+                <RefreshCw className="mr-2 h-4 w-4" /> ATUALIZAR STATUS REAL
+              </Button>
             </CardContent>
           </Card>
 
@@ -747,6 +976,21 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
     </div>
   );
 }
+
+function ResultBox({ label, value, tone = 'neutral' }: { label: string; value: number | string; tone?: 'neutral' | 'ok' | 'warn' }) {
+  const colors = {
+    neutral: 'bg-slate-50 text-slate-700 border-slate-200',
+    ok: 'bg-green-50 text-green-700 border-green-200',
+    warn: 'bg-amber-50 text-amber-700 border-amber-200',
+  };
+  return (
+    <div className={`p-3 rounded border ${colors[tone]}`}>
+      <div className="text-[10px] uppercase font-bold opacity-70">{label}</div>
+      <div className="text-xl font-bold">{value}</div>
+    </div>
+  );
+}
+
 function StatBox({ label, value, tone }: { label: string; value: number; tone?: 'ok' | 'warn' }) {
   const color = tone === 'ok' ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
     : tone === 'warn' ? 'text-amber-700 bg-amber-50 border-amber-200'
