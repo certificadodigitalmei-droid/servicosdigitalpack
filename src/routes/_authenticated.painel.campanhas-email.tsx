@@ -648,12 +648,6 @@ function CampanhasEmail() {
 
       </div>
       
-      {gemStatus.message && (
-        <p className={`text-xs p-2 border rounded ${gemStatus.connected ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-          <strong>Provedor:</strong> GemMail · <strong>Status:</strong> {gemStatus.message}
-        </p>
-      )}
-
       <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
 
         {/* ====== Editor ====== */}
@@ -669,6 +663,11 @@ function CampanhasEmail() {
               <div className="grid grid-cols-2 gap-2">
                 <Field label="De (nome)"><Input value={fromName} onChange={(e) => setFromName(e.target.value)} /></Field>
                 <Field label="De (e-mail)"><Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} /></Field>
+              </div>
+              <Field label="Reply-to"><Input value={replyTo} onChange={(e) => setReplyTo(e.target.value)} /></Field>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Documentação da API GemMail</CardTitle>
@@ -693,10 +692,6 @@ function CampanhasEmail() {
                 <div className="flex justify-between text-[10px]"><span>Endpoint Envio:</span> <span className="text-slate-400">Pendente</span></div>
                 <div className="flex justify-between text-[10px]"><span>Endpoint Relatórios:</span> <span className="text-slate-400">Pendente</span></div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-              <Field label="Reply-to"><Input value={replyTo} onChange={(e) => setReplyTo(e.target.value)} /></Field>
             </CardContent>
           </Card>
 
