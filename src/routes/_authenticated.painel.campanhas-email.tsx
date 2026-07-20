@@ -559,16 +559,25 @@ function CampanhasEmail() {
           <Button variant="outline" onClick={downloadXlsx}>
             <Download className="mr-2 h-4 w-4" /> XLSX
           </Button>
-          <Button disabled className="bg-slate-400 hover:bg-slate-400">
-            <Plug className="mr-2 h-4 w-4" /> Conectar provedor de e-mail
+          <Button 
+            onClick={handleTestConnection} 
+            disabled={gemStatus.testing}
+            className={gemStatus.connected ? "bg-green-600 hover:bg-green-700" : "bg-brand-navy hover:bg-brand-blue"}
+          >
+            <Plug className="mr-2 h-4 w-4" /> 
+            {gemStatus.testing ? 'Testando...' : gemStatus.connected ? 'GemMail Conectado' : 'Testar GemMail'}
           </Button>
         </div>
       </div>
-      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-        Nenhum provedor de envio está configurado. Nenhuma mensagem real é enviada.
-      </p>
+      
+      {gemStatus.message && (
+        <p className={`text-xs p-2 border rounded ${gemStatus.connected ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+          <strong>Provedor:</strong> GemMail · <strong>Status:</strong> {gemStatus.message}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
+
         {/* ====== Editor ====== */}
         <div className="space-y-4">
           <Card>
