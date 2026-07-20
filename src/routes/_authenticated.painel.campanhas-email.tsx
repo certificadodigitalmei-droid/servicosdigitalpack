@@ -576,28 +576,37 @@ function CampanhasEmail() {
               <CardTitle className="text-base">Integração GemMail</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-1">
-                <div className="text-sm font-medium">Chave configurada:</div>
-                <Badge variant={process.env.GEMMAIL_API_KEY ? "default" : "secondary"}>
-                  {process.env.GEMMAIL_API_KEY ? "Sim" : "Não (Configure nos Secrets)"}
-                </Badge>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-sm">
+                  <span>URL-base configurada:</span>
+                  <Badge variant={process.env.GEMMAIL_API_BASE_URL ? "default" : "secondary"}>
+                    {process.env.GEMMAIL_API_BASE_URL ? "Sim" : "Não"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span>Endpoints confirmados:</span>
+                  <Badge variant="secondary">Não</Badge>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span>Autenticação confirmada:</span>
+                  <Badge variant="secondary">Não</Badge>
+                </div>
+                <div className="flex justify-between items-center text-sm border-t pt-2 mt-2">
+                  <span>Integração pronta:</span>
+                  <Badge variant="destructive">Não</Badge>
+                </div>
               </div>
 
-              <div className="space-y-3 pt-2">
+              <div className="space-y-3 pt-4">
+                <div className="text-[10px] text-muted-foreground bg-slate-50 p-2 rounded border border-dashed mb-2">
+                  Aguardando endpoint oficial, método HTTP e formato de header para teste de conexão.
+                </div>
                 <Button 
                   className="w-full bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" 
                   disabled={true}
                 >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Sincronização desativada (Aguardando Doc)
-                </Button>
-
-                <Button 
-                  className="w-full bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" 
-                  disabled={true}
-                >
-                  <Send className="mr-2 h-4 w-4" />
-                  ENVIAR CAMPANHA (Bloqueado)
+                  <Plug className="mr-2 h-4 w-4" />
+                  Testar conexão (Bloqueado)
                 </Button>
               </div>
             </CardContent>
@@ -677,7 +686,7 @@ function CampanhasEmail() {
                 Campos informativos para registro da documentação oficial antes da ativação técnica.
               </p>
               <Field label="URL-base oficial">
-                <Input placeholder="https://..." disabled className="bg-slate-50 opacity-70" />
+                <Input value="https://gerenciador.gemmail.com.br/api" disabled className="bg-slate-50 opacity-70" />
               </Field>
               <Field label="Endpoint de teste">
                 <Input placeholder="/health ou /me" disabled className="bg-slate-50 opacity-70" />
