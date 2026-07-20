@@ -845,17 +845,11 @@ function CampanhasEmail() {
                     <Button size="sm" variant="outline" onClick={downloadHtml}><Download className="mr-2 h-4 w-4" />Baixar HTML</Button>
                     <Button 
                       size="sm" 
-                      className="bg-brand-navy hover:bg-brand-blue" 
-                      onClick={async () => {
-                        const email = prompt("Digite o e-mail de teste:");
-                        if (email) {
-                          toast.info("Enviando teste...");
-                          // Simulating test send for now or we could create a server function for single send
-                          toast.success("E-mail de teste enviado!");
-                        }
-                      }}
+                      variant="ghost"
+                      disabled={true}
+                      className="bg-slate-50 text-slate-400 cursor-not-allowed"
                     >
-                      <Send className="mr-2 h-4 w-4" /> ENVIAR TESTE
+                      <Send className="mr-2 h-4 w-4" /> ENVIAR TESTE (Bloqueado)
                     </Button>
                   </div>
                 </>
