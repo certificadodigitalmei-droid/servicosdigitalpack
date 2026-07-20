@@ -976,6 +976,21 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
     </div>
   );
 }
+
+function ResultBox({ label, value, tone = 'neutral' }: { label: string; value: number | string; tone?: 'neutral' | 'ok' | 'warn' }) {
+  const colors = {
+    neutral: 'bg-slate-50 text-slate-700 border-slate-200',
+    ok: 'bg-green-50 text-green-700 border-green-200',
+    warn: 'bg-amber-50 text-amber-700 border-amber-200',
+  };
+  return (
+    <div className={`p-3 rounded border ${colors[tone]}`}>
+      <div className="text-[10px] uppercase font-bold opacity-70">{label}</div>
+      <div className="text-xl font-bold">{value}</div>
+    </div>
+  );
+}
+
 function StatBox({ label, value, tone }: { label: string; value: number; tone?: 'ok' | 'warn' }) {
   const color = tone === 'ok' ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
     : tone === 'warn' ? 'text-amber-700 bg-amber-50 border-amber-200'
