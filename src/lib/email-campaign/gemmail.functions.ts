@@ -3,55 +3,36 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
- * GemMail Provider Placeholder
- * Renamed from GemMailProvider until official documentation is provided.
- * All guessed endpoints are disabled to prevent unauthorized/incorrect calls.
+ * GemMail Provider Pending Auth
+ * Renamed from GemMailProviderPlaceholder per user request.
+ * This service validates credentials but performs no real calls until authentication format is confirmed.
  */
-class GemMailProviderPlaceholder {
-  private publicKey: string;
-  private privateKey: string;
+class GemMailProviderPendingAuth {
+  private apiKey: string;
   private baseUrl: string;
 
-  constructor(publicKey: string, privateKey: string, baseUrl: string) {
+  constructor(apiKey: string, baseUrl: string) {
     if (!baseUrl) {
-      throw new Error("URL oficial da API GemMail ainda não configurada.");
+      throw new Error("URL-base da API GemMail não configurada.");
     }
-    this.publicKey = publicKey;
-    this.privateKey = privateKey;
+    if (!apiKey) {
+      throw new Error("API Key da GemMail não configurada.");
+    }
+    this.apiKey = apiKey;
     this.baseUrl = baseUrl.replace(/\/$/, "");
   }
 
-  private async request(path: string, options: RequestInit = {}) {
-    // Implementação HTTP verificada ou Microserviço PHP necessária
-    throw new Error("Ação desativada: Formato HTTP oficial do SDK GemMail ainda não confirmado.");
-  }
-
+  // All methods are currently disabled until official authentication format is confirmed
   async testConnection() {
-    throw new Error("Ação desativada: Endpoint oficial para teste ou autenticação necessário.");
+    throw new Error("Autenticação HTTP da API GemMail ainda não confirmada.");
   }
 
-  async getLists() {
-    throw new Error("Ação desativada: Recurso GemMailApi_Endpoint_Lists necessário.");
+  async syncCampaign() {
+    throw new Error("Sincronização desativada: Rotas HTTP reais não confirmadas.");
   }
 
-  async createList(data: any) {
-    throw new Error("Ação desativada: Recurso GemMailApi_Endpoint_Lists necessário.");
-  }
-
-  async addSubscribers(listUid: string, subscribers: any[]) {
-    throw new Error("Ação desativada: Recurso GemMailApi_Endpoint_ListSubscribers necessário.");
-  }
-
-  async createTemplate(data: any) {
-    throw new Error("Ação desativada: Recurso GemMailApi_Endpoint_Templates necessário.");
-  }
-
-  async createCampaign(data: any) {
-    throw new Error("Ação desativada: Recurso GemMailApi_Endpoint_Campaigns necessário.");
-  }
-
-  async sendTransactionalEmail(data: any) {
-    throw new Error("Ação desativada: Recurso GemMailApi_Endpoint_TransactionalEmails necessário.");
+  async sendCampaign() {
+    throw new Error("Envio bloqueado: Domínio e autenticação pendentes.");
   }
 }
 
@@ -72,20 +53,19 @@ export const testGemMailConnection = createServerFn({ method: "POST" })
       throw new Error("Unauthorized: Only admins can perform this action");
     }
 
-    const publicKey = process.env.GEMMAIL_PUBLIC_KEY;
-    const privateKey = process.env.GEMMAIL_PRIVATE_KEY;
+    const apiKey = process.env.GEMMAIL_API_KEY;
     const baseUrl = process.env.GEMMAIL_API_BASE_URL;
 
     if (!baseUrl) {
       return { success: false, message: "GEMMAIL_API_BASE_URL não configurada." };
     }
 
-    if (!publicKey || !privateKey) {
-      return { success: false, message: "GEMMAIL_PUBLIC_KEY ou GEMMAIL_PRIVATE_KEY não configuradas." };
+    if (!apiKey) {
+      return { success: false, message: "GEMMAIL_API_KEY não configurada." };
     }
 
     try {
-      const provider = new GemMailProviderPlaceholder(publicKey, privateKey, baseUrl);
+      const provider = new GemMailProviderPendingAuth(apiKey, baseUrl);
       await provider.testConnection();
       return { success: true, message: "Conexão aprovada" };
     } catch (error: any) {
@@ -107,17 +87,15 @@ export const syncCampaignToGemMail = createServerFn({ method: "POST" })
 
     if (!roleData) throw new Error("Unauthorized");
 
-    const publicKey = process.env.GEMMAIL_PUBLIC_KEY!;
-    const privateKey = process.env.GEMMAIL_PRIVATE_KEY!;
+    const apiKey = process.env.GEMMAIL_API_KEY!;
     const baseUrl = process.env.GEMMAIL_API_BASE_URL;
 
     if (!baseUrl) throw new Error("GEMMAIL_API_BASE_URL não configurada.");
 
-    const provider = new GemMailProviderPlaceholder(publicKey, privateKey, baseUrl);
+    const provider = new GemMailProviderPendingAuth(apiKey, baseUrl);
 
     try {
-      // Disabled functionality until documentation is provided
-      throw new Error("Sincronização desativada: Documentação oficial da API GemMail necessária.");
+      await provider.syncCampaign();
     } catch (error: any) {
       await context.supabase
         .from("email_campaigns")
@@ -140,14 +118,12 @@ export const sendGemMailCampaign = createServerFn({ method: "POST" })
 
     if (!roleData) throw new Error("Unauthorized");
 
-    const publicKey = process.env.GEMMAIL_PUBLIC_KEY!;
-    const privateKey = process.env.GEMMAIL_PRIVATE_KEY!;
+    const apiKey = process.env.GEMMAIL_API_KEY!;
     const baseUrl = process.env.GEMMAIL_API_BASE_URL;
     
     if (!baseUrl) throw new Error("GEMMAIL_API_BASE_URL não configurada.");
 
-    const provider = new GemMailProviderPlaceholder(publicKey, privateKey, baseUrl);
+    const provider = new GemMailProviderPendingAuth(apiKey, baseUrl);
 
-    // Disabled functionality until documentation is provided
-    throw new Error("Envio desativado: Documentação oficial da API GemMail necessária.");
+    await provider.sendCampaign();
   });
