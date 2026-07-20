@@ -867,22 +867,17 @@ function CampanhasEmail() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Resultados da Campanha</CardTitle>
+              <CardTitle className="text-base">Status da Integração</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <ResultBox label="Sincronizados" value={recipients.length} />
-                <ResultBox label="Enviados" value={0} />
-                <ResultBox label="Entregues" value={0} tone="ok" />
-                <ResultBox label="Falhas" value={0} tone="warn" />
-                <ResultBox label="Aberturas" value={0} />
-                <ResultBox label="Cliques" value={0} />
-                <ResultBox label="Descadastros" value={0} tone="warn" />
-                <ResultBox label="Pendentes" value={recipients.length} />
+              <div className="p-4 bg-slate-50 rounded border border-dashed text-center">
+                <p className="text-sm font-medium text-slate-500">
+                  GemMail ainda não conectada.
+                </p>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Métricas em tempo real serão exibidas após configuração oficial.
+                </p>
               </div>
-              <Button size="sm" variant="outline" className="w-full mt-4">
-                <RefreshCw className="mr-2 h-4 w-4" /> ATUALIZAR STATUS REAL
-              </Button>
             </CardContent>
           </Card>
 
