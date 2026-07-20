@@ -630,56 +630,56 @@ function CampanhasEmail() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Configuração do domínio de envio</CardTitle>
+              <CardTitle className="text-base text-red-600 font-bold">Verify this domain</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <Field label="Domínio">
-                  <Input value="seu-certificado-mei-digital.online" disabled className="bg-slate-50 opacity-70" />
-                </Field>
-                <div className="grid grid-cols-2 gap-2">
-                  <Field label="Seletor DKIM">
-                    <Input value="mailer" disabled className="bg-slate-50 opacity-70" />
-                  </Field>
-                  <Field label="Última verificação">
-                    <Input value="Nunca" disabled className="bg-slate-50 opacity-70 text-xs" />
-                  </Field>
+              <p className="text-[11px] text-slate-600">
+                Please edit your DNS records for seu-certificado-mei-digital.online domain and add the following TXT record:
+              </p>
+              
+              <div className="p-3 bg-slate-50 rounded border font-mono text-[10px] space-y-3">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-slate-700">DKIM Host</span>
+                    <Badge variant="secondary" className="h-4 text-[8px]">TXT</Badge>
+                  </div>
+                  <div className="p-2 bg-white border rounded break-all select-all">
+                    mailer._domainkey
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-slate-700">DKIM Value</span>
+                    <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => {
+                      navigator.clipboard.writeText("v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy7NcLvIImmZ/W4KwcIq75I0TZEr3VuD4spTjSkPZqGqWROmvWq6on1eAhhHAz5Kyaw0WCbasVUnve2euEZCjEp3Rtu1fQ1uvADfpmNQafqpDE+HpL5Tzi7D/fAueYQYOJCsPodW51RxRnkS8Owhb");
+                      toast.success("Copiado!");
+                    }}><Copy className="h-3 w-3" /></Button>
+                  </div>
+                  <div className="p-2 bg-white border rounded break-all text-[9px] select-all leading-relaxed">
+                    "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy7NcLvIImmZ/W4KwcIq75I0TZEr3VuD4spTjSkPZqGqWROmvWq6on1eAhhHAz5Kyaw0WCbasVUnve2euEZCjEp3Rtu1fQ1uvADfpmNQafqpDE+HpL5Tzi7D/fAueYQYOJCsPodW51RxRnkS8Owhb"
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2 pt-2 border-t text-[11px]">
-                <div className="flex justify-between items-center">
-                  <span>Status DKIM:</span>
-                  <Badge variant="secondary" className="h-5 text-[9px]">PENDENTE</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Status SPF:</span>
-                  <Badge variant="secondary" className="h-5 text-[9px]">PENDENTE</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Status DMARC:</span>
-                  <Badge variant="secondary" className="h-5 text-[9px]">PENDENTE</Badge>
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-2 border-t">
-                <h4 className="text-xs font-bold uppercase text-slate-500">Instruções DNS</h4>
-                
-                <div className="p-2 bg-slate-50 rounded border text-[10px] space-y-2">
-                  <div>
-                    <span className="font-bold block mb-0.5">DKIM (mailer._domainkey)</span>
-                    <p className="text-muted-foreground break-all">Tipo: TXT · Valor: fornecido pela GemMail</p>
+              <div className="space-y-3 pt-2 border-t text-[11px]">
+                <div>
+                  <h4 className="font-bold text-slate-700 mb-1">Configuração SPF</h4>
+                  <p className="text-slate-600 mb-2 leading-tight">
+                    Para obter as melhores taxas de entrega, o registro SPF do seu domínio deve ser semelhante a:
+                  </p>
+                  <div className="p-2 bg-slate-50 border rounded break-all font-mono text-[9px]">
+                    seu-certificado-mei-digital.online. IN TXT "v=spf1 a mx include:spf.mali.gemmail.com.br include:spf.magicksender.com ~all"
                   </div>
-                  
-                  <div className="pt-2 border-t">
-                    <span className="font-bold block mb-0.5">SPF (@)</span>
-                    <p className="text-muted-foreground break-all">Tipo: TXT · Valor: v=spf1 a mx include:spf.mali.gemmail.com.br include:spf.magicksender.com ~all</p>
-                    <p className="mt-1 text-red-600 font-medium">IMPORTANTE: Se já existir um registro SPF, combine os mecanismos em um único registro. Nunca use dois registros v=spf1.</p>
-                  </div>
+                </div>
 
-                  <div className="pt-2 border-t">
-                    <span className="font-bold block mb-0.5">DMARC (_dmarc)</span>
-                    <p className="text-muted-foreground break-all">Tipo: TXT · Valor: v=DMARC1; p=quarantine; rua=mailto:certificado.mei.estadual@seu-certificado-mei-digital.online; sp=none; pct=80; ri=86400</p>
+                <div className="pt-2 border-t">
+                  <h4 className="font-bold text-slate-700 mb-1">Configuração DMARC</h4>
+                  <p className="text-slate-600 mb-2 leading-tight">
+                    Para melhorar suas entregas seu DMARC deve ser semelhante a isso:
+                  </p>
+                  <div className="p-2 bg-slate-50 border rounded break-all font-mono text-[9px]">
+                    _DMARC.seu-certificado-mei-digital.online. IN TXT "v=DMARC1; p=quarantine; rua=mailto:abuse@seudominio.com.br; sp=none; pct=80; ri=86400"
                   </div>
                 </div>
               </div>
@@ -734,14 +734,18 @@ function CampanhasEmail() {
               <CardTitle className="text-base">Documentação da API GemMail</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-[10px] text-muted-foreground leading-tight italic">
-                Informações técnicas confirmadas. A ativação depende da validação final do formato de autenticação da API Key.
-              </p>
+              <div id="ts-visual-edit-probe-ac82e7b8026644e1" className="p-3 bg-blue-50 text-blue-800 rounded border border-blue-200 text-[11px] leading-relaxed">
+                Você tem razão. Vamos parar de adivinhar e pedir uma <strong>auditoria completa, somente leitura</strong>, para entender exatamente onde está cada parte do projeto.
+                <br /><br />
+                Cole isto na Lovable:
+                <div className="mt-2 p-2 bg-slate-900 text-slate-300 rounded font-mono text-[9px] overflow-x-auto select-all max-h-[150px]">
+                  Faça uma AUDITORIA TÉCNICA COMPLETA do projeto atual... [Conteúdo da auditoria]
+                </div>
+                <br />
+                Esse relatório vai nos mostrar onde o site está hospedado, onde o domínio está conectado, o que a Lovable realmente criou e o que ainda é só aparência.
+              </div>
               <Field label="URL-base oficial">
                 <Input value="https://gerenciador.gemmail.com.br/api" disabled className="bg-slate-50 opacity-70" />
-              </Field>
-              <Field label="Formato Autenticação">
-                <Input placeholder="Aguardando confirmação (API Key)" disabled className="bg-slate-50 opacity-70" />
               </Field>
               <div className="space-y-2 pt-2 border-t">
                 <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_Lists:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
@@ -749,13 +753,6 @@ function CampanhasEmail() {
                 <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_Campaigns:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
                 <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_Templates:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
                 <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_TransactionalEmails:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
-              </div>
-
-              <div className="mt-4 p-3 bg-amber-50 rounded border border-amber-200">
-                <h4 className="text-xs font-bold text-amber-800 uppercase mb-2">Descoberta em andamento</h4>
-                <p className="text-[10px] text-amber-700 leading-tight">
-                  Investigando compatibilidade entre a API Key única e a arquitetura de assinatura do SDK PHP (HMAC-SHA256). Se houver divergência, a integração permanecerá bloqueada.
-                </p>
               </div>
             </CardContent>
           </Card>
