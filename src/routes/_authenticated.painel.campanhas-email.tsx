@@ -579,39 +579,45 @@ function CampanhasEmail() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-sm">
                   <span>URL-base configurada:</span>
-                  <Badge variant={process.env.GEMMAIL_API_BASE_URL && process.env.GEMMAIL_PUBLIC_KEY && process.env.GEMMAIL_PRIVATE_KEY ? "default" : "secondary"}>
+                  <Badge variant={process.env.GEMMAIL_API_BASE_URL ? "default" : "secondary"}>
                     {process.env.GEMMAIL_API_BASE_URL ? "Sim" : "Não"}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span>publicKey configurada:</span>
-                  <Badge variant={process.env.GEMMAIL_PUBLIC_KEY ? "default" : "secondary"}>
-                    {process.env.GEMMAIL_PUBLIC_KEY ? "Sim" : "Não"}
+                  <span>API Key configurada:</span>
+                  <Badge variant={process.env.GEMMAIL_API_KEY ? "default" : "secondary"}>
+                    {process.env.GEMMAIL_API_KEY ? "Sim" : "Não"}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span>privateKey configurada:</span>
-                  <Badge variant={process.env.GEMMAIL_PRIVATE_KEY ? "default" : "secondary"}>
-                    {process.env.GEMMAIL_PRIVATE_KEY ? "Sim" : "Não"}
-                  </Badge>
+                  <span>Autenticação HTTP pendente:</span>
+                  <Badge variant="secondary">Sim</Badge>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span>Endpoints confirmados:</span>
-                  <Badge variant="secondary">Não</Badge>
+                  <span>Domínio pendente:</span>
+                  <Badge variant="secondary">Sim</Badge>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span>Autenticação confirmada:</span>
-                  <Badge variant="secondary">Não</Badge>
+                  <span>DKIM pendente:</span>
+                  <Badge variant="secondary">Sim</Badge>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span>SPF pendente:</span>
+                  <Badge variant="secondary">Sim</Badge>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span>DMARC pendente:</span>
+                  <Badge variant="secondary">Sim</Badge>
                 </div>
                 <div className="flex justify-between items-center text-sm border-t pt-2 mt-2">
-                  <span>Integração pronta:</span>
-                  <Badge variant="destructive">Não</Badge>
+                  <span>Envio bloqueado:</span>
+                  <Badge variant="destructive">Sim</Badge>
                 </div>
               </div>
 
-              <div className="space-y-3 pt-4">
-                <div className="text-[10px] text-muted-foreground bg-slate-50 p-2 rounded border border-dashed mb-2">
-                  Aguardando endpoint oficial, método HTTP e formato de header para teste de conexão.
+              <div className="space-y-3 pt-4 border-t">
+                <div className="text-[10px] text-muted-foreground bg-slate-50 p-2 rounded border border-dashed">
+                  Autenticação HTTP da API GemMail ainda não confirmada. As credenciais da API e as chaves DKIM são configurações diferentes.
                 </div>
                 <Button 
                   className="w-full bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" 
@@ -620,28 +626,71 @@ function CampanhasEmail() {
                   <Plug className="mr-2 h-4 w-4" />
                   Testar conexão (Bloqueado)
                 </Button>
+                <Button 
+                  className="w-full bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" 
+                  disabled={true}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Sincronizar (Bloqueado)
+                </Button>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Configurações do Remetente</CardTitle>
+              <CardTitle className="text-base">Configuração do domínio de envio</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Field label="Nome do Remetente">
-                <Input value={fromName} onChange={(e) => setFromName(e.target.value)} onBlur={() => updateSettings({ from_name: fromName })} />
-              </Field>
-              <Field label="E-mail do Remetente">
-                <Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} onBlur={() => updateSettings({ from_email: fromEmail })} />
-              </Field>
-              <Field label="Domínio de Envio">
-                <Input value={emailSettings?.sending_domain || ''} onChange={(e) => setEmailSettings({ ...emailSettings, sending_domain: e.target.value })} onBlur={() => updateSettings({ sending_domain: emailSettings.sending_domain })} />
-              </Field>
-              <div className="text-[10px] text-muted-foreground pt-1 space-y-1">
-                <div className="flex justify-between"><span>Status do Domínio:</span> <span className="font-bold text-slate-400 uppercase">Não configurado</span></div>
-                <div className="flex justify-between"><span>DKIM:</span> <span className="font-bold text-slate-400 uppercase">Não configurado</span></div>
-                <div className="flex justify-between"><span>SPF:</span> <span className="font-bold text-slate-400 uppercase">Não configurado</span></div>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <Field label="Domínio">
+                  <Input value="seu-certificado-mei-digital.online" disabled className="bg-slate-50 opacity-70" />
+                </Field>
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Seletor DKIM">
+                    <Input value="mailer" disabled className="bg-slate-50 opacity-70" />
+                  </Field>
+                  <Field label="Última verificação">
+                    <Input value="Nunca" disabled className="bg-slate-50 opacity-70 text-xs" />
+                  </Field>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t text-[11px]">
+                <div className="flex justify-between items-center">
+                  <span>Status DKIM:</span>
+                  <Badge variant="secondary" className="h-5 text-[9px]">PENDENTE</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Status SPF:</span>
+                  <Badge variant="secondary" className="h-5 text-[9px]">PENDENTE</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Status DMARC:</span>
+                  <Badge variant="secondary" className="h-5 text-[9px]">PENDENTE</Badge>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-2 border-t">
+                <h4 className="text-xs font-bold uppercase text-slate-500">Instruções DNS</h4>
+                
+                <div className="p-2 bg-slate-50 rounded border text-[10px] space-y-2">
+                  <div>
+                    <span className="font-bold block mb-0.5">DKIM (mailer._domainkey)</span>
+                    <p className="text-muted-foreground break-all">Tipo: TXT · Valor: fornecido pela GemMail</p>
+                  </div>
+                  
+                  <div className="pt-2 border-t">
+                    <span className="font-bold block mb-0.5">SPF (@)</span>
+                    <p className="text-muted-foreground break-all">Tipo: TXT · Valor: v=spf1 a mx include:spf.mali.gemmail.com.br include:spf.magicksender.com ~all</p>
+                    <p className="mt-1 text-red-600 font-medium">IMPORTANTE: Se já existir um registro SPF, combine os mecanismos em um único registro. Nunca use dois registros v=spf1.</p>
+                  </div>
+
+                  <div className="pt-2 border-t">
+                    <span className="font-bold block mb-0.5">DMARC (_dmarc)</span>
+                    <p className="text-muted-foreground break-all">Tipo: TXT · Valor: v=DMARC1; p=quarantine; rua=mailto:certificado.mei.estadual@seu-certificado-mei-digital.online; sp=none; pct=80; ri=86400</p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -695,23 +744,20 @@ function CampanhasEmail() {
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-[10px] text-muted-foreground leading-tight italic">
-                Campos informativos para registro da documentação oficial antes da ativação técnica.
+                Informações técnicas confirmadas. A ativação depende da validação final do formato de autenticação da API Key.
               </p>
               <Field label="URL-base oficial">
                 <Input value="https://gerenciador.gemmail.com.br/api" disabled className="bg-slate-50 opacity-70" />
               </Field>
-              <Field label="Endpoint de teste">
-                <Input placeholder="GemMailApi_Endpoint_TransactionalEmails" disabled className="bg-slate-50 opacity-70" />
-              </Field>
               <Field label="Formato Autenticação">
-                <Input placeholder="publicKey + privateKey (GemMailApi_Config)" disabled className="bg-slate-50 opacity-70" />
+                <Input placeholder="Aguardando confirmação (API Key)" disabled className="bg-slate-50 opacity-70" />
               </Field>
               <div className="space-y-2 pt-2 border-t">
-                <div className="flex justify-between text-[10px]"><span>Endpoint Listas:</span> <span className="text-blue-500 font-bold uppercase">Confirmado (Lists)</span></div>
-                <div className="flex justify-between text-[10px]"><span>Endpoint Inscritos:</span> <span className="text-blue-500 font-bold uppercase">Confirmado (ListSubscribers)</span></div>
-                <div className="flex justify-between text-[10px]"><span>Endpoint Campanhas:</span> <span className="text-blue-500 font-bold uppercase">Confirmado (Campaigns)</span></div>
-                <div className="flex justify-between text-[10px]"><span>Endpoint Templates:</span> <span className="text-blue-500 font-bold uppercase">Confirmado (Templates)</span></div>
-                <div className="flex justify-between text-[10px]"><span>Endpoint Envio:</span> <span className="text-blue-500 font-bold uppercase">Confirmado (TransactionalEmails)</span></div>
+                <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_Lists:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
+                <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_ListSubscribers:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
+                <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_Campaigns:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
+                <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_Templates:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
+                <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_TransactionalEmails:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
               </div>
             </CardContent>
           </Card>
@@ -865,7 +911,7 @@ function CampanhasEmail() {
                       disabled={true}
                       className="bg-slate-50 text-slate-400 cursor-not-allowed"
                     >
-                      <Send className="mr-2 h-4 w-4" /> ENVIAR TESTE (Bloqueado)
+                      <Send className="mr-2 h-4 w-4" /> ENVIAR TESTE (Bloqueado: Autenticação Pendente)
                     </Button>
                   </div>
                 </>
