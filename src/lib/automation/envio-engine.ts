@@ -148,8 +148,42 @@ export async function loadRecipients() {
       }
     }
 
-    const items: QueueItem[] = (data ?? [])
-      .filter((c: any) => /.+@.+\..+/.test(c.email))
+    // Auto-cria links únicos para empresas que ainda não têm.
+    const validCompanies = (data ?? []).filter((c: any) => /.+@.+\..+/.test(c.email));
+    const missing = validCompanies.filter((c: any) => !linksMap[c.id]);
+    if (missing.length > 0) {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const inserts = missing.map((c: any) => {
+        const token = crypto.randomUUID().replace(/-/g, '');
+        return {
+          company_id: c.id,
+          public_token: token,
+          token,
+          public_url: `${origin}/c/${token}`,
+          checkout_url: `${origin}/checkout/${token}`,
+          active: true,
+          status: 'active',
+          company_data: {
+            cnpj: c.cnpj,
+            nome: c.nome_titular_exibicao || c.razao_social_original,
+          } as any,
+        };
+      });
+      const { data: inserted, error: insErr } = await supabase
+        .from('company_links')
+        .insert(inserts)
+        .select('company_id, public_token');
+      if (insErr) {
+        pushLog(`⚠ Falha ao criar links únicos: ${insErr.message}`);
+      } else {
+        for (const l of (inserted ?? []) as Array<{ company_id: string | null; public_token: string }>) {
+          if (l.company_id) linksMap[l.company_id] = l.public_token;
+        }
+        pushLog(`🔗 Criados ${inserted?.length ?? 0} links únicos.`);
+      }
+    }
+
+    const items: QueueItem[] = validCompanies
       .map((c: any) => ({
         id: c.id,
         email: c.email,
@@ -164,6 +198,7 @@ export async function loadRecipients() {
       }));
     envioStore.set({ queue: items });
     pushLog(`Carregados ${items.length} destinatários (limite ${batchLimit}).`);
+
   } catch (e: any) {
     toast.error('Erro ao carregar destinatários: ' + e.message);
   } finally {
