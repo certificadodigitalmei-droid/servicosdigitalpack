@@ -309,7 +309,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     </td></tr>` : ''}
 
     <tr><td align="center" style="padding:0 ${px}px 44px ${px}px;">
-      <a href="${buttonHref}" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);">${buttonLabel}</a>
+      <a href="${buttonHref}" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);white-space:nowrap;mso-padding-alt:0;line-height:1.2;">${buttonLabel}</a>
     </td></tr>
 
     ${D.showSignature ? `
