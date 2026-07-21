@@ -117,6 +117,9 @@ function CampanhasEmail() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [discoveryStatus, setDiscoveryStatus] = useState<string>('pending');
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [companiesInfo, setCompaniesInfo] = useState<{ total: number; withEmail: number; withLink: number } | null>(null);
+  const [companiesOnlyWithEmail, setCompaniesOnlyWithEmail] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const testConnectionFn = useServerFn(testGemMailConnection);
