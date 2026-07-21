@@ -117,29 +117,15 @@ export function GovConsultaLoader({
           alt="gov.br"
           className="absolute inset-0 h-full w-full object-cover object-center"
         />
-        {/* Progress strip on top of the image, aligned over the login card area */}
-        <div
-          className="absolute right-[6%] w-[36%] max-w-[520px]"
-          style={{ top: '78%' }}
-        >
+        {/* Thin top progress bar — no floating button on desktop */}
+        <div className="absolute inset-x-0 top-0 h-1 bg-white/40">
           <div
-            className="flex items-center justify-center gap-2.5 rounded-md px-5 py-3 text-white shadow-lg ring-1 ring-white/40"
-            style={{ background: AZUL }}
-          >
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span key={currentLabel} className="animate-fade-in text-[13.5px] font-semibold tracking-tight">
-              {currentLabel}
-            </span>
-          </div>
-          <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/80 shadow-sm ring-1 ring-black/5">
-            <div
-              className="h-full rounded-full transition-[width] duration-100 ease-linear"
-              style={{
-                width: `${progress}%`,
-                background: `linear-gradient(90deg, ${AZUL}, ${AMARELO})`,
-              }}
-            />
-          </div>
+            className="h-full transition-[width] duration-100 ease-linear"
+            style={{
+              width: `${progress}%`,
+              background: `linear-gradient(90deg, ${AZUL}, ${AMARELO})`,
+            }}
+          />
         </div>
       </div>
 
