@@ -29,16 +29,18 @@ import {
 } from 'lucide-react';
 import { FloatingStatsPanel } from '@/components/painel/FloatingStatsPanel';
 import { useStore } from '@/lib/automation/store';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import {
   envioStore,
   loadRecipients,
   resetStatuses,
-  clearQueue,
   clearLogs,
   startSending,
   togglePause,
   stopSending,
   sendSingle,
+  sendTestOnce,
   buildVarsForPreview,
   setSubject,
   setDelaySec,
@@ -49,8 +51,10 @@ import {
   setFromAddress,
   setReplyTo,
   setShowFloating,
+  setHeroImageUrl,
   type QueueItem,
 } from '@/lib/automation/envio-engine';
+
 
 export const Route = createFileRoute('/_authenticated/painel/envio-massa')({
   component: EnvioMassa,
@@ -72,6 +76,9 @@ function EnvioMassa() {
   const loading = useStore(envioStore, (s) => s.loading);
   const logs = useStore(envioStore, (s) => s.logs);
   const showFloating = useStore(envioStore, (s) => s.showFloating);
+  const heroImageUrl = useStore(envioStore, (s) => s.heroImageUrl);
+  const [uploadingImg, setUploadingImg] = useState(false);
+
 
   const [previewIdx, setPreviewIdx] = useState(0);
 
@@ -94,8 +101,9 @@ function EnvioMassa() {
   const previewHtml = useMemo(() => {
     if (!previewItem) return '';
     const vars = buildVarsForPreview(previewItem);
-    return renderHtml(DEFAULT_DESIGN, vars);
-  }, [previewItem, fromName, fromAddress]);
+    return renderHtml({ ...DEFAULT_DESIGN, heroImageUrl: heroImageUrl || undefined }, vars);
+  }, [previewItem, fromName, fromAddress, heroImageUrl]);
+
 
   const progress =
     stats.total > 0
