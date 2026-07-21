@@ -98,6 +98,7 @@ function ConsultaPage() {
   const autoIntervalSec = useStore(consultaStore, (s) => s.autoIntervalSec);
   const autoImport = useStore(consultaStore, (s) => s.autoImport);
   const autoImportDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
+  const autoImportTarget = useStore(consultaStore, (s) => s.autoImportTarget);
   const autoStats = useStore(consultaStore, (s) => s.autoStats);
   const autoImportRuns = useStore(consultaStore, (s) => s.autoImportRuns);
   const autoImportTotal = useStore(consultaStore, (s) => s.autoImportTotal);
