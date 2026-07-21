@@ -170,9 +170,6 @@ function CheckoutTokenPage() {
               <Step active label="Pagamento" n={3} />
             </div>
 
-            {(
-              <></>
-            ) && !pixOpen ? null : null}
             {true ? (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
