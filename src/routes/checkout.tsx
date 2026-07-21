@@ -53,7 +53,7 @@ function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [pixOpen, setPixOpen] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [pixData, setPixData] = useState<{ qrcode: string; transaction_id: string } | null>(null);
+  const [pixData, setPixData] = useState<{ pix_code: string; qr_code_base64?: string; transaction_id: string } | null>(null);
   const [loading, setLoading] = useState(!!token);
 
   useEffect(() => {
@@ -109,8 +109,8 @@ function CheckoutPage() {
       });
 
       if (result.orderId) setOrderId(result.orderId);
-      if (result.qrcode) {
-        setPixData({ qrcode: result.qrcode, transaction_id: result.transaction_id });
+      if (result.pix_code || result.qr_code_base64) {
+        setPixData({ pix_code: result.pix_code, qr_code_base64: result.qr_code_base64, transaction_id: result.transaction_id });
       }
 
       setPixOpen(true);

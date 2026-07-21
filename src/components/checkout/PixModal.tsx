@@ -18,7 +18,7 @@ export type PixModalProps = {
   open: boolean;
   amount: number;
   orderId: string | null;
-  pixData: { qrcode: string; transaction_id: string } | null;
+  pixData: { pix_code: string; qr_code_base64?: string; transaction_id: string } | null;
   onClose: () => void;
 };
 
@@ -85,9 +85,9 @@ export function PixModal({ open, amount, orderId, pixData, onClose }: PixModalPr
   }, [expiresAt, now]);
 
   function handleCopy() {
-    if (!pixData?.qrcode) return;
+    if (!pixData?.pix_code) return;
     try {
-      navigator.clipboard.writeText(pixData.qrcode);
+      navigator.clipboard.writeText(pixData.pix_code);
       setCopied(true);
       toast.success('Código PIX copiado!');
       setTimeout(() => setCopied(false), 2000);
@@ -164,14 +164,22 @@ export function PixModal({ open, amount, orderId, pixData, onClose }: PixModalPr
                 onClick={handleCopy}
                 title="Clique para copiar"
               >
-                <div className="grid h-48 w-48 grid-cols-8 grid-rows-8 gap-[2px] rounded bg-white p-2 shadow-inner overflow-hidden ring-1 ring-border">
-                  {Array.from({ length: 64 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={((i * 13 + 7) % 5 === 0 || i % 3 === 0) ? 'bg-black' : 'bg-white'}
-                    />
-                  ))}
-                </div>
+                {pixData?.qr_code_base64 ? (
+                  <img
+                    src={pixData.qr_code_base64}
+                    alt="QR Code PIX"
+                    className="h-48 w-48 rounded bg-white p-2 shadow-inner ring-1 ring-border"
+                  />
+                ) : (
+                  <div className="grid h-48 w-48 grid-cols-8 grid-rows-8 gap-[2px] rounded bg-white p-2 shadow-inner overflow-hidden ring-1 ring-border">
+                    {Array.from({ length: 64 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={((i * 13 + 7) % 5 === 0 || i % 3 === 0) ? 'bg-black' : 'bg-white'}
+                      />
+                    ))}
+                  </div>
+                )}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity rounded">
                   <span className="bg-white px-3 py-1 rounded-full text-[10px] font-bold shadow-sm">
                     CLIQUE PARA COPIAR
@@ -196,7 +204,7 @@ export function PixModal({ open, amount, orderId, pixData, onClose }: PixModalPr
               <div className="flex gap-2">
                 <input
                   readOnly
-                  value={pixData?.qrcode || ''}
+                  value={pixData?.pix_code || ''}
                   onFocus={(e) => e.currentTarget.select()}
                   className="w-full truncate rounded-md border border-input bg-muted/30 px-3 py-2.5 text-[12px] font-mono"
                 />
