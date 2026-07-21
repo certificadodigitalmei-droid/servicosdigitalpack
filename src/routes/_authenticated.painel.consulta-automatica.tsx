@@ -109,6 +109,27 @@ function ConsultaPage() {
     status: number;
   }>(null);
 
+  // Consulta automática (loop): fica chamando countByDate a cada X segundos.
+  const [autoCount, setAutoCount] = useState(false);
+  const [autoIntervalSec, setAutoIntervalSec] = useState(30);
+  const [autoStats, setAutoStats] = useState<{
+    checks: number;
+    lastTotal: number | null;
+    prevTotal: number | null;
+    delta: number;
+    peak: number | null;
+    lastCheckAt: string | null;
+    startedAt: string | null;
+  }>({
+    checks: 0,
+    lastTotal: null,
+    prevTotal: null,
+    delta: 0,
+    peak: null,
+    lastCheckAt: null,
+    startedAt: null,
+  });
+
   const [importedRows, setImportedRows] = useState<ImportedRow[]>([]);
   const [failedRows, setFailedRows] = useState<Array<{ cnpj: string; error: string }>>([]);
 
