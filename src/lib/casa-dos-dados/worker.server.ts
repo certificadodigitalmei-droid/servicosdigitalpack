@@ -175,7 +175,7 @@ export async function runAutomationOnce(
         .from('automatic_company_queue')
         .insert({
           automation_id: automation.id,
-          query_date: todayBR,
+          query_date: queryDate,
           cnpj,
           run_id: runId,
         })
