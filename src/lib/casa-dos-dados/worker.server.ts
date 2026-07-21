@@ -159,6 +159,7 @@ export type CoreLoopInput = {
   maxDetailQueries?: number;
   httpTimeoutMs?: number;
   signal?: AbortSignal;
+  onProgress?: (stage: string, progress?: Record<string, unknown>) => Promise<void> | void;
 };
 
 function mergeCompanyData(summary: Record<string, unknown>, detail: Record<string, unknown> | null): Record<string, unknown> {
@@ -236,6 +237,21 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
     outcome.cursorEnd = { page: cursorPage, itemOffset: cursorOffset, lastCnpj };
   };
 
+  const progress = async (stage: string, extra: Record<string, unknown> = {}) => {
+    await input.onProgress?.(stage, {
+      query_date: queryDate,
+      page,
+      item_offset: offset,
+      pages_fetched: outcome.pagesFetched,
+      items_received: outcome.itemsReceived,
+      items_analyzed: outcome.itemsAnalyzed,
+      imported_count: outcome.imported,
+      pending_enrichment_count: outcome.pendingEnrichment,
+      detail_queries: outcome.detailQueries,
+      ...extra,
+    });
+  };
+
   const shouldStop = (cursorPage = page, cursorOffset = offset): boolean => {
     if (input.signal?.aborted) throw new Error('Execução interrompida pelo controlador');
     if (Date.now() - startedAt >= maxRunMs) {
@@ -252,11 +268,16 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
   let itemsSeen = 0;
 
   pageLoop: while (true) {
-    if (outcome.pagesFetched >= maxPages) break;
+    if (outcome.pagesFetched >= maxPages) {
+      setLimit('Limite máximo de páginas atingido', page, offset);
+      break;
+    }
     if (outcome.imported >= requested) break;
     if (shouldStop(page, offset)) break;
 
+    await progress('pesquisa_avancada', { page, item_offset: offset });
     const result = await deps.fetchPage({ filters: automation.filters ?? {}, limit: pageSize, page, date: queryDate, signal: input.signal, timeoutMs: httpTimeoutMs });
+    await progress('paginacao', { page, http_status: result.status, response_total: result.total, cnpjs_length: result.items.length });
     outcome.pagesFetched += 1;
     outcome.apiStatus = result.status;
     outcome.apiTotal = result.total;
@@ -314,6 +335,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         }
         try {
           outcome.detailQueries += 1;
+          await progress('consulta_detalhada_cnpj', { page, item_offset: i, cnpj, detail_queries: outcome.detailQueries });
           const detail = await deps.fetchDetails(cnpj, { signal: input.signal, timeoutMs: httpTimeoutMs });
           if (detail.ok && detail.item) {
             enrichedItem = mergeCompanyData(item, detail.item);
@@ -326,6 +348,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
       }
 
       // Validate data quality AFTER detailed lookup in normal mode.
+      await progress('validacao_dos_campos', { page, item_offset: i, cnpj });
       const validation = validateCompanyItem(enrichedItem, automation.filters ?? {});
       const isValid = validation.complete;
       const dataQualityStatus: 'complete' | 'test_partial' | 'pending_enrichment' = isValid
@@ -341,6 +364,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         outcome.incomplete += 1;
         outcome.pendingEnrichment += 1;
         bumpMissing(validation.missingFields);
+        await progress('gravacao_na_fila', { page, item_offset: i, cnpj, data_quality_status: 'pending_enrichment' });
         const enq = await deps.tryEnqueue({
           automationId: automation.id,
           runId,
@@ -362,6 +386,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
       }
 
       // ---- DEDUPLICATION ----
+      await progress('gravacao_na_fila', { page, item_offset: i, cnpj, data_quality_status: dataQualityStatus });
       const enq = await deps.tryEnqueue({
         automationId: automation.id,
         runId,
@@ -423,6 +448,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
       let companyId: string;
       let wasNewCompany = false;
       try {
+        await progress('upsert_em_companies', { page, item_offset: i, cnpj });
         const up = await deps.upsertCompany(companyPayload);
         companyId = up.companyId;
         wasNewCompany = up.wasNew;
@@ -445,6 +471,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
       if (canGenerateLink) {
         try {
+          await progress('geracao_de_link', { page, item_offset: i, cnpj, company_id: companyId });
           const active = await deps.findActiveLinkByCompany(companyId);
           if (active) {
             linkId = active.id;
@@ -474,6 +501,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         }
       }
 
+      await progress('atualizacao_da_fila', { page, item_offset: i, cnpj, company_id: companyId, company_link_id: linkId });
       await deps.updateQueueRow({ queueId, companyId, companyLinkId: linkId, wasNewCompany, wasNewLink });
 
       outcome.imported += 1;
@@ -517,6 +545,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
   apiSummary.items_received = outcome.itemsReceived;
   apiSummary.items_analyzed = outcome.itemsAnalyzed;
   apiSummary.missing_fields_summary = outcome.missingFieldsSummary;
+  apiSummary.last_stage = 'historico_pronto_para_atualizar';
 
   return { outcome, apiSummary };
 }
@@ -531,7 +560,6 @@ export async function runAutomationOnce(
 ): Promise<RunOutcome> {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const publicBaseUrl = (process.env.PUBLIC_APP_URL ?? '').replace(/\/+$/, '');
-  if (!publicBaseUrl) throw new Error('PUBLIC_APP_URL não configurado');
 
   const isTestRun = opts.trigger === 'test_manual';
   const requested = Math.max(1, opts.overrideQuantity ?? automation.quantity_per_run ?? 1);
@@ -582,18 +610,40 @@ export async function runAutomationOnce(
   let finalStatus: RunOutcome['status'] = 'ok';
   let errorMessage: string | null = null;
   const controller = new AbortController();
-  const abortTimer = setTimeout(() => controller.abort(), maxRunMs + 2_000);
+  const abortTimer = setTimeout(() => controller.abort(), maxRunMs);
+  let lastStage = 'iniciando_execucao';
 
-  const touchHeartbeat = async () => {
-    if (!runId) return;
+  const touchHeartbeat = async (stage = lastStage, progress: Record<string, unknown> = {}) => {
+    lastStage = stage;
     const nowIso = new Date().toISOString();
-    await Promise.all([
-      (supabaseAdmin as any).from('automatic_company_queries').update({ heartbeat_at: nowIso }).eq('id', automation.id),
-      (supabaseAdmin as any).from('automatic_company_query_runs').update({ heartbeat_at: nowIso }).eq('id', runId),
-    ]);
+    const summaryPatch = {
+      ...(apiSummary ?? {}),
+      last_stage: stage,
+      last_progress: progress,
+      heartbeat_at: nowIso,
+      limits: { max_run_ms: maxRunMs, max_pages: maxPages, max_items_analyzed: maxItemsAnalyzed, max_detail_queries: maxDetailQueries, http_timeout_ms: httpTimeoutMs },
+    };
+    apiSummary = summaryPatch;
+    try {
+      const updates: Promise<unknown>[] = [
+        (supabaseAdmin as any).from('automatic_company_queries').update({ heartbeat_at: nowIso }).eq('id', automation.id),
+      ];
+      if (runId) {
+        updates.push(
+          (supabaseAdmin as any)
+            .from('automatic_company_query_runs')
+            .update({ heartbeat_at: nowIso, api_summary: summaryPatch as any })
+            .eq('id', runId),
+        );
+      }
+      await Promise.all(updates);
+    } catch (e: any) {
+      apiSummary.heartbeat_error = e?.message ?? String(e);
+    }
   };
 
   try {
+    await touchHeartbeat('criacao_do_historico');
     const { data: runRow, error: runErr } = await (supabaseAdmin as any)
       .from('automatic_company_query_runs')
       .insert({
@@ -604,21 +654,29 @@ export async function runAutomationOnce(
         query_date: queryDate,
         cursor_start: { page: startPage, itemOffset: startOffset } as any,
         heartbeat_at: new Date().toISOString(),
+        api_summary: {
+          last_stage: 'historico_criado',
+          query_date: queryDate,
+          cursor_start: { page: startPage, itemOffset: startOffset },
+          limits: { max_run_ms: maxRunMs, max_pages: maxPages, max_items_analyzed: maxItemsAnalyzed, max_detail_queries: maxDetailQueries, http_timeout_ms: httpTimeoutMs },
+        } as any,
       })
       .select('id')
       .single();
     if (runErr) throw new Error(`run insert: ${runErr.message}`);
     runId = runRow.id as string;
     outcome.runId = runId;
-    await touchHeartbeat();
+    await touchHeartbeat('historico_criado', { run_id: runId, cursor_start: outcome.cursorStart });
+
+    if (!publicBaseUrl) throw new Error('PUBLIC_APP_URL não configurado');
 
     const deps: WorkerDeps = {
       fetchPage: async (o) => {
-        await touchHeartbeat();
+        await touchHeartbeat('pesquisa_avancada', { page: o.page, limit: o.limit, date: o.date });
         return searchOpeningsByDate(o);
       },
       fetchDetails: async (cnpj, o) => {
-        await touchHeartbeat();
+        await touchHeartbeat('consulta_detalhada_cnpj', { cnpj });
         const detail = await fetchCompanyDetailsByCnpj(cnpj, o);
         return { ok: detail.ok, status: detail.status, item: detail.item };
       },
@@ -748,6 +806,7 @@ export async function runAutomationOnce(
         maxDetailQueries,
         httpTimeoutMs,
         signal: controller.signal,
+        onProgress: touchHeartbeat,
       },
       deps,
     );
@@ -760,15 +819,20 @@ export async function runAutomationOnce(
     apiSummary = res.apiSummary;
   } catch (err: any) {
     const msg = err?.message ?? String(err);
-    errorMessage = msg;
+    errorMessage = controller.signal.aborted && !/timeout|tempo/i.test(msg)
+      ? `Tempo máximo da execução atingido (${maxRunMs}ms)`
+      : msg;
     apiSummary.error = msg;
+    apiSummary.last_stage = lastStage;
     finalStatus = 'error';
-    outcome.error = msg;
+    outcome.error = errorMessage ?? msg;
     outcome.status = 'error';
   } finally {
     clearTimeout(abortTimer);
     const finishedAt = new Date();
     if (!outcome.cursorEnd) outcome.cursorEnd = { page: startPage, itemOffset: startOffset, lastCnpj: null };
+    apiSummary.last_stage = finalStatus === 'error' ? lastStage : 'atualizacao_do_historico';
+    apiSummary.finished_at = finishedAt.toISOString();
     apiSummary.detail_queries = outcome.detailQueries;
     apiSummary.partial_reason = outcome.partialReason ?? null;
     apiSummary.limit_reason = outcome.limitReason ?? null;
@@ -790,7 +854,9 @@ export async function runAutomationOnce(
     }
 
     if (runId) {
-      await (supabaseAdmin as any)
+      try {
+        apiSummary.last_stage = 'atualizacao_do_historico';
+        await (supabaseAdmin as any)
         .from('automatic_company_query_runs')
         .update({
           status: finalStatus,
@@ -813,10 +879,14 @@ export async function runAutomationOnce(
           finished_at: finishedAt.toISOString(),
         })
         .eq('id', runId);
+      } catch (e: any) {
+        apiSummary.history_update_error = e?.message ?? String(e);
+      }
     }
 
     const next = new Date(finishedAt.getTime() + Math.max(1, automation.interval_minutes) * 60_000);
     const finalAutomationStatus = automation.enabled ? 'active' : 'inactive';
+    apiSummary.last_stage = 'liberacao_do_lock';
     const patch: Record<string, unknown> = {
       status: finalAutomationStatus,
       heartbeat_at: null,
@@ -825,7 +895,12 @@ export async function runAutomationOnce(
       last_error: finalStatus === 'error' ? errorMessage : null,
     };
     if (opts.trigger !== 'test_manual') patch.next_run_at = next.toISOString();
-    await (supabaseAdmin as any).from('automatic_company_queries').update(patch).eq('id', automation.id);
+    try {
+      await (supabaseAdmin as any).from('automatic_company_queries').update(patch).eq('id', automation.id);
+    } catch (e: any) {
+      outcome.error = outcome.error ?? `Falha ao liberar lock: ${e?.message ?? String(e)}`;
+      outcome.status = 'error';
+    }
   }
 
   return outcome;
