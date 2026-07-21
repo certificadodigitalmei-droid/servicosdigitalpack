@@ -580,6 +580,7 @@ export async function runAutomationOnce(
   const maxPages = Math.max(1, automation.max_pages_per_run ?? 20);
   const pageSize = Math.max(1, Math.min(200, automation.page_size ?? 50));
   const maxRunMs = Math.max(40_000, Math.min(60_000, Number(process.env.CASA_DOS_DADOS_RUN_TIMEOUT_MS ?? 50_000) || 50_000));
+  const softLimitMs = Math.max(10_000, Math.min(maxRunMs - 5_000, Number(process.env.CASA_DOS_DADOS_SOFT_LIMIT_MS ?? 35_000) || 35_000));
   const httpTimeoutMs = Math.max(3_000, Math.min(15_000, Number(process.env.CASA_DOS_DADOS_HTTP_TIMEOUT_MS ?? 12_000) || 12_000));
   const maxItemsAnalyzed = Math.max(1, Math.min(300, Number(process.env.CASA_DOS_DADOS_MAX_ITEMS_PER_RUN ?? Math.min(maxPages * pageSize + 10, 250)) || 250));
   const maxDetailQueries = Math.max(0, Math.min(maxItemsAnalyzed, Number(process.env.CASA_DOS_DADOS_MAX_DETAIL_QUERIES ?? Math.min(maxItemsAnalyzed, 80)) || 80));
