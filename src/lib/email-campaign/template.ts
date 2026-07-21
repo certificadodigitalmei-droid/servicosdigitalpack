@@ -65,7 +65,23 @@ export type CampaignDesign = {
   showFooter: boolean;
   unsubText: string;
   unsubHref: string;
+
+  // Avatar (topo, círculo)
+  showAvatar?: boolean;
+  avatarUrl?: string;
+  avatarSize?: number;
+
+  // Faixa gov.br (texto acima do cabeçalho)
+  showGovBar?: boolean;
+  govBarText?: string;
+  govBarBg?: string;
+  govBarColor?: string;
+
+  // Selos de confiança (rodapé)
+  showBadges?: boolean;
+  badgesText?: string; // separado por "·"
 };
+
 
 export const DEFAULT_DESIGN: CampaignDesign = {
   logoText: 'CERTIFICADO DIGITAL MEI',
