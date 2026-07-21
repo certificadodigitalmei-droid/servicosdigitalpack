@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { toast } from 'sonner';
-import { Copy, Download, RotateCcw, Save, Smartphone, Monitor } from 'lucide-react';
+import { Copy, Download, RotateCcw, Save, Smartphone, Monitor, Check, Sparkles } from 'lucide-react';
 import {
   DEFAULT_DESIGN,
   DEFAULT_SUBJECT,
@@ -21,6 +21,8 @@ import {
   substitute,
   type CampaignDesign,
 } from '@/lib/email-campaign/template';
+import { PRESETS } from '@/lib/email-campaign/presets';
+
 
 export const Route = createFileRoute('/_authenticated/painel/modelo-mensagem')({
   component: ModeloMensagem,
@@ -73,6 +75,18 @@ function ModeloMensagem() {
   const [subject, setSubject] = useState<string>(() => loadString(SUBJECT_KEY, DEFAULT_SUBJECT));
   const [preheader, setPreheader] = useState<string>(() => loadString(PREHEADER_KEY, DEFAULT_PREHEADER));
   const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop');
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+
+  const applyPreset = (id: string) => {
+    const p = PRESETS.find((x) => x.id === id);
+    if (!p) return;
+    setDesign({ ...DEFAULT_DESIGN, ...p.design });
+    setSubject(p.subject);
+    setPreheader(p.preheader);
+    setSelectedPreset(id);
+    toast.success(`Modelo "${p.name}" aplicado — clique em Salvar para usar nos envios`);
+  };
+
 
   useEffect(() => {
     try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(design)); } catch {}
@@ -142,10 +156,60 @@ function ModeloMensagem() {
         </div>
       </div>
 
+      {/* ===== Galeria de Modelos Prontos ===== */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-brand-navy" />
+            Galeria de modelos prontos
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Clique em um modelo para aplicar. Depois clique em <strong>Salvar modelo</strong> para usar nos envios.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {PRESETS.map((p) => {
+              const previewHtml = renderHtml(p.design, PREVIEW_VARS);
+              const active = selectedPreset === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => applyPreset(p.id)}
+                  className={`group text-left rounded-xl border-2 overflow-hidden transition-all hover:shadow-lg ${active ? 'border-brand-navy ring-2 ring-brand-navy/30' : 'border-slate-200 hover:border-slate-400'}`}
+                >
+                  <div className="relative bg-slate-100 h-[260px] overflow-hidden">
+                    <iframe
+                      title={p.name}
+                      srcDoc={previewHtml}
+                      className="border-none pointer-events-none absolute top-0 left-0"
+                      style={{ width: '900px', height: '1100px', transform: 'scale(0.42)', transformOrigin: 'top left' }}
+                    />
+                    {active && (
+                      <div className="absolute top-2 right-2 bg-brand-navy text-white rounded-full p-1.5 shadow-lg">
+                        <Check className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3 bg-white border-t">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ background: p.accent }} />
+                      <div className="font-semibold text-sm">{p.name}</div>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{p.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 xl:grid-cols-[460px_1fr] gap-6">
         {/* ===== Editor ===== */}
         <div className="space-y-3">
           <Accordion type="multiple" defaultValue={['assunto', 'header', 'hero', 'body']} className="space-y-2">
+
 
             <SectionItem value="assunto" title="Assunto e preheader">
               <Field label="Assunto (aparece no Gmail)">
@@ -271,7 +335,35 @@ function ModeloMensagem() {
               </Field>
             </SectionItem>
 
+            <SectionItem value="avatar" title="Foto de perfil (avatar circular no topo)">
+              <ToggleField label="Mostrar avatar" value={!!design.showAvatar} onChange={(v) => set('showAvatar', v)} />
+              <Field label="URL da imagem (PNG/JPG quadrada)">
+                <Input value={design.avatarUrl || ''} onChange={(e) => set('avatarUrl', e.target.value)} placeholder="https://..." />
+              </Field>
+              <SliderField label="Tamanho (px)" min={40} max={110} value={design.avatarSize || 64} onChange={(v) => set('avatarSize', v)} />
+            </SectionItem>
+
+            <SectionItem value="govbar" title="Faixa gov.br (topo)">
+              <ToggleField label="Mostrar faixa" value={!!design.showGovBar} onChange={(v) => set('showGovBar', v)} />
+              <Field label="Texto">
+                <Input value={design.govBarText || ''} onChange={(e) => set('govBarText', e.target.value)} />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <ColorField label="Fundo" value={design.govBarBg || '#071d40'} onChange={(v) => set('govBarBg', v)} />
+                <ColorField label="Texto" value={design.govBarColor || '#c9d5ec'} onChange={(v) => set('govBarColor', v)} />
+              </div>
+            </SectionItem>
+
+            <SectionItem value="badges" title="Selos de confiança (rodapé)">
+              <ToggleField label="Mostrar selos" value={!!design.showBadges} onChange={(v) => set('showBadges', v)} />
+              <Field label="Texto (separe por · )">
+                <Input value={design.badgesText || ''} onChange={(e) => set('badgesText', e.target.value)} />
+              </Field>
+              <p className="text-[11px] text-muted-foreground">Ex.: Portal gov.br · Site Seguro (SSL) · Receita Federal · LGPD</p>
+            </SectionItem>
+
             <SectionItem value="layout" title="Layout geral">
+
               <div className="grid grid-cols-2 gap-3">
                 <SliderField label="Largura (px)" min={480} max={800} step={20} value={design.containerWidth} onChange={(v) => set('containerWidth', v)} />
                 <SliderField label="Padding lateral (px)" min={16} max={60} value={design.contentPaddingX} onChange={(v) => set('contentPaddingX', v)} />
