@@ -397,14 +397,22 @@ export async function startSending() {
 
   // Reavaliar a cada iteração com estado atualizado.
   while (!stopFlag) {
-    const q = envioStore.get().queue;
-    const item = q.find((x) => x.status === 'pending' || x.status === 'error');
+    ensureDailyWindow();
+    const cur = envioStore.get();
+    if (cur.dailyLimit > 0 && cur.sentToday >= cur.dailyLimit) {
+      pushLog(`🛑 Limite diário atingido (${cur.sentToday}/${cur.dailyLimit}). Envio parado.`);
+      toast.info(`Limite diário atingido (${cur.dailyLimit}).`);
+      break;
+    }
+    const item = cur.queue.find((x) => x.status === 'pending' || x.status === 'error');
     if (!item) break;
 
     while (paused && !stopFlag) {
       await new Promise((r) => setTimeout(r, 500));
     }
     if (stopFlag) break;
+
+
 
     const res = await sendOne(item);
     if (!res.ok && res.waitSec) {
