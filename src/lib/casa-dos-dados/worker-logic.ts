@@ -115,15 +115,26 @@ export type DataQualityResult = {
 export type ValidationFilters = { require_email?: boolean; only_matriz?: boolean };
 
 /**
- * Validates the raw Casa dos Dados item against the required-fields spec.
- * Called BEFORE upsert — determines whether the record can flow as "complete"
- * in normal mode or must be quarantined as `pending_enrichment`.
+ * Validates the raw Casa dos Dados item (from POST /v5/cnpj/pesquisa → response.cnpjs)
+ * against the "seven required fields" spec:
+ *   cnpj, razao_social, situacao_cadastral, data_abertura,
+ *   matriz_filial, municipio, uf.
+ *
+ * Email and telefone are OPTIONAL: they are captured when present but they
+ * never mark a record as incomplete, and the `require_email`/`com_email`
+ * filter is treated as an API-side hint only (it does NOT guarantee the
+ * payload includes the address). Missing email → saved as null; UI shows
+ * "Não informado".
  */
 export function validateCompanyItem(
   item: Record<string, unknown>,
   filters?: ValidationFilters,
 ): DataQualityResult {
   const missing: string[] = [];
+
+  // cnpj presence/length is enforced upstream by classifyItem; still guard it.
+  const cnpj = pickStr(item, ['cnpj', 'cnpj_completo']);
+  if (!cnpj) missing.push('cnpj');
 
   const razao = pickStr(item, ['razao_social', 'nome_empresarial']);
   if (!razao) missing.push('razao_social');
@@ -134,9 +145,8 @@ export function validateCompanyItem(
   const abertura = pickStr(item, ['data_abertura', 'abertura', 'inicio_atividade']);
   if (!abertura) missing.push('data_abertura');
 
-  // Filtro "somente matriz" já garante matriz na API, mas o campo em si
-  // precisa vir para podermos identificar. Se o filtro está ligado, aceitamos
-  // o próprio filtro como fonte da informação.
+  // Filtro "somente matriz" já garante matriz na API; sem o filtro o payload
+  // precisa trazer o campo para podermos identificar matriz vs filial.
   if (!filters?.only_matriz && !hasMatrizFlag(item)) missing.push('matriz_filial');
 
   const municipio = pickStr(item, ['municipio', 'cidade', 'municipio_descricao']);
@@ -145,8 +155,8 @@ export function validateCompanyItem(
   const uf = pickStr(item, ['uf']);
   if (!uf) missing.push('uf');
 
+  // Email é opcional: mapeamos se vier, mas nunca bloqueia a importação.
   const email = extractEmail(item);
-  if (filters?.require_email && !email) missing.push('email');
 
   return { complete: missing.length === 0, missingFields: missing, email };
 }
