@@ -38,7 +38,7 @@ export const getSaldo = createServerFn({ method: 'GET' })
     await assertAdmin(context.supabase, context.userId);
     const { checkSaldo } = await import('./client.server');
     const r = await checkSaldo({ timeoutMs: 10_000 });
-    return { status: r.status, ok: r.ok, body: r.body };
+    return { status: r.status, ok: r.ok, body: JSON.stringify(r.body) };
   });
 
 // ---------------------------------------------------------------------------
