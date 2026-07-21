@@ -643,7 +643,7 @@ export async function runAutomationOnce(
         updates.push(
           (supabaseAdmin as any)
             .from('automatic_company_query_runs')
-            .update({ heartbeat_at: nowIso, api_summary: summaryPatch as any })
+            .update({ heartbeat_at: nowIso, api_summary: summaryPatch as any, current_stage: stage })
             .eq('id', runId),
         );
       }
