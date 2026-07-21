@@ -128,13 +128,18 @@ export type EnqueueArgs = {
   isTestRecord: boolean;
   dataQualityStatus: 'complete' | 'test_partial' | 'pending_enrichment';
   missingFields: string[];
+  rawData?: Record<string, unknown> | null;
 };
+
+export type EnqueueResult =
+  | { ok: true; queueId: string }
+  | { ok: false; reason: 'duplicate'; existing?: { id: string; status: string; dataQualityStatus: string } }
+  | { ok: false; reason: 'error'; message: string };
 
 export type WorkerDeps = {
   fetchPage: FetchPageFn;
   fetchDetails?: (cnpj: string, opts?: { signal?: AbortSignal; timeoutMs?: number }) => Promise<{ ok: boolean; status: number; item: Record<string, unknown> | null }>;
-  tryEnqueue: (args: EnqueueArgs) =>
-    Promise<{ ok: true; queueId: string } | { ok: false; reason: 'duplicate' } | { ok: false; reason: 'error'; message: string }>;
+  tryEnqueue: (args: EnqueueArgs) => Promise<EnqueueResult>;
   findActiveLinkByCnpj: (cnpj: string) => Promise<{ id: string; publicToken: string; publicUrl: string | null; checkoutUrl: string | null } | null>;
   upsertCompany: (payload: Record<string, unknown>) => Promise<{ companyId: string; wasNew: boolean }>;
   findActiveLinkByCompany: (companyId: string) => Promise<{ id: string; publicToken: string; publicUrl: string | null; checkoutUrl: string | null } | null>;
