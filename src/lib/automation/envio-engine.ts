@@ -333,12 +333,15 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
     });
 
     if (res.sent) {
+      ensureDailyWindow();
       envioStore.set((s) => ({
         queue: s.queue.map((q) => (q.id === item.id ? { ...q, status: 'sent' } : q)),
+        sentToday: s.sentToday + 1,
       }));
-      pushLog(`✓ Enviado para ${res.recipient}`);
+      pushLog(`✓ Enviado para ${res.recipient} (${envioStore.get().sentToday} hoje)`);
       return { ok: true };
     }
+
     if (res.reason === 'recipient_suppressed') {
       envioStore.set((s) => ({
         queue: s.queue.map((q) =>
