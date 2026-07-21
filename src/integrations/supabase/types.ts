@@ -1450,6 +1450,13 @@ export type Database = {
           quantity_per_run: number
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       recover_stale_automations: {
         Args: { _older_than?: string }
         Returns: number
