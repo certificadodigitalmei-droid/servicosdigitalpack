@@ -1,0 +1,320 @@
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { useEffect, useState, useMemo } from 'react';
+import { Search, Eye, RefreshCw, Loader2, Copy } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { supabase } from '@/integrations/supabase/client';
+import { formatCNPJ, formatDateBR } from '@/lib/format';
+import { toast } from 'sonner';
+
+export const Route = createFileRoute('/_authenticated/painel/empresas-importadas/')({
+  head: () => ({ meta: [{ title: 'Empresas Importadas | Painel' }] }),
+  component: EmpresasImportadasPage,
+});
+
+type Row = {
+  id: string;
+  cnpj: string;
+  razao_social_original: string | null;
+  nome_titular_exibicao: string | null;
+  nome_fantasia: string | null;
+  situacao_cadastral_desc: string | null;
+  inicio_atividade: string | null;
+  is_mei: boolean | null;
+  is_matriz: boolean | null;
+  uf: string | null;
+  municipio_descricao: string | null;
+  email: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+const PAGE_SIZE = 25;
+
+function niceName(r: Row): string {
+  const raw = r.nome_titular_exibicao || r.razao_social_original || '';
+  return raw.replace(/^\d+[.\-/\s]*/, '').trim() || 'Não informado';
+}
+
+function EmpresasImportadasPage() {
+  const [rows, setRows] = useState<Row[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [search, setSearch] = useState('');
+  const [uf, setUf] = useState<string>('all');
+  const [emailFilter, setEmailFilter] = useState<string>('all');
+  const [origin, setOrigin] = useState<string>('all'); // all | auto | manual
+  const [openingFrom, setOpeningFrom] = useState('');
+  const [openingTo, setOpeningTo] = useState('');
+  const [importedFrom, setImportedFrom] = useState('');
+  const [importedTo, setImportedTo] = useState('');
+  const [autoIds, setAutoIds] = useState<Set<string>>(new Set());
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      let q = supabase
+        .from('companies')
+        .select(
+          'id,cnpj,razao_social_original,nome_titular_exibicao,nome_fantasia,situacao_cadastral_desc,inicio_atividade,is_mei,is_matriz,uf,municipio_descricao,email,created_at,updated_at',
+          { count: 'exact' },
+        )
+        .order('created_at', { ascending: false });
+
+      if (search.trim()) {
+        const s = search.trim();
+        const digits = s.replace(/\D/g, '');
+        if (digits.length >= 3) {
+          q = q.or(
+            `cnpj.ilike.%${digits}%,razao_social_original.ilike.%${s}%,nome_titular_exibicao.ilike.%${s}%,nome_fantasia.ilike.%${s}%`,
+          );
+        } else {
+          q = q.or(
+            `razao_social_original.ilike.%${s}%,nome_titular_exibicao.ilike.%${s}%,nome_fantasia.ilike.%${s}%`,
+          );
+        }
+      }
+      if (uf !== 'all') q = q.eq('uf', uf);
+      if (emailFilter === 'with') q = q.not('email', 'is', null).neq('email', '');
+      if (emailFilter === 'without') q = q.or('email.is.null,email.eq.');
+      if (openingFrom) q = q.gte('inicio_atividade', openingFrom);
+      if (openingTo) q = q.lte('inicio_atividade', openingTo);
+      if (importedFrom) q = q.gte('created_at', importedFrom);
+      if (importedTo) q = q.lte('created_at', importedTo + 'T23:59:59');
+
+      q = q.range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+
+      const { data, error, count } = await q;
+      if (error) throw error;
+      let list = (data ?? []) as Row[];
+
+      // origem: buscar quais estão na fila automática
+      if (list.length) {
+        const ids = list.map((r) => r.id);
+        const { data: queueRows } = await supabase
+          .from('automatic_company_queue')
+          .select('company_id')
+          .in('company_id', ids);
+        const set = new Set<string>((queueRows ?? []).map((q: any) => q.company_id).filter(Boolean));
+        setAutoIds(set);
+        if (origin === 'auto') list = list.filter((r) => set.has(r.id));
+        if (origin === 'manual') list = list.filter((r) => !set.has(r.id));
+      } else {
+        setAutoIds(new Set());
+      }
+
+      setRows(list);
+      setTotal(count ?? list.length);
+    } catch (e: any) {
+      toast.error('Erro ao carregar empresas: ' + (e?.message ?? 'desconhecido'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const ufs = useMemo(
+    () => [
+      'AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO',
+    ],
+    [],
+  );
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900">Empresas Importadas</h1>
+        <p className="text-sm text-slate-600">
+          Registros importados via Consulta Automática ou importação manual.
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Filtros</CardTitle>
+          <CardDescription>Busque e refine os resultados.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-4">
+          <div className="md:col-span-2">
+            <Label>Busca (CNPJ, razão, fantasia)</Label>
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
+              <Input
+                className="pl-8"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (setPage(0), void load())}
+                placeholder="Digite e pressione Enter"
+              />
+            </div>
+          </div>
+          <div>
+            <Label>UF</Label>
+            <Select value={uf} onValueChange={setUf}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {ufs.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>E-mail</Label>
+            <Select value={emailFilter} onValueChange={setEmailFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="with">Com e-mail</SelectItem>
+                <SelectItem value="without">Sem e-mail</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Origem</Label>
+            <Select value={origin} onValueChange={setOrigin}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="auto">Consulta Automática</SelectItem>
+                <SelectItem value="manual">Manual / Planilha</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Abertura (de)</Label>
+            <Input type="date" value={openingFrom} onChange={(e) => setOpeningFrom(e.target.value)} />
+          </div>
+          <div>
+            <Label>Abertura (até)</Label>
+            <Input type="date" value={openingTo} onChange={(e) => setOpeningTo(e.target.value)} />
+          </div>
+          <div>
+            <Label>Importada (de)</Label>
+            <Input type="date" value={importedFrom} onChange={(e) => setImportedFrom(e.target.value)} />
+          </div>
+          <div>
+            <Label>Importada (até)</Label>
+            <Input type="date" value={importedTo} onChange={(e) => setImportedTo(e.target.value)} />
+          </div>
+          <div className="flex items-end gap-2 md:col-span-3 lg:col-span-4">
+            <Button onClick={() => { setPage(0); void load(); }} disabled={loading}>
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+              Aplicar filtros
+            </Button>
+            <Button variant="outline" onClick={() => {
+              setSearch(''); setUf('all'); setEmailFilter('all'); setOrigin('all');
+              setOpeningFrom(''); setOpeningTo(''); setImportedFrom(''); setImportedTo('');
+              setPage(0); setTimeout(load, 0);
+            }}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Limpar
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Resultados</CardTitle>
+          <CardDescription>{total} registro(s) — página {page + 1} de {totalPages}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Empresa</TableHead>
+                  <TableHead>CNPJ</TableHead>
+                  <TableHead>Situação</TableHead>
+                  <TableHead>Abertura</TableHead>
+                  <TableHead>UF</TableHead>
+                  <TableHead>E-mail</TableHead>
+                  <TableHead>Origem</TableHead>
+                  <TableHead>Importada em</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow><TableCell colSpan={9} className="py-8 text-center">
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
+                  </TableCell></TableRow>
+                ) : rows.length === 0 ? (
+                  <TableRow><TableCell colSpan={9} className="py-8 text-center text-sm text-slate-500">
+                    Nenhuma empresa encontrada.
+                  </TableCell></TableRow>
+                ) : rows.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="max-w-[220px] truncate font-medium">{niceName(r)}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      <button
+                        className="inline-flex items-center gap-1 hover:text-brand-blue"
+                        onClick={() => { navigator.clipboard.writeText(formatCNPJ(r.cnpj)); toast.success('CNPJ copiado'); }}
+                        title="Copiar CNPJ"
+                      >
+                        {formatCNPJ(r.cnpj)} <Copy className="h-3 w-3" />
+                      </button>
+                    </TableCell>
+                    <TableCell>{r.situacao_cadastral_desc || 'Não informado'}</TableCell>
+                    <TableCell>{r.inicio_atividade ? formatDateBR(r.inicio_atividade) : 'Não informado'}</TableCell>
+                    <TableCell>{r.uf || '—'}</TableCell>
+                    <TableCell className="max-w-[180px] truncate">{r.email || 'Não informado'}</TableCell>
+                    <TableCell>
+                      {autoIds.has(r.id)
+                        ? <Badge variant="secondary">Consulta Automática</Badge>
+                        : <Badge variant="outline">Manual</Badge>}
+                    </TableCell>
+                    <TableCell className="text-xs">{formatDateBR(r.created_at.slice(0, 10))}</TableCell>
+                    <TableCell className="text-right">
+                      <Button asChild size="sm" variant="outline">
+                        <Link to="/painel/empresas-importadas/$companyId" params={{ companyId: r.id }}>
+                          <Eye className="mr-1 h-3 w-3" /> Ver detalhes
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-xs text-slate-500">Página {page + 1} de {totalPages}</div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled={page === 0 || loading} onClick={() => setPage((p) => Math.max(0, p - 1))}>
+                Anterior
+              </Button>
+              <Button variant="outline" size="sm" disabled={page + 1 >= totalPages || loading} onClick={() => setPage((p) => p + 1)}>
+                Próxima
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

@@ -9,6 +9,8 @@ import {
   Upload,
   Mail,
   Bot,
+  Database,
+  LinkIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,6 +48,8 @@ function PanelLayout() {
   const menuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, to: '/painel' },
     { title: 'Consulta Automática', icon: Bot, to: '/painel/consulta-automatica' },
+    { title: 'Empresas Importadas', icon: Database, to: '/painel/empresas-importadas' },
+    { title: 'Links Gerados', icon: LinkIcon, to: '/painel/links-gerados' },
     { title: 'Filtrar Empresas MEI', icon: Filter, to: '/painel/filtrar-mei' },
     { title: 'Importar Empresas', icon: Upload, to: '/painel/importar-empresas' },
     { title: 'Gerador de Links', icon: Link2, to: '/painel/gerador-links' },
@@ -56,6 +60,9 @@ function PanelLayout() {
   const getBreadcrumbLabel = (path: string) => {
     if (path === '/painel') return 'Dashboard';
     if (path === '/painel/consulta-automatica') return 'Consulta Automática';
+    if (path === '/painel/empresas-importadas') return 'Empresas Importadas';
+    if (path.startsWith('/painel/empresas-importadas/')) return 'Detalhes da Empresa';
+    if (path === '/painel/links-gerados') return 'Links Gerados';
     if (path === '/painel/importar-empresas') return 'Importar Empresas';
     if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
     if (path === '/painel/gerador-links') return 'Gerador de Links';
