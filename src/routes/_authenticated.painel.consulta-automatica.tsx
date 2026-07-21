@@ -178,6 +178,8 @@ function ConsultaAutomaticaPage() {
           filters: localFilters,
           query_date_mode: dateMode,
           selected_query_date: dateMode === 'specific' ? selectedDate : null,
+          auto_import_enabled: autoImport,
+          auto_generate_links_enabled: autoLinks && autoImport,
         },
       }),
     onSuccess: async () => {
