@@ -111,6 +111,16 @@ function isEmailLike(s: string | null | undefined): s is string {
 export function extractEmail(item: Record<string, unknown>): string | null {
   const direct = pickStr(item, ['email', 'email_contato']);
   if (isEmailLike(direct)) return direct;
+  // v4: contato_email: [{ email, valido, dominio }]
+  const contatoEmail = (item as any).contato_email;
+  if (Array.isArray(contatoEmail)) {
+    for (const e of contatoEmail) {
+      if (e && typeof e === 'object') {
+        const s = pickStr(e as Record<string, unknown>, ['email']);
+        if (isEmailLike(s)) return s;
+      } else if (typeof e === 'string' && isEmailLike(e)) return e.trim();
+    }
+  }
   const emails = (item as any).emails;
   if (Array.isArray(emails)) {
     for (const e of emails) {
@@ -120,6 +130,11 @@ export function extractEmail(item: Record<string, unknown>): string | null {
         if (isEmailLike(s)) return s;
       }
     }
+  }
+  const contato = (item as any).contato;
+  if (contato && typeof contato === 'object') {
+    const s = pickStr(contato as Record<string, unknown>, ['email']);
+    if (isEmailLike(s)) return s;
   }
   const estab = (item as any).estabelecimento;
   if (estab && typeof estab === 'object') {
@@ -132,15 +147,30 @@ export function extractEmail(item: Record<string, unknown>): string | null {
 function extractPhone(item: Record<string, unknown>): string | null {
   const direct = pickStr(item, ['telefone', 'telefone_contato']);
   if (direct) return direct;
+  // v4: contato_telefonico: [{ completo, ddd, numero, tipo }]
+  const contatoTel = (item as any).contato_telefonico;
+  if (Array.isArray(contatoTel)) {
+    for (const t of contatoTel) {
+      if (t && typeof t === 'object') {
+        const s = pickStr(t as Record<string, unknown>, ['completo', 'numero']);
+        if (s) return s;
+      } else if (typeof t === 'string' && t.trim()) return t.trim();
+    }
+  }
   const tels = (item as any).telefones;
   if (Array.isArray(tels)) {
     for (const t of tels) {
       if (typeof t === 'string' && t.trim()) return t.trim();
       if (t && typeof t === 'object') {
-        const s = pickStr(t as Record<string, unknown>, ['numero', 'telefone']);
+        const s = pickStr(t as Record<string, unknown>, ['numero', 'telefone', 'completo']);
         if (s) return s;
       }
     }
+  }
+  const contato = (item as any).contato;
+  if (contato && typeof contato === 'object') {
+    const s = pickStr(contato as Record<string, unknown>, ['telefone', 'ddd_telefone']);
+    if (s) return s;
   }
   const estab = (item as any).estabelecimento;
   if (estab && typeof estab === 'object') {
