@@ -70,6 +70,8 @@ function PanelLayout() {
     if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
     if (path === '/painel/gerador-links') return 'Gerador de Links';
     if (path === '/painel/campanhas-email') return 'Campanhas de E-mail';
+    if (path === '/painel/modelo-mensagem') return 'Modelo de Mensagem';
+
     if (path === '/painel/envio-massa') return 'Envio em Massa';
     if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
     return 'Painel';
