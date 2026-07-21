@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { bootConsultaEngine } from '@/lib/automation/consulta-engine';
+import { bootEnvioEngine } from '@/lib/automation/envio-engine';
 
 export const Route = createFileRoute('/_authenticated')({
   ssr: false,
