@@ -53,7 +53,7 @@ function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [pixOpen, setPixOpen] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [pixData, setPixData] = useState<{ qrcode: string; transaction_id: string } | null>(null);
+  const [pixData, setPixData] = useState<{ pix_code: string; qr_code_base64?: string; transaction_id: string } | null>(null);
   const [loading, setLoading] = useState(!!token);
 
   useEffect(() => {
