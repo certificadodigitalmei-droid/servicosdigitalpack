@@ -248,50 +248,69 @@ function ConsultaPage() {
   }, [listStorageKey, foundList]);
 
   const listMut = useMutation({
-    mutationFn: () =>
-      listFn({ data: { date: effectiveDate, filters, limit: 20, page: 1 } }),
+    mutationFn: async () => {
+      const pageSize = 20;
+      const maxPages = 500;
+      let page = 1;
+      let lastStatus = { date: effectiveDate, total: null as number | null, ok: true, status: 200 };
+      let totalAdded = 0;
+      const now = new Date().toISOString();
+      while (page <= maxPages) {
+        const r = await listFn({
+          data: { date: effectiveDate, filters, limit: pageSize, page },
+        });
+        lastStatus = { date: r.date, total: r.total, ok: r.ok, status: r.status };
+        const items = r.items ?? [];
+        if (items.length > 0) {
+          let addedThisPage = 0;
+          setFoundList((prev) => {
+            const seen = new Map(prev.map((it) => [it.cnpj, it]));
+            for (const it of items) {
+              if (!seen.has(it.cnpj)) {
+                seen.set(it.cnpj, { ...it, firstSeenAt: now });
+                addedThisPage += 1;
+              }
+            }
+            if (addedThisPage === 0) return prev;
+            return Array.from(seen.values()).sort((a, b) =>
+              b.firstSeenAt.localeCompare(a.firstSeenAt),
+            );
+          });
+          totalAdded += addedThisPage;
+        }
+        if (!r.ok) break;
+        if (items.length < pageSize) break;
+        if (r.total != null && page * pageSize >= r.total) break;
+        page += 1;
+      }
+      return { ...lastStatus, addedCount: totalAdded };
+    },
     onSuccess: (r) => {
       setCountResult({ date: r.date, total: r.total, ok: r.ok, status: r.status });
       const now = new Date().toISOString();
-      let addedCount = 0;
-      setFoundList((prev) => {
-        const seen = new Map(prev.map((it) => [it.cnpj, it]));
-        for (const it of r.items ?? []) {
-          if (!seen.has(it.cnpj)) {
-            seen.set(it.cnpj, { ...it, firstSeenAt: now });
-            addedCount += 1;
-          }
-        }
-        if (addedCount === 0) return prev;
-        return Array.from(seen.values()).sort((a, b) =>
-          b.firstSeenAt.localeCompare(a.firstSeenAt),
-        );
-      });
-      setAutoStats((prev) => {
-        const next = {
-          checks: prev.checks + 1,
-          prevTotal: prev.lastTotal,
-          lastTotal: r.total,
-          delta:
-            r.total != null && prev.lastTotal != null ? r.total - prev.lastTotal : 0,
-          peak:
-            r.total != null
-              ? prev.peak != null
-                ? Math.max(prev.peak, r.total)
-                : r.total
-              : prev.peak,
-          lastCheckAt: now,
-          startedAt: prev.startedAt ?? now,
-        };
-        return next;
-      });
-      if (addedCount > 0) {
-        toast.success(`+${addedCount} novo(s) CNPJ(s) na lista.`);
+      setAutoStats((prev) => ({
+        checks: prev.checks + 1,
+        prevTotal: prev.lastTotal,
+        lastTotal: r.total,
+        delta:
+          r.total != null && prev.lastTotal != null ? r.total - prev.lastTotal : 0,
+        peak:
+          r.total != null
+            ? prev.peak != null
+              ? Math.max(prev.peak, r.total)
+              : r.total
+            : prev.peak,
+        lastCheckAt: now,
+        startedAt: prev.startedAt ?? now,
+      }));
+      if (r.addedCount > 0) {
+        toast.success(`+${r.addedCount} novo(s) CNPJ(s) na lista.`);
       }
       if (!r.ok) toast.error(`API respondeu ${r.status}`);
     },
     onError: (e: any) => toast.error(e?.message ?? 'Erro'),
   });
+
 
   // Loop de consulta automática. Enquanto autoCount=true, chama listMut a
   // cada autoIntervalSec segundos, acumulando CNPJs. Não consome créditos.
