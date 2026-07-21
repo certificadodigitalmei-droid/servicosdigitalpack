@@ -15,6 +15,13 @@ function AuthenticatedLayout() {
   const [state, setState] = useState<'checking' | 'ok' | 'no_user' | 'no_admin'>('checking');
 
   useEffect(() => {
+    // Boot engines de automação (loops em nível de módulo continuam vivos
+    // mesmo quando o usuário navega entre abas do painel).
+    bootConsultaEngine();
+    bootEnvioEngine();
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function check() {
