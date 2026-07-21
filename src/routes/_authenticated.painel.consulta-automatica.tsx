@@ -945,8 +945,14 @@ function DraggableCnpjPanel(props: {
             CNPJs encontrados — {dateLabel}
           </span>
           <span className="shrink-0 text-xs text-slate-500">({savedCount} salvos)</span>
+          {importedSet.size > 0 && (
+            <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+              {foundList.filter((f) => importedSet.has(f.cnpj)).length} já importados
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
+
           <span className="hidden text-xs text-slate-500 sm:inline">
             Total API: <strong>{apiTotal != null ? apiTotal.toLocaleString('pt-BR') : '—'}</strong>
           </span>
