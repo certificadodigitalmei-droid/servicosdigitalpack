@@ -21,7 +21,7 @@ export const createPixCharge = createServerFn({ method: "POST" })
     }
 
     // Tenta múltiplos formatos de autenticação aceitos pelo gateway
-    const attempts = [
+    const attempts: Record<string, string>[] = [
       { "Content-Type": "application/json", "x-api-key": apiKey },
       { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       { "Content-Type": "application/json", "api-key": apiKey },
