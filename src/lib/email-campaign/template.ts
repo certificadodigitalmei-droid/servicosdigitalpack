@@ -1,3 +1,5 @@
+import govbrAvatarAsset from '@/assets/govbr-logo-avatar.png.asset.json';
+
 export type CampaignDesign = {
   // Marca / cabeçalho
   logoText: string;
