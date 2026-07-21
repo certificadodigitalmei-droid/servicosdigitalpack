@@ -58,6 +58,7 @@ function PanelLayout() {
     { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
     { title: 'Modelo de Mensagem', icon: Palette, to: '/painel/modelo-mensagem' },
     { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
+    { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
   ];
 
 
