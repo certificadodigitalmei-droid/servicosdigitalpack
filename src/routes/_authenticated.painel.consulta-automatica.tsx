@@ -205,12 +205,15 @@ function ConsultaAutomaticaPage() {
   });
 
   const runMut = useMutation({
-    mutationFn: (overrideQuantity?: number) =>
+    mutationFn: (args?: { overrideQuantity?: number; trigger?: 'manual' | 'test_manual' }) =>
       runFn({
         data: {
           id: automation!.id,
-          overrideQuantity,
+          overrideQuantity: args?.overrideQuantity,
           queryDate: effectiveDate,
+          trigger: args?.trigger ?? 'manual',
+          overrideAutoImport: autoImport,
+          overrideAutoLinks: autoLinks && autoImport,
         },
       }),
     onSuccess: (r: any) => {
@@ -218,10 +221,12 @@ function ConsultaAutomaticaPage() {
         toast.warning('Já existe uma execução em andamento');
       } else if (r?.outcome?.status === 'error') {
         toast.error(`Erro na execução: ${r.outcome.error}`);
+        setLastRunSummary({ ...r.outcome, queryDate: r.queryDate });
       } else {
         toast.success(
           `Execução concluída (${formatBR(r.queryDate)}): ${r.outcome.imported} importada(s), ${r.outcome.duplicated} duplicada(s)`,
         );
+        setLastRunSummary({ ...r.outcome, queryDate: r.queryDate });
       }
       qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
     },
