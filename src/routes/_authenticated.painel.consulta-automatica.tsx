@@ -211,7 +211,6 @@ function ConsultaPage() {
         />
       </div>
 
-      <AutoImportCard />
 
       {/* 1. Data + filtros */}
       <Card>
