@@ -35,7 +35,11 @@ import {
   getSaldo,
   countByDate,
   importBatch,
+  getAutoImportConfig,
+  saveAutoImportConfig,
 } from '@/lib/casa-dos-dados/simple-flow.functions';
+import { useQuery } from '@tanstack/react-query';
+import { Input } from '@/components/ui/input';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
   head: () => ({ meta: [{ title: 'Consulta Casa dos Dados | Painel' }] }),
