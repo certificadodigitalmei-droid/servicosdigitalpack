@@ -25,6 +25,7 @@ import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/
 import { Route as AuthenticatedPainelImportarEmpresasRouteImport } from './routes/_authenticated.painel.importar-empresas'
 import { Route as AuthenticatedPainelGeradorLinksRouteImport } from './routes/_authenticated.painel.gerador-links'
 import { Route as AuthenticatedPainelFiltrarMeiRouteImport } from './routes/_authenticated.painel.filtrar-mei'
+import { Route as AuthenticatedPainelEmpresasImportadasRouteImport } from './routes/_authenticated.painel.empresas-importadas'
 import { Route as AuthenticatedPainelConsultaAutomaticaRouteImport } from './routes/_authenticated.painel.consulta-automatica'
 import { Route as AuthenticatedPainelCampanhasEmailRouteImport } from './routes/_authenticated.painel.campanhas-email'
 import { Route as AuthenticatedPainelGeradorLinksHistoricoRouteImport } from './routes/_authenticated.painel.gerador-links.historico'
@@ -114,6 +115,12 @@ const AuthenticatedPainelFiltrarMeiRoute =
     path: '/filtrar-mei',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelEmpresasImportadasRoute =
+  AuthenticatedPainelEmpresasImportadasRouteImport.update({
+    id: '/empresas-importadas',
+    path: '/empresas-importadas',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 const AuthenticatedPainelConsultaAutomaticaRoute =
   AuthenticatedPainelConsultaAutomaticaRouteImport.update({
     id: '/consulta-automatica',
@@ -145,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
   '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
+  '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -164,6 +172,7 @@ export interface FileRoutesByTo {
   '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
   '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
+  '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -186,6 +195,7 @@ export interface FileRoutesById {
   '/checkout_/$token': typeof CheckoutTokenRoute
   '/_authenticated/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
   '/_authenticated/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
+  '/_authenticated/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRoute
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/_authenticated/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/checkout/$token'
     | '/painel/campanhas-email'
     | '/painel/consulta-automatica'
+    | '/painel/empresas-importadas'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel/importar-empresas'
@@ -227,6 +238,7 @@ export interface FileRouteTypes {
     | '/checkout/$token'
     | '/painel/campanhas-email'
     | '/painel/consulta-automatica'
+    | '/painel/empresas-importadas'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel/importar-empresas'
@@ -248,6 +260,7 @@ export interface FileRouteTypes {
     | '/checkout_/$token'
     | '/_authenticated/painel/campanhas-email'
     | '/_authenticated/painel/consulta-automatica'
+    | '/_authenticated/painel/empresas-importadas'
     | '/_authenticated/painel/filtrar-mei'
     | '/_authenticated/painel/gerador-links'
     | '/_authenticated/painel/importar-empresas'
@@ -385,6 +398,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelFiltrarMeiRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/empresas-importadas': {
+      id: '/_authenticated/painel/empresas-importadas'
+      path: '/empresas-importadas'
+      fullPath: '/painel/empresas-importadas'
+      preLoaderRoute: typeof AuthenticatedPainelEmpresasImportadasRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
     '/_authenticated/painel/consulta-automatica': {
       id: '/_authenticated/painel/consulta-automatica'
       path: '/consulta-automatica'
@@ -427,6 +447,7 @@ const AuthenticatedPainelGeradorLinksRouteWithChildren =
 interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelCampanhasEmailRoute: typeof AuthenticatedPainelCampanhasEmailRoute
   AuthenticatedPainelConsultaAutomaticaRoute: typeof AuthenticatedPainelConsultaAutomaticaRoute
+  AuthenticatedPainelEmpresasImportadasRoute: typeof AuthenticatedPainelEmpresasImportadasRoute
   AuthenticatedPainelFiltrarMeiRoute: typeof AuthenticatedPainelFiltrarMeiRoute
   AuthenticatedPainelGeradorLinksRoute: typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   AuthenticatedPainelImportarEmpresasRoute: typeof AuthenticatedPainelImportarEmpresasRoute
@@ -438,6 +459,8 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
     AuthenticatedPainelCampanhasEmailRoute,
   AuthenticatedPainelConsultaAutomaticaRoute:
     AuthenticatedPainelConsultaAutomaticaRoute,
+  AuthenticatedPainelEmpresasImportadasRoute:
+    AuthenticatedPainelEmpresasImportadasRoute,
   AuthenticatedPainelFiltrarMeiRoute: AuthenticatedPainelFiltrarMeiRoute,
   AuthenticatedPainelGeradorLinksRoute:
     AuthenticatedPainelGeradorLinksRouteWithChildren,
@@ -477,13 +500,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
