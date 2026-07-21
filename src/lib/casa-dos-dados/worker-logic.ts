@@ -215,9 +215,12 @@ export function normalizeCasaDosDadosCompany(item: Record<string, unknown>): Nor
   const endereco = enderecoDirect ?? (enderecoParts.length ? enderecoParts.join(', ') : null);
 
   // matriz_filial may be a numeric flag: 1 = matriz, 2 = filial
-  let matrizStr: string | null = descOf(matrizRaw);
-  if (!matrizStr && (matrizRaw === 1 || matrizRaw === '1')) matrizStr = 'MATRIZ';
-  else if (!matrizStr && (matrizRaw === 2 || matrizRaw === '2')) matrizStr = 'FILIAL';
+  let matrizStr: string | null = null;
+  if (matrizRaw === 1 || matrizRaw === '1') matrizStr = 'MATRIZ';
+  else if (matrizRaw === 2 || matrizRaw === '2') matrizStr = 'FILIAL';
+  else matrizStr = descOf(matrizRaw);
+  if (matrizStr === '1') matrizStr = 'MATRIZ';
+  else if (matrizStr === '2') matrizStr = 'FILIAL';
 
   return {
     cnpj: cnpj ? cnpj.replace(/\D+/g, '') : null,
