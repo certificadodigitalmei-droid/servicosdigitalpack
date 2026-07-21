@@ -872,11 +872,13 @@ export async function runAutomationOnce(
         .from('automatic_company_query_runs')
         .update({
           status: finalStatus,
+          current_stage: finalStatus === 'error' ? lastStage : 'finalize',
           error_message: errorMessage,
           api_total: outcome.apiTotal,
           imported_count: outcome.imported,
           duplicate_count: outcome.duplicated,
           incomplete_count: outcome.incomplete,
+          complete_count: outcome.imported,
           pending_enrichment_count: outcome.pendingEnrichment,
           link_created_count: outcome.linksCreated,
           link_reused_count: outcome.linksReused,
