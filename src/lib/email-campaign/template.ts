@@ -145,8 +145,8 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   unsubText: '',
   unsubHref: '#',
 
-  showAvatar: false,
-  avatarUrl: '',
+  showAvatar: true,
+  avatarUrl: govbrAvatarAsset.url,
   avatarSize: 68,
 
   showGovBar: false,
