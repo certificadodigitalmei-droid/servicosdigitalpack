@@ -314,7 +314,9 @@ function ConsultaPage() {
         startedAt: prev.startedAt ?? now,
       }));
       if (r.addedCount > 0) {
+        pushFlash(r.addedCount);
         toast.success(`+${r.addedCount} novo(s) CNPJ(s) na lista.`);
+
       }
       if (!r.ok) toast.error(`API respondeu ${r.status}`);
     },
