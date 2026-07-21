@@ -85,9 +85,9 @@ export function PixModal({ open, amount, orderId, pixData, onClose }: PixModalPr
   }, [expiresAt, now]);
 
   function handleCopy() {
-    if (!pixData?.qrcode) return;
+    if (!pixData?.pix_code) return;
     try {
-      navigator.clipboard.writeText(pixData.qrcode);
+      navigator.clipboard.writeText(pixData.pix_code);
       setCopied(true);
       toast.success('Código PIX copiado!');
       setTimeout(() => setCopied(false), 2000);
