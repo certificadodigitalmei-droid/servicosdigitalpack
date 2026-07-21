@@ -174,6 +174,8 @@ function PanelLayout() {
             <Outlet />
           </div>
         </main>
+        <GlobalFloatingPanels />
+      </div>
       </div>
     </SidebarProvider>
   );
