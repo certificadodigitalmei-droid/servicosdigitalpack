@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/client';
+import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
@@ -322,13 +323,43 @@ function ConsultaAutomaticaPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Consulta Automática (Casa dos Dados)</h1>
-        <p className="text-sm text-slate-600">
-          Consulta empresas abertas em uma data (padrão: hoje, fuso America/Sao_Paulo). A
-          automação horária só trabalha no modo <strong>Hoje</strong>.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-brand-navy">Consulta Automática (Casa dos Dados)</h1>
+          <p className="text-sm text-slate-600">
+            Consulta empresas abertas em uma data (padrão: hoje, fuso America/Sao_Paulo). A
+            automação horária só trabalha no modo <strong>Hoje</strong>.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <WipeAllButton
+            size="sm"
+            label="Apagar histórico"
+            title="Apagar todo o histórico de execuções?"
+            description="Remove permanentemente todos os registros de execuções da Consulta Automática (a lista embaixo desta tela). Não afeta empresas importadas nem links já criados."
+            steps={[
+              { label: 'automatic_company_query_runs', run: () => supabase.from('automatic_company_query_runs').delete().neq('id', EMPTY_UUID) },
+            ]}
+            onDone={async () => {
+              await qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
+            }}
+          />
+          <WipeAllButton
+            size="sm"
+            label="Apagar resultados"
+            title="Apagar todos os resultados pendentes?"
+            description="Remove permanentemente todos os itens da fila da Consulta Automática (descobertos, aguardando enriquecimento e erros). Não afeta empresas já importadas nem links já criados."
+            steps={[
+              { label: 'automatic_company_queue', run: () => supabase.from('automatic_company_queue').delete().neq('id', EMPTY_UUID) },
+            ]}
+            onDone={async () => {
+              await qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
+              await qc.invalidateQueries({ queryKey: ['casa-recent-imports'] });
+            }}
+          />
+        </div>
       </div>
+
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
