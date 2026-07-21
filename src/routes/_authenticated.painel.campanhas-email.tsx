@@ -247,6 +247,8 @@ function CampanhasEmail() {
       setLoadingCompanies(false);
     }
   };
+
+  const handleTestConnection = async () => {
     setGemStatus({ ...gemStatus, testing: true });
     try {
       const res = await testConnectionFn();
