@@ -30,12 +30,15 @@ export type RunOutcome = {
   apiTotal?: number | null;
   requested: number;
   imported: number;
+  updated: number;
   duplicated: number;
   linksCreated: number;
   linksReused: number;
   skipped: Array<{ index: number; cnpj: string | null; reason: SkipReason; detail?: string }>;
   responseKeys?: string[];
   error?: string;
+  autoImportEnabled: boolean;
+  autoGenerateLinksEnabled: boolean;
   sample?: {
     cnpj: string | null;
     nome: string | null;
