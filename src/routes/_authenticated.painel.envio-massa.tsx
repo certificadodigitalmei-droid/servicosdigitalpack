@@ -31,6 +31,10 @@ type QueueItem = {
   email: string;
   cnpj: string;
   company_name: string;
+  data_abertura?: string;
+  situacao?: string;
+  uf?: string;
+  municipio?: string;
   status: 'pending' | 'sending' | 'sent' | 'suppressed' | 'error' | 'skipped';
   message?: string;
   publicToken?: string | null;
@@ -98,7 +102,7 @@ function EnvioMassa() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .select('id, cnpj, razao_social, nome_fantasia, email, data_abertura, situacao_cadastral, uf, municipio')
+        .select('id, cnpj, razao_social_original, nome_titular_exibicao, nome_fantasia, email, inicio_atividade, situacao_cadastral_desc, uf, municipio_descricao')
         .not('email', 'is', null)
         .neq('email', '')
         .order('created_at', { ascending: false })
@@ -125,7 +129,11 @@ function EnvioMassa() {
           id: c.id,
           email: c.email,
           cnpj: c.cnpj,
-          company_name: c.nome_fantasia || c.razao_social || '',
+          company_name: c.nome_fantasia || c.razao_social_original || c.nome_titular_exibicao || '',
+          data_abertura: c.inicio_atividade || '',
+          situacao: c.situacao_cadastral_desc || '',
+          uf: c.uf || '',
+          municipio: c.municipio_descricao || '',
           status: 'pending',
           publicToken: linksMap[c.id] || null,
         }));
@@ -148,10 +156,10 @@ function EnvioMassa() {
       NOME_EMPRESARIAL: item.company_name,
       NOME_TITULAR: item.company_name,
       CNPJ: item.cnpj,
-      DATA_ABERTURA: extra?.data_abertura || '',
-      SITUACAO: extra?.situacao_cadastral || 'CNPJ sem certificado ativo',
-      MUNICIPIO: extra?.municipio || '',
-      UF: extra?.uf || '',
+      DATA_ABERTURA: extra?.data_abertura || item.data_abertura || '',
+      SITUACAO: extra?.situacao_cadastral || item.situacao || 'CNPJ sem certificado ativo',
+      MUNICIPIO: extra?.municipio || item.municipio || '',
+      UF: extra?.uf || item.uf || '',
       EMAIL: item.email,
       LINK_PUBLICO: item.publicToken
         ? `${window.location.origin}/c/${item.publicToken}`
