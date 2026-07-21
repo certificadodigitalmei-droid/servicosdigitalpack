@@ -196,29 +196,41 @@ function ensureDailyWindow() {
 export async function loadRecipients() {
   envioStore.set({ loading: true });
   try {
-    const { batchLimit } = envioStore.get();
-    const { data, error } = await supabase
-      .from('companies')
-      .select(
-        'id, cnpj, razao_social_original, nome_titular_exibicao, nome_fantasia, email, inicio_atividade, situacao_cadastral_desc, uf, municipio_descricao',
-      )
-      .not('email', 'is', null)
-      .neq('email', '')
-      .order('created_at', { ascending: false })
-      .limit(batchLimit);
-    if (error) throw error;
+    // A fila de envio espelha EXATAMENTE a lista de "Empresas Importadas":
+    // mesma tabela, mesma ordenação (created_at desc), sem limite artificial.
+    // Empresas sem e-mail entram como "skipped" para manter o paralelo visual
+    // com a lista, mas só as com e-mail válido serão disparadas.
+    const PAGE = 1000;
+    const all: any[] = [];
+    let from = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { data, error } = await supabase
+        .from('companies')
+        .select(
+          'id, cnpj, razao_social_original, nome_titular_exibicao, nome_fantasia, email, inicio_atividade, situacao_cadastral_desc, uf, municipio_descricao',
+        )
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      const chunk = data ?? [];
+      all.push(...chunk);
+      if (chunk.length < PAGE) break;
+      from += PAGE;
+      if (all.length >= 20000) break; // salvaguarda dura
+    }
 
-    const companyIds = (data ?? []).map((c: any) => c.id).filter(Boolean);
+    const companyIds = all.map((c: any) => c.id).filter(Boolean);
     const linksMap: Record<string, { token: string; url: string }> = {};
-    if (companyIds.length > 0) {
+    for (let i = 0; i < companyIds.length; i += 500) {
+      const slice = companyIds.slice(i, i + 500);
       const { data: links } = await supabase
         .from('company_links')
         .select('company_id, public_token, public_url')
-        .in('company_id', companyIds)
+        .in('company_id', slice)
         .eq('active', true);
       for (const l of (links ?? []) as Array<{ company_id: string | null; public_token: string; public_url: string | null }>) {
         if (l.company_id && l.public_token && !linksMap[l.company_id]) {
-          // Preferir public_url do DB; se apontar para preview/lovable, reescreve p/ produção.
           let url = l.public_url || '';
           if (!url || /lovable\.app|localhost|127\.0\.0\.1/i.test(url)) {
             url = `${PUBLIC_BASE_URL}/c/${l.public_token}`;
@@ -228,9 +240,8 @@ export async function loadRecipients() {
       }
     }
 
-    // Auto-cria links únicos para empresas que ainda não têm.
-    const validCompanies = (data ?? []).filter((c: any) => /.+@.+\..+/.test(c.email));
-    const missing = validCompanies.filter((c: any) => !linksMap[c.id]);
+    const withEmail = all.filter((c: any) => /.+@.+\..+/.test(c.email || ''));
+    const missing = withEmail.filter((c: any) => !linksMap[c.id]);
     if (missing.length > 0) {
       const inserts = missing.map((c: any) => {
         const token = crypto.randomUUID().replace(/-/g, '');
@@ -267,25 +278,25 @@ export async function loadRecipients() {
       }
     }
 
-
-    const items: QueueItem[] = validCompanies
-      .map((c: any) => ({
+    const items: QueueItem[] = all.map((c: any) => {
+      const hasEmail = /.+@.+\..+/.test(c.email || '');
+      return {
         id: c.id,
-        email: c.email,
+        email: c.email || '',
         cnpj: c.cnpj,
         company_name: c.nome_fantasia || c.razao_social_original || c.nome_titular_exibicao || '',
         data_abertura: c.inicio_atividade || '',
         situacao: c.situacao_cadastral_desc || '',
         uf: c.uf || '',
         municipio: c.municipio_descricao || '',
-        status: 'pending',
+        status: hasEmail ? 'pending' : 'skipped',
+        message: hasEmail ? undefined : 'Sem e-mail',
         publicToken: linksMap[c.id]?.token || null,
         publicUrl: linksMap[c.id]?.url || null,
-
-      }));
+      };
+    });
     envioStore.set({ queue: items });
-    pushLog(`Carregados ${items.length} destinatários (limite ${batchLimit}).`);
-
+    pushLog(`Fila espelhada de Empresas Importadas: ${items.length} registros (${withEmail.length} com e-mail).`);
   } catch (e: any) {
     toast.error('Erro ao carregar destinatários: ' + e.message);
   } finally {
