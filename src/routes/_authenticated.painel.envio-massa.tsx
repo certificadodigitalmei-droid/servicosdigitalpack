@@ -284,6 +284,39 @@ function EnvioMassa() {
     pushLog('■ Parada solicitada.');
   }
 
+  async function sendSingle(item: QueueItem) {
+    if (runningRef.current) {
+      toast.error('Aguarde o envio atual terminar (ou pare).');
+      return;
+    }
+    if (testMode && !testRecipient) {
+      toast.error('Modo teste ativo: informe um e-mail de teste.');
+      return;
+    }
+    pushLog(`➤ Envio único para ${item.email}${testMode ? ' (TESTE)' : ''}`);
+    await sendOne(item);
+  }
+
+  function resetStatuses() {
+    setQueue((prev) => prev.map((q) => ({ ...q, status: 'pending', message: undefined })));
+    pushLog('↻ Status da fila resetados (todos como pendentes).');
+    toast.success('Status resetados.');
+  }
+
+  function clearQueue() {
+    if (runningRef.current) {
+      toast.error('Pare o envio antes de limpar a fila.');
+      return;
+    }
+    setQueue([]);
+    pushLog('🗑 Fila esvaziada.');
+    toast.success('Fila limpa.');
+  }
+
+  function clearLogs() {
+    setLogs([]);
+  }
+
   const previewItem = queue[previewIdx];
   const previewHtml = useMemo(() => {
     if (!previewItem) return '';
