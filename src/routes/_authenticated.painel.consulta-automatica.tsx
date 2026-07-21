@@ -163,10 +163,64 @@ function ConsultaPage() {
     mutationFn: () => countFn({ data: { date: effectiveDate, filters } }),
     onSuccess: (r) => {
       setCountResult({ date: r.date, total: r.total, ok: r.ok, status: r.status });
+      setAutoStats((prev) => {
+        const now = new Date().toISOString();
+        const next = {
+          checks: prev.checks + 1,
+          prevTotal: prev.lastTotal,
+          lastTotal: r.total,
+          delta:
+            r.total != null && prev.lastTotal != null ? r.total - prev.lastTotal : 0,
+          peak:
+            r.total != null
+              ? prev.peak != null
+                ? Math.max(prev.peak, r.total)
+                : r.total
+              : prev.peak,
+          lastCheckAt: now,
+          startedAt: prev.startedAt ?? now,
+        };
+        if (
+          next.delta > 0 &&
+          prev.lastTotal != null &&
+          r.total != null
+        ) {
+          toast.success(`+${next.delta} nova(s) empresa(s) encontrada(s)!`);
+        }
+        return next;
+      });
       if (!r.ok) toast.error(`API respondeu ${r.status}`);
     },
     onError: (e: any) => toast.error(e?.message ?? 'Erro'),
   });
+
+  // Loop de consulta automática. Enquanto autoCount=true, chama countMut a
+  // cada autoIntervalSec segundos. Não consome créditos (endpoint grátis).
+  const countMutRef = useRef(countMut);
+  countMutRef.current = countMut;
+  useEffect(() => {
+    if (!autoCount) return;
+    // Dispara imediatamente ao ligar.
+    countMutRef.current.mutate();
+    const id = window.setInterval(() => {
+      if (!countMutRef.current.isPending) {
+        countMutRef.current.mutate();
+      }
+    }, Math.max(5, autoIntervalSec) * 1000);
+    return () => window.clearInterval(id);
+    // Reinicia o loop quando muda data/filtros/intervalo.
+  }, [autoCount, autoIntervalSec, effectiveDate, filters]);
+
+  // Ao desligar, reseta estatísticas do próximo ciclo.
+  const prevAutoRef = useRef(autoCount);
+  useEffect(() => {
+    if (prevAutoRef.current && !autoCount) {
+      // desligou: mantém último resultado exibido, mas zera contadores
+      setAutoStats((s) => ({ ...s, checks: 0, startedAt: null }));
+    }
+    prevAutoRef.current = autoCount;
+  }, [autoCount]);
+
 
   const importMut = useMutation({
     mutationFn: () =>
