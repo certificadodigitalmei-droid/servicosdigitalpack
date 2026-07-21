@@ -53,6 +53,17 @@ export type QueueItem = {
   publicUrl?: string | null;
 };
 
+export type SentEmail = {
+  id: string;
+  email: string;
+  cnpj: string;
+  company_name: string;
+  subject: string;
+  sentAt: string; // ISO
+  testMode: boolean;
+  publicUrl?: string | null;
+};
+
 
 type State = {
   // Config persistida
