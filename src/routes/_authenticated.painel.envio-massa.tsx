@@ -527,16 +527,29 @@ function EnvioMassa() {
                     <th>E-mail</th>
                     <th>Empresa</th>
                     <th>Status</th>
+                    <th className="text-right">Ação</th>
                   </tr>
                 </thead>
                 <tbody>
                   {queue.map((q, i) => (
-                    <tr key={q.id} className="border-b last:border-0">
+                    <tr key={q.id} className="border-b last:border-0 hover:bg-slate-50">
                       <td className="py-2 text-slate-500">{i + 1}</td>
                       <td className="truncate">{q.email}</td>
                       <td className="max-w-[180px] truncate">{q.company_name}</td>
                       <td>
                         <StatusBadge status={q.status} message={q.message} />
+                      </td>
+                      <td className="text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2"
+                          disabled={running || q.status === 'sending'}
+                          onClick={() => sendSingle(q)}
+                          title="Enviar apenas este"
+                        >
+                          <Zap className="h-3.5 w-3.5" /> Enviar
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -546,6 +559,16 @@ function EnvioMassa() {
           </CardContent>
         </Card>
       </div>
+
+      {showFloating && (
+        <FloatingStatsPanel
+          stats={stats}
+          running={running}
+          paused={paused}
+          lastEvent={logs[0]}
+          onClose={() => setShowFloating(false)}
+        />
+      )}
     </div>
   );
 }
