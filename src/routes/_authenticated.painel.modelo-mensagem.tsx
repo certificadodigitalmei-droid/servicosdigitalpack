@@ -335,7 +335,35 @@ function ModeloMensagem() {
               </Field>
             </SectionItem>
 
+            <SectionItem value="avatar" title="Foto de perfil (avatar circular no topo)">
+              <ToggleField label="Mostrar avatar" value={!!design.showAvatar} onChange={(v) => set('showAvatar', v)} />
+              <Field label="URL da imagem (PNG/JPG quadrada)">
+                <Input value={design.avatarUrl || ''} onChange={(e) => set('avatarUrl', e.target.value)} placeholder="https://..." />
+              </Field>
+              <SliderField label="Tamanho (px)" min={40} max={110} value={design.avatarSize || 64} onChange={(v) => set('avatarSize', v)} />
+            </SectionItem>
+
+            <SectionItem value="govbar" title="Faixa gov.br (topo)">
+              <ToggleField label="Mostrar faixa" value={!!design.showGovBar} onChange={(v) => set('showGovBar', v)} />
+              <Field label="Texto">
+                <Input value={design.govBarText || ''} onChange={(e) => set('govBarText', e.target.value)} />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <ColorField label="Fundo" value={design.govBarBg || '#071d40'} onChange={(v) => set('govBarBg', v)} />
+                <ColorField label="Texto" value={design.govBarColor || '#c9d5ec'} onChange={(v) => set('govBarColor', v)} />
+              </div>
+            </SectionItem>
+
+            <SectionItem value="badges" title="Selos de confiança (rodapé)">
+              <ToggleField label="Mostrar selos" value={!!design.showBadges} onChange={(v) => set('showBadges', v)} />
+              <Field label="Texto (separe por · )">
+                <Input value={design.badgesText || ''} onChange={(e) => set('badgesText', e.target.value)} />
+              </Field>
+              <p className="text-[11px] text-muted-foreground">Ex.: Portal gov.br · Site Seguro (SSL) · Receita Federal · LGPD</p>
+            </SectionItem>
+
             <SectionItem value="layout" title="Layout geral">
+
               <div className="grid grid-cols-2 gap-3">
                 <SliderField label="Largura (px)" min={480} max={800} step={20} value={design.containerWidth} onChange={(v) => set('containerWidth', v)} />
                 <SliderField label="Padding lateral (px)" min={16} max={60} value={design.contentPaddingX} onChange={(v) => set('contentPaddingX', v)} />
