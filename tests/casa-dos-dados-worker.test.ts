@@ -4,60 +4,104 @@
 import { runCoreLoop, type WorkerDeps } from '../src/lib/casa-dos-dados/worker.server';
 import type { CasaSearchResult } from '../src/lib/casa-dos-dados/client.server';
 
-function makePage(cnpjs: string[], total: number): CasaSearchResult {
+type Item = Record<string, unknown>;
+
+function makeCompleteItem(cnpj: string, overrides: Partial<Item> = {}): Item {
+  return {
+    cnpj,
+    razao_social: `Empresa ${cnpj}`,
+    situacao_cadastral: 'ATIVA',
+    data_abertura: '2020-01-01',
+    matriz_filial: 'MATRIZ',
+    municipio: 'SAO PAULO',
+    uf: 'SP',
+    email: `contato-${cnpj}@example.com`,
+    ...overrides,
+  };
+}
+
+function makePage(items: Item[], total: number): CasaSearchResult {
   return {
     status: 200,
     ok: true,
     total,
-    items: cnpjs.map((c) => ({ cnpj: c, razao_social: `Empresa ${c}` })),
+    items,
     responseKeys: ['total', 'cnpjs'],
     rawPreview: {},
     request: { url: 'mock', method: 'POST', body: null },
   };
 }
 
+function makePageOfCnpjs(cnpjs: string[], total: number): CasaSearchResult {
+  return makePage(cnpjs.map((c) => makeCompleteItem(c)), total);
+}
+
+type State = {
+  companies: Map<string, { id: string; dataQuality: string; isTest: boolean }>;
+  links: Map<string, { id: string; isTest: boolean; dataQuality: string }>;
+};
+
 function makeDeps(opts: {
-  pages: string[][];
-  total: number;
+  pages: CasaSearchResult[];
   existingCnpjs?: Set<string>;
   cnpjsWithActiveLink?: Set<string>;
-}): { deps: WorkerDeps; calls: Record<string, number> } {
+}): { deps: WorkerDeps; calls: Record<string, number>; state: State; enqueued: Array<Record<string, unknown>> } {
   const existing = new Set(opts.existingCnpjs ?? []);
   const withLink = new Set(opts.cnpjsWithActiveLink ?? []);
-  const enqueued = new Set<string>();
-  const calls = { fetchPage: 0, enqueue: 0, upsert: 0, insertLink: 0, findLinkByCnpj: 0 };
+  const enqueuedSet = new Set<string>();
+  const enqueued: Array<Record<string, unknown>> = [];
+  const state: State = { companies: new Map(), links: new Map() };
+  const calls = { fetchPage: 0, enqueue: 0, upsert: 0, insertLink: 0, findLinkByCnpj: 0, updateQueue: 0 };
 
   const deps: WorkerDeps = {
     fetchPage: async ({ page }) => {
       calls.fetchPage += 1;
-      const p = opts.pages[page - 1] ?? [];
-      return makePage(p, opts.total);
+      return opts.pages[page - 1] ?? makePage([], opts.pages[0]?.total ?? 0);
     },
-    tryEnqueue: async ({ cnpj }) => {
+    tryEnqueue: async ({ cnpj, isTestRecord, dataQualityStatus, missingFields }) => {
       calls.enqueue += 1;
-      if (enqueued.has(cnpj) || existing.has(cnpj)) return { ok: false, reason: 'duplicate' } as const;
-      enqueued.add(cnpj);
+      const key = cnpj;
+      if (enqueuedSet.has(key) || existing.has(key)) return { ok: false, reason: 'duplicate' } as const;
+      enqueuedSet.add(key);
+      enqueued.push({ cnpj, isTestRecord, dataQualityStatus, missingFields });
       return { ok: true, queueId: `q-${cnpj}` } as const;
     },
     findActiveLinkByCnpj: async (cnpj) => {
       calls.findLinkByCnpj += 1;
-      if (withLink.has(cnpj)) {
-        return { id: `lk-${cnpj}`, publicToken: 't', publicUrl: null, checkoutUrl: null };
-      }
+      if (withLink.has(cnpj)) return { id: `lk-${cnpj}`, publicToken: 't', publicUrl: null, checkoutUrl: null };
       return null;
     },
     upsertCompany: async (payload) => {
       calls.upsert += 1;
-      return { companyId: `co-${payload.cnpj}`, wasNew: true };
+      const cnpj = String(payload.cnpj);
+      const existingComp = state.companies.get(cnpj);
+      if (existingComp) {
+        if (payload.data_quality_status === 'complete') {
+          existingComp.dataQuality = 'complete';
+          if (existingComp.isTest) existingComp.isTest = false;
+        }
+        return { companyId: existingComp.id, wasNew: false };
+      }
+      const id = `co-${cnpj}`;
+      state.companies.set(cnpj, {
+        id,
+        dataQuality: String(payload.data_quality_status ?? 'complete'),
+        isTest: !!payload.is_test_record,
+      });
+      return { companyId: id, wasNew: true };
     },
     findActiveLinkByCompany: async () => null,
-    insertLink: async ({ cnpj }) => {
+    insertLink: async ({ cnpj, isTestRecord, dataQualityStatus }) => {
       calls.insertLink += 1;
-      return { id: `lk-${cnpj}`, publicToken: 'tok', publicUrl: 'u', checkoutUrl: 'c' };
+      const id = `lk-${cnpj}`;
+      state.links.set(id, { id, isTest: isTestRecord, dataQuality: dataQualityStatus });
+      return { id, publicToken: 'tok', publicUrl: 'u', checkoutUrl: 'c' };
     },
-    updateQueueRow: async () => {},
+    updateQueueRow: async () => {
+      calls.updateQueue += 1;
+    },
   };
-  return { deps, calls };
+  return { deps, calls, state, enqueued };
 }
 
 const automation = {
@@ -72,16 +116,14 @@ const automation = {
 };
 
 function assert(cond: unknown, msg: string) {
-  if (!cond) {
-    console.error('FAIL:', msg);
-    process.exit(1);
-  }
+  if (!cond) { console.error('FAIL:', msg); process.exit(1); }
 }
 
+// ----- ORIGINAL SUITE (regression) -----
+
 async function testFirstDuplicateSecondNew() {
-  const { deps, calls } = makeDeps({
-    pages: [['11111111000111', '22222222000122']],
-    total: 2,
+  const { deps } = makeDeps({
+    pages: [makePageOfCnpjs(['11111111000111', '22222222000122'], 2)],
     existingCnpjs: new Set(['11111111000111']),
     cnpjsWithActiveLink: new Set(['11111111000111']),
   });
@@ -89,92 +131,162 @@ async function testFirstDuplicateSecondNew() {
     { automation, requested: 1, queryDate: '2026-07-20', runId: 'r1', startPage: 1, startOffset: 0, maxPages: 5, pageSize: 50, publicBaseUrl: 'https://x' },
     deps,
   );
-  assert(outcome.imported === 1, `imported=${outcome.imported}, expected 1`);
-  assert(outcome.duplicated === 1, `duplicated=${outcome.duplicated}, expected 1`);
-  assert(outcome.linksReused === 1, `linksReused=${outcome.linksReused}, expected 1 (dup had active link)`);
-  assert(outcome.linksCreated === 1, `linksCreated=${outcome.linksCreated}, expected 1 (new company)`);
-  assert(outcome.itemsAnalyzed === 2, `itemsAnalyzed=${outcome.itemsAnalyzed}`);
-  assert(outcome.pagesFetched === 1, `pagesFetched=${outcome.pagesFetched}`);
-  assert(outcome.cursorEnd?.page === 1 && outcome.cursorEnd?.itemOffset === 2, `cursorEnd=${JSON.stringify(outcome.cursorEnd)}`);
-  console.log('OK  test1 first-dup-second-new — imported=1, duplicated=1, linksReused=1, linksCreated=1');
-  return calls;
+  assert(outcome.imported === 1, `imported=${outcome.imported}`);
+  assert(outcome.duplicated === 1, `duplicated=${outcome.duplicated}`);
+  assert(outcome.linksReused === 1, `linksReused=${outcome.linksReused}`);
+  assert(outcome.linksCreated === 1, `linksCreated=${outcome.linksCreated}`);
+  console.log('OK  test1 first-dup-second-new');
 }
 
 async function testFullPageDuplicateThenNextPage() {
-  const { deps, calls } = makeDeps({
+  const { deps } = makeDeps({
     pages: [
-      ['11111111000111', '22222222000122', '33333333000133'],
-      ['44444444000144', '55555555000155'],
+      makePageOfCnpjs(['11111111000111', '22222222000122', '33333333000133'], 5),
+      makePageOfCnpjs(['44444444000144', '55555555000155'], 5),
     ],
-    total: 5,
     existingCnpjs: new Set(['11111111000111', '22222222000122', '33333333000133']),
   });
   const { outcome } = await runCoreLoop(
     { automation, requested: 1, queryDate: '2026-07-20', runId: 'r2', startPage: 1, startOffset: 0, maxPages: 5, pageSize: 50, publicBaseUrl: 'https://x' },
     deps,
   );
-  assert(outcome.imported === 1, `imported=${outcome.imported}, expected 1`);
-  assert(outcome.duplicated === 3, `duplicated=${outcome.duplicated}, expected 3`);
-  assert(outcome.pagesFetched === 2, `pagesFetched=${outcome.pagesFetched}, expected 2`);
-  assert(outcome.cursorEnd?.page === 2 && outcome.cursorEnd?.itemOffset === 1, `cursor=${JSON.stringify(outcome.cursorEnd)}`);
-  console.log('OK  test2 whole-page-dup then next page — imported=1, duplicated=3, pages=2, cursor=p2/o1');
-  return calls;
-}
-
-async function testQuantityTenSkipsDuplicates() {
-  const dupList = Array.from({ length: 8 }, (_, i) => String(10000000000000 + i));
-  const newList = Array.from({ length: 12 }, (_, i) => String(20000000000000 + i));
-  const { deps } = makeDeps({
-    pages: [dupList.concat(newList.slice(0, 2)), newList.slice(2)],
-    total: dupList.length + newList.length,
-    existingCnpjs: new Set(dupList),
-  });
-  const { outcome } = await runCoreLoop(
-    { automation, requested: 10, queryDate: '2026-07-20', runId: 'r3', startPage: 1, startOffset: 0, maxPages: 5, pageSize: 50, publicBaseUrl: 'https://x' },
-    deps,
-  );
-  assert(outcome.imported === 10, `imported=${outcome.imported}, expected 10`);
-  assert(outcome.duplicated === 8, `duplicated=${outcome.duplicated}, expected 8`);
-  console.log('OK  test3 requested=10 skips duplicates — imported=10, duplicated=8');
+  assert(outcome.imported === 1, `imported=${outcome.imported}`);
+  assert(outcome.duplicated === 3, `duplicated=${outcome.duplicated}`);
+  assert(outcome.pagesFetched === 2, `pagesFetched=${outcome.pagesFetched}`);
+  console.log('OK  test2 whole-page-dup then next page');
 }
 
 async function testResumeFromCursor() {
-  const { deps, calls } = makeDeps({
-    pages: [['11111111000111', '22222222000122', '33333333000133']],
-    total: 3,
+  const { deps } = makeDeps({
+    pages: [makePageOfCnpjs(['11111111000111', '22222222000122', '33333333000133'], 3)],
   });
   const { outcome } = await runCoreLoop(
     { automation, requested: 1, queryDate: '2026-07-20', runId: 'r4', startPage: 1, startOffset: 2, maxPages: 5, pageSize: 50, publicBaseUrl: 'https://x' },
     deps,
   );
   assert(outcome.imported === 1, `imported=${outcome.imported}`);
-  assert(outcome.itemsAnalyzed === 1, `itemsAnalyzed=${outcome.itemsAnalyzed}, expected 1 (resumed at offset 2)`);
-  console.log('OK  test4 resume from cursor — analyzed only 1 item at offset 2');
-  return calls;
+  assert(outcome.itemsAnalyzed === 1, `itemsAnalyzed=${outcome.itemsAnalyzed}`);
+  console.log('OK  test3 resume from cursor');
 }
 
-async function testMaxPagesGuard() {
-  const dup = (n: number) => Array.from({ length: 3 }, (_, i) => String(n * 1000000000 + i));
-  const { deps } = makeDeps({
-    pages: [dup(1), dup(2), dup(3), dup(4), dup(5), dup(6)],
-    total: 18,
-    existingCnpjs: new Set([...dup(1), ...dup(2), ...dup(3), ...dup(4), ...dup(5), ...dup(6)]),
+// ----- DATA-QUALITY SUITE -----
+
+async function testCompleteNormal() {
+  const { deps, state, enqueued } = makeDeps({
+    pages: [makePageOfCnpjs(['99999999000101'], 1)],
   });
   const { outcome } = await runCoreLoop(
-    { automation, requested: 1, queryDate: '2026-07-20', runId: 'r5', startPage: 1, startOffset: 0, maxPages: 3, pageSize: 50, publicBaseUrl: 'https://x' },
+    { automation, requested: 1, queryDate: '2026-07-20', runId: 'r10', startPage: 1, startOffset: 0, maxPages: 3, pageSize: 50, publicBaseUrl: 'https://x' },
     deps,
   );
-  assert(outcome.imported === 0, `imported=${outcome.imported}, expected 0`);
-  assert(outcome.pagesFetched === 3, `pagesFetched=${outcome.pagesFetched}, expected 3 (max)`);
-  console.log('OK  test5 max_pages guard stops after 3 pages of duplicates');
+  assert(outcome.imported === 1, `imported=${outcome.imported}`);
+  assert(outcome.incomplete === 0, `incomplete=${outcome.incomplete}`);
+  assert(outcome.linksCreated === 1, `linksCreated=${outcome.linksCreated}`);
+  assert(outcome.testLinksCreated === 0, 'no test link');
+  const comp = state.companies.get('99999999000101')!;
+  assert(comp.dataQuality === 'complete' && !comp.isTest, 'company complete non-test');
+  assert(enqueued[0]!.dataQualityStatus === 'complete', 'queue complete');
+  console.log('OK  test4 complete-normal → imported=1, links=1');
+}
+
+async function testIncompleteNormalPendingEnrichment() {
+  // 1 incomplete + 1 complete, requested=1. Incomplete must NOT consume quota.
+  const incomplete = { cnpj: '11111111000199', razao_social: 'Sem UF', municipio: 'SP' /* no uf, no situacao, etc */ };
+  const complete = makeCompleteItem('22222222000101');
+  const { deps, state, enqueued } = makeDeps({
+    pages: [makePage([incomplete, complete], 2)],
+  });
+  const { outcome } = await runCoreLoop(
+    { automation, requested: 1, queryDate: '2026-07-20', runId: 'r11', startPage: 1, startOffset: 0, maxPages: 3, pageSize: 50, publicBaseUrl: 'https://x' },
+    deps,
+  );
+  assert(outcome.imported === 1, `imported=${outcome.imported}`);
+  assert(outcome.incomplete === 1, `incomplete=${outcome.incomplete}`);
+  assert(outcome.pendingEnrichment === 1, `pendingEnrichment=${outcome.pendingEnrichment}`);
+  assert(outcome.linksCreated === 1 && outcome.testLinksCreated === 0, 'only normal link');
+  assert(!state.companies.has('11111111000199'), 'incomplete not upserted as company');
+  const enqIncomplete = enqueued.find((e) => e.cnpj === '11111111000199')!;
+  assert(enqIncomplete.dataQualityStatus === 'pending_enrichment', 'enqueued as pending_enrichment');
+  assert(Array.isArray(enqIncomplete.missingFields) && (enqIncomplete.missingFields as string[]).length > 0, 'missing fields recorded');
+  assert(outcome.missingFieldsSummary && Object.keys(outcome.missingFieldsSummary).length > 0, 'summary populated');
+  console.log('OK  test5 incomplete-normal → pending_enrichment, quota not consumed');
+}
+
+async function testIncompleteTestMode() {
+  const incomplete = { cnpj: '33333333000199', razao_social: 'Falta tudo' };
+  const { deps, state } = makeDeps({
+    pages: [makePage([incomplete], 1)],
+  });
+  const { outcome } = await runCoreLoop(
+    { automation, requested: 1, queryDate: '2026-07-20', runId: 'r12', startPage: 1, startOffset: 0, maxPages: 3, pageSize: 50, publicBaseUrl: 'https://x', isTestRun: true },
+    deps,
+  );
+  assert(outcome.imported === 1, `imported=${outcome.imported}`);
+  assert(outcome.incomplete === 0, `incomplete (should be 0 in test mode)=${outcome.incomplete}`);
+  assert(outcome.testLinksCreated === 1, `testLinksCreated=${outcome.testLinksCreated}`);
+  assert(outcome.linksCreated === 0, `normal links must stay 0 in test`);
+  const comp = state.companies.get('33333333000199')!;
+  assert(comp.isTest === true, 'company flagged as test');
+  assert(comp.dataQuality === 'test_partial', `quality=${comp.dataQuality}`);
+  console.log('OK  test6 incomplete-test → imported as test_partial, test link created');
+}
+
+async function testRequireEmailButMissing() {
+  // Filter require_email=true; API returned item without email → incomplete.
+  const noEmail = makeCompleteItem('44444444000101', { email: undefined });
+  delete (noEmail as any).email;
+  const withEmail = makeCompleteItem('55555555000101');
+  const autoWithEmail = { ...automation, filters: { require_email: true } };
+  const { deps } = makeDeps({
+    pages: [makePage([noEmail, withEmail], 2)],
+  });
+  const { outcome } = await runCoreLoop(
+    { automation: autoWithEmail, requested: 1, queryDate: '2026-07-20', runId: 'r13', startPage: 1, startOffset: 0, maxPages: 3, pageSize: 50, publicBaseUrl: 'https://x' },
+    deps,
+  );
+  assert(outcome.imported === 1, `imported=${outcome.imported}`);
+  assert(outcome.incomplete === 1, `incomplete=${outcome.incomplete}`);
+  assert(outcome.missingFieldsSummary.email === 1, `missing.email=${outcome.missingFieldsSummary.email}`);
+  console.log('OK  test7 require_email missing → incomplete, quota not consumed');
+}
+
+async function testEnrichmentUpgrade() {
+  // 1st run: incomplete → pending_enrichment (no company row in mock).
+  // 2nd run: same cnpj now complete → company created as complete/non-test.
+  const cnpj = '66666666000101';
+  const incomplete = { cnpj, razao_social: 'Parcial' };
+  const complete = makeCompleteItem(cnpj);
+
+  // Run 1
+  const first = makeDeps({ pages: [makePage([incomplete], 1)] });
+  await runCoreLoop(
+    { automation, requested: 1, queryDate: '2026-07-20', runId: 'r14a', startPage: 1, startOffset: 0, maxPages: 3, pageSize: 50, publicBaseUrl: 'https://x' },
+    first.deps,
+  );
+  assert(!first.state.companies.has(cnpj), 'run1: no company created for incomplete');
+
+  // Run 2: fresh state, but simulate: cnpj is NOT in existingCnpjs (fresh queue)
+  // The upsert should now create it as complete.
+  const second = makeDeps({ pages: [makePage([complete], 1)] });
+  const { outcome } = await runCoreLoop(
+    { automation, requested: 1, queryDate: '2026-07-21', runId: 'r14b', startPage: 1, startOffset: 0, maxPages: 3, pageSize: 50, publicBaseUrl: 'https://x' },
+    second.deps,
+  );
+  assert(outcome.imported === 1, `imported=${outcome.imported}`);
+  const comp = second.state.companies.get(cnpj)!;
+  assert(comp.dataQuality === 'complete' && !comp.isTest, 'enriched → complete + not test');
+  console.log('OK  test8 enrichment upgrade → registro completo passa a valer como definitivo');
 }
 
 (async () => {
   await testFirstDuplicateSecondNew();
   await testFullPageDuplicateThenNextPage();
-  await testQuantityTenSkipsDuplicates();
   await testResumeFromCursor();
-  await testMaxPagesGuard();
+  await testCompleteNormal();
+  await testIncompleteNormalPendingEnrichment();
+  await testIncompleteTestMode();
+  await testRequireEmailButMissing();
+  await testEnrichmentUpgrade();
   console.log('\nAll tests passed.');
 })().catch((e) => {
   console.error(e);

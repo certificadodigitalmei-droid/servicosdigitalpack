@@ -29,13 +29,8 @@ export type WalkState = {
 export function shouldStopForRequested(
   state: Pick<WalkState, 'newImported' | 'linksReused'>,
   requested: number,
-  autoImportEnabled: boolean,
+  _autoImportEnabled: boolean,
 ): boolean {
-  // "quantity" always means NEW companies processed (or link-reused when
-  // auto-import is off and we still want to iterate quantity items).
-  if (autoImportEnabled) return state.newImported >= requested;
-  // When auto-import is off, we only queue CNPJs — consider each unique
-  // non-duplicate as a processed unit.
   return state.newImported >= requested;
 }
 
@@ -66,4 +61,92 @@ export function writeCursor(
     updated_at: new Date().toISOString(),
   };
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Data-quality validation
+// ---------------------------------------------------------------------------
+
+function pickStr(obj: Record<string, unknown>, keys: string[]): string | null {
+  for (const k of keys) {
+    const v = obj[k];
+    if (typeof v === 'string' && v.trim().length > 0) return v.trim();
+  }
+  return null;
+}
+
+function isEmailLike(s: string | null | undefined): s is string {
+  if (!s) return false;
+  const v = s.trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
+export function extractEmail(item: Record<string, unknown>): string | null {
+  const direct = pickStr(item, ['email', 'email_contato']);
+  if (isEmailLike(direct)) return direct;
+  const emails = (item as any).emails;
+  if (Array.isArray(emails)) {
+    for (const e of emails) {
+      if (typeof e === 'string' && isEmailLike(e)) return e.trim();
+      if (e && typeof e === 'object') {
+        const s = pickStr(e as Record<string, unknown>, ['email', 'endereco']);
+        if (isEmailLike(s)) return s;
+      }
+    }
+  }
+  return null;
+}
+
+function hasMatrizFlag(item: Record<string, unknown>): boolean {
+  const v =
+    (item as any).matriz_filial ??
+    (item as any).matriz ??
+    (item as any).is_matriz ??
+    (item as any).tipo;
+  return v !== undefined && v !== null && v !== '';
+}
+
+export type DataQualityResult = {
+  complete: boolean;
+  missingFields: string[];
+  email: string | null;
+};
+
+export type ValidationFilters = { require_email?: boolean; only_matriz?: boolean };
+
+/**
+ * Validates the raw Casa dos Dados item against the required-fields spec.
+ * Called BEFORE upsert — determines whether the record can flow as "complete"
+ * in normal mode or must be quarantined as `pending_enrichment`.
+ */
+export function validateCompanyItem(
+  item: Record<string, unknown>,
+  filters?: ValidationFilters,
+): DataQualityResult {
+  const missing: string[] = [];
+
+  const razao = pickStr(item, ['razao_social', 'nome_empresarial']);
+  if (!razao) missing.push('razao_social');
+
+  const situacao = pickStr(item, ['situacao_cadastral', 'situacao', 'situacao_cadastral_desc']);
+  if (!situacao) missing.push('situacao_cadastral');
+
+  const abertura = pickStr(item, ['data_abertura', 'abertura', 'inicio_atividade']);
+  if (!abertura) missing.push('data_abertura');
+
+  // Filtro "somente matriz" já garante matriz na API, mas o campo em si
+  // precisa vir para podermos identificar. Se o filtro está ligado, aceitamos
+  // o próprio filtro como fonte da informação.
+  if (!filters?.only_matriz && !hasMatrizFlag(item)) missing.push('matriz_filial');
+
+  const municipio = pickStr(item, ['municipio', 'cidade', 'municipio_descricao']);
+  if (!municipio) missing.push('municipio');
+
+  const uf = pickStr(item, ['uf']);
+  if (!uf) missing.push('uf');
+
+  const email = extractEmail(item);
+  if (filters?.require_email && !email) missing.push('email');
+
+  return { complete: missing.length === 0, missingFields: missing, email };
 }

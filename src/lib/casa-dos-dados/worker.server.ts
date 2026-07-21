@@ -1,18 +1,26 @@
 // Worker that executes a single automation "run".
 // Called by the internal server route (via pg_cron) OR from the "run now" server fn.
 //
+// Data-quality rules (July 2026):
+//   - "test_manual" trigger imports incomplete records marked as test.
+//   - All other triggers must validate required fields BEFORE upsert.
+//     Incomplete records are enqueued as `pending_enrichment` and DO NOT
+//     consume the quantity quota nor generate any link.
+//
 // Pagination model:
-//   - "quantity_per_run" means N NEW companies imported (or N unique CNPJs
-//     when auto-import is off). Duplicates never consume the quota.
-//   - Pages are fetched with `page_size` items each. The worker walks forward
-//     until it hits the requested quota, runs out of items, or reaches
-//     `max_pages_per_run`.
-//   - The cursor { page, item_offset, last_cnpj } is persisted per query_date
-//     on `automatic_company_queries.pagination_cursors` so the next run
-//     resumes where the previous one stopped.
+//   - "quantity_per_run" means N NEW *valid* companies imported.
+//   - Duplicates and incomplete records never consume the quota.
+//   - Cursors are persisted per query_date on
+//     `automatic_company_queries.pagination_cursors`.
 
 import { searchOpeningsByDate, todayBR, type CasaFilters, type CasaSearchResult } from './client.server';
-import { classifyItem, readCursor, writeCursor, type CursorMap } from './worker-logic';
+import {
+  classifyItem,
+  readCursor,
+  writeCursor,
+  validateCompanyItem,
+  type CursorMap,
+} from './worker-logic';
 
 type Automation = {
   id: string;
@@ -32,6 +40,7 @@ type SkipReason =
   | 'missing_cnpj'
   | 'invalid_cnpj_length'
   | 'duplicate'
+  | 'incomplete'
   | 'company_upsert_error'
   | 'link_error'
   | 'queue_error'
@@ -46,24 +55,32 @@ export type RunOutcome = {
   imported: number;
   updated: number;
   duplicated: number;
+  incomplete: number;
+  pendingEnrichment: number;
   linksCreated: number;
+  testLinksCreated: number;
   linksReused: number;
   itemsReceived: number;
   itemsAnalyzed: number;
   pagesFetched: number;
   cursorStart: { page: number; itemOffset: number } | null;
   cursorEnd: { page: number; itemOffset: number; lastCnpj: string | null } | null;
-  skipped: Array<{ index: number; page: number; cnpj: string | null; reason: SkipReason; detail?: string }>;
+  skipped: Array<{ index: number; page: number; cnpj: string | null; reason: SkipReason; detail?: string; missing?: string[] }>;
+  missingFieldsSummary: Record<string, number>;
   responseKeys?: string[];
   error?: string;
   autoImportEnabled: boolean;
   autoGenerateLinksEnabled: boolean;
+  isTestRun: boolean;
   sample?: {
     cnpj: string | null;
     nome: string | null;
     token: string | null;
     linkPublico: string | null;
     linkCheckout: string | null;
+    isTest: boolean;
+    dataQualityStatus: string;
+    missingFields: string[];
   } | null;
 };
 
@@ -71,18 +88,6 @@ function pickString(obj: Record<string, unknown>, keys: string[]): string | null
   for (const k of keys) {
     const v = obj[k];
     if (typeof v === 'string' && v.trim().length > 0) return v.trim();
-  }
-  return null;
-}
-
-function pickNestedEmail(obj: Record<string, unknown>): string | null {
-  const direct = pickString(obj, ['email', 'email_contato']);
-  if (direct) return direct;
-  const emails = (obj as any).emails;
-  if (Array.isArray(emails) && emails.length > 0) {
-    const first = emails[0];
-    if (typeof first === 'string') return first;
-    if (first && typeof first === 'object') return pickString(first as Record<string, unknown>, ['email', 'endereco']);
   }
   return null;
 }
@@ -107,18 +112,24 @@ export type FetchPageFn = (opts: {
   date: string;
 }) => Promise<CasaSearchResult>;
 
+export type EnqueueArgs = {
+  automationId: string;
+  runId: string;
+  queryDate: string;
+  cnpj: string;
+  isTestRecord: boolean;
+  dataQualityStatus: 'complete' | 'test_partial' | 'pending_enrichment';
+  missingFields: string[];
+};
+
 export type WorkerDeps = {
   fetchPage: FetchPageFn;
-  // Attempts to enqueue a CNPJ for a run. Returns 'duplicate' if the
-  // (automation_id, query_date, cnpj) tuple already exists.
-  tryEnqueue: (args: { automationId: string; runId: string; queryDate: string; cnpj: string }) =>
+  tryEnqueue: (args: EnqueueArgs) =>
     Promise<{ ok: true; queueId: string } | { ok: false; reason: 'duplicate' } | { ok: false; reason: 'error'; message: string }>;
-  // Looks up a duplicate CNPJ's active link (if any) so the worker can
-  // count it as `linksReused`.
   findActiveLinkByCnpj: (cnpj: string) => Promise<{ id: string; publicToken: string; publicUrl: string | null; checkoutUrl: string | null } | null>;
   upsertCompany: (payload: Record<string, unknown>) => Promise<{ companyId: string; wasNew: boolean }>;
   findActiveLinkByCompany: (companyId: string) => Promise<{ id: string; publicToken: string; publicUrl: string | null; checkoutUrl: string | null } | null>;
-  insertLink: (args: { companyId: string; cnpj: string; nome: string }) =>
+  insertLink: (args: { companyId: string; cnpj: string; nome: string; isTestRecord: boolean; dataQualityStatus: string }) =>
     Promise<{ id: string; publicToken: string; publicUrl: string; checkoutUrl: string }>;
   updateQueueRow: (args: { queueId: string; companyId: string | null; companyLinkId: string | null; wasNewCompany: boolean; wasNewLink: boolean }) => Promise<void>;
 };
@@ -133,13 +144,15 @@ export type CoreLoopInput = {
   maxPages: number;
   pageSize: number;
   publicBaseUrl: string;
+  isTestRun?: boolean;
 };
 
 export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promise<{
-  outcome: Omit<RunOutcome, 'runId' | 'status' | 'autoImportEnabled' | 'autoGenerateLinksEnabled'>;
+  outcome: Omit<RunOutcome, 'runId' | 'status' | 'autoImportEnabled' | 'autoGenerateLinksEnabled' | 'isTestRun'>;
   apiSummary: Record<string, unknown>;
 }> {
   const { automation, requested, queryDate, runId, startPage, startOffset, maxPages, pageSize, publicBaseUrl } = input;
+  const isTestRun = !!input.isTestRun;
   const autoImportEnabled = automation.auto_import_enabled ?? true;
   const autoGenerateLinksEnabled = (automation.auto_generate_links_enabled ?? true) && autoImportEnabled;
 
@@ -150,7 +163,10 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
     imported: 0,
     updated: 0,
     duplicated: 0,
+    incomplete: 0,
+    pendingEnrichment: 0,
     linksCreated: 0,
+    testLinksCreated: 0,
     linksReused: 0,
     itemsReceived: 0,
     itemsAnalyzed: 0,
@@ -158,14 +174,20 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
     cursorStart: { page: startPage, itemOffset: startOffset } as { page: number; itemOffset: number },
     cursorEnd: null as { page: number; itemOffset: number; lastCnpj: string | null } | null,
     skipped: [] as RunOutcome['skipped'],
+    missingFieldsSummary: {} as Record<string, number>,
     responseKeys: undefined as string[] | undefined,
     sample: null as RunOutcome['sample'],
+  };
+
+  const bumpMissing = (fields: string[]) => {
+    for (const f of fields) outcome.missingFieldsSummary[f] = (outcome.missingFieldsSummary[f] ?? 0) + 1;
   };
 
   const apiSummary: Record<string, unknown> = {
     query_date: queryDate,
     page_size: pageSize,
     max_pages: maxPages,
+    is_test_run: isTestRun,
     cursor_start: outcome.cursorStart,
     pages: [] as Array<Record<string, unknown>>,
   };
@@ -175,7 +197,6 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
   let lastCnpj: string | null = null;
   let sampleSet = false;
 
-  // Safety cap on total iterations regardless of page count (defensive).
   const HARD_ITEM_CAP = maxPages * pageSize + 10;
   let itemsSeen = 0;
 
@@ -204,7 +225,6 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
       throw new Error(`Resposta inconsistente: total=${result.total} mas cnpjs=[] na página ${page}.`);
     }
     if (result.items.length === 0) {
-      // Nothing left on this page → end of data.
       outcome.cursorEnd = { page, itemOffset: 0, lastCnpj };
       break;
     }
@@ -230,16 +250,59 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
       const cnpj = cls.cnpj;
       lastCnpj = cnpj;
 
-      const enq = await deps.tryEnqueue({ automationId: automation.id, runId, queryDate, cnpj });
+      // Validate data quality BEFORE anything else.
+      const validation = validateCompanyItem(item, automation.filters ?? {});
+      const isValid = validation.complete;
+      const dataQualityStatus: 'complete' | 'test_partial' | 'pending_enrichment' = isValid
+        ? 'complete'
+        : isTestRun
+          ? 'test_partial'
+          : 'pending_enrichment';
+
+      // ---- NORMAL MODE + INCOMPLETE ----
+      // Enqueue as pending_enrichment (best effort), skip everything else,
+      // DO NOT consume quota.
+      if (!isValid && !isTestRun) {
+        outcome.incomplete += 1;
+        outcome.pendingEnrichment += 1;
+        bumpMissing(validation.missingFields);
+        const enq = await deps.tryEnqueue({
+          automationId: automation.id,
+          runId,
+          queryDate,
+          cnpj,
+          isTestRecord: false,
+          dataQualityStatus: 'pending_enrichment',
+          missingFields: validation.missingFields,
+        });
+        if (!enq.ok && enq.reason === 'duplicate') {
+          // Already known — that's fine, just count skip.
+          outcome.skipped.push({ index: i, page, cnpj, reason: 'incomplete', missing: validation.missingFields, detail: 'duplicate_in_queue' });
+        } else if (!enq.ok) {
+          outcome.skipped.push({ index: i, page, cnpj, reason: 'queue_error', detail: enq.message });
+        } else {
+          outcome.skipped.push({ index: i, page, cnpj, reason: 'incomplete', missing: validation.missingFields });
+        }
+        continue;
+      }
+
+      // ---- DEDUPLICATION ----
+      const enq = await deps.tryEnqueue({
+        automationId: automation.id,
+        runId,
+        queryDate,
+        cnpj,
+        isTestRecord: isTestRun,
+        dataQualityStatus,
+        missingFields: validation.missingFields,
+      });
       if (!enq.ok && enq.reason === 'duplicate') {
         outcome.duplicated += 1;
         outcome.skipped.push({ index: i, page, cnpj, reason: 'duplicate' });
-        // If the duplicate CNPJ still has an active link, count as reused.
         if (autoGenerateLinksEnabled) {
           const active = await deps.findActiveLinkByCnpj(cnpj);
           if (active) outcome.linksReused += 1;
         }
-        // DO NOT consume quota — keep walking.
         continue;
       }
       if (!enq.ok) {
@@ -249,7 +312,6 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
       const queueId = enq.queueId;
 
       if (!autoImportEnabled) {
-        // Just queued; counts as "processed new" for quantity purposes.
         outcome.imported += 1;
         if (outcome.imported >= requested) {
           outcome.cursorEnd = { page, itemOffset: i + 1, lastCnpj };
@@ -258,6 +320,8 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         continue;
       }
 
+      if (!isValid) bumpMissing(validation.missingFields);
+
       const companyPayload: Record<string, unknown> = {
         cnpj,
         razao_social_original: pickString(item, ['razao_social', 'nome_empresarial']) ?? null,
@@ -265,7 +329,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         nome_titular_exibicao:
           pickString(item, ['nome_titular', 'nome']) ??
           pickString(item, ['razao_social', 'nome_empresarial']),
-        email: pickNestedEmail(item),
+        email: validation.email,
         uf: pickString(item, ['uf']),
         municipio_descricao: pickString(item, ['municipio', 'cidade']),
         situacao_cadastral_desc: pickString(item, ['situacao_cadastral', 'situacao']),
@@ -274,7 +338,10 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         is_matriz: automation.filters?.only_matriz ? true : undefined,
         fonte: 'casa_dos_dados',
         last_seen_at: new Date().toISOString(),
-        possui_email: !!pickNestedEmail(item),
+        possui_email: !!validation.email,
+        is_test_record: isTestRun,
+        data_quality_status: dataQualityStatus,
+        missing_fields: validation.missingFields,
       };
       for (const k of Object.keys(companyPayload)) if (companyPayload[k] === undefined) delete companyPayload[k];
 
@@ -296,7 +363,12 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
       let checkoutUrl: string | null = null;
       let wasNewLink = false;
 
-      if (autoGenerateLinksEnabled) {
+      // Link generation gate:
+      //  - normal mode → só se complete
+      //  - test mode → permite mesmo com test_partial
+      const canGenerateLink = autoGenerateLinksEnabled && (isValid || isTestRun);
+
+      if (canGenerateLink) {
         try {
           const active = await deps.findActiveLinkByCompany(companyId);
           if (active) {
@@ -310,13 +382,16 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
               companyId,
               cnpj,
               nome: String(companyPayload.nome_titular_exibicao ?? companyPayload.razao_social_original ?? ''),
+              isTestRecord: isTestRun,
+              dataQualityStatus,
             });
             linkId = nl.id;
             publicToken = nl.publicToken;
             publicUrl = nl.publicUrl;
             checkoutUrl = nl.checkoutUrl;
             wasNewLink = true;
-            outcome.linksCreated += 1;
+            if (isTestRun) outcome.testLinksCreated += 1;
+            else outcome.linksCreated += 1;
           }
         } catch (e: any) {
           outcome.skipped.push({ index: i, page, cnpj, reason: 'link_error', detail: e?.message ?? String(e) });
@@ -334,6 +409,9 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
           token: publicToken,
           linkPublico: publicUrl,
           linkCheckout: checkoutUrl,
+          isTest: isTestRun,
+          dataQualityStatus,
+          missingFields: validation.missingFields,
         };
         sampleSet = true;
       }
@@ -344,13 +422,9 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
       }
     }
 
-    // Finished the page without hitting the quota → advance to next page.
     if (!outcome.cursorEnd) {
-      // If we walked the whole page, next run should start at page+1 offset 0.
-      // But only if we've actually consumed everything from `offset` onward.
       offset = 0;
       page += 1;
-      // If API total is known and we've fetched everything, stop.
       if (typeof outcome.apiTotal === 'number' && outcome.itemsReceived >= outcome.apiTotal) {
         outcome.cursorEnd = { page, itemOffset: 0, lastCnpj };
         break;
@@ -367,6 +441,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
   apiSummary.pages_fetched = outcome.pagesFetched;
   apiSummary.items_received = outcome.itemsReceived;
   apiSummary.items_analyzed = outcome.itemsAnalyzed;
+  apiSummary.missing_fields_summary = outcome.missingFieldsSummary;
 
   return { outcome, apiSummary };
 }
@@ -383,6 +458,7 @@ export async function runAutomationOnce(
   const publicBaseUrl = (process.env.PUBLIC_APP_URL ?? '').replace(/\/+$/, '');
   if (!publicBaseUrl) throw new Error('PUBLIC_APP_URL não configurado');
 
+  const isTestRun = opts.trigger === 'test_manual';
   const requested = Math.max(1, opts.overrideQuantity ?? automation.quantity_per_run ?? 1);
   const queryDate = opts.queryDate && /^\d{4}-\d{2}-\d{2}$/.test(opts.queryDate)
     ? opts.queryDate
@@ -414,10 +490,18 @@ export async function runAutomationOnce(
 
   const deps: WorkerDeps = {
     fetchPage: (o) => searchOpeningsByDate(o),
-    tryEnqueue: async ({ automationId, runId: rId, queryDate: qd, cnpj }) => {
+    tryEnqueue: async ({ automationId, runId: rId, queryDate: qd, cnpj, isTestRecord, dataQualityStatus, missingFields }) => {
       const { data, error } = await supabaseAdmin
         .from('automatic_company_queue')
-        .insert({ automation_id: automationId, run_id: rId, query_date: qd, cnpj })
+        .insert({
+          automation_id: automationId,
+          run_id: rId,
+          query_date: qd,
+          cnpj,
+          is_test_record: isTestRecord,
+          data_quality_status: dataQualityStatus,
+          missing_fields: missingFields as any,
+        })
         .select('id')
         .maybeSingle();
       if (error) {
@@ -447,9 +531,23 @@ export async function runAutomationOnce(
     },
     upsertCompany: async (payload) => {
       const cnpj = String(payload.cnpj);
-      const { data: existing } = await supabaseAdmin.from('companies').select('id').eq('cnpj', cnpj).maybeSingle();
+      const { data: existing } = await supabaseAdmin
+        .from('companies')
+        .select('id, is_test_record, data_quality_status')
+        .eq('cnpj', cnpj)
+        .maybeSingle();
       if (existing?.id) {
-        const { error } = await (supabaseAdmin as any).from('companies').update(payload).eq('id', existing.id);
+        // Enriquecimento: se a empresa já existe e o registro atual está
+        // "complete", saímos do estado pending_enrichment / test_partial.
+        const nextPayload: Record<string, unknown> = { ...payload };
+        if (payload.data_quality_status === 'complete') {
+          nextPayload.data_quality_status = 'complete';
+          nextPayload.missing_fields = [];
+          // Só derruba flag de teste se o registro anterior era test_partial
+          // e agora temos dados completos (upgrade para registro real).
+          if ((existing as any).is_test_record) nextPayload.is_test_record = false;
+        }
+        const { error } = await (supabaseAdmin as any).from('companies').update(nextPayload).eq('id', existing.id);
         if (error) throw new Error(error.message);
         return { companyId: existing.id as string, wasNew: false };
       }
@@ -474,7 +572,7 @@ export async function runAutomationOnce(
         checkoutUrl: (lk as any).checkout_url ?? null,
       };
     },
-    insertLink: async ({ companyId, cnpj, nome }) => {
+    insertLink: async ({ companyId, cnpj, nome, isTestRecord, dataQualityStatus }) => {
       const publicToken = crypto.randomUUID().replace(/-/g, '');
       const publicUrl = `${publicBaseUrl}/c/${publicToken}`;
       const checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
@@ -488,7 +586,9 @@ export async function runAutomationOnce(
           checkout_url: checkoutUrl,
           active: true,
           status: 'active',
-          company_data: { cnpj, nome, origin: 'casa_dos_dados_automation' } as any,
+          is_test_record: isTestRecord,
+          data_quality_status: dataQualityStatus,
+          company_data: { cnpj, nome, origin: 'casa_dos_dados_automation', is_test: isTestRecord } as any,
         })
         .select('id')
         .single();
@@ -510,7 +610,10 @@ export async function runAutomationOnce(
     imported: 0,
     updated: 0,
     duplicated: 0,
+    incomplete: 0,
+    pendingEnrichment: 0,
     linksCreated: 0,
+    testLinksCreated: 0,
     linksReused: 0,
     itemsReceived: 0,
     itemsAnalyzed: 0,
@@ -518,23 +621,23 @@ export async function runAutomationOnce(
     cursorStart: { page: startPage, itemOffset: startOffset },
     cursorEnd: null,
     skipped: [],
+    missingFieldsSummary: {},
     autoImportEnabled,
     autoGenerateLinksEnabled,
+    isTestRun,
     sample: null,
   };
 
   let apiSummary: Record<string, unknown> = {};
   try {
     const res = await runCoreLoop(
-      { automation, requested, queryDate, runId, startPage, startOffset, maxPages, pageSize, publicBaseUrl },
+      { automation, requested, queryDate, runId, startPage, startOffset, maxPages, pageSize, publicBaseUrl, isTestRun },
       deps,
     );
     Object.assign(outcome, res.outcome);
     outcome.status = 'ok';
     apiSummary = res.apiSummary;
 
-    // Persist cursor for this date (only on non-test runs so a passed-date
-    // test does not shift the real automation's cursor).
     if (opts.trigger !== 'test_manual' && outcome.cursorEnd) {
       const nextCursors = writeCursor(cursors, queryDate, {
         page: outcome.cursorEnd.page,
@@ -554,8 +657,12 @@ export async function runAutomationOnce(
         api_total: outcome.apiTotal,
         imported_count: outcome.imported,
         duplicate_count: outcome.duplicated,
+        incomplete_count: outcome.incomplete,
+        pending_enrichment_count: outcome.pendingEnrichment,
         link_created_count: outcome.linksCreated,
         link_reused_count: outcome.linksReused,
+        test_link_count: outcome.testLinksCreated,
+        missing_fields_summary: outcome.missingFieldsSummary as any,
         pages_fetched: outcome.pagesFetched,
         items_received: outcome.itemsReceived,
         items_analyzed: outcome.itemsAnalyzed,
@@ -585,8 +692,12 @@ export async function runAutomationOnce(
         api_total: outcome.apiTotal,
         imported_count: outcome.imported,
         duplicate_count: outcome.duplicated,
+        incomplete_count: outcome.incomplete,
+        pending_enrichment_count: outcome.pendingEnrichment,
         link_created_count: outcome.linksCreated,
         link_reused_count: outcome.linksReused,
+        test_link_count: outcome.testLinksCreated,
+        missing_fields_summary: outcome.missingFieldsSummary as any,
         pages_fetched: outcome.pagesFetched,
         items_received: outcome.itemsReceived,
         items_analyzed: outcome.itemsAnalyzed,

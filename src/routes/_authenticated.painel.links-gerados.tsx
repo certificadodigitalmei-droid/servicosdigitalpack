@@ -41,7 +41,7 @@ function LinksGeradosPage() {
       let q = supabase
         .from('company_links')
         .select(
-          'id,company_id,public_token,public_url,checkout_url,active,status,expires_at,access_count,created_at,generation_id,companies(id,cnpj,razao_social_original,nome_titular_exibicao,nome_fantasia)',
+          'id,company_id,public_token,public_url,checkout_url,active,status,expires_at,access_count,created_at,generation_id,is_test_record,data_quality_status,companies(id,cnpj,razao_social_original,nome_titular_exibicao,nome_fantasia)',
           { count: 'exact' },
         )
         .order('created_at', { ascending: false });
@@ -183,6 +183,7 @@ function LinksGeradosPage() {
                   <TableHead>Empresa</TableHead>
                   <TableHead>CNPJ</TableHead>
                   <TableHead>Token</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Origem</TableHead>
                   <TableHead>Acessos</TableHead>
@@ -192,11 +193,11 @@ function LinksGeradosPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={8} className="py-8 text-center">
+                  <TableRow><TableCell colSpan={9} className="py-8 text-center">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
                   </TableCell></TableRow>
                 ) : rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="py-8 text-center text-sm text-slate-500">
+                  <TableRow><TableCell colSpan={9} className="py-8 text-center text-sm text-slate-500">
                     Nenhum link encontrado.
                   </TableCell></TableRow>
                 ) : rows.map((r) => {
@@ -209,6 +210,11 @@ function LinksGeradosPage() {
                       <TableCell className="max-w-[220px] truncate font-medium">{nome}</TableCell>
                       <TableCell className="font-mono text-xs">{c?.cnpj ? formatCNPJ(c.cnpj) : '—'}</TableCell>
                       <TableCell className="font-mono text-xs">{r.public_token?.slice(0, 12)}…</TableCell>
+                      <TableCell>
+                        {r.is_test_record
+                          ? <Badge className="bg-amber-500 text-white" title="Link gerado para teste, dados podem estar incompletos">Teste</Badge>
+                          : <Badge variant="outline">Normal</Badge>}
+                      </TableCell>
                       <TableCell>
                         {r.active ? <Badge className="bg-green-600">Ativo</Badge> : <Badge variant="secondary">Inativo</Badge>}
                       </TableCell>

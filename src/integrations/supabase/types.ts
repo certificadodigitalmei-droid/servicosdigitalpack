@@ -255,15 +255,19 @@ export type Database = {
           finished_at: string | null
           id: string
           imported_count: number
+          incomplete_count: number
           items_analyzed: number
           items_received: number
           link_created_count: number
           link_reused_count: number
+          missing_fields_summary: Json
           pages_fetched: number
+          pending_enrichment_count: number
           query_date: string | null
           requested_quantity: number | null
           started_at: string
           status: string
+          test_link_count: number
           trigger: string
         }
         Insert: {
@@ -278,15 +282,19 @@ export type Database = {
           finished_at?: string | null
           id?: string
           imported_count?: number
+          incomplete_count?: number
           items_analyzed?: number
           items_received?: number
           link_created_count?: number
           link_reused_count?: number
+          missing_fields_summary?: Json
           pages_fetched?: number
+          pending_enrichment_count?: number
           query_date?: string | null
           requested_quantity?: number | null
           started_at?: string
           status?: string
+          test_link_count?: number
           trigger?: string
         }
         Update: {
@@ -301,15 +309,19 @@ export type Database = {
           finished_at?: string | null
           id?: string
           imported_count?: number
+          incomplete_count?: number
           items_analyzed?: number
           items_received?: number
           link_created_count?: number
           link_reused_count?: number
+          missing_fields_summary?: Json
           pages_fetched?: number
+          pending_enrichment_count?: number
           query_date?: string | null
           requested_quantity?: number | null
           started_at?: string
           status?: string
+          test_link_count?: number
           trigger?: string
         }
         Relationships: [
@@ -329,7 +341,10 @@ export type Database = {
           company_id: string | null
           company_link_id: string | null
           created_at: string
+          data_quality_status: string
           id: string
+          is_test_record: boolean
+          missing_fields: Json
           query_date: string
           run_id: string | null
           was_new_company: boolean
@@ -341,7 +356,10 @@ export type Database = {
           company_id?: string | null
           company_link_id?: string | null
           created_at?: string
+          data_quality_status?: string
           id?: string
+          is_test_record?: boolean
+          missing_fields?: Json
           query_date?: string
           run_id?: string | null
           was_new_company?: boolean
@@ -353,7 +371,10 @@ export type Database = {
           company_id?: string | null
           company_link_id?: string | null
           created_at?: string
+          data_quality_status?: string
           id?: string
+          is_test_record?: boolean
+          missing_fields?: Json
           query_date?: string
           run_id?: string | null
           was_new_company?: boolean
@@ -402,6 +423,7 @@ export type Database = {
           complemento: string | null
           complete_data_fetched_at: string | null
           created_at: string
+          data_quality_status: string
           ddd: string | null
           email: string | null
           first_found_at: string | null
@@ -412,8 +434,10 @@ export type Database = {
           is_matriz: boolean | null
           is_mei: boolean | null
           is_simples: boolean | null
+          is_test_record: boolean
           last_seen_at: string | null
           logradouro: string | null
+          missing_fields: Json
           municipio_codigo: string | null
           municipio_descricao: string | null
           natureza_id: string | null
@@ -448,6 +472,7 @@ export type Database = {
           complemento?: string | null
           complete_data_fetched_at?: string | null
           created_at?: string
+          data_quality_status?: string
           ddd?: string | null
           email?: string | null
           first_found_at?: string | null
@@ -458,8 +483,10 @@ export type Database = {
           is_matriz?: boolean | null
           is_mei?: boolean | null
           is_simples?: boolean | null
+          is_test_record?: boolean
           last_seen_at?: string | null
           logradouro?: string | null
+          missing_fields?: Json
           municipio_codigo?: string | null
           municipio_descricao?: string | null
           natureza_id?: string | null
@@ -494,6 +521,7 @@ export type Database = {
           complemento?: string | null
           complete_data_fetched_at?: string | null
           created_at?: string
+          data_quality_status?: string
           ddd?: string | null
           email?: string | null
           first_found_at?: string | null
@@ -504,8 +532,10 @@ export type Database = {
           is_matriz?: boolean | null
           is_mei?: boolean | null
           is_simples?: boolean | null
+          is_test_record?: boolean
           last_seen_at?: string | null
           logradouro?: string | null
+          missing_fields?: Json
           municipio_codigo?: string | null
           municipio_descricao?: string | null
           natureza_id?: string | null
@@ -539,10 +569,12 @@ export type Database = {
           company_data: Json
           company_id: string | null
           created_at: string
+          data_quality_status: string
           expires_at: string | null
           first_access_at: string | null
           generation_id: string | null
           id: string
+          is_test_record: boolean
           last_access_at: string | null
           public_token: string
           public_url: string | null
@@ -557,10 +589,12 @@ export type Database = {
           company_data?: Json
           company_id?: string | null
           created_at?: string
+          data_quality_status?: string
           expires_at?: string | null
           first_access_at?: string | null
           generation_id?: string | null
           id?: string
+          is_test_record?: boolean
           last_access_at?: string | null
           public_token: string
           public_url?: string | null
@@ -575,10 +609,12 @@ export type Database = {
           company_data?: Json
           company_id?: string | null
           created_at?: string
+          data_quality_status?: string
           expires_at?: string | null
           first_access_at?: string | null
           generation_id?: string | null
           id?: string
+          is_test_record?: boolean
           last_access_at?: string | null
           public_token?: string
           public_url?: string | null
