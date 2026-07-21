@@ -184,6 +184,8 @@ export type Database = {
           next_run_at: string | null
           owner_user_id: string
           quantity_per_run: number
+          query_date_mode: string
+          selected_query_date: string | null
           status: string
           updated_at: string
         }
@@ -200,6 +202,8 @@ export type Database = {
           next_run_at?: string | null
           owner_user_id: string
           quantity_per_run?: number
+          query_date_mode?: string
+          selected_query_date?: string | null
           status?: string
           updated_at?: string
         }
@@ -216,6 +220,8 @@ export type Database = {
           next_run_at?: string | null
           owner_user_id?: string
           quantity_per_run?: number
+          query_date_mode?: string
+          selected_query_date?: string | null
           status?: string
           updated_at?: string
         }
@@ -234,6 +240,7 @@ export type Database = {
           imported_count: number
           link_created_count: number
           link_reused_count: number
+          query_date: string | null
           requested_quantity: number | null
           started_at: string
           status: string
@@ -251,6 +258,7 @@ export type Database = {
           imported_count?: number
           link_created_count?: number
           link_reused_count?: number
+          query_date?: string | null
           requested_quantity?: number | null
           started_at?: string
           status?: string
@@ -268,6 +276,7 @@ export type Database = {
           imported_count?: number
           link_created_count?: number
           link_reused_count?: number
+          query_date?: string | null
           requested_quantity?: number | null
           started_at?: string
           status?: string
