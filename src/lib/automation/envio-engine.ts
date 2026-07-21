@@ -83,6 +83,7 @@ type State = {
 
   // Estado
   queue: QueueItem[];
+  sentEmails: SentEmail[];
   running: boolean;
   paused: boolean;
   loading: boolean;
