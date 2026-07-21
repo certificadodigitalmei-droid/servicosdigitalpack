@@ -12,6 +12,15 @@ type Automation = {
   filters: CasaFilters;
 };
 
+type SkipReason =
+  | 'missing_cnpj'
+  | 'invalid_cnpj_length'
+  | 'duplicate'
+  | 'company_upsert_error'
+  | 'link_error'
+  | 'queue_error'
+  | 'other';
+
 export type RunOutcome = {
   runId: string | null;
   status: 'ok' | 'error' | 'noop';
@@ -22,6 +31,8 @@ export type RunOutcome = {
   duplicated: number;
   linksCreated: number;
   linksReused: number;
+  skipped: Array<{ index: number; cnpj: string | null; reason: SkipReason; detail?: string }>;
+  responseKeys?: string[];
   error?: string;
   sample?: {
     cnpj: string | null;
@@ -58,7 +69,6 @@ function pickNestedEmail(obj: Record<string, unknown>): string | null {
 
 function toDate(v: unknown): string | null {
   if (typeof v !== 'string' || !v) return null;
-  // Accept YYYY-MM-DD or DD/MM/YYYY
   const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
   const br = v.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
@@ -76,7 +86,6 @@ export async function runAutomationOnce(
 
   const requested = Math.max(1, opts.overrideQuantity ?? automation.quantity_per_run ?? 1);
 
-  // 1) Create run row
   const { data: runRow, error: runErr } = await supabaseAdmin
     .from('automatic_company_query_runs')
     .insert({
@@ -98,28 +107,49 @@ export async function runAutomationOnce(
     duplicated: 0,
     linksCreated: 0,
     linksReused: 0,
+    skipped: [],
     sample: null,
   };
 
   let apiTotal: number | null = null;
   let apiStatus = 0;
-  let apiSummary: unknown = null;
+  let apiSummary: Record<string, unknown> = {};
   let sampleSet = false;
 
   try {
-    // 2) Query Casa dos Dados
     const result = await searchOpeningsToday({
       filters: automation.filters ?? {},
       limit: requested,
     });
     apiStatus = result.status;
-    apiTotal = result.totalCount;
-    apiSummary = { total: result.totalCount, returned: result.items.length, status: result.status };
+    apiTotal = result.total;
     outcome.apiStatus = apiStatus;
     outcome.apiTotal = apiTotal;
+    outcome.responseKeys = result.responseKeys;
+
+    apiSummary = {
+      request: result.request, // sanitized: no api-key header
+      http_status: result.status,
+      response_keys: result.responseKeys,
+      response_total: result.total,
+      cnpjs_length: result.items.length,
+      raw_preview: result.rawPreview,
+    };
 
     if (!result.ok) {
       throw new Error(`API status ${result.status}`);
+    }
+
+    // Response shape guard: total > 0 but cnpjs vazio → falha de paginação/schema.
+    if ((result.total ?? 0) > 0 && result.items.length === 0) {
+      throw new Error(
+        `Resposta inconsistente: total=${result.total} mas cnpjs=[]. Provável mudança de schema ou paginação inválida.`,
+      );
+    }
+
+    if (result.items.length === 0) {
+      // Nada para importar hoje (total=0).
+      apiSummary.note = 'no_items_returned';
     }
 
     const todayBR = new Intl.DateTimeFormat('en-CA', {
@@ -127,11 +157,19 @@ export async function runAutomationOnce(
       year: 'numeric', month: '2-digit', day: '2-digit',
     }).format(new Date());
 
-    for (const item of result.items) {
-      const cnpj = digitsOnly((item as any).cnpj ?? (item as any).cnpj_completo);
-      if (!cnpj || cnpj.length !== 14) continue;
+    for (let i = 0; i < result.items.length; i += 1) {
+      const item = result.items[i];
+      const cnpjRaw = (item as any).cnpj ?? (item as any).cnpj_completo;
+      const cnpj = digitsOnly(cnpjRaw);
+      if (!cnpj) {
+        outcome.skipped.push({ index: i, cnpj: null, reason: 'missing_cnpj' });
+        continue;
+      }
+      if (cnpj.length !== 14) {
+        outcome.skipped.push({ index: i, cnpj, reason: 'invalid_cnpj_length', detail: `len=${cnpj.length}` });
+        continue;
+      }
 
-      // 3) Deduplicate by (automation, day, cnpj) — insert into queue with ON CONFLICT
       const { data: queueRow, error: qErr } = await supabaseAdmin
         .from('automatic_company_queue')
         .insert({
@@ -146,13 +184,14 @@ export async function runAutomationOnce(
       if (qErr) {
         if (qErr.code === '23505') {
           outcome.duplicated += 1;
+          outcome.skipped.push({ index: i, cnpj, reason: 'duplicate' });
           continue;
         }
-        throw new Error(`queue insert: ${qErr.message}`);
+        outcome.skipped.push({ index: i, cnpj, reason: 'queue_error', detail: qErr.message });
+        continue;
       }
       const queueId = queueRow!.id as string;
 
-      // 4) Upsert company
       const companyPayload: Record<string, unknown> = {
         cnpj,
         razao_social_original: pickString(item, ['razao_social', 'nome_empresarial']) ?? null,
@@ -171,7 +210,6 @@ export async function runAutomationOnce(
         last_seen_at: new Date().toISOString(),
         possui_email: !!pickNestedEmail(item),
       };
-      // clean undefined
       for (const k of Object.keys(companyPayload)) if (companyPayload[k] === undefined) delete companyPayload[k];
 
       const { data: existing } = await supabaseAdmin
@@ -182,25 +220,29 @@ export async function runAutomationOnce(
 
       let companyId: string;
       let wasNewCompany = false;
-      if (existing?.id) {
-        companyId = existing.id;
-        const { error: upErr } = await (supabaseAdmin as any)
-          .from('companies')
-          .update(companyPayload)
-          .eq('id', companyId);
-        if (upErr) throw new Error(`company update: ${upErr.message}`);
-      } else {
-        const { data: ins, error: insErr } = await (supabaseAdmin as any)
-          .from('companies')
-          .insert(companyPayload)
-          .select('id')
-          .single();
-        if (insErr) throw new Error(`company insert: ${insErr.message}`);
-        companyId = ins.id as string;
-        wasNewCompany = true;
+      try {
+        if (existing?.id) {
+          companyId = existing.id;
+          const { error: upErr } = await (supabaseAdmin as any)
+            .from('companies')
+            .update(companyPayload)
+            .eq('id', companyId);
+          if (upErr) throw new Error(upErr.message);
+        } else {
+          const { data: ins, error: insErr } = await (supabaseAdmin as any)
+            .from('companies')
+            .insert(companyPayload)
+            .select('id')
+            .single();
+          if (insErr) throw new Error(insErr.message);
+          companyId = ins.id as string;
+          wasNewCompany = true;
+        }
+      } catch (e: any) {
+        outcome.skipped.push({ index: i, cnpj, reason: 'company_upsert_error', detail: e?.message ?? String(e) });
+        continue;
       }
 
-      // 5) Reuse active link, else create new
       const { data: activeLink } = await supabaseAdmin
         .from('company_links')
         .select('id, public_token, public_url, checkout_url')
@@ -216,38 +258,43 @@ export async function runAutomationOnce(
       let checkoutUrl: string;
       let wasNewLink = false;
 
-      if (activeLink) {
-        linkId = activeLink.id as string;
-        publicToken = (activeLink as any).public_token as string;
-        publicUrl = (activeLink as any).public_url ?? `${publicBaseUrl}/c/${publicToken}`;
-        checkoutUrl = (activeLink as any).checkout_url ?? `${publicBaseUrl}/checkout/${publicToken}`;
-        outcome.linksReused += 1;
-      } else {
-        publicToken = crypto.randomUUID().replace(/-/g, '');
-        publicUrl = `${publicBaseUrl}/c/${publicToken}`;
-        checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
-        const { data: newLink, error: lErr } = await supabaseAdmin
-          .from('company_links')
-          .insert({
-            company_id: companyId,
-            public_token: publicToken,
-            token: publicToken,
-            public_url: publicUrl,
-            checkout_url: checkoutUrl,
-            active: true,
-            status: 'active',
-            company_data: {
-              cnpj,
-              nome: String(companyPayload.nome_titular_exibicao ?? companyPayload.razao_social_original ?? ''),
-              origin: 'casa_dos_dados_automation',
-            } as any,
-          })
-          .select('id')
-          .single();
-        if (lErr) throw new Error(`link insert: ${lErr.message}`);
-        linkId = newLink.id as string;
-        wasNewLink = true;
-        outcome.linksCreated += 1;
+      try {
+        if (activeLink) {
+          linkId = activeLink.id as string;
+          publicToken = (activeLink as any).public_token as string;
+          publicUrl = (activeLink as any).public_url ?? `${publicBaseUrl}/c/${publicToken}`;
+          checkoutUrl = (activeLink as any).checkout_url ?? `${publicBaseUrl}/checkout/${publicToken}`;
+          outcome.linksReused += 1;
+        } else {
+          publicToken = crypto.randomUUID().replace(/-/g, '');
+          publicUrl = `${publicBaseUrl}/c/${publicToken}`;
+          checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
+          const { data: newLink, error: lErr } = await supabaseAdmin
+            .from('company_links')
+            .insert({
+              company_id: companyId,
+              public_token: publicToken,
+              token: publicToken,
+              public_url: publicUrl,
+              checkout_url: checkoutUrl,
+              active: true,
+              status: 'active',
+              company_data: {
+                cnpj,
+                nome: String(companyPayload.nome_titular_exibicao ?? companyPayload.razao_social_original ?? ''),
+                origin: 'casa_dos_dados_automation',
+              } as any,
+            })
+            .select('id')
+            .single();
+          if (lErr) throw new Error(lErr.message);
+          linkId = newLink.id as string;
+          wasNewLink = true;
+          outcome.linksCreated += 1;
+        }
+      } catch (e: any) {
+        outcome.skipped.push({ index: i, cnpj, reason: 'link_error', detail: e?.message ?? String(e) });
+        continue;
       }
 
       await supabaseAdmin
@@ -274,7 +321,8 @@ export async function runAutomationOnce(
       }
     }
 
-    // 6) Finalize run + automation
+    apiSummary.skipped = outcome.skipped;
+
     await supabaseAdmin
       .from('automatic_company_query_runs')
       .update({
@@ -304,6 +352,9 @@ export async function runAutomationOnce(
     return outcome;
   } catch (err: any) {
     const msg = err?.message ?? String(err);
+    apiSummary.skipped = outcome.skipped;
+    apiSummary.error = msg;
+
     await supabaseAdmin
       .from('automatic_company_query_runs')
       .update({
