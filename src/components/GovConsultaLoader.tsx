@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, CheckCircle2, ShieldCheck, Fingerprint } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import heroMobile from '@/assets/gov-entrar-mobile.jpg.asset.json';
-import heroDesktop from '@/assets/gov-entrar-desktop.jpg.asset.json';
-import govLogo from '@/assets/govbr-logo-2.png.asset.json';
+import heroDesktop from '@/assets/gov-entrar-desktop-v2.png.asset.json';
 
 const AZUL = '#1351B4';
-const AZUL_ESCURO = '#0C326F';
 const AMARELO = '#FFCD07';
 
 function buildSteps(nome?: string | null) {
