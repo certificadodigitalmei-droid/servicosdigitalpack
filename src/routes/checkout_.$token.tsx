@@ -145,9 +145,10 @@ function CheckoutTokenPage() {
       />
 
       <main className="flex-1">
-        <div className="mx-auto w-full max-w-[700px] px-3.5 py-6 sm:px-4">
-          <div className="rounded-md border border-border bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-            <div className="mb-6 flex items-center justify-between gap-2 text-[12px]">
+        <div className="mx-auto w-full max-w-[700px] px-3.5 py-6 sm:px-4 lg:max-w-[1180px] lg:px-8 lg:py-10">
+          <div className="rounded-md border border-border bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] lg:p-8 lg:shadow-[0_20px_60px_-30px_rgba(0,72,132,0.25)]">
+            {/* Stepper */}
+            <div className="mb-6 flex items-center justify-between gap-2 text-[12px] lg:mb-8 lg:text-[13px]">
               <Step done label="Identificação" n={1} />
               <div className="mx-1 h-px flex-1 bg-border" />
               <Step done label="Dados" n={2} />
@@ -155,111 +156,132 @@ function CheckoutTokenPage() {
               <Step active label="Pagamento" n={3} />
             </div>
 
-            {true ? (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <h1 className="text-[20px] font-bold text-foreground">Pagamento da Guia</h1>
-                  <p className="mt-1 text-[13px] text-muted-foreground">
-                    Confira os dados da guia antes de realizar o pagamento.
-                  </p>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <h1 className="text-[20px] font-bold text-foreground lg:text-[26px]">Pagamento da Guia</h1>
+                <p className="mt-1 text-[13px] text-muted-foreground lg:text-[14px]">
+                  Confira os dados da guia antes de realizar o pagamento.
+                </p>
+              </div>
+
+              {/* Desktop 2 columns: form left, sticky summary right */}
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
+                {/* LEFT column */}
+                <div className="space-y-5">
+                  <Card title="Detalhes da Guia">
+                    <TableRow label="Serviço" value="Certificado Digital MEI" />
+                    <TableRow label="Descrição" value="Emissão do Certificado Digital para MEI" />
+                    <TableRow label="Referência" value={`${row.razao_social || row.nome || '—'} (CNPJ: ${formatCPFOrCNPJ(row.cnpj || '')})`} />
+                    <TableRow
+                      label="Valor da Guia"
+                      value={<span className="font-bold text-brand-blue">{brl(AMOUNT)}</span>}
+                      last
+                    />
+                  </Card>
+
+                  <Card title="Dados do Pagador">
+                    <div className="space-y-3 p-4 lg:p-5">
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <Field label="NOME DO TITULAR" error={errors.nome} required>
+                          <input
+                            type="text"
+                            value={form.nome}
+                            onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+                            className={inputCls(errors.nome)}
+                            maxLength={120}
+                          />
+                        </Field>
+                        <Field label="CNPJ/CPF" error={errors.doc} required>
+                          <input
+                            type="text"
+                            value={form.doc}
+                            onChange={(e) => setForm((f) => ({ ...f, doc: maskCPFCNPJ(e.target.value) }))}
+                            className={inputCls(errors.doc)}
+                            inputMode="numeric"
+                          />
+                        </Field>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field label="E-MAIL" error={errors.email} required>
+                          <input
+                            type="email"
+                            value={form.email}
+                            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                            className={inputCls(errors.email)}
+                            placeholder="seu@email.com"
+                            maxLength={255}
+                          />
+                        </Field>
+                        <Field label="TELEFONE" error={errors.phone} required>
+                          <input
+                            type="tel"
+                            value={form.phone}
+                            onChange={(e) => setForm((f) => ({ ...f, phone: maskPhone(e.target.value) }))}
+                            className={inputCls(errors.phone)}
+                            placeholder="(11) 99999-9999"
+                            inputMode="tel"
+                          />
+                        </Field>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card title="Forma de Pagamento">
+                    <div className="space-y-2 p-3 lg:p-4">
+                      <PayOption selected icon={<QrCode className="h-5 w-5" />} title="PIX" subtitle="Confirmação após identificação do pagamento" />
+                      <PayOption disabled icon={<CreditCard className="h-5 w-5" />} title="Cartão de Crédito" subtitle="Indisponível para este serviço" />
+                      <PayOption disabled icon={<Barcode className="h-5 w-5" />} title="Boleto Bancário" subtitle="Indisponível para este serviço" />
+                      <div className="rounded-md border border-success/40 bg-success-soft px-3 py-2 text-[12.5px] text-foreground">
+                        ✓ Confirmação imediata da emissão via PIX. QR Code gerado na hora — pague pelo app do seu banco.
+                      </div>
+                    </div>
+                  </Card>
                 </div>
 
-                <Card title="Detalhes da Guia">
-                  <TableRow label="Serviço" value="Certificado Digital MEI" />
-                  <TableRow label="Descrição" value="Emissão do Certificado Digital para MEI" />
-                  <TableRow label="Referência" value={`${row.razao_social || row.nome || '—'} (CNPJ: ${formatCPFOrCNPJ(row.cnpj || '')})`} />
-                  <TableRow
-                    label="Valor da Guia"
-                    value={<span className="font-bold text-brand-blue">{brl(AMOUNT)}</span>}
-                    last
-                  />
-                </Card>
-
-                <Card title="Dados do Pagador">
-                  <div className="space-y-3 p-4">
-                    <Field label="NOME DO TITULAR" error={errors.nome} required>
-                      <input
-                        type="text"
-                        value={form.nome}
-                        onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
-                        className={inputCls(errors.nome)}
-                        maxLength={120}
-                      />
-                    </Field>
-                    <Field label="CNPJ/CPF" error={errors.doc} required>
-                      <input
-                        type="text"
-                        value={form.doc}
-                        onChange={(e) => setForm((f) => ({ ...f, doc: maskCPFCNPJ(e.target.value) }))}
-                        className={inputCls(errors.doc)}
-                        inputMode="numeric"
-                      />
-                    </Field>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="E-MAIL" error={errors.email} required>
-                        <input
-                          type="email"
-                          value={form.email}
-                          onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                          className={inputCls(errors.email)}
-                          placeholder="seu@email.com"
-                          maxLength={255}
-                        />
-                      </Field>
-                      <Field label="TELEFONE" error={errors.phone} required>
-                        <input
-                          type="tel"
-                          value={form.phone}
-                          onChange={(e) => setForm((f) => ({ ...f, phone: maskPhone(e.target.value) }))}
-                          className={inputCls(errors.phone)}
-                          placeholder="(11) 99999-9999"
-                          inputMode="tel"
-                        />
-                      </Field>
+                {/* RIGHT column — sticky summary */}
+                <aside className="lg:sticky lg:top-6 space-y-4">
+                  <Card title="Resumo do Pagamento">
+                    <div className="divide-y divide-border">
+                      <SummaryRow label="Subtotal" value={brl(AMOUNT)} />
+                      <SummaryRow label="Tarifa de processamento" value="R$ 0,00" />
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="text-[14px] font-bold text-foreground">Total a pagar</span>
+                        <span className="text-[18px] font-bold text-[#004884] lg:text-[22px]">{brl(AMOUNT)}</span>
+                      </div>
                     </div>
-                  </div>
-                </Card>
-
-                <Card title="Forma de Pagamento">
-                  <div className="space-y-2 p-3">
-                    <PayOption selected icon={<QrCode className="h-5 w-5" />} title="PIX" subtitle="Confirmação após identificação do pagamento" />
-                    <PayOption disabled icon={<CreditCard className="h-5 w-5" />} title="Cartão de Crédito" subtitle="Indisponível para este serviço" />
-                    <PayOption disabled icon={<Barcode className="h-5 w-5" />} title="Boleto Bancário" subtitle="Indisponível para este serviço" />
-                    <div className="rounded-md border border-success/40 bg-success-soft px-3 py-2 text-[12.5px] text-foreground">
-                      ✓ Confirmação imediata da emissão via PIX. QR Code gerado na hora — pague pelo app do seu banco.
+                    <div className="border-t border-border bg-[#f8f9fa] p-4 space-y-3">
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-md bg-[#1351b4] text-[14px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[#004884] active:scale-[0.98] shadow-md lg:min-h-[54px] lg:text-[15px]"
+                      >
+                        <QrCode className="h-4 w-4" />
+                        {submitting ? 'Processando...' : 'Gerar Guia'}
+                      </button>
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1"><Check className="h-3 w-3 text-emerald-600" />Pagamento seguro</span>
+                        <span className="font-semibold text-[#004884]">gov.br</span>
+                        <span>ICP-Brasil</span>
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
 
-                <Card title="Resumo do Pagamento">
-                  <div className="divide-y divide-border">
-                    <SummaryRow label="Subtotal" value={brl(AMOUNT)} />
-                    <SummaryRow label="Tarifa de processamento" value="R$ 0,00" />
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <span className="text-[14px] font-bold text-foreground">Total a pagar</span>
-                      <span className="text-[18px] font-bold text-[#004884]">{brl(AMOUNT)}</span>
-                    </div>
+                  <div className="hidden lg:block rounded-md border border-border bg-muted/30 p-4 text-[12px] leading-relaxed text-muted-foreground">
+                    Após o pagamento via PIX, seu Certificado Digital MEI é emitido automaticamente e enviado ao seu e-mail em minutos.
                   </div>
-                </Card>
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex min-h-[48px] w-full items-center justify-center rounded-md bg-[#1351b4] text-[15px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[#004884] active:scale-[0.98] shadow-md"
-                >
-                  {submitting ? 'Processando...' : 'Gerar Guia'}
-                </button>
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => navigate({ to: '/c/$token', params: { token } })}
-                    className="inline-flex items-center gap-1 text-[13px] text-brand-blue hover:underline"
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5" /> Voltar
-                  </button>
-                </div>
-              </form>
-            ) : null}
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => navigate({ to: '/c/$token', params: { token } })}
+                      className="inline-flex items-center gap-1 text-[13px] text-brand-blue hover:underline"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+                    </button>
+                  </div>
+                </aside>
+              </div>
+            </form>
           </div>
         </div>
       </main>
