@@ -205,7 +205,7 @@ function ModeloMensagem() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[460px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
         {/* ===== Editor ===== */}
         <div className="space-y-3">
           <Accordion type="multiple" defaultValue={['assunto', 'header', 'hero', 'body']} className="space-y-2">
