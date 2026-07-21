@@ -9,6 +9,8 @@ import {
   Upload,
   Mail,
   Bot,
+  Database,
+  LinkIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
