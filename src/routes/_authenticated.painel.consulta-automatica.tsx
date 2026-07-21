@@ -870,9 +870,11 @@ function DraggableCnpjPanel(props: {
     firstSeenAt: string;
   }>;
   flashes: Array<{ id: number; count: number }>;
-  onCopy: (v: string) => void;
+  importedSet: Set<string>;
+  onCopy: (v: string) => void | Promise<void>;
 }) {
-  const { onClose, autoCount, dateLabel, savedCount, apiTotal, foundList, flashes, onCopy } = props;
+  const { onClose, autoCount, dateLabel, savedCount, apiTotal, foundList, flashes, importedSet, onCopy } = props;
+
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const [size, setSize] = useState({ w: 720, h: 560 });
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
