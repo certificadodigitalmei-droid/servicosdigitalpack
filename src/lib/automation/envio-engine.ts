@@ -35,6 +35,9 @@ type State = {
   subject: string;
   delaySec: number;
   batchLimit: number;
+  dailyLimit: number; // 0 = ilimitado
+  sentToday: number;
+  sentDay: string; // YYYY-MM-DD (reset diário)
   testMode: boolean;
   testRecipient: string;
   fromName: string;
@@ -51,10 +54,20 @@ type State = {
   logs: string[];
 };
 
+function todayStr() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+}
+
 const initial: State = {
   subject: DEFAULT_SUBJECT,
-  delaySec: 8,
+  delaySec: 60,
   batchLimit: 200,
+  dailyLimit: 50,
+  sentToday: 0,
+  sentDay: todayStr(),
   testMode: true,
   testRecipient: '',
   fromName: 'Certificado Digital MEI',
@@ -76,6 +89,9 @@ export const envioStore = createStore<State>(initial, {
     'subject',
     'delaySec',
     'batchLimit',
+    'dailyLimit',
+    'sentToday',
+    'sentDay',
     'testMode',
     'testRecipient',
     'fromName',
@@ -87,6 +103,7 @@ export const envioStore = createStore<State>(initial, {
     'logs',
   ],
 });
+
 
 
 // Flags de controle do loop (fora do store para não gerar re-render por tick).
