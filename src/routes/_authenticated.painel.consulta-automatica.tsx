@@ -85,9 +85,10 @@ function ConsultaAutomaticaPage() {
           filters: localFilters,
         },
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Configuração salva');
-      qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
+      await qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
+      await stateQ.refetch();
     },
     onError: (e: any) => toast.error(e?.message ?? 'Erro ao salvar'),
   });
