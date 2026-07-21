@@ -98,7 +98,7 @@ function EnvioMassa() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .select('id, cnpj, razao_social, nome_fantasia, email, data_abertura, situacao_cadastral, uf, municipio')
+        .select('id, cnpj, razao_social_original, nome_titular_exibicao, nome_fantasia, email, inicio_atividade, situacao_cadastral_desc, uf, municipio_descricao')
         .not('email', 'is', null)
         .neq('email', '')
         .order('created_at', { ascending: false })
