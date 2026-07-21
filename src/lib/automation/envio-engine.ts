@@ -137,6 +137,7 @@ export const envioStore = createStore<State>(initial, {
     'showFloating',
     'heroImageUrl',
     'queue',
+    'sentEmails',
     'logs',
   ],
 });
