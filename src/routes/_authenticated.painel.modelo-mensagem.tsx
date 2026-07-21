@@ -205,7 +205,7 @@ function ModeloMensagem() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[460px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
         {/* ===== Editor ===== */}
         <div className="space-y-3">
           <Accordion type="multiple" defaultValue={['assunto', 'header', 'hero', 'body']} className="space-y-2">
@@ -404,9 +404,23 @@ function ModeloMensagem() {
                   <TabsTrigger value="text">Texto</TabsTrigger>
                 </TabsList>
                 <TabsContent value="preview">
-                  <div className="bg-slate-100 p-4 rounded border flex justify-center">
+                  <div className="bg-slate-100 p-4 rounded border flex justify-center overflow-auto">
                     {viewport === 'desktop' ? (
-                      <iframe title="prévia" srcDoc={html} className="w-full h-[720px] bg-white border-none rounded" />
+                      <div
+                        className="relative bg-white shadow-sm"
+                        style={{
+                          width: design.containerWidth,
+                          height: 900,
+                          maxWidth: '100%',
+                        }}
+                      >
+                        <iframe
+                          title="prévia"
+                          srcDoc={html}
+                          className="border-none bg-white"
+                          style={{ width: design.containerWidth, height: 1400, transformOrigin: 'top left' }}
+                        />
+                      </div>
                     ) : (
                       <div className="bg-white rounded-[32px] shadow-xl overflow-hidden border-[8px] border-slate-800 w-[380px] h-[720px] relative">
                         <div className="h-6 w-32 bg-slate-800 absolute top-0 left-1/2 -translate-x-1/2 rounded-b-xl z-10" />
@@ -415,6 +429,7 @@ function ModeloMensagem() {
                     )}
                   </div>
                 </TabsContent>
+
                 <TabsContent value="html">
                   <Textarea readOnly value={html} className="h-[600px] font-mono text-xs" />
                 </TabsContent>
