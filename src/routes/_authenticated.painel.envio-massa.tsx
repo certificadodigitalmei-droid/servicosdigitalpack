@@ -76,6 +76,13 @@ function EnvioMassa() {
 
   const [logs, setLogs] = useState<string[]>([]);
   const [previewIdx, setPreviewIdx] = useState(0);
+  const [showFloating, setShowFloating] = useState<boolean>(() => {
+    try { return localStorage.getItem('envio-massa-floating-open') !== '0'; } catch { return true; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('envio-massa-floating-open', showFloating ? '1' : '0'); } catch {}
+  }, [showFloating]);
 
   useEffect(() => {
     localStorage.setItem(
