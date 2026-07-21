@@ -337,7 +337,7 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
   }));
   const cfg = envioStore.get();
   const vars = buildVarsFor(item);
-  const subj = substitute(cfg.subject, vars);
+  const subj = substitute(loadSavedSubject() || cfg.subject, vars);
   try {
     const res: any = await sendCampaignEmail({
       data: {
