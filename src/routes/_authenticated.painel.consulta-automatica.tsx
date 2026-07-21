@@ -846,7 +846,9 @@ function ConsultaPage() {
           apiTotal={countResult?.total ?? null}
           foundList={foundList}
           flashes={flashes}
+          importedSet={importedSet}
           onCopy={copy}
+
         />
       )}
     </div>
