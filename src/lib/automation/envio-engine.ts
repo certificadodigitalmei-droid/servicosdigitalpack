@@ -511,7 +511,7 @@ export async function sendTestOnce() {
     publicToken: null,
   };
   const vars = buildVarsFor(sample);
-  const subj = substitute(cfg.subject, vars);
+  const subj = substitute(loadSavedSubject() || cfg.subject, vars);
   pushLog(`🧪 Enviando 1 e-mail de teste para ${to}...`);
   try {
     const res: any = await sendCampaignEmail({
@@ -519,7 +519,7 @@ export async function sendTestOnce() {
         recipient: to,
         subject: subj,
         vars,
-        design: cfg.heroImageUrl ? { heroImageUrl: cfg.heroImageUrl } : undefined,
+        design: mergedDesign(cfg.heroImageUrl || undefined),
         fromName: cfg.fromName,
         fromAddress: cfg.fromAddress,
         replyTo: cfg.replyTo || undefined,
