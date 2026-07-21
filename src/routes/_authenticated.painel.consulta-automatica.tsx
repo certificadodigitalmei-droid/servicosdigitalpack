@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/client';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useServerFn } from '@tanstack/react-start';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Loader2,
@@ -31,21 +30,25 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { formatCNPJ } from '@/lib/format';
-import {
-  getSaldo,
-  countByDate,
-  importBatch,
-  listByDate,
-} from '@/lib/casa-dos-dados/simple-flow.functions';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { getSaldo } from '@/lib/casa-dos-dados/simple-flow.functions';
 import { List, Trash2 } from 'lucide-react';
+import { useStore } from '@/lib/automation/store';
+import {
+  consultaStore,
+  setAutoCount,
+  setAutoImport,
+  setAutoIntervalSec,
+  setAutoImportDelaySec,
+  setDateMode,
+  setSelectedDate,
+  setFilters,
+  setQuantidade,
+  setListDialogOpen,
+  clearFoundList,
+  setSaldo as setSaldoAction,
+  runCountOnce,
+  runImportOnce,
+} from '@/lib/automation/consulta-engine';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
   head: () => ({ meta: [{ title: 'Consulta Casa dos Dados | Painel' }] }),
@@ -81,123 +84,39 @@ function isoToDate(iso: string): Date {
   return new Date(y, (m ?? 1) - 1, d ?? 1);
 }
 
-type ImportedRow = {
-  cnpj: string;
-  nome: string;
-  publicUrl: string;
-  checkoutUrl: string;
-  isNewCompany: boolean;
-  isNewLink: boolean;
-};
-
 function ConsultaPage() {
   const qc = useQueryClient();
   const todayBR = todayBRString();
 
-  const saldoFn = useServerFn(getSaldo);
-  const countFn = useServerFn(countByDate);
-  const importFn = useServerFn(importBatch);
-  const listFn = useServerFn(listByDate);
+  // Reads reativos da engine global (persistem entre abas).
+  const dateMode = useStore(consultaStore, (s) => s.dateMode);
+  const selectedDate = useStore(consultaStore, (s) => s.selectedDate);
+  const filters = useStore(consultaStore, (s) => s.filters);
+  const quantidade = useStore(consultaStore, (s) => s.quantidade);
+  const autoCount = useStore(consultaStore, (s) => s.autoCount);
+  const autoIntervalSec = useStore(consultaStore, (s) => s.autoIntervalSec);
+  const autoImport = useStore(consultaStore, (s) => s.autoImport);
+  const autoImportDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
+  const autoStats = useStore(consultaStore, (s) => s.autoStats);
+  const autoImportRuns = useStore(consultaStore, (s) => s.autoImportRuns);
+  const autoImportTotal = useStore(consultaStore, (s) => s.autoImportTotal);
+  const foundList = useStore(consultaStore, (s) => s.foundList);
+  const importedRows = useStore(consultaStore, (s) => s.importedRows);
+  const failedRows = useStore(consultaStore, (s) => s.failedRows);
+  const importedSetArr = useStore(consultaStore, (s) => s.importedSet);
+  const countResult = useStore(consultaStore, (s) => s.countResult);
+  const saldo = useStore(consultaStore, (s) => s.saldo);
+  const isCounting = useStore(consultaStore, (s) => s.isCounting);
+  const isImporting = useStore(consultaStore, (s) => s.isImporting);
+  const flashes = useStore(consultaStore, (s) => s.flashes);
+  const listDialogOpen = useStore(consultaStore, (s) => s.listDialogOpen);
 
-  const [dateMode, setDateMode] = useState<'today' | 'specific'>('today');
-  const [selectedDate, setSelectedDate] = useState<string>(todayBR);
+  const importedSet = useMemo(() => new Set(importedSetArr), [importedSetArr]);
+
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [saldoLoading, setSaldoLoading] = useState(false);
 
-  const [filters, setFilters] = useState({
-    only_mei: true,
-    only_active: true,
-    only_matriz: true,
-    require_email: false,
-  });
-
-  const [quantidade, setQuantidade] = useState<number>(5);
-
-  const [saldo, setSaldo] = useState<string | null>(null);
-  const [countResult, setCountResult] = useState<null | {
-    date: string;
-    total: number | null;
-    ok: boolean;
-    status: number;
-  }>(null);
-
-  // Consulta automática (loop): fica chamando countByDate a cada X segundos.
-  const [autoCount, setAutoCount] = useState(false);
-  const [autoIntervalSec, setAutoIntervalSec] = useState(30);
-  const [autoStats, setAutoStats] = useState<{
-    checks: number;
-    lastTotal: number | null;
-    prevTotal: number | null;
-    delta: number;
-    peak: number | null;
-    lastCheckAt: string | null;
-    startedAt: string | null;
-  }>({
-    checks: 0,
-    lastTotal: null,
-    prevTotal: null,
-    delta: 0,
-    peak: null,
-    lastCheckAt: null,
-    startedAt: null,
-  });
-
-  const [importedRows, setImportedRows] = useState<ImportedRow[]>([]);
-  const [failedRows, setFailedRows] = useState<Array<{ cnpj: string; error: string }>>([]);
-
-  // Lista acumulada de CNPJs descobertos no Modo Automático.
-  type FoundRow = {
-    cnpj: string;
-    nome: string;
-    fantasia: string | null;
-    uf: string | null;
-    municipio: string | null;
-    firstSeenAt: string;
-  };
-  const [foundList, setFoundList] = useState<FoundRow[]>([]);
-  const [listDialogOpen, setListDialogOpen] = useState(false);
-  const [flashes, setFlashes] = useState<Array<{ id: number; count: number }>>([]);
-  const flashIdRef = useRef(0);
-  const pushFlash = (count: number) => {
-    const id = ++flashIdRef.current;
-    setFlashes((prev) => [...prev, { id, count }]);
-    window.setTimeout(() => {
-      setFlashes((prev) => prev.filter((f) => f.id !== id));
-    }, 3200);
-  };
-
-  // CNPJs já importados (persistidos globalmente no navegador).
-  // Marca visualmente no popup e evita reimportação junto com dedup do servidor.
-  const IMPORTED_KEY = 'casa:importedCnpjs';
-  const [importedSet, setImportedSet] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set();
-    try {
-      const raw = window.localStorage.getItem(IMPORTED_KEY);
-      const arr = raw ? JSON.parse(raw) : [];
-      return new Set(Array.isArray(arr) ? arr : []);
-    } catch {
-      return new Set();
-    }
-  });
-  const addImported = (cnpjs: string[]) => {
-    if (!cnpjs.length) return;
-    setImportedSet((prev) => {
-      const next = new Set(prev);
-      for (const c of cnpjs) next.add(c);
-      try {
-        window.localStorage.setItem(IMPORTED_KEY, JSON.stringify([...next]));
-      } catch { /* ignore quota */ }
-      return next;
-    });
-  };
-
-
-
-
-
-  const effectiveDate = useMemo(
-    () => (dateMode === 'today' ? todayBR : selectedDate || todayBR),
-    [dateMode, selectedDate, todayBR],
-  );
+  const effectiveDate = dateMode === 'today' ? todayBR : selectedDate || todayBR;
 
   const filtersSummary = useMemo(() => {
     const parts: string[] = [];
@@ -210,290 +129,19 @@ function ConsultaPage() {
 
   const disableFuture = (d: Date) => dateToISO(d) > todayBR;
 
-  const saldoMut = useMutation({
-    mutationFn: () => saldoFn(),
-    onSuccess: (r) => {
-      setSaldo(r.body ?? '(sem corpo)');
+  const onSaldo = async () => {
+    setSaldoLoading(true);
+    try {
+      const r: any = await getSaldo();
+      setSaldoAction(r.body ?? '(sem corpo)');
       if (!r.ok) toast.error(`API respondeu ${r.status}`);
       else toast.success('Saldo consultado.');
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Erro'),
-  });
-
-  const countMut = useMutation({
-    mutationFn: () => countFn({ data: { date: effectiveDate, filters } }),
-    onSuccess: (r) => {
-      setCountResult({ date: r.date, total: r.total, ok: r.ok, status: r.status });
-      setAutoStats((prev) => {
-        const now = new Date().toISOString();
-        const next = {
-          checks: prev.checks + 1,
-          prevTotal: prev.lastTotal,
-          lastTotal: r.total,
-          delta:
-            r.total != null && prev.lastTotal != null ? r.total - prev.lastTotal : 0,
-          peak:
-            r.total != null
-              ? prev.peak != null
-                ? Math.max(prev.peak, r.total)
-                : r.total
-              : prev.peak,
-          lastCheckAt: now,
-          startedAt: prev.startedAt ?? now,
-        };
-        if (
-          next.delta > 0 &&
-          prev.lastTotal != null &&
-          r.total != null
-        ) {
-          toast.success(`+${next.delta} nova(s) empresa(s) encontrada(s)!`);
-        }
-        return next;
-      });
-      if (!r.ok) toast.error(`API respondeu ${r.status}`);
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Erro'),
-  });
-
-  // Chave estável para persistir a lista descoberta por data+filtros.
-  const listStorageKey = useMemo(
-    () => `casa:autoList:${effectiveDate}:${JSON.stringify(filters)}`,
-    [effectiveDate, filters],
-  );
-
-  // Carrega lista salva quando muda a chave (data/filtros).
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(listStorageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as FoundRow[];
-        if (Array.isArray(parsed)) {
-          setFoundList(parsed);
-          return;
-        }
-      }
-    } catch { /* ignore */ }
-    setFoundList([]);
-  }, [listStorageKey]);
-
-  // Persiste sempre que a lista muda.
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(listStorageKey, JSON.stringify(foundList));
-    } catch { /* ignore quota */ }
-  }, [listStorageKey, foundList]);
-
-  // Sincroniza com o banco: consulta quais CNPJs da lista já existem em `companies`.
-  useEffect(() => {
-    if (foundList.length === 0) return;
-    const cnpjs = foundList.map((f) => f.cnpj).filter(Boolean);
-    let cancelled = false;
-    (async () => {
-      const CHUNK = 200;
-      const found: string[] = [];
-      for (let i = 0; i < cnpjs.length; i += CHUNK) {
-        const slice = cnpjs.slice(i, i + CHUNK);
-        const { data } = await supabase
-          .from('companies')
-          .select('cnpj')
-          .in('cnpj', slice);
-        if (cancelled) return;
-        for (const row of data ?? []) if (row?.cnpj) found.push(row.cnpj);
-      }
-      if (!cancelled && found.length) addImported(found);
-    })();
-    return () => { cancelled = true; };
-  }, [foundList]);
-
-
-  const listMut = useMutation({
-    mutationFn: async () => {
-      const pageSize = 20;
-      const maxPages = 500;
-      let page = 1;
-      let lastStatus = { date: effectiveDate, total: null as number | null, ok: true, status: 200 };
-      let totalAdded = 0;
-      const now = new Date().toISOString();
-      while (page <= maxPages) {
-        const r = await listFn({
-          data: { date: effectiveDate, filters, limit: pageSize, page },
-        });
-        lastStatus = { date: r.date, total: r.total, ok: r.ok, status: r.status };
-        const items = r.items ?? [];
-        if (items.length > 0) {
-          let addedThisPage = 0;
-          setFoundList((prev) => {
-            const seen = new Map(prev.map((it) => [it.cnpj, it]));
-            for (const it of items) {
-              if (!seen.has(it.cnpj)) {
-                seen.set(it.cnpj, { ...it, firstSeenAt: now });
-                addedThisPage += 1;
-              }
-            }
-            if (addedThisPage === 0) return prev;
-            return Array.from(seen.values()).sort((a, b) =>
-              b.firstSeenAt.localeCompare(a.firstSeenAt),
-            );
-          });
-          totalAdded += addedThisPage;
-        }
-        if (!r.ok) break;
-        if (items.length < pageSize) break;
-        if (r.total != null && page * pageSize >= r.total) break;
-        page += 1;
-      }
-      return { ...lastStatus, addedCount: totalAdded };
-    },
-    onSuccess: (r) => {
-      setCountResult({ date: r.date, total: r.total, ok: r.ok, status: r.status });
-      const now = new Date().toISOString();
-      setAutoStats((prev) => ({
-        checks: prev.checks + 1,
-        prevTotal: prev.lastTotal,
-        lastTotal: r.total,
-        delta:
-          r.total != null && prev.lastTotal != null ? r.total - prev.lastTotal : 0,
-        peak:
-          r.total != null
-            ? prev.peak != null
-              ? Math.max(prev.peak, r.total)
-              : r.total
-            : prev.peak,
-        lastCheckAt: now,
-        startedAt: prev.startedAt ?? now,
-      }));
-      if (r.addedCount > 0) {
-        pushFlash(r.addedCount);
-        toast.success(`+${r.addedCount} novo(s) CNPJ(s) na lista.`);
-
-      }
-      if (!r.ok) toast.error(`API respondeu ${r.status}`);
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Erro'),
-  });
-
-
-  // Loop de consulta automática. Enquanto autoCount=true, chama listMut a
-  // cada autoIntervalSec segundos, acumulando CNPJs. Não consome créditos.
-  const listMutRef = useRef(listMut);
-  listMutRef.current = listMut;
-  useEffect(() => {
-    if (!autoCount) return;
-    setListDialogOpen(true);
-    listMutRef.current.mutate();
-    const id = window.setInterval(() => {
-      if (!listMutRef.current.isPending) {
-        listMutRef.current.mutate();
-      }
-    }, Math.max(5, autoIntervalSec) * 1000);
-    return () => window.clearInterval(id);
-  }, [autoCount, autoIntervalSec, effectiveDate, filters]);
-
-  // Ao desligar, reseta apenas contadores de sessão (mantém lista salva).
-  const prevAutoRef = useRef(autoCount);
-  useEffect(() => {
-    if (prevAutoRef.current && !autoCount) {
-      setAutoStats((s) => ({ ...s, checks: 0, startedAt: null }));
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Erro');
+    } finally {
+      setSaldoLoading(false);
     }
-    prevAutoRef.current = autoCount;
-  }, [autoCount]);
-
-
-  const importMut = useMutation({
-    mutationFn: () =>
-      importFn({
-        data: { date: effectiveDate, filters, limit: quantidade, page: 1, skipExisting: true },
-      }),
-    onSuccess: (r: any) => {
-      if (!r.ok) {
-        toast.error(r.error ?? `API respondeu ${r.status}`);
-        return;
-      }
-      const newImported = r.imported ?? [];
-      const newFailed = r.failed ?? [];
-      // Se automático estiver ligado, acumula. Caso contrário, substitui.
-      if (autoImportRef.current) {
-        setImportedRows((prev) => [...newImported, ...prev].slice(0, 200));
-        setFailedRows((prev) => [...newFailed, ...prev].slice(0, 200));
-      } else {
-        setImportedRows(newImported);
-        setFailedRows(newFailed);
-      }
-      addImported(newImported.map((it: any) => it.cnpj).filter(Boolean));
-
-      const nImp = newImported.length;
-      const nFail = newFailed.length;
-      if (nImp > 0) {
-        toast.success(
-          `${nImp} empresa(s) importada(s) e link(s) gerado(s). ${nImp} créditos consumidos.`,
-        );
-      } else if (nFail > 0) {
-        toast.error(`Nenhuma importada. ${nFail} falha(s).`);
-      } else if ((r.skipped ?? 0) > 0) {
-        if (!autoImportRef.current) {
-          toast.info(
-            `Nenhum CNPJ novo — todos os ${r.skipped} encontrados já foram importados. Aumente a quantidade ou tente outra data.`,
-          );
-        }
-      } else if (!autoImportRef.current) {
-        toast.info('Nenhuma empresa retornada pela API para esta data/filtros.');
-      }
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Erro ao importar'),
-  });
-
-  // ============ IMPORTAÇÃO AUTOMÁTICA ============
-  // Loop no navegador que chama importMut a cada X segundos.
-  // Consome créditos! Deduplicação server-side garante que não repete CNPJ.
-  const [autoImport, setAutoImport] = useState(false);
-  const [autoImportDelaySec, setAutoImportDelaySec] = useState(60);
-  const [autoImportRuns, setAutoImportRuns] = useState(0);
-  const [autoImportTotal, setAutoImportTotal] = useState(0);
-  const autoImportRef = useRef(false);
-  const importMutRef = useRef(importMut);
-  useEffect(() => { importMutRef.current = importMut; }, [importMut]);
-  useEffect(() => { autoImportRef.current = autoImport; }, [autoImport]);
-
-  useEffect(() => {
-    if (!autoImport) return;
-    let cancelled = false;
-
-    const tick = async () => {
-      if (cancelled) return;
-      if (importMutRef.current.isPending) return;
-      try {
-        const r: any = await importMutRef.current.mutateAsync();
-        const n = r?.imported?.length ?? 0;
-        if (n > 0) {
-          setAutoImportTotal((t) => t + n);
-          pushFlash(n);
-        }
-      } catch {
-        /* onError já mostrou */
-      }
-      setAutoImportRuns((c) => c + 1);
-    };
-
-    // dispara já e depois periodicamente
-    void tick();
-    const id = window.setInterval(tick, Math.max(5, autoImportDelaySec) * 1000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoImport, autoImportDelaySec, effectiveDate, filters, quantidade]);
-
-  // Ao desligar, zera estatísticas da sessão.
-  const prevAutoImpRef = useRef(autoImport);
-  useEffect(() => {
-    if (prevAutoImpRef.current && !autoImport) {
-      setAutoImportRuns(0);
-      setAutoImportTotal(0);
-    }
-    prevAutoImpRef.current = autoImport;
-  }, [autoImport]);
-
+  };
 
   const copy = async (v: string) => {
     try {
@@ -513,6 +161,11 @@ function ConsultaPage() {
             Escolha a data, quantos CNPJs quer importar e clique em <strong>Importar agora</strong>.
             Cada CNPJ importado consome <strong>1 crédito</strong> da sua conta Casa dos Dados.
           </p>
+          {(autoCount || autoImport) && (
+            <p className="mt-1 text-xs font-semibold text-emerald-700">
+              ● Automação ativa — continua rodando mesmo se você trocar de aba.
+            </p>
+          )}
         </div>
         <WipeAllButton
           size="sm"
@@ -532,7 +185,6 @@ function ConsultaPage() {
         />
       </div>
 
-
       {/* 1. Data + filtros */}
       <Card>
         <CardHeader>
@@ -546,11 +198,7 @@ function ConsultaPage() {
             <Label className="mb-2 block">Data de abertura</Label>
             <RadioGroup
               value={dateMode}
-              onValueChange={(v) => {
-                const m = v as 'today' | 'specific';
-                setDateMode(m);
-                if (m === 'today') setSelectedDate(todayBR);
-              }}
+              onValueChange={(v) => setDateMode(v as 'today' | 'specific')}
               className="flex flex-col gap-2"
             >
               <div className="flex items-center gap-2">
@@ -615,9 +263,7 @@ function ConsultaPage() {
                   <span className="text-sm">{f.label}</span>
                   <Switch
                     checked={(filters as any)[f.key]}
-                    onCheckedChange={(v) =>
-                      setFilters((prev) => ({ ...prev, [f.key]: v }))
-                    }
+                    onCheckedChange={(v) => setFilters({ [f.key]: v } as any)}
                   />
                 </div>
               ))}
@@ -630,22 +276,18 @@ function ConsultaPage() {
           <div className="flex flex-wrap items-center gap-3">
             <Button
               variant="secondary"
-              onClick={() => countMut.mutate()}
-              disabled={countMut.isPending || autoCount}
+              onClick={() => runCountOnce()}
+              disabled={isCounting || autoCount}
             >
-              {countMut.isPending ? (
+              {isCounting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <CalendarIcon className="mr-2 h-4 w-4" />
               )}
               Consultar quantidade (grátis)
             </Button>
-            <Button
-              variant="ghost"
-              onClick={() => saldoMut.mutate()}
-              disabled={saldoMut.isPending}
-            >
-              {saldoMut.isPending ? (
+            <Button variant="ghost" onClick={onSaldo} disabled={saldoLoading}>
+              {saldoLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Wallet className="mr-2 h-4 w-4" />
@@ -668,7 +310,7 @@ function ConsultaPage() {
                   Modo automático (consulta sem parar)
                 </Label>
                 <p className="text-xs text-slate-600">
-                  Fica consultando a quantidade sozinho a cada X segundos. Não consome créditos.
+                  Fica consultando sozinho — continua rodando mesmo se você mudar de aba.
                 </p>
               </div>
               <Switch id="auto-count" checked={autoCount} onCheckedChange={setAutoCount} />
@@ -683,9 +325,7 @@ function ConsultaPage() {
                 min={5}
                 max={600}
                 value={autoIntervalSec}
-                onChange={(e) =>
-                  setAutoIntervalSec(Math.max(5, Math.min(600, Number(e.target.value) || 30)))
-                }
+                onChange={(e) => setAutoIntervalSec(Number(e.target.value))}
                 className="h-8 w-24 rounded border border-slate-300 px-2 text-sm"
               />
               <span className="text-xs text-slate-500">mín. 5 seg</span>
@@ -705,7 +345,7 @@ function ConsultaPage() {
                   variant="ghost"
                   onClick={() => {
                     if (confirm('Limpar a lista salva desta data + filtros?')) {
-                      setFoundList([]);
+                      clearFoundList();
                     }
                   }}
                 >
@@ -739,9 +379,7 @@ function ConsultaPage() {
               </div>
               {autoCount && (
                 <div className="grid gap-1 text-xs text-slate-600 sm:grid-cols-2">
-                  <div>
-                    Consultas feitas: <strong>{autoStats.checks}</strong>
-                  </div>
+                  <div>Consultas feitas: <strong>{autoStats.checks}</strong></div>
                   <div>
                     Pico da sessão:{' '}
                     <strong>
@@ -758,15 +396,12 @@ function ConsultaPage() {
                         : '—'}
                     </strong>
                   </div>
-                  <div>
-                    Próxima em: <strong>~{autoIntervalSec}s</strong>
-                  </div>
+                  <div>Próxima em: <strong>~{autoIntervalSec}s</strong></div>
                 </div>
               )}
               <p className="mt-1 text-xs text-slate-500">Nenhum crédito consumido.</p>
             </div>
           )}
-
 
           {saldo && (
             <div className="rounded border border-slate-200 bg-slate-50 p-3 text-xs">
@@ -798,7 +433,7 @@ function ConsultaPage() {
                   size="sm"
                   variant={quantidade === n ? 'default' : 'outline'}
                   onClick={() => setQuantidade(n)}
-                  disabled={importMut.isPending}
+                  disabled={isImporting}
                 >
                   {n}
                 </Button>
@@ -812,11 +447,11 @@ function ConsultaPage() {
 
           <div className="flex flex-wrap gap-3">
             <Button
-              onClick={() => importMut.mutate()}
-              disabled={importMut.isPending}
+              onClick={() => runImportOnce()}
+              disabled={isImporting}
               className="bg-brand-navy hover:bg-brand-navy/90"
             >
-              {importMut.isPending ? (
+              {isImporting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Play className="mr-2 h-4 w-4" />
@@ -825,7 +460,7 @@ function ConsultaPage() {
             </Button>
           </div>
 
-          {importMut.isPending && (
+          {isImporting && (
             <p className="text-sm text-slate-600">
               Aguarde… a chamada pode levar de 5 a 30 segundos.
             </p>
@@ -845,8 +480,8 @@ function ConsultaPage() {
                   )}
                 </div>
                 <p className="text-xs text-slate-600">
-                  Fica importando sozinho a cada X segundos, respeitando a quantidade
-                  escolhida acima. <strong>Consome créditos.</strong> CNPJs repetidos são ignorados.
+                  Fica importando sozinho — continua ativo mesmo em outras abas do painel.
+                  <strong> Consome créditos.</strong> CNPJs repetidos são ignorados.
                 </p>
               </div>
               <Switch
@@ -864,9 +499,7 @@ function ConsultaPage() {
                   min={5}
                   step={5}
                   value={autoImportDelaySec}
-                  onChange={(e) =>
-                    setAutoImportDelaySec(Math.max(5, Number(e.target.value) || 5))
-                  }
+                  onChange={(e) => setAutoImportDelaySec(Number(e.target.value))}
                   disabled={autoImport}
                   className="h-9 w-32 rounded-md border border-slate-300 bg-white px-3 text-sm disabled:bg-slate-100"
                 />
@@ -881,20 +514,16 @@ function ConsultaPage() {
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <Stat label="Ciclos" value={autoImportRuns.toString()} />
                 <Stat label="Importadas (sessão)" value={autoImportTotal.toString()} />
-                <Stat
-                  label="Créditos máx/ciclo"
-                  value={quantidade.toString()}
-                />
+                <Stat label="Créditos máx/ciclo" value={quantidade.toString()} />
                 <Stat
                   label="Próximo em"
-                  value={importMut.isPending ? 'rodando…' : `~${autoImportDelaySec}s`}
+                  value={isImporting ? 'rodando…' : `~${autoImportDelaySec}s`}
                 />
               </div>
             )}
           </div>
         </CardContent>
       </Card>
-
 
       {/* 3. Resultado do último lote */}
       {(importedRows.length > 0 || failedRows.length > 0) && (
@@ -927,18 +556,10 @@ function ConsultaPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copy(row.publicUrl)}
-                  >
+                  <Button size="sm" variant="outline" onClick={() => copy(row.publicUrl)}>
                     <Copy className="mr-1 h-3 w-3" /> Link público
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copy(row.checkoutUrl)}
-                  >
+                  <Button size="sm" variant="outline" onClick={() => copy(row.checkoutUrl)}>
                     <Copy className="mr-1 h-3 w-3" /> Checkout
                   </Button>
                   <a href={row.publicUrl} target="_blank" rel="noreferrer">
@@ -956,9 +577,7 @@ function ConsultaPage() {
               >
                 <XCircle className="h-4 w-4 shrink-0 text-red-600" />
                 <div className="min-w-0">
-                  <div>
-                    <strong>{formatCNPJ(row.cnpj)}</strong>
-                  </div>
+                  <div><strong>{formatCNPJ(row.cnpj)}</strong></div>
                   <div className="text-xs text-red-700">{row.error}</div>
                 </div>
               </div>
@@ -978,7 +597,6 @@ function ConsultaPage() {
           flashes={flashes}
           importedSet={importedSet}
           onCopy={copy}
-
         />
       )}
     </div>
@@ -1047,7 +665,6 @@ function DraggableCnpjPanel(props: {
       className="fixed z-50 flex flex-col rounded-lg border border-slate-300 bg-white shadow-2xl resize overflow-hidden"
       style={{ left: pos.x, top: pos.y, width: size.w, height: size.h, minWidth: 380, minHeight: 280 }}
     >
-      {/* Flashes empilhados acima do painel */}
       <div className="pointer-events-none absolute -top-2 left-1/2 z-10 flex -translate-x-1/2 -translate-y-full flex-col items-center gap-1">
         {flashes.map((f) => (
           <div
@@ -1059,7 +676,6 @@ function DraggableCnpjPanel(props: {
         ))}
       </div>
 
-      {/* Header arrastável */}
       <div
         onMouseDown={startDrag}
         className="flex cursor-move items-center justify-between gap-2 border-b bg-slate-50 px-4 py-2 select-none"
@@ -1082,17 +698,13 @@ function DraggableCnpjPanel(props: {
           )}
         </div>
         <div className="flex items-center gap-2">
-
           <span className="hidden text-xs text-slate-500 sm:inline">
             Total API: <strong>{apiTotal != null ? apiTotal.toLocaleString('pt-BR') : '—'}</strong>
           </span>
-          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onClose}>
-            ✕
-          </Button>
+          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onClose}>✕</Button>
         </div>
       </div>
 
-      {/* Lista com scrollbar nativa visível */}
       <div className="flex-1 overflow-y-scroll">
         {foundList.length === 0 ? (
           <div className="p-6 text-center text-sm text-slate-500">
@@ -1105,10 +717,7 @@ function DraggableCnpjPanel(props: {
               return (
               <li
                 key={it.cnpj}
-                className={cn(
-                  'flex items-start justify-between gap-3 p-3',
-                  isImported && 'bg-red-50',
-                )}
+                className={cn('flex items-start justify-between gap-3 p-3', isImported && 'bg-red-50')}
               >
                 <div className="min-w-0">
                   <div className={cn('font-mono text-sm', isImported && 'text-red-700 line-through decoration-red-400/60')}>
@@ -1133,19 +742,13 @@ function DraggableCnpjPanel(props: {
                   <span className="text-[10px] text-slate-400">
                     {new Date(it.firstSeenAt).toLocaleTimeString('pt-BR')}
                   </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 px-2"
-                    onClick={() => onCopy(it.cnpj)}
-                  >
+                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => onCopy(it.cnpj)}>
                     <Copy className="h-3 w-3" />
                   </Button>
                 </div>
               </li>
               );
             })}
-
           </ul>
         )}
       </div>
@@ -1156,7 +759,6 @@ function DraggableCnpjPanel(props: {
     </div>
   );
 }
-
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
