@@ -660,33 +660,8 @@ function CampanhasEmail() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Documentação da API GemMail</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div id="ts-visual-edit-probe-ac82e7b8026644e1" className="p-3 bg-blue-50 text-blue-800 rounded border border-blue-200 text-[11px] leading-relaxed">
-                Você tem razão. Vamos parar de adivinhar e pedir uma <strong>auditoria completa, somente leitura</strong>, para entender exatamente onde está cada parte do projeto.
-                <br /><br />
-                Cole isto na Lovable:
-                <div className="mt-2 p-2 bg-slate-900 text-slate-300 rounded font-mono text-[9px] overflow-x-auto select-all max-h-[150px]">
-                  Faça uma AUDITORIA TÉCNICA COMPLETA do projeto atual... [Conteúdo da auditoria]
-                </div>
-                <br />
-                Esse relatório vai nos mostrar onde o site está hospedado, onde o domínio está conectado, o que a Lovable realmente criou e o que ainda é só aparência.
-              </div>
-              <Field label="URL-base oficial">
-                <Input value="https://gerenciador.gemmail.com.br/api" disabled className="bg-slate-50 opacity-70" />
-              </Field>
-              <div className="space-y-2 pt-2 border-t">
-                <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_Lists:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
-                <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_ListSubscribers:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
-                <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_Campaigns:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
-                <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_Templates:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
-                <div className="flex justify-between text-[10px]"><span>GemMailApi_Endpoint_TransactionalEmails:</span> <span className="text-blue-500 font-bold uppercase">Confirmado</span></div>
-              </div>
-            </CardContent>
-          </Card>
+
+
 
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-base">Conteúdo</CardTitle></CardHeader>
