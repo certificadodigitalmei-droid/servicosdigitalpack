@@ -729,6 +729,42 @@ function ConsultaAutomaticaPage() {
         </Card>
       )}
 
+      {lastRunSummary && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Resultado da última execução manual</CardTitle>
+            <CardDescription>
+              Data consultada: <strong>{formatBR(lastRunSummary.queryDate)}</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 text-sm md:grid-cols-2">
+            <div>Status: <strong>{lastRunSummary.status}</strong></div>
+            <div>API total: <strong>{lastRunSummary.apiTotal ?? '—'}</strong></div>
+            <div>Registros recebidos / colocados na fila: <strong>{lastRunSummary.requested}</strong></div>
+            <div>Empresas importadas (novas): <strong>{lastRunSummary.imported - (lastRunSummary.updated ?? 0)}</strong></div>
+            <div>Empresas atualizadas: <strong>{lastRunSummary.updated ?? 0}</strong></div>
+            <div>Duplicadas: <strong>{lastRunSummary.duplicated}</strong></div>
+            <div>Links novos: <strong>{lastRunSummary.linksCreated}</strong></div>
+            <div>Links reutilizados: <strong>{lastRunSummary.linksReused}</strong></div>
+            <div>Ignorados: <strong>{lastRunSummary.skipped?.length ?? 0}</strong></div>
+            <div>Erros: <strong>{lastRunSummary.error ? '1' : '0'}</strong></div>
+            {(!lastRunSummary.autoImportEnabled || !lastRunSummary.autoGenerateLinksEnabled) && (
+              <div className="md:col-span-2 rounded bg-amber-50 p-2 text-amber-800">
+                {!lastRunSummary.autoImportEnabled && (
+                  <div>Importação desligada — nenhuma empresa foi importada, apenas CNPJs enfileirados.</div>
+                )}
+                {lastRunSummary.autoImportEnabled && !lastRunSummary.autoGenerateLinksEnabled && (
+                  <div>Geração de links desligada — nenhum link foi gerado nesta execução.</div>
+                )}
+              </div>
+            )}
+            {lastRunSummary.error && (
+              <div className="md:col-span-2 text-red-600"><strong>Erro:</strong> {lastRunSummary.error}</div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>
