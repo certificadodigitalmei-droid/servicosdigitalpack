@@ -160,12 +160,28 @@ function EmpresasImportadasPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Empresas Importadas</h1>
-        <p className="text-sm text-slate-600">
-          Registros importados via Consulta Automática ou importação manual.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Empresas Importadas</h1>
+          <p className="text-sm text-slate-600">
+            Registros importados via Consulta Automática ou importação manual.
+          </p>
+        </div>
+        <WipeAllButton
+          label="Apagar todas as empresas"
+          title="Apagar todas as empresas importadas?"
+          description="Remove permanentemente todas as empresas, junto com todos os links, gerações, eventos e itens da fila da Consulta Automática. Os links públicos deixarão de funcionar. Não pode ser desfeito."
+          steps={[
+            { label: 'link_events', run: () => supabase.from('link_events').delete().neq('id', EMPTY_UUID) },
+            { label: 'company_links', run: () => supabase.from('company_links').delete().neq('id', EMPTY_UUID) },
+            { label: 'link_generations', run: () => supabase.from('link_generations').delete().neq('id', EMPTY_UUID) },
+            { label: 'automatic_company_queue', run: () => supabase.from('automatic_company_queue').delete().neq('id', EMPTY_UUID) },
+            { label: 'companies', run: () => supabase.from('companies').delete().neq('id', EMPTY_UUID) },
+          ]}
+          onDone={() => { setPage(0); load(); }}
+        />
       </div>
+
 
       <Card>
         <CardHeader>
