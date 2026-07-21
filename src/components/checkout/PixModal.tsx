@@ -166,18 +166,23 @@ export function PixModal({ open, amount, orderId, pixData, onClose }: PixModalPr
               >
                 {pixData?.qr_code_base64 ? (
                   <img
-                    src={pixData.qr_code_base64}
+                    src={
+                      pixData.qr_code_base64.startsWith('data:')
+                        ? pixData.qr_code_base64
+                        : `data:image/png;base64,${pixData.qr_code_base64.replace(/^base64,/, '')}`
+                    }
                     alt="QR Code PIX"
-                    className="h-48 w-48 rounded bg-white p-2 shadow-inner ring-1 ring-border"
+                    className="h-48 w-48 rounded bg-white p-2 shadow-inner ring-1 ring-border object-contain"
+                  />
+                ) : pixData?.pix_code ? (
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixData.pix_code)}`}
+                    alt="QR Code PIX"
+                    className="h-48 w-48 rounded bg-white p-2 shadow-inner ring-1 ring-border object-contain"
                   />
                 ) : (
-                  <div className="grid h-48 w-48 grid-cols-8 grid-rows-8 gap-[2px] rounded bg-white p-2 shadow-inner overflow-hidden ring-1 ring-border">
-                    {Array.from({ length: 64 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={((i * 13 + 7) % 5 === 0 || i % 3 === 0) ? 'bg-black' : 'bg-white'}
-                      />
-                    ))}
+                  <div className="grid h-48 w-48 place-items-center rounded bg-white p-2 shadow-inner ring-1 ring-border text-[11px] text-muted-foreground">
+                    QR indisponível
                   </div>
                 )}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity rounded">
