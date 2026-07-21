@@ -176,7 +176,6 @@ function PanelLayout() {
         </main>
         <GlobalFloatingPanels />
       </div>
-      </div>
     </SidebarProvider>
   );
 }
