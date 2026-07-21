@@ -83,15 +83,16 @@ export async function countOpeningsToday(): Promise<{ status: number; body: unkn
  * documented schema (data_abertura.inicio/fim, situacao_cadastral[], matriz_filial,
  * mei.optante, mais_filtros.*, limite, pagina).
  */
-export function buildOpeningsTodayBody(opts: {
+export function buildSearchBody(opts: {
   filters: CasaFilters;
   limit: number;
   page?: number;
+  date?: string; // YYYY-MM-DD (America/Sao_Paulo). Defaults to today.
 }): Record<string, unknown> {
-  const today = todayBR();
+  const date = opts.date && isValidISODate(opts.date) ? opts.date : todayBR();
   const f = opts.filters ?? {};
   return {
-    data_abertura: { inicio: today, fim: today },
+    data_abertura: { inicio: date, fim: date },
     situacao_cadastral: f.only_active ? ['ATIVA'] : [],
     matriz_filial: f.only_matriz ? 'MATRIZ' : '',
     mei: {
@@ -108,12 +109,16 @@ export function buildOpeningsTodayBody(opts: {
   };
 }
 
-export async function searchOpeningsToday(opts: {
+// Back-compat alias.
+export const buildOpeningsTodayBody = buildSearchBody;
+
+export async function searchOpeningsByDate(opts: {
   filters: CasaFilters;
   limit: number;
   page?: number;
+  date?: string;
 }): Promise<CasaSearchResult> {
-  const body = buildOpeningsTodayBody(opts);
+  const body = buildSearchBody(opts);
   const url = `${baseUrl()}/v5/cnpj/pesquisa`;
   const request: SanitizedRequestLog = { url, method: 'POST', body };
 
@@ -131,10 +136,26 @@ export async function searchOpeningsToday(opts: {
   const total = typeof r.total === 'number' ? r.total : null;
   const items = Array.isArray(r.cnpjs) ? (r.cnpjs as Array<Record<string, unknown>>) : [];
 
-  // Preview only — never full raw payload in logs (keep small)
   const rawPreview = typeof raw === 'string'
     ? (raw as string).slice(0, 400)
     : { keys: responseKeys, total, cnpjs_length: items.length };
 
   return { status: res.status, ok: res.ok, total, items, responseKeys, rawPreview, request };
 }
+
+// Back-compat alias.
+export const searchOpeningsToday = searchOpeningsByDate;
+
+/**
+ * Consulta apenas o total (limite=1) para uma data específica.
+ * Não importa dados, não gera token, não gera link.
+ */
+export async function countOpeningsByDate(opts: {
+  filters: CasaFilters;
+  date?: string;
+}): Promise<{ status: number; ok: boolean; total: number | null; date: string; request: SanitizedRequestLog }> {
+  const date = opts.date && isValidISODate(opts.date) ? opts.date : todayBR();
+  const r = await searchOpeningsByDate({ filters: opts.filters, limit: 1, page: 1, date });
+  return { status: r.status, ok: r.ok, total: r.total, date, request: r.request };
+}
+
