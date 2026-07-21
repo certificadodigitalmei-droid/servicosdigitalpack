@@ -36,6 +36,7 @@ import {
   envioStore,
   loadRecipients,
   resetStatuses,
+  clearQueue,
   clearLogs,
   startSending,
   togglePause,
