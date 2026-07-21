@@ -183,6 +183,9 @@ export type Database = {
           last_error: string | null
           last_run_at: string | null
           lock_token: string | null
+          max_detail_queries_per_run: number
+          max_execution_time_ms: number
+          max_items_analyzed_per_run: number
           max_pages_per_run: number
           mode: string
           name: string
@@ -192,6 +195,8 @@ export type Database = {
           pagination_cursors: Json
           quantity_per_run: number
           query_date_mode: string
+          search_page_size: number
+          search_pages_per_run: number
           selected_query_date: string | null
           status: string
           updated_at: string
@@ -208,6 +213,9 @@ export type Database = {
           last_error?: string | null
           last_run_at?: string | null
           lock_token?: string | null
+          max_detail_queries_per_run?: number
+          max_execution_time_ms?: number
+          max_items_analyzed_per_run?: number
           max_pages_per_run?: number
           mode?: string
           name?: string
@@ -217,6 +225,8 @@ export type Database = {
           pagination_cursors?: Json
           quantity_per_run?: number
           query_date_mode?: string
+          search_page_size?: number
+          search_pages_per_run?: number
           selected_query_date?: string | null
           status?: string
           updated_at?: string
@@ -233,6 +243,9 @@ export type Database = {
           last_error?: string | null
           last_run_at?: string | null
           lock_token?: string | null
+          max_detail_queries_per_run?: number
+          max_execution_time_ms?: number
+          max_items_analyzed_per_run?: number
           max_pages_per_run?: number
           mode?: string
           name?: string
@@ -242,6 +255,8 @@ export type Database = {
           pagination_cursors?: Json
           quantity_per_run?: number
           query_date_mode?: string
+          search_page_size?: number
+          search_pages_per_run?: number
           selected_query_date?: string | null
           status?: string
           updated_at?: string
@@ -253,9 +268,12 @@ export type Database = {
           api_summary: Json | null
           api_total: number | null
           automation_id: string
+          complete_count: number
           created_at: string
+          current_stage: string | null
           cursor_end: Json | null
           cursor_start: Json | null
+          detail_queries: number
           duplicate_count: number
           error_message: string | null
           finished_at: string | null
@@ -265,10 +283,12 @@ export type Database = {
           incomplete_count: number
           items_analyzed: number
           items_received: number
+          limit_reason: string | null
           link_created_count: number
           link_reused_count: number
           missing_fields_summary: Json
           pages_fetched: number
+          partial_reason: string | null
           pending_enrichment_count: number
           query_date: string | null
           recovered_reason: string | null
@@ -282,9 +302,12 @@ export type Database = {
           api_summary?: Json | null
           api_total?: number | null
           automation_id: string
+          complete_count?: number
           created_at?: string
+          current_stage?: string | null
           cursor_end?: Json | null
           cursor_start?: Json | null
+          detail_queries?: number
           duplicate_count?: number
           error_message?: string | null
           finished_at?: string | null
@@ -294,10 +317,12 @@ export type Database = {
           incomplete_count?: number
           items_analyzed?: number
           items_received?: number
+          limit_reason?: string | null
           link_created_count?: number
           link_reused_count?: number
           missing_fields_summary?: Json
           pages_fetched?: number
+          partial_reason?: string | null
           pending_enrichment_count?: number
           query_date?: string | null
           recovered_reason?: string | null
@@ -311,9 +336,12 @@ export type Database = {
           api_summary?: Json | null
           api_total?: number | null
           automation_id?: string
+          complete_count?: number
           created_at?: string
+          current_stage?: string | null
           cursor_end?: Json | null
           cursor_start?: Json | null
+          detail_queries?: number
           duplicate_count?: number
           error_message?: string | null
           finished_at?: string | null
@@ -323,10 +351,12 @@ export type Database = {
           incomplete_count?: number
           items_analyzed?: number
           items_received?: number
+          limit_reason?: string | null
           link_created_count?: number
           link_reused_count?: number
           missing_fields_summary?: Json
           pages_fetched?: number
+          partial_reason?: string | null
           pending_enrichment_count?: number
           query_date?: string | null
           recovered_reason?: string | null
@@ -348,6 +378,7 @@ export type Database = {
       }
       automatic_company_queue: {
         Row: {
+          attempts: number
           automation_id: string
           cnpj: string
           company_id: string | null
@@ -356,13 +387,17 @@ export type Database = {
           data_quality_status: string
           id: string
           is_test_record: boolean
+          last_attempt_at: string | null
+          last_error: string | null
           missing_fields: Json
           query_date: string
           run_id: string | null
+          status: string
           was_new_company: boolean
           was_new_link: boolean
         }
         Insert: {
+          attempts?: number
           automation_id: string
           cnpj: string
           company_id?: string | null
@@ -371,13 +406,17 @@ export type Database = {
           data_quality_status?: string
           id?: string
           is_test_record?: boolean
+          last_attempt_at?: string | null
+          last_error?: string | null
           missing_fields?: Json
           query_date?: string
           run_id?: string | null
+          status?: string
           was_new_company?: boolean
           was_new_link?: boolean
         }
         Update: {
+          attempts?: number
           automation_id?: string
           cnpj?: string
           company_id?: string | null
@@ -386,9 +425,12 @@ export type Database = {
           data_quality_status?: string
           id?: string
           is_test_record?: boolean
+          last_attempt_at?: string | null
+          last_error?: string | null
           missing_fields?: Json
           query_date?: string
           run_id?: string | null
+          status?: string
           was_new_company?: boolean
           was_new_link?: boolean
         }
