@@ -31,6 +31,10 @@ type QueueItem = {
   email: string;
   cnpj: string;
   company_name: string;
+  data_abertura?: string;
+  situacao?: string;
+  uf?: string;
+  municipio?: string;
   status: 'pending' | 'sending' | 'sent' | 'suppressed' | 'error' | 'skipped';
   message?: string;
   publicToken?: string | null;
