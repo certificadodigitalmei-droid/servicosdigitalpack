@@ -563,9 +563,50 @@ function CampanhasEmail() {
           </p>
         </div>
 
+        <Card className="border-emerald-300 bg-emerald-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-emerald-900">
+              <Zap className="h-5 w-5" /> Montar automaticamente das Empresas Importadas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-emerald-900/80">
+              A campanha é construída direto do banco (empresas já importadas + seus links gerados).
+              Não precisa mais subir planilha — a cada nova importação, basta clicar em <strong>Recarregar</strong>.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                onClick={loadFromCompanies}
+                disabled={loadingCompanies}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {loadingCompanies ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                {companiesInfo ? 'Recarregar empresas importadas' : 'Carregar empresas importadas'}
+              </Button>
+              <label className="flex items-center gap-2 text-xs text-emerald-900">
+                <input
+                  type="checkbox"
+                  checked={companiesOnlyWithEmail}
+                  onChange={(e) => setCompaniesOnlyWithEmail(e.target.checked)}
+                />
+                Somente empresas com e-mail válido
+              </label>
+              {companiesInfo && (
+                <span className="text-xs text-emerald-900/80">
+                  {companiesInfo.total} empresas · {companiesInfo.withEmail} com e-mail · {companiesInfo.withLink} com link
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
-            <CardTitle>1. Upload da planilha</CardTitle>
+            <CardTitle>Ou 1. Upload da planilha</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3">
