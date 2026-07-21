@@ -301,18 +301,18 @@ function CheckoutTokenPage() {
 
 function Step({ n, label, done, active }: { n: number; label: string; done?: boolean; active?: boolean }) {
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
       <div
         className={
-          'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold ' +
+          'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold sm:h-7 sm:w-7 sm:text-[12px] ' +
           (done || active ? 'bg-brand-blue text-primary-foreground' : 'bg-muted text-muted-foreground')
         }
       >
-        {done ? <Check className="h-4 w-4" /> : n}
+        {done ? <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : n}
       </div>
       <span
         className={
-          'truncate ' +
+          'hidden truncate xs:inline sm:inline ' +
           (active ? 'font-semibold text-brand-blue' : done ? 'text-foreground' : 'text-muted-foreground')
         }
       >
