@@ -278,62 +278,104 @@ function ConsultaAutomaticaPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
-              {saveMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Salvar configurações
-            </Button>
-            {automation && (
-              <>
-                {automation.enabled ? (
+          {(() => {
+            const hasAutomation = !!automation?.id;
+            const isRunning = automation?.status === 'running';
+            const anyPending =
+              saveMut.isPending || enableMut.isPending || runMut.isPending;
+
+            const runDisabledReason = !hasAutomation
+              ? 'Salve a configuração para criar a automação.'
+              : isRunning
+                ? 'Já existe uma execução em andamento.'
+                : runMut.isPending
+                  ? 'Requisição em andamento…'
+                  : anyPending
+                    ? 'Aguarde a operação atual terminar.'
+                    : null;
+
+            return (
+              <div className="flex flex-wrap gap-4">
+                <div className="flex flex-col">
+                  <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+                    {saveMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    Salvar configurações
+                  </Button>
+                </div>
+
+                {hasAutomation && (
+                  <div className="flex flex-col">
+                    {automation!.enabled ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => enableMut.mutate(false)}
+                        disabled={enableMut.isPending}
+                      >
+                        <PowerOff className="mr-2 h-4 w-4" />
+                        Desativar automação
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => enableMut.mutate(true)}
+                        disabled={enableMut.isPending}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <Power className="mr-2 h-4 w-4" />
+                        Ativar automação
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-col">
                   <Button
                     variant="outline"
-                    onClick={() => enableMut.mutate(false)}
-                    disabled={enableMut.isPending}
+                    onClick={() => runMut.mutate(undefined)}
+                    disabled={!!runDisabledReason}
                   >
-                    <PowerOff className="mr-2 h-4 w-4" />
-                    Desativar automação
+                    {runMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                    Executar agora
                   </Button>
-                ) : (
+                  {runDisabledReason && (
+                    <span className="mt-1 max-w-[220px] text-xs text-slate-500">{runDisabledReason}</span>
+                  )}
+                </div>
+
+                <div className="flex flex-col">
                   <Button
-                    onClick={() => enableMut.mutate(true)}
-                    disabled={enableMut.isPending}
-                    className="bg-green-600 hover:bg-green-700"
+                    variant="outline"
+                    onClick={() => runMut.mutate(1)}
+                    disabled={!!runDisabledReason}
                   >
-                    <Power className="mr-2 h-4 w-4" />
-                    Ativar automação
+                    <Play className="mr-2 h-4 w-4" />
+                    Rodar teste com 1 empresa
                   </Button>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => runMut.mutate(undefined)}
-                  disabled={runMut.isPending || automation.status === 'running'}
-                >
-                  {runMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                  Executar agora
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => runMut.mutate(1)}
-                  disabled={runMut.isPending || automation.status === 'running'}
-                >
-                  <Play className="mr-2 h-4 w-4" />
-                  Rodar teste com 1 empresa
-                </Button>
-              </>
-            )}
-            <Button variant="secondary" onClick={() => testMut.mutate()} disabled={testMut.isPending}>
-              <TestTube2 className="mr-2 h-4 w-4" />
-              Testar API (/v5/saldo)
-            </Button>
-            <Button variant="secondary" onClick={() => countMut.mutate()} disabled={countMut.isPending}>
-              <Calendar className="mr-2 h-4 w-4" />
-              Quantidade de hoje
-            </Button>
-            <Button variant="ghost" onClick={() => stateQ.refetch()}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Atualizar
-            </Button>
-          </div>
+                  {runDisabledReason && (
+                    <span className="mt-1 max-w-[220px] text-xs text-slate-500">{runDisabledReason}</span>
+                  )}
+                </div>
+
+                <div className="flex flex-col">
+                  <Button variant="secondary" onClick={() => testMut.mutate()} disabled={testMut.isPending}>
+                    <TestTube2 className="mr-2 h-4 w-4" />
+                    Testar API (/v5/saldo)
+                  </Button>
+                </div>
+                <div className="flex flex-col">
+                  <Button variant="secondary" onClick={() => countMut.mutate()} disabled={countMut.isPending}>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Quantidade de hoje
+                  </Button>
+                </div>
+                <div className="flex flex-col">
+                  <Button variant="ghost" onClick={() => stateQ.refetch()}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Atualizar
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
