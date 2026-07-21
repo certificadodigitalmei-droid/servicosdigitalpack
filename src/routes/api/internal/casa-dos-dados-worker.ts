@@ -45,6 +45,12 @@ export const Route = createFileRoute('/api/internal/casa-dos-dados-worker')({
           });
         }
 
+        const { data: fullRow } = await supabaseAdmin
+          .from('automatic_company_queries')
+          .select('auto_import_enabled, auto_generate_links_enabled')
+          .eq('id', row.id)
+          .maybeSingle();
+
         const { runAutomationOnce } = await import('@/lib/casa-dos-dados/worker.server');
         const outcome = await runAutomationOnce(
           {
@@ -54,6 +60,8 @@ export const Route = createFileRoute('/api/internal/casa-dos-dados-worker')({
             quantity_per_run: row.quantity_per_run,
             interval_minutes: row.interval_minutes,
             filters: (row.filters ?? {}) as any,
+            auto_import_enabled: (fullRow as any)?.auto_import_enabled ?? true,
+            auto_generate_links_enabled: (fullRow as any)?.auto_generate_links_enabled ?? true,
           },
           { trigger: 'cron' },
         );
