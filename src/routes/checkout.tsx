@@ -9,9 +9,8 @@ import {
   maskPhone,
   isValidEmail,
 } from "@/lib/format";
-import { supabase } from "@/integrations/supabase/client";
 import { resolveCompanyLink } from "@/lib/company-links.functions";
-import { createPixCharge } from "@/lib/payments/uniaopay.functions";
+import { createOrderAndPixCharge } from "@/lib/payments/checkout.functions";
 import { PixModal } from "@/components/checkout/PixModal";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/errors";
