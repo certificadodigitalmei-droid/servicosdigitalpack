@@ -116,6 +116,11 @@ function ConsultaPage() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [saldoLoading, setSaldoLoading] = useState(false);
 
+  // Abre o painel flutuante automaticamente quando o modo automático liga.
+  useEffect(() => {
+    if (autoCount && !listDialogOpen) setListDialogOpen(true);
+  }, [autoCount]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const effectiveDate = dateMode === 'today' ? todayBR : selectedDate || todayBR;
 
   const filtersSummary = useMemo(() => {
