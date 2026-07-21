@@ -97,6 +97,7 @@ function ConsultaPage() {
   const saldoFn = useServerFn(getSaldo);
   const countFn = useServerFn(countByDate);
   const importFn = useServerFn(importBatch);
+  const listFn = useServerFn(listByDate);
 
   const [dateMode, setDateMode] = useState<'today' | 'specific'>('today');
   const [selectedDate, setSelectedDate] = useState<string>(todayBR);
