@@ -27,7 +27,7 @@ export function SiteHeader({ userName, userDoc }: HeaderProps) {
           </Link>
 
           <div className="flex min-w-0 items-center gap-2">
-            <div className="hidden text-right sm:block">
+            <div className="min-w-0 text-right">
               <div className="truncate text-[10.5px] font-bold text-foreground">
                 {displayName}
               </div>
