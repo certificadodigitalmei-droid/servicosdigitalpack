@@ -103,7 +103,19 @@ function CampanhasEmail() {
   const [fromName, setFromName] = useState('Central de Atendimento');
   const [fromEmail, setFromEmail] = useState('certificado.mei.estadual@seu-certificado-mei-digital.online');
   const [replyTo, setReplyTo] = useState('certificado.mei.estadual@seu-certificado-mei-digital.online');
-  const [design, setDesign] = useState<CampaignDesign>(DEFAULT_DESIGN);
+  const [design, setDesign] = useState<CampaignDesign>(() => {
+    if (typeof window === 'undefined') return DEFAULT_DESIGN;
+    try {
+      const saved = window.localStorage.getItem('campanha:design:v1');
+      if (saved) return { ...DEFAULT_DESIGN, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_DESIGN;
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('campanha:design:v1', JSON.stringify(design));
+    } catch {}
+  }, [design]);
 
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
