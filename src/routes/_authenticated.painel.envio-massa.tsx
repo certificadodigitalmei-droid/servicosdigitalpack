@@ -156,10 +156,10 @@ function EnvioMassa() {
       NOME_EMPRESARIAL: item.company_name,
       NOME_TITULAR: item.company_name,
       CNPJ: item.cnpj,
-      DATA_ABERTURA: extra?.data_abertura || '',
-      SITUACAO: extra?.situacao_cadastral || 'CNPJ sem certificado ativo',
-      MUNICIPIO: extra?.municipio || '',
-      UF: extra?.uf || '',
+      DATA_ABERTURA: extra?.data_abertura || item.data_abertura || '',
+      SITUACAO: extra?.situacao_cadastral || item.situacao || 'CNPJ sem certificado ativo',
+      MUNICIPIO: extra?.municipio || item.municipio || '',
+      UF: extra?.uf || item.uf || '',
       EMAIL: item.email,
       LINK_PUBLICO: item.publicToken
         ? `${window.location.origin}/c/${item.publicToken}`
