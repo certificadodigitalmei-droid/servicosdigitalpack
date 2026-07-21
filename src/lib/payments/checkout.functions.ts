@@ -119,26 +119,40 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
 
       if (response.ok) {
         try {
-          const pix = JSON.parse(text) as {
+          const parsed = JSON.parse(text) as {
+            success?: boolean;
+            transaction?: {
+              id?: string;
+              pix_code?: string;
+              qr_code_base64?: string;
+              expiration?: string;
+            };
+            id?: string;
+            pix_code?: string;
+            qr_code_base64?: string;
             qrcode?: string;
             transaction_id?: string;
-            pix_code?: string;
             expiration?: string;
           };
 
-          const pixQr = pix.qrcode || pix.pix_code || "";
-          const transactionId = pix.transaction_id || "";
-          const expiration = pix.expiration ? new Date(pix.expiration) : null;
+          const tx = parsed.transaction ?? parsed;
+          const pixCode = tx.pix_code || "";
+          const qrImage = tx.qr_code_base64 || parsed.qrcode || "";
+          const transactionId = tx.id || parsed.transaction_id || "";
+          const expiration = tx.expiration ? new Date(tx.expiration) : null;
 
-          // 5. Atualiza pedido com dados do PIX e status aguardando pagamento
+          if (!pixCode && !qrImage) {
+            throw new Error(`Resposta sem dados de PIX: ${text.slice(0, 300)}`);
+          }
+
           await supabaseAdmin
             .from("orders")
             .update({
               status: "awaiting_payment",
               payment_provider: "uniaopay",
               external_transaction_id: transactionId,
-              pix_code: pix.pix_code || null,
-              pix_qr_code: pixQr || null,
+              pix_code: pixCode || null,
+              pix_qr_code: qrImage || null,
               pix_expiration: expiration?.toISOString() || null,
               updated_at: new Date().toISOString(),
             })
@@ -146,11 +160,13 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
 
           return {
             orderId: order.id,
-            qrcode: pixQr,
+            pix_code: pixCode,
+            qr_code_base64: qrImage,
             transaction_id: transactionId,
           };
-        } catch {
-          throw new Error(`Resposta inválida do UniaoPay: ${text.slice(0, 200)}`);
+        } catch (e) {
+          if (e instanceof Error && e.message.startsWith("Resposta sem")) throw e;
+          throw new Error(`Resposta inválida do UniaoPay: ${text.slice(0, 300)}`);
         }
       }
 
