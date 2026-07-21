@@ -39,6 +39,7 @@ import {
   setAutoImport,
   setAutoIntervalSec,
   setAutoImportDelaySec,
+  setAutoImportTarget,
   setDateMode,
   setSelectedDate,
   setFilters,
