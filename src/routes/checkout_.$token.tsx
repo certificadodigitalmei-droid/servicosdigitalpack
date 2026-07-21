@@ -274,18 +274,18 @@ function CheckoutTokenPage() {
                   </button>
                 </div>
               </form>
-            ) : (
-              <PixDemo
-                orderId={orderId}
-                nome={form.nome}
-                doc={form.doc}
-                pixData={pixData}
-                onBack={() => navigate({ to: '/c/$token', params: { token } })}
-              />
-            )}
+            ) : null}
           </div>
         </div>
       </main>
+
+      <PixModal
+        open={pixOpen}
+        amount={AMOUNT}
+        orderId={orderId}
+        pixData={pixData}
+        onClose={() => setPixOpen(false)}
+      />
 
       <SiteFooter />
     </Page>
