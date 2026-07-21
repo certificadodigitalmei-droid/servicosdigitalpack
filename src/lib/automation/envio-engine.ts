@@ -370,8 +370,21 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
 
     if (res.sent) {
       ensureDailyWindow();
+      const nowIso = new Date().toISOString();
+      const entry: SentEmail = {
+        id: item.id + '-' + Date.now(),
+        email: res.recipient || item.email,
+        cnpj: item.cnpj,
+        company_name: item.company_name,
+        subject: subj,
+        sentAt: nowIso,
+        testMode: !!cfg.testMode,
+        publicUrl: item.publicUrl || null,
+      };
       envioStore.set((s) => ({
-        queue: s.queue.map((q) => (q.id === item.id ? { ...q, status: 'sent' } : q)),
+        // Remove imediatamente da fila e move para "Enviados"
+        queue: s.queue.filter((q) => q.id !== item.id),
+        sentEmails: [entry, ...s.sentEmails].slice(0, 5000),
         sentToday: s.sentToday + 1,
       }));
       pushLog(`✓ Enviado para ${res.recipient} (${envioStore.get().sentToday} hoje)`);
