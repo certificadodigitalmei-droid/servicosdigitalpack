@@ -1,15 +1,34 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
-import { Loader2, Play, Power, PowerOff, Save, TestTube2, Calendar, RefreshCw } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Loader2,
+  Play,
+  Power,
+  PowerOff,
+  Save,
+  TestTube2,
+  Calendar as CalendarIcon,
+  RefreshCw,
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 import { formatCNPJ } from '@/lib/format';
 import {
   getAutomationState,
@@ -17,7 +36,7 @@ import {
   setAutomationEnabled,
   runAutomationNow,
   testApi,
-  countOpeningsTodayFn,
+  countByDateFn,
 } from '@/lib/casa-dos-dados/automation.functions';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
@@ -27,6 +46,33 @@ export const Route = createFileRoute('/_authenticated/painel/consulta-automatica
 
 const QUICK_QUANTITIES = [1, 5, 10, 20, 50, 100, 500];
 
+function todayBRString(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+function formatBR(dateISO: string | null | undefined): string {
+  if (!dateISO || !/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) return '—';
+  const [y, m, d] = dateISO.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function dateToISO(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function isoToDate(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1);
+}
+
 function ConsultaAutomaticaPage() {
   const qc = useQueryClient();
   const getState = useServerFn(getAutomationState);
@@ -34,7 +80,7 @@ function ConsultaAutomaticaPage() {
   const enableFn = useServerFn(setAutomationEnabled);
   const runFn = useServerFn(runAutomationNow);
   const testFn = useServerFn(testApi);
-  const countFn = useServerFn(countOpeningsTodayFn);
+  const countFn = useServerFn(countByDateFn);
 
   const stateQ = useQuery({
     queryKey: ['casa-automation-state'],
@@ -42,8 +88,9 @@ function ConsultaAutomaticaPage() {
     refetchInterval: 5000,
   });
 
-  const automation = stateQ.data?.automation ?? null;
+  const automation = (stateQ.data?.automation ?? null) as any;
   const runs = stateQ.data?.runs ?? [];
+  const todayBR = stateQ.data?.todayBR ?? todayBRString();
 
   const filters = (automation?.filters as any) ?? {
     only_mei: true,
@@ -61,8 +108,11 @@ function ConsultaAutomaticaPage() {
     only_matriz: true,
     require_email: true,
   });
+  const [dateMode, setDateMode] = useState<'today' | 'specific'>('today');
+  const [selectedDate, setSelectedDate] = useState<string>(todayBR);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
-  useMemo(() => {
+  useEffect(() => {
     if (automation) {
       setQuantity(automation.quantity_per_run);
       setIntervalMinutes(automation.interval_minutes);
@@ -72,9 +122,26 @@ function ConsultaAutomaticaPage() {
         only_matriz: !!filters.only_matriz,
         require_email: !!filters.require_email,
       });
+      const mode = automation.query_date_mode === 'specific' ? 'specific' : 'today';
+      setDateMode(mode);
+      setSelectedDate(automation.selected_query_date ?? todayBR);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [automation?.id]);
+
+  const effectiveDate = useMemo(
+    () => (dateMode === 'today' ? todayBR : selectedDate || todayBR),
+    [dateMode, selectedDate, todayBR],
+  );
+
+  const filtersSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (localFilters.only_mei) parts.push('MEI');
+    if (localFilters.only_active) parts.push('ATIVA');
+    if (localFilters.only_matriz) parts.push('MATRIZ');
+    if (localFilters.require_email) parts.push('com e-mail');
+    return parts.length ? parts.join(', ') : 'nenhum';
+  }, [localFilters]);
 
   const saveMut = useMutation({
     mutationFn: () =>
@@ -83,6 +150,8 @@ function ConsultaAutomaticaPage() {
           quantity_per_run: quantity,
           interval_minutes: interval,
           filters: localFilters,
+          query_date_mode: dateMode,
+          selected_query_date: dateMode === 'specific' ? selectedDate : null,
         },
       }),
     onSuccess: async () => {
@@ -97,7 +166,11 @@ function ConsultaAutomaticaPage() {
     mutationFn: (enabled: boolean) =>
       enableFn({ data: { id: automation!.id, enabled } }),
     onSuccess: (_r, enabled) => {
-      toast.success(enabled ? 'Automação ativada' : 'Automação desativada');
+      toast.success(
+        enabled
+          ? 'Automação ativada — trabalhando sempre em "Hoje"'
+          : 'Automação desativada',
+      );
       qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
     },
     onError: (e: any) => toast.error(e?.message ?? 'Erro'),
@@ -105,7 +178,13 @@ function ConsultaAutomaticaPage() {
 
   const runMut = useMutation({
     mutationFn: (overrideQuantity?: number) =>
-      runFn({ data: { id: automation!.id, overrideQuantity } }),
+      runFn({
+        data: {
+          id: automation!.id,
+          overrideQuantity,
+          queryDate: effectiveDate,
+        },
+      }),
     onSuccess: (r: any) => {
       if (r?.ok === false && r?.reason === 'already_running') {
         toast.warning('Já existe uma execução em andamento');
@@ -113,7 +192,7 @@ function ConsultaAutomaticaPage() {
         toast.error(`Erro na execução: ${r.outcome.error}`);
       } else {
         toast.success(
-          `Execução concluída: ${r.outcome.imported} importada(s), ${r.outcome.duplicated} duplicada(s)`,
+          `Execução concluída (${formatBR(r.queryDate)}): ${r.outcome.imported} importada(s), ${r.outcome.duplicated} duplicada(s)`,
         );
       }
       qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
@@ -125,20 +204,51 @@ function ConsultaAutomaticaPage() {
     mutationFn: () => testFn({ data: undefined as any }),
     onSuccess: (r) => {
       toast.info(`API respondeu com status ${r.status}`);
-      // eslint-disable-next-line no-console
-      console.log('[Casa dos Dados] /v5/saldo →', r);
     },
     onError: (e: any) => toast.error(e?.message ?? 'Erro ao testar API'),
   });
 
+  const [countResult, setCountResult] = useState<null | {
+    date: string;
+    total: number | null;
+    status: number;
+    ok: boolean;
+    checkedAt: string;
+    filters: typeof localFilters;
+    error?: string;
+  }>(null);
+
   const countMut = useMutation({
-    mutationFn: () => countFn({ data: undefined as any }),
-    onSuccess: (r) => {
-      toast.info(`Quantidade de hoje — HTTP ${r.status}. Veja o console.`);
-      // eslint-disable-next-line no-console
-      console.log('[Casa dos Dados] /v4/dashboard/.../empresas-abertas/hoje →', r);
+    mutationFn: () =>
+      countFn({
+        data: {
+          queryDate: effectiveDate,
+          filters: localFilters,
+        },
+      }),
+    onSuccess: (r: any) => {
+      setCountResult({
+        date: r.date,
+        total: r.total,
+        status: r.status,
+        ok: r.ok,
+        checkedAt: r.checkedAt,
+        filters: r.filters,
+      });
+      if (!r.ok) toast.error(`API retornou status ${r.status}`);
     },
-    onError: (e: any) => toast.error(e?.message ?? 'Erro ao consultar'),
+    onError: (e: any) => {
+      setCountResult({
+        date: effectiveDate,
+        total: null,
+        status: 0,
+        ok: false,
+        checkedAt: new Date().toISOString(),
+        filters: localFilters,
+        error: e?.message ?? 'Erro',
+      });
+      toast.error(e?.message ?? 'Erro ao consultar');
+    },
   });
 
   const statusBadge = () => {
@@ -149,13 +259,18 @@ function ConsultaAutomaticaPage() {
     return <Badge variant="secondary">Inativa</Badge>;
   };
 
+  const disableFuture = (d: Date) => {
+    const iso = dateToISO(d);
+    return iso > todayBR;
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-brand-navy">Consulta Automática (Casa dos Dados)</h1>
         <p className="text-sm text-slate-600">
-          Fase 1 — MEI aberto hoje, situação ATIVA, matriz, com e-mail. O worker roda em background via
-          agendamento no banco de dados; a página não precisa ficar aberta.
+          Consulta empresas abertas em uma data (padrão: hoje, fuso America/Sao_Paulo). A
+          automação horária só trabalha no modo <strong>Hoje</strong>.
         </p>
       </div>
 
@@ -200,10 +315,69 @@ function ConsultaAutomaticaPage() {
         <CardHeader>
           <CardTitle>Configuração</CardTitle>
           <CardDescription>
-            Modo atual: <strong>Empresas abertas hoje (recomendado)</strong>. Filtros avançados na Fase 2.
+            Modo atual: <strong>Empresas abertas na data selecionada</strong>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Data da consulta */}
+          <div>
+            <Label className="mb-2 block">Data da consulta</Label>
+            <RadioGroup
+              value={dateMode}
+              onValueChange={(v) => {
+                const m = v as 'today' | 'specific';
+                setDateMode(m);
+                if (m === 'today') setSelectedDate(todayBR);
+              }}
+              className="flex flex-col gap-2"
+            >
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="today" id="mode-today" />
+                <Label htmlFor="mode-today" className="cursor-pointer font-normal">
+                  Hoje — recomendada ({formatBR(todayBR)})
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="specific" id="mode-specific" />
+                <Label htmlFor="mode-specific" className="cursor-pointer font-normal">
+                  Escolher outra data
+                </Label>
+              </div>
+            </RadioGroup>
+
+            {dateMode === 'specific' && (
+              <div className="mt-3">
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-[260px] justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? formatBR(selectedDate) : 'Selecione uma data'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate ? isoToDate(selectedDate) : undefined}
+                      onSelect={(d) => {
+                        if (d) {
+                          setSelectedDate(dateToISO(d));
+                          setCalendarOpen(false);
+                        }
+                      }}
+                      disabled={disableFuture}
+                      initialFocus
+                      className={cn('p-3 pointer-events-auto')}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="mt-1 text-xs text-amber-700">
+                  Consultar uma data histórica pode consumir uma chamada da API.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Quantidade */}
           <div>
             <Label className="mb-2 block">Quantidade por execução</Label>
             <div className="flex flex-wrap gap-2">
@@ -234,9 +408,7 @@ function ConsultaAutomaticaPage() {
                 />
               </div>
             </div>
-            <p className="mt-1 text-xs text-slate-500">
-              Limite máximo desta fase: 1000 por execução.
-            </p>
+            <p className="mt-1 text-xs text-slate-500">Limite máximo desta fase: 1000 por execução.</p>
           </div>
 
           <div>
@@ -249,7 +421,9 @@ function ConsultaAutomaticaPage() {
               value={interval}
               onChange={(e) => setIntervalMinutes(Number(e.target.value) || 60)}
             />
-            <p className="mt-1 text-xs text-slate-500">Padrão: 60 (execução horária).</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Padrão: 60 (execução horária). A automação horária só roda no modo <strong>Hoje</strong>.
+            </p>
           </div>
 
           <div>
@@ -277,11 +451,17 @@ function ConsultaAutomaticaPage() {
             </div>
           </div>
 
+          {/* Resumo antes de executar */}
+          <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+            <div><strong>Consulta:</strong> {formatBR(effectiveDate)}{dateMode === 'today' ? ' (hoje)' : ''}</div>
+            <div><strong>Quantidade por execução:</strong> {quantity}</div>
+            <div><strong>Filtros:</strong> {filtersSummary}</div>
+          </div>
+
           {(() => {
             const hasAutomation = !!automation?.id;
             const isRunning = automation?.status === 'running';
-            const anyPending =
-              saveMut.isPending || enableMut.isPending || runMut.isPending;
+            const anyPending = saveMut.isPending || enableMut.isPending || runMut.isPending;
 
             const runDisabledReason = !hasAutomation
               ? 'Salve a configuração para criar a automação.'
@@ -320,7 +500,7 @@ function ConsultaAutomaticaPage() {
                         className="bg-green-600 hover:bg-green-700"
                       >
                         <Power className="mr-2 h-4 w-4" />
-                        Ativar automação
+                        Ativar automação (Hoje)
                       </Button>
                     )}
                   </div>
@@ -333,10 +513,10 @@ function ConsultaAutomaticaPage() {
                     disabled={!!runDisabledReason}
                   >
                     {runMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                    Executar agora
+                    Executar agora ({formatBR(effectiveDate)})
                   </Button>
                   {runDisabledReason && (
-                    <span className="mt-1 max-w-[220px] text-xs text-slate-500">{runDisabledReason}</span>
+                    <span className="mt-1 max-w-[240px] text-xs text-slate-500">{runDisabledReason}</span>
                   )}
                 </div>
 
@@ -350,7 +530,7 @@ function ConsultaAutomaticaPage() {
                     Rodar teste com 1 empresa
                   </Button>
                   {runDisabledReason && (
-                    <span className="mt-1 max-w-[220px] text-xs text-slate-500">{runDisabledReason}</span>
+                    <span className="mt-1 max-w-[240px] text-xs text-slate-500">{runDisabledReason}</span>
                   )}
                 </div>
 
@@ -362,8 +542,8 @@ function ConsultaAutomaticaPage() {
                 </div>
                 <div className="flex flex-col">
                   <Button variant="secondary" onClick={() => countMut.mutate()} disabled={countMut.isPending}>
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Quantidade de hoje
+                    {countMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarIcon className="mr-2 h-4 w-4" />}
+                    Consultar quantidade da data
                   </Button>
                 </div>
                 <div className="flex flex-col">
@@ -377,6 +557,61 @@ function ConsultaAutomaticaPage() {
           })()}
         </CardContent>
       </Card>
+
+      {/* Card de resultado da contagem */}
+      {countResult && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Quantidade encontrada</CardTitle>
+            <CardDescription>
+              Consulta apenas de contagem — não importa empresa, não gera token, não gera link.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div><strong>Data:</strong> {formatBR(countResult.date)}</div>
+            <div>
+              <strong>Total com os filtros atuais:</strong>{' '}
+              {countResult.total !== null ? countResult.total.toLocaleString('pt-BR') : '—'}
+            </div>
+            <div>
+              <strong>Consultado às:</strong>{' '}
+              {new Date(countResult.checkedAt).toLocaleTimeString('pt-BR', {
+                timeZone: 'America/Sao_Paulo',
+              })}
+            </div>
+            <div>
+              <strong>Status:</strong>{' '}
+              {countResult.status ? `HTTP ${countResult.status}` : '—'}{' '}
+              {countResult.ok ? (
+                <Badge className="bg-green-600">OK</Badge>
+              ) : (
+                <Badge variant="destructive">Falha</Badge>
+              )}
+            </div>
+            <div>
+              <strong>Filtros aplicados:</strong>{' '}
+              {[
+                countResult.filters.only_mei && 'MEI',
+                countResult.filters.only_active && 'ATIVA',
+                countResult.filters.only_matriz && 'MATRIZ',
+                countResult.filters.require_email && 'com e-mail',
+              ]
+                .filter(Boolean)
+                .join(', ') || 'nenhum'}
+            </div>
+            {countResult.error && (
+              <div className="text-red-600">
+                <strong>Erro:</strong> {countResult.error}
+              </div>
+            )}
+            {countResult.ok && countResult.total === 0 && (
+              <div className="rounded bg-amber-50 p-2 text-amber-800">
+                Nenhuma empresa foi encontrada nessa data com os filtros selecionados.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -392,6 +627,7 @@ function ConsultaAutomaticaPage() {
                 <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
                   <tr>
                     <th className="p-2">Início</th>
+                    <th className="p-2">Data consultada</th>
                     <th className="p-2">Origem</th>
                     <th className="p-2">Status</th>
                     <th className="p-2">Pedido</th>
@@ -407,6 +643,7 @@ function ConsultaAutomaticaPage() {
                   {runs.map((r: any) => (
                     <tr key={r.id} className="border-t border-slate-100">
                       <td className="p-2">{new Date(r.started_at).toLocaleString('pt-BR')}</td>
+                      <td className="p-2">{formatBR(r.query_date)}</td>
                       <td className="p-2">{r.trigger}</td>
                       <td className="p-2">
                         {r.status === 'ok' && <Badge className="bg-green-600">OK</Badge>}

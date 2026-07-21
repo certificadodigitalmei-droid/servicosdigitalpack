@@ -16,6 +16,27 @@ async function assertAdmin(supabase: any, userId: string) {
   if (!data) throw new Error('forbidden: admin role required');
 }
 
+function todayBRDate(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+function resolveQueryDate(
+  mode: string | null | undefined,
+  selected: string | null | undefined,
+): string {
+  if (mode === 'specific' && selected && /^\d{4}-\d{2}-\d{2}$/.test(selected)) {
+    // Não permitir futuro
+    if (selected > todayBRDate()) return todayBRDate();
+    return selected;
+  }
+  return todayBRDate();
+}
+
 export const getAutomationState = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -40,8 +61,13 @@ export const getAutomationState = createServerFn({ method: 'GET' })
         .limit(20);
       runs = data ?? [];
     }
-    return { automation, runs };
+    return { automation, runs, todayBR: todayBRDate() };
   });
+
+const dateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'data inválida')
+  .refine((s) => s <= todayBRDate(), 'não é permitido escolher datas futuras');
 
 export const upsertAutomation = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
@@ -50,6 +76,8 @@ export const upsertAutomation = createServerFn({ method: 'POST' })
       .object({
         quantity_per_run: z.number().int().min(1).max(1000),
         interval_minutes: z.number().int().min(1).max(1440).default(60),
+        query_date_mode: z.enum(['today', 'specific']).default('today'),
+        selected_query_date: dateSchema.nullable().optional(),
         filters: z
           .object({
             only_mei: z.boolean().default(true),
@@ -65,6 +93,9 @@ export const upsertAutomation = createServerFn({ method: 'POST' })
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
 
+    const selected =
+      data.query_date_mode === 'specific' ? data.selected_query_date ?? null : null;
+
     const { data: existing } = await supabase
       .from('automatic_company_queries')
       .select('id')
@@ -78,6 +109,8 @@ export const upsertAutomation = createServerFn({ method: 'POST' })
           quantity_per_run: data.quantity_per_run,
           interval_minutes: data.interval_minutes,
           filters: data.filters,
+          query_date_mode: data.query_date_mode,
+          selected_query_date: selected,
         })
         .eq('id', existing.id);
       if (error) throw new Error(error.message);
@@ -92,6 +125,8 @@ export const upsertAutomation = createServerFn({ method: 'POST' })
         quantity_per_run: data.quantity_per_run,
         interval_minutes: data.interval_minutes,
         filters: data.filters,
+        query_date_mode: data.query_date_mode,
+        selected_query_date: selected,
       })
       .select('id')
       .single();
@@ -105,11 +140,16 @@ export const setAutomationEnabled = createServerFn({ method: 'POST' })
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
+    // Ao ativar automação horária: força modo "today" (nunca repetir consulta de data passada).
     const patch: Record<string, unknown> = {
       enabled: data.enabled,
       status: data.enabled ? 'active' : 'inactive',
     };
-    if (data.enabled) patch.next_run_at = new Date().toISOString();
+    if (data.enabled) {
+      patch.next_run_at = new Date().toISOString();
+      patch.query_date_mode = 'today';
+      patch.selected_query_date = null;
+    }
     const { error } = await (supabase as any)
       .from('automatic_company_queries')
       .update(patch)
@@ -122,7 +162,14 @@ export const setAutomationEnabled = createServerFn({ method: 'POST' })
 export const runAutomationNow = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ id: z.string().uuid(), overrideQuantity: z.number().int().min(1).max(1000).optional() }).parse(d),
+    z
+      .object({
+        id: z.string().uuid(),
+        overrideQuantity: z.number().int().min(1).max(1000).optional(),
+        // Data opcional para a execução manual; se omitida, usa o modo salvo.
+        queryDate: dateSchema.nullable().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
@@ -132,6 +179,11 @@ export const runAutomationNow = createServerFn({ method: 'POST' })
     if (error) throw new Error(error.message);
     const row = Array.isArray(claimed) ? claimed[0] : claimed;
     if (!row) return { ok: false, reason: 'already_running' as const };
+
+    const queryDate =
+      data.queryDate && /^\d{4}-\d{2}-\d{2}$/.test(data.queryDate)
+        ? data.queryDate
+        : resolveQueryDate((row as any).query_date_mode, (row as any).selected_query_date);
 
     const { runAutomationOnce } = await import('./worker.server');
     const outcome = await runAutomationOnce(
@@ -143,9 +195,9 @@ export const runAutomationNow = createServerFn({ method: 'POST' })
         interval_minutes: row.interval_minutes,
         filters: (row.filters ?? {}) as any,
       },
-      { trigger: 'manual', overrideQuantity: data.overrideQuantity },
+      { trigger: 'manual', overrideQuantity: data.overrideQuantity, queryDate },
     );
-    return { ok: true as const, outcome };
+    return { ok: true as const, outcome, queryDate };
   });
 
 export const testApi = createServerFn({ method: 'POST' })
@@ -158,12 +210,44 @@ export const testApi = createServerFn({ method: 'POST' })
     return { status: r.status, ok: r.ok, body: JSON.stringify(r.body ?? null) };
   });
 
-export const countOpeningsTodayFn = createServerFn({ method: 'POST' })
+/**
+ * Consulta apenas a QUANTIDADE (total) para uma data.
+ * Não importa empresa, não gera token, não gera link, não adiciona à fila.
+ */
+export const countByDateFn = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d) =>
+    z
+      .object({
+        queryDate: dateSchema.nullable().optional(),
+        filters: z
+          .object({
+            only_mei: z.boolean().default(true),
+            only_active: z.boolean().default(true),
+            only_matriz: z.boolean().default(true),
+            require_email: z.boolean().default(true),
+          })
+          .default({ only_mei: true, only_active: true, only_matriz: true, require_email: true }),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { countOpeningsToday } = await import('./client.server');
-    const r = await countOpeningsToday();
-    return { status: r.status, ok: r.ok, body: JSON.stringify(r.body ?? null) };
+    const { countOpeningsByDate } = await import('./client.server');
+    const date = data.queryDate && /^\d{4}-\d{2}-\d{2}$/.test(data.queryDate)
+      ? data.queryDate
+      : todayBRDate();
+    const r = await countOpeningsByDate({ filters: data.filters, date });
+    return {
+      status: r.status,
+      ok: r.ok,
+      total: r.total,
+      date: r.date,
+      filters: data.filters,
+      checkedAt: new Date().toISOString(),
+    };
   });
+
+// Back-compat: mantém o nome antigo, agora consulta o dia atual (BR).
+export const countOpeningsTodayFn = countByDateFn;

@@ -1,7 +1,7 @@
 // Worker that executes a single automation "run".
 // Called by the internal server route (via pg_cron) OR from the "run now" server fn.
 
-import { searchOpeningsToday, type CasaFilters } from './client.server';
+import { searchOpeningsByDate, todayBR, type CasaFilters } from './client.server';
 
 type Automation = {
   id: string;
@@ -78,13 +78,16 @@ function toDate(v: unknown): string | null {
 
 export async function runAutomationOnce(
   automation: Automation,
-  opts: { trigger: 'cron' | 'manual'; overrideQuantity?: number },
+  opts: { trigger: 'cron' | 'manual'; overrideQuantity?: number; queryDate?: string },
 ): Promise<RunOutcome> {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const publicBaseUrl = (process.env.PUBLIC_APP_URL ?? '').replace(/\/+$/, '');
   if (!publicBaseUrl) throw new Error('PUBLIC_APP_URL não configurado');
 
   const requested = Math.max(1, opts.overrideQuantity ?? automation.quantity_per_run ?? 1);
+  const queryDate = opts.queryDate && /^\d{4}-\d{2}-\d{2}$/.test(opts.queryDate)
+    ? opts.queryDate
+    : todayBR();
 
   const { data: runRow, error: runErr } = await supabaseAdmin
     .from('automatic_company_query_runs')
@@ -93,6 +96,7 @@ export async function runAutomationOnce(
       status: 'running',
       trigger: opts.trigger,
       requested_quantity: requested,
+      query_date: queryDate,
     })
     .select('id')
     .single();
@@ -117,9 +121,10 @@ export async function runAutomationOnce(
   let sampleSet = false;
 
   try {
-    const result = await searchOpeningsToday({
+    const result = await searchOpeningsByDate({
       filters: automation.filters ?? {},
       limit: requested,
+      date: queryDate,
     });
     apiStatus = result.status;
     apiTotal = result.total;
@@ -128,19 +133,19 @@ export async function runAutomationOnce(
     outcome.responseKeys = result.responseKeys;
 
     apiSummary = {
-      request: result.request, // sanitized: no api-key header
+      request: result.request,
       http_status: result.status,
       response_keys: result.responseKeys,
       response_total: result.total,
       cnpjs_length: result.items.length,
       raw_preview: result.rawPreview,
+      query_date: queryDate,
     };
 
     if (!result.ok) {
       throw new Error(`API status ${result.status}`);
     }
 
-    // Response shape guard: total > 0 but cnpjs vazio → falha de paginação/schema.
     if ((result.total ?? 0) > 0 && result.items.length === 0) {
       throw new Error(
         `Resposta inconsistente: total=${result.total} mas cnpjs=[]. Provável mudança de schema ou paginação inválida.`,
@@ -148,14 +153,10 @@ export async function runAutomationOnce(
     }
 
     if (result.items.length === 0) {
-      // Nada para importar hoje (total=0).
       apiSummary.note = 'no_items_returned';
     }
 
-    const todayBR = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/Sao_Paulo',
-      year: 'numeric', month: '2-digit', day: '2-digit',
-    }).format(new Date());
+
 
     for (let i = 0; i < result.items.length; i += 1) {
       const item = result.items[i];
@@ -174,7 +175,7 @@ export async function runAutomationOnce(
         .from('automatic_company_queue')
         .insert({
           automation_id: automation.id,
-          query_date: todayBR,
+          query_date: queryDate,
           cnpj,
           run_id: runId,
         })
