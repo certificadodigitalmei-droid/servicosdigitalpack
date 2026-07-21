@@ -68,7 +68,13 @@ export function GovConsultaLoader({
         <Loader2 className="h-[18px] w-[18px] shrink-0 animate-spin" />
         <span
           key={currentLabel}
-          className="animate-fade-in text-[15.5px] font-semibold tracking-tight"
+          className={`animate-fade-in whitespace-nowrap font-semibold tracking-tight ${
+            currentLabel.length > 30
+              ? 'text-[11px]'
+              : currentLabel.length > 22
+                ? 'text-[13px]'
+                : 'text-[15.5px]'
+          }`}
         >
           {currentLabel}
         </span>
