@@ -121,9 +121,8 @@ function CampanhasEmail() {
   const [companiesOnlyWithEmail, setCompaniesOnlyWithEmail] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const testConnectionFn = useServerFn(testGemMailConnection);
-  const syncCampaignFn = useServerFn(syncCampaignToGemMail);
-  const sendCampaignFn = useServerFn(sendGemMailCampaign);
+
+
 
   useEffect(() => {
     fetchSettings();
