@@ -108,15 +108,22 @@ export async function runAutomationOnce(
   if (runErr) throw new Error(`run insert: ${runErr.message}`);
   const runId = runRow.id as string;
 
+  const autoImportEnabled = automation.auto_import_enabled ?? true;
+  const autoGenerateLinksEnabled =
+    (automation.auto_generate_links_enabled ?? true) && autoImportEnabled;
+
   const outcome: RunOutcome = {
     runId,
     status: 'ok',
     requested,
     imported: 0,
+    updated: 0,
     duplicated: 0,
     linksCreated: 0,
     linksReused: 0,
     skipped: [],
+    autoImportEnabled,
+    autoGenerateLinksEnabled,
     sample: null,
   };
 
