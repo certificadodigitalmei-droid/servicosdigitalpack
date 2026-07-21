@@ -164,13 +164,19 @@ export async function searchOpeningsByDate(opts: {
   limit: number;
   page?: number;
   date?: string;
+  /**
+   * Quando true, adiciona `?tipo_resultado=completo` — devolve endereço,
+   * UF, município, matriz/filial, contato_email etc. **e CONSOME créditos**
+   * (1 por CNPJ retornado).
+   *
+   * Quando false/omitido, devolve apenas cnpj/razao_social/nome_fantasia/
+   * situacao — payload reduzido, NÃO consome créditos. Use no modo
+   * "descoberta" e no botão de teste para validar plumbing sem gastar saldo.
+   */
+  completo?: boolean;
 } & CasaRequestOptions): Promise<CasaSearchResult> {
   const body = buildSearchBody(opts);
-  // tipo_resultado=completo devolve endereco, uf, municipio, matriz_filial,
-  // data_abertura, mei, contato_email e contato_telefonico. Sem esse parâmetro
-  // a API devolve apenas cnpj/razao_social/nome_fantasia/situacao (payload
-  // reduzido que não consome crédito e faz tudo virar pending_enrichment).
-  const url = `${baseUrl()}/v5/cnpj/pesquisa?tipo_resultado=completo`;
+  const url = `${baseUrl()}/v5/cnpj/pesquisa${opts.completo ? '?tipo_resultado=completo' : ''}`;
   const request: SanitizedRequestLog = { url, method: 'POST', body };
 
   const res = await fetchWithTimeout(url, {
@@ -193,6 +199,7 @@ export async function searchOpeningsByDate(opts: {
 
   return { status: res.status, ok: res.ok, total, items, responseKeys, rawPreview, request };
 }
+
 
 // Back-compat alias.
 export const searchOpeningsToday = searchOpeningsByDate;
