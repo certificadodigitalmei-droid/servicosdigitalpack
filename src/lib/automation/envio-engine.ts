@@ -28,7 +28,9 @@ export type QueueItem = {
   status: 'pending' | 'sending' | 'sent' | 'suppressed' | 'error' | 'skipped';
   message?: string;
   publicToken?: string | null;
+  publicUrl?: string | null;
 };
+
 
 type State = {
   // Config persistida
