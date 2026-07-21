@@ -1,9 +1,7 @@
 // Casa dos Dados HTTP client — server-only.
-// Uses official API base URL and API key from environment.
-// Endpoints implemented (from official docs):
-//   POST /v5/cnpj/pesquisa               — advanced search
-//   GET  /v5/saldo                        — credit / status check
-//   GET  /v4/dashboard/cnpj/empresas-abertas/hoje — count of companies opened today
+// Official endpoint: POST https://api.casadosdados.com.br/v5/cnpj/pesquisa
+// Auth: header `api-key: <secret>`.
+// Response schema: { total: number, cnpjs: [...] }
 
 export type CasaFilters = {
   only_mei?: boolean;
@@ -12,12 +10,20 @@ export type CasaFilters = {
   require_email?: boolean;
 };
 
+export type SanitizedRequestLog = {
+  url: string;
+  method: 'POST' | 'GET';
+  body: unknown | null;
+};
+
 export type CasaSearchResult = {
   status: number;
   ok: boolean;
-  totalCount: number | null;
+  total: number | null;
   items: Array<Record<string, unknown>>;
-  raw: unknown;
+  responseKeys: string[];
+  rawPreview: unknown;
+  request: SanitizedRequestLog;
 };
 
 function baseUrl(): string {
@@ -40,16 +46,13 @@ function headers(): Record<string, string> {
   };
 }
 
-function todayBR(): { start: string; end: string } {
-  // Brazil day boundaries (America/Sao_Paulo). Casa dos Dados expects YYYY-MM-DD.
-  const now = new Date();
-  const brNowStr = new Intl.DateTimeFormat('en-CA', {
+function todayBR(): string {
+  return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).format(now);
-  return { start: brNowStr, end: brNowStr };
+  }).format(new Date());
 }
 
 export async function checkSaldo(): Promise<{ status: number; body: unknown; ok: boolean }> {
@@ -70,75 +73,63 @@ export async function countOpeningsToday(): Promise<{ status: number; body: unkn
   return { status: res.status, body, ok: res.ok };
 }
 
+/**
+ * Builds the official request body for /v5/cnpj/pesquisa according to the
+ * documented schema (data_abertura.inicio/fim, situacao_cadastral[], matriz_filial,
+ * mei.optante, mais_filtros.*, limite, pagina).
+ */
+export function buildOpeningsTodayBody(opts: {
+  filters: CasaFilters;
+  limit: number;
+  page?: number;
+}): Record<string, unknown> {
+  const today = todayBR();
+  const f = opts.filters ?? {};
+  return {
+    data_abertura: { inicio: today, fim: today },
+    situacao_cadastral: f.only_active ? ['ATIVA'] : [],
+    matriz_filial: f.only_matriz ? 'MATRIZ' : '',
+    mei: {
+      optante: !!f.only_mei,
+      excluir_optante: false,
+    },
+    mais_filtros: {
+      somente_matriz: !!f.only_matriz,
+      somente_filial: false,
+      com_email: !!f.require_email,
+    },
+    limite: opts.limit,
+    pagina: opts.page ?? 1,
+  };
+}
+
 export async function searchOpeningsToday(opts: {
   filters: CasaFilters;
   limit: number;
   page?: number;
 }): Promise<CasaSearchResult> {
-  const { start, end } = todayBR();
-  const filters = opts.filters ?? {};
-  const naturezaJuridica: string[] = [];
-  if (filters.only_mei) naturezaJuridica.push('213-5'); // Empresário Individual (MEI usa este código de natureza)
-
-  const query: Record<string, unknown> = {
-    query: {
-      termo: [],
-      atividade_principal: [],
-      natureza_juridica: naturezaJuridica,
-      uf: [],
-      municipio: [],
-      bairro: [],
-      situacao_cadastral: filters.only_active ? 'ATIVA' : '',
-      cep: [],
-      ddd: [],
-    },
-    range_query: {
-      data_abertura: { lte: end, gte: start },
-      capital_social: { lte: null, gte: null },
-    },
-    extras: {
-      somente_mei: !!filters.only_mei,
-      excluir_mei: false,
-      com_email: !!filters.require_email,
-      com_contato_telefonico: false,
-      somente_fixo: false,
-      somente_celular: false,
-      somente_matriz: !!filters.only_matriz,
-      somente_filial: false,
-    },
-    page: opts.page ?? 1,
-  };
-
+  const body = buildOpeningsTodayBody(opts);
   const url = `${baseUrl()}/v5/cnpj/pesquisa`;
+  const request: SanitizedRequestLog = { url, method: 'POST', body };
+
   const res = await fetch(url, {
     method: 'POST',
     headers: headers(),
-    body: JSON.stringify(query),
+    body: JSON.stringify(body),
   });
   const text = await res.text();
   let raw: unknown = text;
   try { raw = JSON.parse(text); } catch { /* keep text */ }
 
-  const items = extractItems(raw).slice(0, opts.limit);
-  const totalCount = extractTotal(raw);
+  const r = (raw && typeof raw === 'object') ? (raw as Record<string, unknown>) : {};
+  const responseKeys = Object.keys(r);
+  const total = typeof r.total === 'number' ? r.total : null;
+  const items = Array.isArray(r.cnpjs) ? (r.cnpjs as Array<Record<string, unknown>>) : [];
 
-  return { status: res.status, ok: res.ok, totalCount, items, raw };
-}
+  // Preview only — never full raw payload in logs (keep small)
+  const rawPreview = typeof raw === 'string'
+    ? (raw as string).slice(0, 400)
+    : { keys: responseKeys, total, cnpjs_length: items.length };
 
-function extractItems(raw: unknown): Array<Record<string, unknown>> {
-  if (!raw || typeof raw !== 'object') return [];
-  const r = raw as Record<string, unknown>;
-  const candidates = [r.data, r.results, r.items, r.hits, (r.data as any)?.items, (r.data as any)?.data];
-  for (const c of candidates) {
-    if (Array.isArray(c)) return c as Array<Record<string, unknown>>;
-  }
-  return [];
-}
-
-function extractTotal(raw: unknown): number | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const r = raw as Record<string, unknown>;
-  const c = [r.total, r.count, r.totalCount, (r.data as any)?.total, (r.data as any)?.count];
-  for (const v of c) if (typeof v === 'number') return v;
-  return null;
+  return { status: res.status, ok: res.ok, total, items, responseKeys, rawPreview, request };
 }
