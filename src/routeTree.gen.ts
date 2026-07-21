@@ -30,6 +30,7 @@ import { Route as AuthenticatedPainelConsultaAutomaticaRouteImport } from './rou
 import { Route as AuthenticatedPainelCampanhasEmailRouteImport } from './routes/_authenticated.painel.campanhas-email'
 import { Route as AuthenticatedPainelEmpresasImportadasIndexRouteImport } from './routes/_authenticated.painel.empresas-importadas.index'
 import { Route as AuthenticatedPainelGeradorLinksHistoricoRouteImport } from './routes/_authenticated.painel.gerador-links.historico'
+import { Route as AuthenticatedPainelEmpresasImportadasCompanyIdRouteImport } from './routes/_authenticated.painel.empresas-importadas.$companyId'
 
 const ModeloRoute = ModeloRouteImport.update({
   id: '/modelo',
@@ -146,6 +147,12 @@ const AuthenticatedPainelGeradorLinksHistoricoRoute =
     path: '/historico',
     getParentRoute: () => AuthenticatedPainelGeradorLinksRoute,
   } as any)
+const AuthenticatedPainelEmpresasImportadasCompanyIdRoute =
+  AuthenticatedPainelEmpresasImportadasCompanyIdRouteImport.update({
+    id: '/$companyId',
+    path: '/$companyId',
+    getParentRoute: () => AuthenticatedPainelEmpresasImportadasRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
+  '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
   '/painel/empresas-importadas/': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
@@ -186,6 +194,7 @@ export interface FileRoutesByTo {
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
+  '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
   '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
@@ -210,6 +219,7 @@ export interface FileRoutesById {
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
+  '/_authenticated/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/_authenticated/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
   '/_authenticated/painel/empresas-importadas/': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-uniaopay'
     | '/painel/'
+    | '/painel/empresas-importadas/$companyId'
     | '/painel/gerador-links/historico'
     | '/painel/empresas-importadas/'
   fileRoutesByTo: FileRoutesByTo
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-uniaopay'
     | '/painel'
+    | '/painel/empresas-importadas/$companyId'
     | '/painel/gerador-links/historico'
     | '/painel/empresas-importadas'
   id:
@@ -277,6 +289,7 @@ export interface FileRouteTypes {
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-uniaopay'
     | '/_authenticated/painel/'
+    | '/_authenticated/painel/empresas-importadas/$companyId'
     | '/_authenticated/painel/gerador-links/historico'
     | '/_authenticated/painel/empresas-importadas/'
   fileRoutesById: FileRoutesById
@@ -444,15 +457,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelGeradorLinksHistoricoRouteImport
       parentRoute: typeof AuthenticatedPainelGeradorLinksRoute
     }
+    '/_authenticated/painel/empresas-importadas/$companyId': {
+      id: '/_authenticated/painel/empresas-importadas/$companyId'
+      path: '/$companyId'
+      fullPath: '/painel/empresas-importadas/$companyId'
+      preLoaderRoute: typeof AuthenticatedPainelEmpresasImportadasCompanyIdRouteImport
+      parentRoute: typeof AuthenticatedPainelEmpresasImportadasRoute
+    }
   }
 }
 
 interface AuthenticatedPainelEmpresasImportadasRouteChildren {
+  AuthenticatedPainelEmpresasImportadasCompanyIdRoute: typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   AuthenticatedPainelEmpresasImportadasIndexRoute: typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
 
 const AuthenticatedPainelEmpresasImportadasRouteChildren: AuthenticatedPainelEmpresasImportadasRouteChildren =
   {
+    AuthenticatedPainelEmpresasImportadasCompanyIdRoute:
+      AuthenticatedPainelEmpresasImportadasCompanyIdRoute,
     AuthenticatedPainelEmpresasImportadasIndexRoute:
       AuthenticatedPainelEmpresasImportadasIndexRoute,
   }
