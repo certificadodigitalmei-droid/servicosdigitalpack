@@ -367,7 +367,7 @@ export async function runAutomationOnce(
       last_error: null,
     };
     if (!isTest) okPatch.next_run_at = next.toISOString();
-    await supabaseAdmin
+    await (supabaseAdmin as any)
       .from('automatic_company_queries')
       .update(okPatch)
       .eq('id', automation.id);
