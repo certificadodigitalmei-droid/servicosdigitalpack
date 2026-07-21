@@ -17,24 +17,50 @@ export const createPixCharge = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const apiKey = process.env.UNIAOPAY_API_KEY;
     if (!apiKey) {
-      throw new Error("UNIAOPAY_API_KEY is not configured");
+      throw new Error("UNIAOPAY_API_KEY não está configurada no servidor");
     }
 
-    const response = await fetch(`${UNIAOPAY_API_BASE}/pix/create`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-      },
-      body: JSON.stringify(data),
+    // Tenta múltiplos formatos de autenticação aceitos pelo gateway
+    const attempts = [
+      { "Content-Type": "application/json", "x-api-key": apiKey },
+      { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      { "Content-Type": "application/json", "api-key": apiKey },
+    ];
+
+    let lastStatus = 0;
+    let lastBody = "";
+
+    for (const headers of attempts) {
+      const response = await fetch(`${UNIAOPAY_API_BASE}/pix/create`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(data),
+      });
+
+      const text = await response.text();
+      lastStatus = response.status;
+      lastBody = text;
+
+      if (response.ok) {
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw new Error(`Resposta inválida do UniaoPay: ${text.slice(0, 200)}`);
+        }
+      }
+
+      if (response.status !== 401 && response.status !== 403) {
+        break;
+      }
+    }
+
+    console.error("[UniaoPay] Falha ao criar cobrança PIX", {
+      status: lastStatus,
+      body: lastBody.slice(0, 500),
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`UniaoPay API error: ${response.status} - ${errorText}`);
-    }
-
-    return await response.json();
+    throw new Error(
+      `UniaoPay ${lastStatus}: ${lastBody.slice(0, 200) || "sem resposta"}`
+    );
   });
 
 export const getPixStatus = createServerFn({ method: "GET" })
