@@ -1,6 +1,6 @@
 import { createFileRoute, notFound, redirect } from '@tanstack/react-router';
 import { resolveCompanyLink } from '@/lib/company-links.functions';
-import { createPixCharge } from '@/lib/payments/uniaopay.functions';
+import { createOrderAndPixCharge } from '@/lib/payments/checkout.functions';
 import { PixModal } from '@/components/checkout/PixModal';
 
 // Loads company data by token and forwards to the existing /checkout page.
