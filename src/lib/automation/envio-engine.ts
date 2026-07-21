@@ -53,6 +53,17 @@ export type QueueItem = {
   publicUrl?: string | null;
 };
 
+export type SentEmail = {
+  id: string;
+  email: string;
+  cnpj: string;
+  company_name: string;
+  subject: string;
+  sentAt: string; // ISO
+  testMode: boolean;
+  publicUrl?: string | null;
+};
+
 
 type State = {
   // Config persistida
@@ -72,6 +83,7 @@ type State = {
 
   // Estado
   queue: QueueItem[];
+  sentEmails: SentEmail[];
   running: boolean;
   paused: boolean;
   loading: boolean;
@@ -100,6 +112,7 @@ const initial: State = {
   showFloating: true,
   heroImageUrl: '',
   queue: [],
+  sentEmails: [],
   running: false,
   paused: false,
   loading: false,
@@ -124,6 +137,7 @@ export const envioStore = createStore<State>(initial, {
     'showFloating',
     'heroImageUrl',
     'queue',
+    'sentEmails',
     'logs',
   ],
 });
@@ -301,6 +315,15 @@ export function clearLogs() {
   envioStore.set({ logs: [] });
 }
 
+export function clearSentEmails() {
+  envioStore.set({ sentEmails: [] });
+  pushLog('🗑 Lista de enviados limpa.');
+}
+
+export function removeSentEmail(id: string) {
+  envioStore.set((s) => ({ sentEmails: s.sentEmails.filter((e) => e.id !== id) }));
+}
+
 /* --------------------------------- send ----------------------------------- */
 
 function buildVarsFor(item: QueueItem) {
@@ -356,8 +379,21 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
 
     if (res.sent) {
       ensureDailyWindow();
+      const nowIso = new Date().toISOString();
+      const entry: SentEmail = {
+        id: item.id + '-' + Date.now(),
+        email: res.recipient || item.email,
+        cnpj: item.cnpj,
+        company_name: item.company_name,
+        subject: subj,
+        sentAt: nowIso,
+        testMode: !!cfg.testMode,
+        publicUrl: item.publicUrl || null,
+      };
       envioStore.set((s) => ({
-        queue: s.queue.map((q) => (q.id === item.id ? { ...q, status: 'sent' } : q)),
+        // Remove imediatamente da fila e move para "Enviados"
+        queue: s.queue.filter((q) => q.id !== item.id),
+        sentEmails: [entry, ...s.sentEmails].slice(0, 5000),
         sentToday: s.sentToday + 1,
       }));
       pushLog(`✓ Enviado para ${res.recipient} (${envioStore.get().sentToday} hoje)`);
