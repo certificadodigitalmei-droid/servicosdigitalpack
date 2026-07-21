@@ -28,6 +28,7 @@ import { Route as AuthenticatedPainelFiltrarMeiRouteImport } from './routes/_aut
 import { Route as AuthenticatedPainelEmpresasImportadasRouteImport } from './routes/_authenticated.painel.empresas-importadas'
 import { Route as AuthenticatedPainelConsultaAutomaticaRouteImport } from './routes/_authenticated.painel.consulta-automatica'
 import { Route as AuthenticatedPainelCampanhasEmailRouteImport } from './routes/_authenticated.painel.campanhas-email'
+import { Route as AuthenticatedPainelEmpresasImportadasIndexRouteImport } from './routes/_authenticated.painel.empresas-importadas.index'
 import { Route as AuthenticatedPainelGeradorLinksHistoricoRouteImport } from './routes/_authenticated.painel.gerador-links.historico'
 
 const ModeloRoute = ModeloRouteImport.update({
@@ -133,6 +134,12 @@ const AuthenticatedPainelCampanhasEmailRoute =
     path: '/campanhas-email',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelEmpresasImportadasIndexRoute =
+  AuthenticatedPainelEmpresasImportadasIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPainelEmpresasImportadasRoute,
+  } as any)
 const AuthenticatedPainelGeradorLinksHistoricoRoute =
   AuthenticatedPainelGeradorLinksHistoricoRouteImport.update({
     id: '/historico',
@@ -152,7 +159,7 @@ export interface FileRoutesByFullPath {
   '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
   '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
-  '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRoute
+  '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -160,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
+  '/painel/empresas-importadas/': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -172,7 +180,6 @@ export interface FileRoutesByTo {
   '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
   '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
-  '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
+  '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -195,7 +203,7 @@ export interface FileRoutesById {
   '/checkout_/$token': typeof CheckoutTokenRoute
   '/_authenticated/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
   '/_authenticated/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
-  '/_authenticated/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRoute
+  '/_authenticated/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/_authenticated/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -203,6 +211,7 @@ export interface FileRoutesById {
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
   '/_authenticated/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
+  '/_authenticated/painel/empresas-importadas/': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -226,6 +235,7 @@ export interface FileRouteTypes {
     | '/api/public/webhook-uniaopay'
     | '/painel/'
     | '/painel/gerador-links/historico'
+    | '/painel/empresas-importadas/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -238,7 +248,6 @@ export interface FileRouteTypes {
     | '/checkout/$token'
     | '/painel/campanhas-email'
     | '/painel/consulta-automatica'
-    | '/painel/empresas-importadas'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel/importar-empresas'
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/api/public/webhook-uniaopay'
     | '/painel'
     | '/painel/gerador-links/historico'
+    | '/painel/empresas-importadas'
   id:
     | '__root__'
     | '/'
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/api/public/webhook-uniaopay'
     | '/_authenticated/painel/'
     | '/_authenticated/painel/gerador-links/historico'
+    | '/_authenticated/painel/empresas-importadas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -419,6 +430,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelCampanhasEmailRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/empresas-importadas/': {
+      id: '/_authenticated/painel/empresas-importadas/'
+      path: '/'
+      fullPath: '/painel/empresas-importadas/'
+      preLoaderRoute: typeof AuthenticatedPainelEmpresasImportadasIndexRouteImport
+      parentRoute: typeof AuthenticatedPainelEmpresasImportadasRoute
+    }
     '/_authenticated/painel/gerador-links/historico': {
       id: '/_authenticated/painel/gerador-links/historico'
       path: '/historico'
@@ -428,6 +446,21 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedPainelEmpresasImportadasRouteChildren {
+  AuthenticatedPainelEmpresasImportadasIndexRoute: typeof AuthenticatedPainelEmpresasImportadasIndexRoute
+}
+
+const AuthenticatedPainelEmpresasImportadasRouteChildren: AuthenticatedPainelEmpresasImportadasRouteChildren =
+  {
+    AuthenticatedPainelEmpresasImportadasIndexRoute:
+      AuthenticatedPainelEmpresasImportadasIndexRoute,
+  }
+
+const AuthenticatedPainelEmpresasImportadasRouteWithChildren =
+  AuthenticatedPainelEmpresasImportadasRoute._addFileChildren(
+    AuthenticatedPainelEmpresasImportadasRouteChildren,
+  )
 
 interface AuthenticatedPainelGeradorLinksRouteChildren {
   AuthenticatedPainelGeradorLinksHistoricoRoute: typeof AuthenticatedPainelGeradorLinksHistoricoRoute
@@ -447,7 +480,7 @@ const AuthenticatedPainelGeradorLinksRouteWithChildren =
 interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelCampanhasEmailRoute: typeof AuthenticatedPainelCampanhasEmailRoute
   AuthenticatedPainelConsultaAutomaticaRoute: typeof AuthenticatedPainelConsultaAutomaticaRoute
-  AuthenticatedPainelEmpresasImportadasRoute: typeof AuthenticatedPainelEmpresasImportadasRoute
+  AuthenticatedPainelEmpresasImportadasRoute: typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
   AuthenticatedPainelFiltrarMeiRoute: typeof AuthenticatedPainelFiltrarMeiRoute
   AuthenticatedPainelGeradorLinksRoute: typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   AuthenticatedPainelImportarEmpresasRoute: typeof AuthenticatedPainelImportarEmpresasRoute
@@ -460,7 +493,7 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelConsultaAutomaticaRoute:
     AuthenticatedPainelConsultaAutomaticaRoute,
   AuthenticatedPainelEmpresasImportadasRoute:
-    AuthenticatedPainelEmpresasImportadasRoute,
+    AuthenticatedPainelEmpresasImportadasRouteWithChildren,
   AuthenticatedPainelFiltrarMeiRoute: AuthenticatedPainelFiltrarMeiRoute,
   AuthenticatedPainelGeradorLinksRoute:
     AuthenticatedPainelGeradorLinksRouteWithChildren,
