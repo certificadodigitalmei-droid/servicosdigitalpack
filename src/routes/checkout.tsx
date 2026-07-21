@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { useState, useEffect } from "react";
-import { Check, QrCode, CreditCard, Barcode, Copy, ArrowLeft, Clock, Loader2 } from "lucide-react";
+import { Check, QrCode, CreditCard, Barcode, ArrowLeft, Clock } from "lucide-react";
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from "@/components/layout/SiteChrome";
 import {
   formatCPFOrCNPJ,
@@ -12,6 +12,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { resolveCompanyLink } from "@/lib/company-links.functions";
 import { createPixCharge } from "@/lib/payments/uniaopay.functions";
+import { PixModal } from "@/components/checkout/PixModal";
 import { toast } from "sonner";
 
 const searchSchema = z.object({
