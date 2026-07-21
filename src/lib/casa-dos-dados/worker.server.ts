@@ -393,16 +393,18 @@ export async function runAutomationOnce(
       })
       .eq('id', runId);
 
-    const now = new Date();
-    const next = new Date(now.getTime() + Math.max(1, automation.interval_minutes) * 60_000);
-    await supabaseAdmin
+    const isTestErr = opts.trigger === 'test_manual';
+    const nowE = new Date();
+    const nextE = new Date(nowE.getTime() + Math.max(1, automation.interval_minutes) * 60_000);
+    const errPatch: Record<string, unknown> = {
+      status: 'error',
+      last_error: msg,
+      last_run_at: nowE.toISOString(),
+    };
+    if (!isTestErr) errPatch.next_run_at = nextE.toISOString();
+    await (supabaseAdmin as any)
       .from('automatic_company_queries')
-      .update({
-        status: 'error',
-        last_error: msg,
-        last_run_at: now.toISOString(),
-        next_run_at: next.toISOString(),
-      })
+      .update(errPatch)
       .eq('id', automation.id);
 
     outcome.status = 'error';
