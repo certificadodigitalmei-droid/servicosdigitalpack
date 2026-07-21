@@ -484,12 +484,83 @@ function ConsultaAutomaticaPage() {
             </div>
           </div>
 
+          {/* Processamento — importação + geração de links */}
+          <div>
+            <Label className="mb-2 block">Processamento</Label>
+            <div className="grid gap-2 md:grid-cols-2">
+              <div className="flex items-center justify-between rounded border border-slate-200 p-3">
+                <div>
+                  <div className="text-sm font-medium">Importar empresas automaticamente</div>
+                  <div className="text-xs text-slate-500">Salva/atualiza a empresa a cada CNPJ retornado.</div>
+                </div>
+                <Switch checked={autoImport} onCheckedChange={setAutoImport} />
+              </div>
+              <div
+                className={cn(
+                  'flex items-center justify-between rounded border border-slate-200 p-3',
+                  !autoImport && 'opacity-60',
+                )}
+              >
+                <div>
+                  <div className="text-sm font-medium">Gerar links automaticamente</div>
+                  <div className="text-xs text-slate-500">
+                    {autoImport
+                      ? 'Cria token e link público quando ainda não existe link ativo.'
+                      : 'Ative a importação para gerar links.'}
+                  </div>
+                </div>
+                <Switch
+                  checked={autoLinks && autoImport}
+                  disabled={!autoImport}
+                  onCheckedChange={setAutoLinks}
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Resumo antes de executar */}
           <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
             <div><strong>Consulta:</strong> {formatBR(effectiveDate)}{dateMode === 'today' ? ' (hoje)' : ''}</div>
             <div><strong>Quantidade por execução:</strong> {quantity}</div>
             <div><strong>Filtros:</strong> {filtersSummary}</div>
+            <div>
+              <strong>Importar automaticamente:</strong> {autoImport ? 'Sim' : 'Não'}{' · '}
+              <strong>Gerar link automaticamente:</strong> {autoLinks && autoImport ? 'Sim' : 'Não'}
+            </div>
           </div>
+
+          {/* BANNER DE STATUS DA AUTOMAÇÃO */}
+          {automation?.id && (
+            <div
+              className={cn(
+                'rounded-lg border-2 p-4',
+                automation.enabled
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-slate-300 bg-slate-50',
+              )}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div
+                    className={cn(
+                      'text-lg font-bold',
+                      automation.enabled ? 'text-green-700' : 'text-slate-700',
+                    )}
+                  >
+                    {automation.enabled ? 'AUTOMAÇÃO ATIVA' : 'AUTOMAÇÃO DESATIVADA'}
+                  </div>
+                  <div className="mt-1 grid gap-x-6 gap-y-1 text-xs text-slate-600 sm:grid-cols-2">
+                    <div>Próxima execução: <strong>{automation.next_run_at ? new Date(automation.next_run_at).toLocaleString('pt-BR') : '—'}</strong></div>
+                    <div>Última execução: <strong>{automation.last_run_at ? new Date(automation.last_run_at).toLocaleString('pt-BR') : '—'}</strong></div>
+                    <div>Quantidade por execução: <strong>{automation.quantity_per_run}</strong></div>
+                    <div>Data usada: <strong>Hoje (America/Sao_Paulo)</strong></div>
+                    <div>Importação: <strong>{(automation.auto_import_enabled ?? true) ? 'Ligada' : 'Desligada'}</strong></div>
+                    <div>Geração de links: <strong>{(automation.auto_generate_links_enabled ?? true) ? 'Ligada' : 'Desligada'}</strong></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {(() => {
             const hasAutomation = !!automation?.id;
@@ -505,6 +576,18 @@ function ConsultaAutomaticaPage() {
                   : anyPending
                     ? 'Aguarde a operação atual terminar.'
                     : null;
+
+            const confirmTest = () => {
+              const ok = window.confirm(
+                `Este teste fará uma consulta real e poderá consumir saldo da Casa dos Dados.\n\n` +
+                  `Data do teste: ${formatBR(effectiveDate)}\n` +
+                  `Quantidade: 1\n` +
+                  `Importar automaticamente: ${autoImport ? 'Sim' : 'Não'}\n` +
+                  `Gerar link automaticamente: ${autoLinks && autoImport ? 'Sim' : 'Não'}\n\n` +
+                  `Deseja continuar?`,
+              );
+              if (ok) runMut.mutate({ overrideQuantity: 1, trigger: 'test_manual' });
+            };
 
             return (
               <div className="flex flex-wrap gap-4">
@@ -542,7 +625,7 @@ function ConsultaAutomaticaPage() {
                 <div className="flex flex-col">
                   <Button
                     variant="outline"
-                    onClick={() => runMut.mutate(undefined)}
+                    onClick={() => runMut.mutate({ trigger: 'manual' })}
                     disabled={!!runDisabledReason}
                   >
                     {runMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
@@ -556,7 +639,7 @@ function ConsultaAutomaticaPage() {
                 <div className="flex flex-col">
                   <Button
                     variant="outline"
-                    onClick={() => runMut.mutate(1)}
+                    onClick={confirmTest}
                     disabled={!!runDisabledReason}
                   >
                     <Play className="mr-2 h-4 w-4" />
