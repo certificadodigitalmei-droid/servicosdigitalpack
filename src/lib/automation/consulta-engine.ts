@@ -100,6 +100,7 @@ const initial: State = {
   autoIntervalSec: 30,
   autoImport: false,
   autoImportDelaySec: 60,
+  autoImportTarget: 0,
   dateMode: 'today',
   selectedDate: todayBRString(),
   filters: { only_mei: true, only_active: true, only_matriz: true, require_email: false },
