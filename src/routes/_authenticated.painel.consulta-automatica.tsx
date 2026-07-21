@@ -36,6 +36,7 @@ import {
   countByDate,
   importBatch,
 } from '@/lib/casa-dos-dados/simple-flow.functions';
+import { AutoImportCard } from '@/components/painel/AutoImportCard';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
   head: () => ({ meta: [{ title: 'Consulta Casa dos Dados | Painel' }] }),
@@ -210,6 +211,8 @@ function ConsultaPage() {
           }}
         />
       </div>
+
+      <AutoImportCard />
 
       {/* 1. Data + filtros */}
       <Card>

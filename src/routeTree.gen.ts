@@ -30,6 +30,7 @@ import { Route as AuthenticatedPainelEmpresasImportadasRouteImport } from './rou
 import { Route as AuthenticatedPainelConsultaAutomaticaRouteImport } from './routes/_authenticated.painel.consulta-automatica'
 import { Route as AuthenticatedPainelCampanhasEmailRouteImport } from './routes/_authenticated.painel.campanhas-email'
 import { Route as AuthenticatedPainelEmpresasImportadasIndexRouteImport } from './routes/_authenticated.painel.empresas-importadas.index'
+import { Route as ApiPublicHooksAutoImportMeiRouteImport } from './routes/api/public/hooks/auto-import-mei'
 import { Route as AuthenticatedPainelGeradorLinksHistoricoRouteImport } from './routes/_authenticated.painel.gerador-links.historico'
 import { Route as AuthenticatedPainelEmpresasImportadasCompanyIdRouteImport } from './routes/_authenticated.painel.empresas-importadas.$companyId'
 
@@ -148,6 +149,12 @@ const AuthenticatedPainelEmpresasImportadasIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPainelEmpresasImportadasRoute,
   } as any)
+const ApiPublicHooksAutoImportMeiRoute =
+  ApiPublicHooksAutoImportMeiRouteImport.update({
+    id: '/api/public/hooks/auto-import-mei',
+    path: '/api/public/hooks/auto-import-mei',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedPainelGeradorLinksHistoricoRoute =
   AuthenticatedPainelGeradorLinksHistoricoRouteImport.update({
     id: '/historico',
@@ -183,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/painel/': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
+  '/api/public/hooks/auto-import-mei': typeof ApiPublicHooksAutoImportMeiRoute
   '/painel/empresas-importadas/': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
 export interface FileRoutesByTo {
@@ -205,6 +213,7 @@ export interface FileRoutesByTo {
   '/painel': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
+  '/api/public/hooks/auto-import-mei': typeof ApiPublicHooksAutoImportMeiRoute
   '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
 export interface FileRoutesById {
@@ -231,6 +240,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
   '/_authenticated/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/_authenticated/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
+  '/api/public/hooks/auto-import-mei': typeof ApiPublicHooksAutoImportMeiRoute
   '/_authenticated/painel/empresas-importadas/': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
 export interface FileRouteTypes {
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/painel/'
     | '/painel/empresas-importadas/$companyId'
     | '/painel/gerador-links/historico'
+    | '/api/public/hooks/auto-import-mei'
     | '/painel/empresas-importadas/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/painel/empresas-importadas/$companyId'
     | '/painel/gerador-links/historico'
+    | '/api/public/hooks/auto-import-mei'
     | '/painel/empresas-importadas'
   id:
     | '__root__'
@@ -304,6 +316,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/'
     | '/_authenticated/painel/empresas-importadas/$companyId'
     | '/_authenticated/painel/gerador-links/historico'
+    | '/api/public/hooks/auto-import-mei'
     | '/_authenticated/painel/empresas-importadas/'
   fileRoutesById: FileRoutesById
 }
@@ -319,6 +332,7 @@ export interface RootRouteChildren {
   CheckoutTokenRoute: typeof CheckoutTokenRoute
   ApiInternalCasaDosDadosWorkerRoute: typeof ApiInternalCasaDosDadosWorkerRoute
   ApiPublicWebhookUniaopayRoute: typeof ApiPublicWebhookUniaopayRoute
+  ApiPublicHooksAutoImportMeiRoute: typeof ApiPublicHooksAutoImportMeiRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -470,6 +484,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelEmpresasImportadasIndexRouteImport
       parentRoute: typeof AuthenticatedPainelEmpresasImportadasRoute
     }
+    '/api/public/hooks/auto-import-mei': {
+      id: '/api/public/hooks/auto-import-mei'
+      path: '/api/public/hooks/auto-import-mei'
+      fullPath: '/api/public/hooks/auto-import-mei'
+      preLoaderRoute: typeof ApiPublicHooksAutoImportMeiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/painel/gerador-links/historico': {
       id: '/_authenticated/painel/gerador-links/historico'
       path: '/historico'
@@ -574,6 +595,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutTokenRoute: CheckoutTokenRoute,
   ApiInternalCasaDosDadosWorkerRoute: ApiInternalCasaDosDadosWorkerRoute,
   ApiPublicWebhookUniaopayRoute: ApiPublicWebhookUniaopayRoute,
+  ApiPublicHooksAutoImportMeiRoute: ApiPublicHooksAutoImportMeiRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
