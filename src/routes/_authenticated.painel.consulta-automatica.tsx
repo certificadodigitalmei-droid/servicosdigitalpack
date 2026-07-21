@@ -535,16 +535,47 @@ function ConsultaPage() {
                   className="h-9 w-32 rounded-md border border-slate-300 bg-white px-3 text-sm disabled:bg-slate-100"
                 />
               </div>
+              <div>
+                <Label className="mb-1 block text-xs">
+                  Meta total (0 = infinito)
+                </Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    step={10}
+                    value={autoImportTarget}
+                    onChange={(e) => setAutoImportTarget(Number(e.target.value))}
+                    className="h-9 w-32 rounded-md border border-slate-300 bg-white px-3 text-sm"
+                    placeholder="0"
+                  />
+                  <Button size="sm" variant="outline" onClick={() => setAutoImportTarget(0)}>
+                    ∞
+                  </Button>
+                </div>
+              </div>
               <div className="text-xs text-slate-600">
-                A cada ciclo: <strong>{quantidade}</strong> tentativa(s) · a cada{' '}
-                <strong>{autoImportDelaySec}s</strong>
+                A cada ciclo: até <strong>{quantidade}</strong> CNPJ(s) · a cada{' '}
+                <strong>{autoImportDelaySec}s</strong> ·{' '}
+                {autoImportTarget > 0 ? (
+                  <>meta <strong>{autoImportTarget}</strong></>
+                ) : (
+                  <>sem meta (infinito)</>
+                )}
               </div>
             </div>
 
             {autoImport && (
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <Stat label="Ciclos" value={autoImportRuns.toString()} />
-                <Stat label="Importadas (sessão)" value={autoImportTotal.toString()} />
+                <Stat
+                  label="Importadas (sessão)"
+                  value={
+                    autoImportTarget > 0
+                      ? `${autoImportTotal} / ${autoImportTarget}`
+                      : autoImportTotal.toString()
+                  }
+                />
                 <Stat label="Créditos máx/ciclo" value={quantidade.toString()} />
                 <Stat
                   label="Próximo em"
