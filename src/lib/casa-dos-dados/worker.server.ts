@@ -689,7 +689,7 @@ export async function runAutomationOnce(
       // fetchDetails intentionally omitted: response.cnpjs already carries
       // the seven required fields. GET /v5/cnpj/{cnpj} is no longer called
       // per-result to keep every run inside the timeout budget.
-      tryEnqueue: async ({ automationId, runId: rId, queryDate: qd, cnpj, isTestRecord, dataQualityStatus, missingFields }) => {
+      tryEnqueue: async ({ automationId, runId: rId, queryDate: qd, cnpj, isTestRecord, dataQualityStatus, missingFields, rawData }) => {
         const { data, error } = await supabaseAdmin
           .from('automatic_company_queue')
           .insert({
@@ -700,6 +700,8 @@ export async function runAutomationOnce(
             is_test_record: isTestRecord,
             data_quality_status: dataQualityStatus,
             missing_fields: missingFields as any,
+            raw_data: (rawData ?? null) as any,
+            last_normalized_at: new Date().toISOString(),
           })
           .select('id')
           .maybeSingle();
