@@ -6,7 +6,7 @@ const TARGET = "https://www.gov.br/pt-br";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "gov.br" },
+      { title: "Portal do Empreendedor — Certificado Digital MEI" },
       { name: "robots", content: "noindex" },
       { httpEquiv: "refresh", content: `0; url=${TARGET}` },
     ],
