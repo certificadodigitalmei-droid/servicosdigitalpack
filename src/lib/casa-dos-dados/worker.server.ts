@@ -205,6 +205,11 @@ export async function runAutomationOnce(
       }
       const queueId = queueRow!.id as string;
 
+      // If auto-import is off, only queue the CNPJ, skip company/link work.
+      if (!autoImportEnabled) {
+        continue;
+      }
+
       const companyPayload: Record<string, unknown> = {
         cnpj,
         razao_social_original: pickString(item, ['razao_social', 'nome_empresarial']) ?? null,
@@ -241,6 +246,7 @@ export async function runAutomationOnce(
             .update(companyPayload)
             .eq('id', companyId);
           if (upErr) throw new Error(upErr.message);
+          outcome.updated += 1;
         } else {
           const { data: ins, error: insErr } = await (supabaseAdmin as any)
             .from('companies')
@@ -256,58 +262,60 @@ export async function runAutomationOnce(
         continue;
       }
 
-      const { data: activeLink } = await supabaseAdmin
-        .from('company_links')
-        .select('id, public_token, public_url, checkout_url')
-        .eq('company_id', companyId)
-        .eq('active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      let linkId: string;
-      let publicToken: string;
-      let publicUrl: string;
-      let checkoutUrl: string;
+      let linkId: string | null = null;
+      let publicToken: string | null = null;
+      let publicUrl: string | null = null;
+      let checkoutUrl: string | null = null;
       let wasNewLink = false;
 
-      try {
-        if (activeLink) {
-          linkId = activeLink.id as string;
-          publicToken = (activeLink as any).public_token as string;
-          publicUrl = (activeLink as any).public_url ?? `${publicBaseUrl}/c/${publicToken}`;
-          checkoutUrl = (activeLink as any).checkout_url ?? `${publicBaseUrl}/checkout/${publicToken}`;
-          outcome.linksReused += 1;
-        } else {
-          publicToken = crypto.randomUUID().replace(/-/g, '');
-          publicUrl = `${publicBaseUrl}/c/${publicToken}`;
-          checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
-          const { data: newLink, error: lErr } = await supabaseAdmin
-            .from('company_links')
-            .insert({
-              company_id: companyId,
-              public_token: publicToken,
-              token: publicToken,
-              public_url: publicUrl,
-              checkout_url: checkoutUrl,
-              active: true,
-              status: 'active',
-              company_data: {
-                cnpj,
-                nome: String(companyPayload.nome_titular_exibicao ?? companyPayload.razao_social_original ?? ''),
-                origin: 'casa_dos_dados_automation',
-              } as any,
-            })
-            .select('id')
-            .single();
-          if (lErr) throw new Error(lErr.message);
-          linkId = newLink.id as string;
-          wasNewLink = true;
-          outcome.linksCreated += 1;
+      if (autoGenerateLinksEnabled) {
+        const { data: activeLink } = await supabaseAdmin
+          .from('company_links')
+          .select('id, public_token, public_url, checkout_url')
+          .eq('company_id', companyId)
+          .eq('active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        try {
+          if (activeLink) {
+            linkId = activeLink.id as string;
+            publicToken = (activeLink as any).public_token as string;
+            publicUrl = (activeLink as any).public_url ?? `${publicBaseUrl}/c/${publicToken}`;
+            checkoutUrl = (activeLink as any).checkout_url ?? `${publicBaseUrl}/checkout/${publicToken}`;
+            outcome.linksReused += 1;
+          } else {
+            publicToken = crypto.randomUUID().replace(/-/g, '');
+            publicUrl = `${publicBaseUrl}/c/${publicToken}`;
+            checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
+            const { data: newLink, error: lErr } = await supabaseAdmin
+              .from('company_links')
+              .insert({
+                company_id: companyId,
+                public_token: publicToken,
+                token: publicToken,
+                public_url: publicUrl,
+                checkout_url: checkoutUrl,
+                active: true,
+                status: 'active',
+                company_data: {
+                  cnpj,
+                  nome: String(companyPayload.nome_titular_exibicao ?? companyPayload.razao_social_original ?? ''),
+                  origin: 'casa_dos_dados_automation',
+                } as any,
+              })
+              .select('id')
+              .single();
+            if (lErr) throw new Error(lErr.message);
+            linkId = newLink.id as string;
+            wasNewLink = true;
+            outcome.linksCreated += 1;
+          }
+        } catch (e: any) {
+          outcome.skipped.push({ index: i, cnpj, reason: 'link_error', detail: e?.message ?? String(e) });
+          continue;
         }
-      } catch (e: any) {
-        outcome.skipped.push({ index: i, cnpj, reason: 'link_error', detail: e?.message ?? String(e) });
-        continue;
       }
 
       await supabaseAdmin
