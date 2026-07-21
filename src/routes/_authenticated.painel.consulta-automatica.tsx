@@ -1013,7 +1013,9 @@ function DraggableCnpjPanel(props: {
                   </Button>
                 </div>
               </li>
-            ))}
+              );
+            })}
+
           </ul>
         )}
       </div>
