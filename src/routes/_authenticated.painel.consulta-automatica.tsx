@@ -409,12 +409,20 @@ function ConsultaPage() {
         toast.error(r.error ?? `API respondeu ${r.status}`);
         return;
       }
-      setImportedRows(r.imported ?? []);
-      setFailedRows(r.failed ?? []);
-      addImported((r.imported ?? []).map((it: any) => it.cnpj).filter(Boolean));
+      const newImported = r.imported ?? [];
+      const newFailed = r.failed ?? [];
+      // Se automático estiver ligado, acumula. Caso contrário, substitui.
+      if (autoImportRef.current) {
+        setImportedRows((prev) => [...newImported, ...prev].slice(0, 200));
+        setFailedRows((prev) => [...newFailed, ...prev].slice(0, 200));
+      } else {
+        setImportedRows(newImported);
+        setFailedRows(newFailed);
+      }
+      addImported(newImported.map((it: any) => it.cnpj).filter(Boolean));
 
-      const nImp = r.imported?.length ?? 0;
-      const nFail = r.failed?.length ?? 0;
+      const nImp = newImported.length;
+      const nFail = newFailed.length;
       if (nImp > 0) {
         toast.success(
           `${nImp} empresa(s) importada(s) e link(s) gerado(s). ${nImp} créditos consumidos.`,
@@ -422,15 +430,70 @@ function ConsultaPage() {
       } else if (nFail > 0) {
         toast.error(`Nenhuma importada. ${nFail} falha(s).`);
       } else if ((r.skipped ?? 0) > 0) {
-        toast.info(
-          `Nenhum CNPJ novo — todos os ${r.skipped} encontrados já foram importados. Aumente a quantidade ou tente outra data.`,
-        );
-      } else {
+        if (!autoImportRef.current) {
+          toast.info(
+            `Nenhum CNPJ novo — todos os ${r.skipped} encontrados já foram importados. Aumente a quantidade ou tente outra data.`,
+          );
+        }
+      } else if (!autoImportRef.current) {
         toast.info('Nenhuma empresa retornada pela API para esta data/filtros.');
       }
     },
     onError: (e: any) => toast.error(e?.message ?? 'Erro ao importar'),
   });
+
+  // ============ IMPORTAÇÃO AUTOMÁTICA ============
+  // Loop no navegador que chama importMut a cada X segundos.
+  // Consome créditos! Deduplicação server-side garante que não repete CNPJ.
+  const [autoImport, setAutoImport] = useState(false);
+  const [autoImportDelaySec, setAutoImportDelaySec] = useState(60);
+  const [autoImportRuns, setAutoImportRuns] = useState(0);
+  const [autoImportTotal, setAutoImportTotal] = useState(0);
+  const autoImportRef = useRef(false);
+  const importMutRef = useRef(importMut);
+  useEffect(() => { importMutRef.current = importMut; }, [importMut]);
+  useEffect(() => { autoImportRef.current = autoImport; }, [autoImport]);
+
+  useEffect(() => {
+    if (!autoImport) return;
+    let cancelled = false;
+
+    const tick = async () => {
+      if (cancelled) return;
+      if (importMutRef.current.isPending) return;
+      try {
+        const r: any = await importMutRef.current.mutateAsync();
+        const n = r?.imported?.length ?? 0;
+        if (n > 0) {
+          setAutoImportTotal((t) => t + n);
+          pushFlash(n);
+        }
+      } catch {
+        /* onError já mostrou */
+      }
+      setAutoImportRuns((c) => c + 1);
+    };
+
+    // dispara já e depois periodicamente
+    void tick();
+    const id = window.setInterval(tick, Math.max(5, autoImportDelaySec) * 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoImport, autoImportDelaySec, effectiveDate, filters, quantidade]);
+
+  // Ao desligar, zera estatísticas da sessão.
+  const prevAutoImpRef = useRef(autoImport);
+  useEffect(() => {
+    if (prevAutoImpRef.current && !autoImport) {
+      setAutoImportRuns(0);
+      setAutoImportTotal(0);
+    }
+    prevAutoImpRef.current = autoImport;
+  }, [autoImport]);
+
 
   const copy = async (v: string) => {
     try {
