@@ -404,7 +404,7 @@ function ModeloMensagem() {
                   <TabsTrigger value="text">Texto</TabsTrigger>
                 </TabsList>
                 <TabsContent value="preview">
-                  <div className="bg-slate-100 p-4 rounded border flex justify-center overflow-hidden">
+                  <div className="bg-slate-100 p-4 rounded border flex justify-center overflow-auto">
                     {viewport === 'desktop' ? (
                       <div
                         className="relative bg-white shadow-sm"
