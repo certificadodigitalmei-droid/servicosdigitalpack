@@ -50,9 +50,6 @@ function PanelLayout() {
     { title: 'Consulta Automática', icon: Bot, to: '/painel/consulta-automatica' },
     { title: 'Empresas Importadas', icon: Database, to: '/painel/empresas-importadas' },
     { title: 'Links Gerados', icon: LinkIcon, to: '/painel/links-gerados' },
-    { title: 'Filtrar Empresas MEI', icon: Filter, to: '/painel/filtrar-mei' },
-    { title: 'Importar Empresas', icon: Upload, to: '/painel/importar-empresas' },
-    { title: 'Gerador de Links', icon: Link2, to: '/painel/gerador-links' },
     { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
   ];
 
