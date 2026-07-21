@@ -630,6 +630,72 @@ function ConsultaAutomaticaPage() {
       )}
 
       <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <div>
+            <CardTitle>Últimos registros importados</CardTitle>
+            <CardDescription>5 empresas mais recentes vindas da automação.</CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link to="/painel/empresas-importadas">Ver todas as empresas</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/painel/links-gerados">Ver todos os links</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {(recentImportsQ.data ?? []).length === 0 ? (
+            <p className="text-sm text-slate-500">Nenhum registro importado ainda.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="p-2">Empresa</th>
+                    <th className="p-2">CNPJ</th>
+                    <th className="p-2">Data consultada</th>
+                    <th className="p-2">Status</th>
+                    <th className="p-2">Link</th>
+                    <th className="p-2 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(recentImportsQ.data ?? []).map((q: any) => {
+                    const c = q.companies;
+                    const nome = c ? ((c.nome_titular_exibicao || c.razao_social_original || '').replace(/^\d+[.\-/\s]*/, '').trim() || '—') : '—';
+                    return (
+                      <tr key={q.id} className="border-t border-slate-100">
+                        <td className="p-2 font-medium">{nome}</td>
+                        <td className="p-2 font-mono text-xs">{formatCNPJ(q.cnpj)}</td>
+                        <td className="p-2">{formatBR(q.query_date)}</td>
+                        <td className="p-2">
+                          {q.company_link_id
+                            ? <Badge className="bg-green-600">Importada</Badge>
+                            : <Badge variant="secondary">Sem link</Badge>}
+                        </td>
+                        <td className="p-2">{q.was_new_link ? 'Novo' : 'Reutilizado'}</td>
+                        <td className="p-2 text-right">
+                          {q.company_id && (
+                            <Button asChild size="sm" variant="ghost">
+                              <Link to="/painel/empresas-importadas/$companyId" params={{ companyId: q.company_id }}>
+                                Ver
+                              </Link>
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+
+      <Card>
         <CardHeader>
           <CardTitle>Histórico de execuções</CardTitle>
           <CardDescription>Últimas 20 execuções da automação.</CardDescription>
