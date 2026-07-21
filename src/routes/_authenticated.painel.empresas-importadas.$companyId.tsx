@@ -48,10 +48,12 @@ function DetalhesEmpresa() {
   const { companyId } = Route.useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const [company, setCompany] = useState<any>(null);
   const [links, setLinks] = useState<any[]>([]);
   const [queue, setQueue] = useState<any[]>([]);
   const [runs, setRuns] = useState<Record<string, any>>({});
+
 
   useEffect(() => {
     (async () => {
