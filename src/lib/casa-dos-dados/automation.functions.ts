@@ -78,6 +78,8 @@ export const upsertAutomation = createServerFn({ method: 'POST' })
         interval_minutes: z.number().int().min(1).max(1440).default(60),
         query_date_mode: z.enum(['today', 'specific']).default('today'),
         selected_query_date: dateSchema.nullable().optional(),
+        auto_import_enabled: z.boolean().default(true),
+        auto_generate_links_enabled: z.boolean().default(true),
         filters: z
           .object({
             only_mei: z.boolean().default(true),
@@ -87,6 +89,10 @@ export const upsertAutomation = createServerFn({ method: 'POST' })
           })
           .default({ only_mei: true, only_active: true, only_matriz: true, require_email: true }),
       })
+      .refine(
+        (v) => !(v.auto_generate_links_enabled && !v.auto_import_enabled),
+        { message: 'Ative a importação para gerar links.', path: ['auto_generate_links_enabled'] },
+      )
       .parse(data),
   )
   .handler(async ({ context, data }) => {
@@ -102,31 +108,31 @@ export const upsertAutomation = createServerFn({ method: 'POST' })
       .eq('owner_user_id', userId)
       .maybeSingle();
 
+    const patch = {
+      quantity_per_run: data.quantity_per_run,
+      interval_minutes: data.interval_minutes,
+      filters: data.filters,
+      query_date_mode: data.query_date_mode,
+      selected_query_date: selected,
+      auto_import_enabled: data.auto_import_enabled,
+      auto_generate_links_enabled: data.auto_generate_links_enabled,
+    };
+
     if (existing?.id) {
       const { error } = await (supabase as any)
         .from('automatic_company_queries')
-        .update({
-          quantity_per_run: data.quantity_per_run,
-          interval_minutes: data.interval_minutes,
-          filters: data.filters,
-          query_date_mode: data.query_date_mode,
-          selected_query_date: selected,
-        })
+        .update(patch)
         .eq('id', existing.id);
       if (error) throw new Error(error.message);
       return { id: existing.id };
     }
-    const { data: created, error } = await supabase
+    const { data: created, error } = await (supabase as any)
       .from('automatic_company_queries')
       .insert({
         owner_user_id: userId,
         name: 'Consulta padrão',
         mode: 'openings_today',
-        quantity_per_run: data.quantity_per_run,
-        interval_minutes: data.interval_minutes,
-        filters: data.filters,
-        query_date_mode: data.query_date_mode,
-        selected_query_date: selected,
+        ...patch,
       })
       .select('id')
       .single();
