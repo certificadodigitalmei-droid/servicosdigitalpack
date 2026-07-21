@@ -667,99 +667,154 @@ function DraggableCnpjPanel(props: {
 
   return (
     <div
-      className="fixed z-50 flex flex-col rounded-lg border border-slate-300 bg-white shadow-2xl resize overflow-hidden"
-      style={{ left: pos.x, top: pos.y, width: size.w, height: size.h, minWidth: 380, minHeight: 280 }}
+      className="fixed z-50 flex flex-col rounded-2xl border border-slate-200/70 bg-white/95 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.35)] backdrop-blur-xl resize overflow-hidden ring-1 ring-black/5"
+      style={{ left: pos.x, top: pos.y, width: size.w, height: size.h, minWidth: 380, minHeight: 300 }}
     >
+      {/* Flashes de novos CNPJs */}
       <div className="pointer-events-none absolute -top-2 left-1/2 z-10 flex -translate-x-1/2 -translate-y-full flex-col items-center gap-1">
         {flashes.map((f) => (
           <div
             key={f.id}
-            className="rounded-full bg-emerald-600 px-3 py-1 text-sm font-bold text-white shadow-lg animate-in fade-in slide-in-from-bottom-2"
+            className="rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-1.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/40 animate-in fade-in slide-in-from-bottom-2"
           >
-            +{f.count} novo{f.count === 1 ? '' : 's'}
+            +{f.count} novo{f.count === 1 ? '' : 's'} CNPJ{f.count === 1 ? '' : 's'}
           </div>
         ))}
       </div>
 
+      {/* Cabeçalho gradiente arrastável */}
       <div
         onMouseDown={startDrag}
-        className="flex cursor-move items-center justify-between gap-2 border-b bg-slate-50 px-4 py-2 select-none"
+        className="cursor-move select-none bg-gradient-to-r from-brand-navy via-slate-800 to-brand-navy px-4 py-3 text-white"
       >
-        <div className="flex min-w-0 items-center gap-2">
-          {autoCount && (
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
-            </span>
-          )}
-          <span className="truncate text-sm font-semibold">
-            CNPJs encontrados — {dateLabel}
-          </span>
-          <span className="shrink-0 text-xs text-slate-500">({savedCount} salvos)</span>
-          {importedSet.size > 0 && (
-            <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
-              {foundList.filter((f) => importedSet.has(f.cnpj)).length} já importados
-            </span>
-          )}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/20">
+              {autoCount ? (
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+                </span>
+              ) : (
+                <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold tracking-tight">
+                CNPJs encontrados
+              </div>
+              <div className="text-[11px] text-white/70">
+                {dateLabel} · {autoCount ? 'monitorando ao vivo' : 'monitor pausado'}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-white/70 transition hover:bg-white/10 hover:text-white"
+            aria-label="Fechar"
+          >
+            ✕
+          </button>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="hidden text-xs text-slate-500 sm:inline">
-            Total API: <strong>{apiTotal != null ? apiTotal.toLocaleString('pt-BR') : '—'}</strong>
-          </span>
-          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onClose}>✕</Button>
+
+        {/* Mini estatísticas */}
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-lg bg-white/10 px-2 py-1.5 ring-1 ring-white/10">
+            <div className="text-[10px] uppercase tracking-wider text-white/60">Salvos</div>
+            <div className="text-base font-bold tabular-nums">{savedCount}</div>
+          </div>
+          <div className="rounded-lg bg-white/10 px-2 py-1.5 ring-1 ring-white/10">
+            <div className="text-[10px] uppercase tracking-wider text-white/60">Total API</div>
+            <div className="text-base font-bold tabular-nums">
+              {apiTotal != null ? apiTotal.toLocaleString('pt-BR') : '—'}
+            </div>
+          </div>
+          <div className="rounded-lg bg-white/10 px-2 py-1.5 ring-1 ring-white/10">
+            <div className="text-[10px] uppercase tracking-wider text-white/60">Importados</div>
+            <div className="text-base font-bold tabular-nums text-red-200">
+              {foundList.filter((f) => importedSet.has(f.cnpj)).length}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-scroll">
+      {/* Lista */}
+      <div className="flex-1 overflow-y-auto bg-slate-50/40">
         {foundList.length === 0 ? (
-          <div className="p-6 text-center text-sm text-slate-500">
-            Nenhum CNPJ ainda. Ligue o modo automático para começar.
+          <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-400">
+              <List className="h-5 w-5" />
+            </div>
+            <div className="text-sm font-medium text-slate-700">
+              Nenhum CNPJ ainda
+            </div>
+            <div className="text-xs text-slate-500">
+              Ligue o <strong>Modo automático</strong> — os CNPJs aparecem aqui em tempo real.
+            </div>
           </div>
         ) : (
           <ul className="divide-y divide-slate-100">
             {foundList.map((it) => {
               const isImported = importedSet.has(it.cnpj);
               return (
-              <li
-                key={it.cnpj}
-                className={cn('flex items-start justify-between gap-3 p-3', isImported && 'bg-red-50')}
-              >
-                <div className="min-w-0">
-                  <div className={cn('font-mono text-sm', isImported && 'text-red-700 line-through decoration-red-400/60')}>
-                    {formatCNPJ(it.cnpj)}
-                  </div>
-                  <div className={cn('truncate text-sm', isImported ? 'text-red-800' : 'text-slate-700')}>
-                    {it.nome}
-                  </div>
-                  {(it.municipio || it.uf) && (
-                    <div className={cn('text-xs', isImported ? 'text-red-600' : 'text-slate-500')}>
-                      {[it.municipio, it.uf].filter(Boolean).join(' / ')}
-                    </div>
+                <li
+                  key={it.cnpj}
+                  className={cn(
+                    'group flex items-start justify-between gap-3 px-4 py-3 transition',
+                    isImported ? 'bg-red-50/70' : 'hover:bg-white',
                   )}
-                  {isImported && (
-                    <div className="mt-1 inline-block rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
-                      Já importado
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          'font-mono text-sm font-semibold tabular-nums',
+                          isImported ? 'text-red-700 line-through decoration-red-400/60' : 'text-slate-900',
+                        )}
+                      >
+                        {formatCNPJ(it.cnpj)}
+                      </span>
+                      {isImported && (
+                        <span className="rounded-full bg-red-600 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+                          Importado
+                        </span>
+                      )}
                     </div>
-                  )}
-                </div>
+                    <div className={cn('mt-0.5 truncate text-sm', isImported ? 'text-red-800/80' : 'text-slate-700')}>
+                      {it.nome}
+                    </div>
+                    {(it.municipio || it.uf) && (
+                      <div className={cn('mt-0.5 text-xs', isImported ? 'text-red-600/80' : 'text-slate-500')}>
+                        📍 {[it.municipio, it.uf].filter(Boolean).join(' / ')}
+                      </div>
+                    )}
+                  </div>
 
-                <div className="flex shrink-0 flex-col items-end gap-1">
-                  <span className="text-[10px] text-slate-400">
-                    {new Date(it.firstSeenAt).toLocaleTimeString('pt-BR')}
-                  </span>
-                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => onCopy(it.cnpj)}>
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-              </li>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <span className="text-[10px] text-slate-400 tabular-nums">
+                      {new Date(it.firstSeenAt).toLocaleTimeString('pt-BR')}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 opacity-70 transition group-hover:opacity-100"
+                      onClick={() => onCopy(it.cnpj)}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </li>
               );
             })}
           </ul>
         )}
       </div>
 
-      <div className="border-t bg-slate-50 px-3 py-1.5 text-[11px] text-slate-500">
-        Arraste pelo topo · redimensione pelo canto inferior direito · fica salvo no navegador
+      {/* Rodapé */}
+      <div className="border-t border-slate-200 bg-white/80 px-3 py-2 text-[11px] text-slate-500">
+        <span className="inline-flex items-center gap-1">
+          ✋ Arraste o topo · ↘ redimensione pelo canto · 💾 salvo no navegador
+        </span>
       </div>
     </div>
   );
