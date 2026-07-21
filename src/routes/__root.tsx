@@ -78,12 +78,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { httpEquiv: "Content-Language", content: "pt-BR" },
+      { name: "language", content: "Portuguese" },
       { title: "Certificado Digital MEI — Emissão para o seu CNPJ" },
       {
         name: "description",
         content:
           "Certificado Digital para Microempreendedor Individual (MEI). Vinculado ao seu CNPJ, com validade jurídica, assinatura digital ICP-Brasil e acesso aos portais gov.br.",
       },
+      { property: "og:locale", content: "pt_BR" },
       { property: "og:title", content: "Certificado Digital MEI — Emissão para o seu CNPJ" },
       {
         property: "og:description",
@@ -114,7 +117,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>
