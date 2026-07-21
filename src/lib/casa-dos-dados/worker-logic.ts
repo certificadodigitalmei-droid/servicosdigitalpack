@@ -96,7 +96,7 @@ function descOf(v: unknown): string | null {
   if (typeof v === 'number') return String(v);
   if (typeof v === 'object') {
     const o = v as Record<string, unknown>;
-    const s = pickStr(o, ['descricao', 'description', 'nome', 'sigla', 'texto', 'valor', 'codigo']);
+    const s = pickStr(o, ['situacao_atual', 'descricao', 'description', 'nome', 'sigla', 'texto', 'valor', 'codigo']);
     if (s) return s;
   }
   return null;
@@ -230,7 +230,8 @@ export function normalizeCasaDosDadosCompany(item: Record<string, unknown>): Nor
       ?? (estab ? pickStr(estab, ['nome_fantasia']) : null),
     matriz_filial: matrizStr,
     situacao_cadastral: descOf(situacaoRaw),
-    data_abertura: toISODate(scope(['data_abertura', 'abertura', 'inicio_atividade'])),
+    data_abertura: toISODate(scope(['data_abertura', 'abertura', 'inicio_atividade']))
+      ?? toISODate((item as any)?.situacao_cadastral?.data),
     municipio: descOf(municipioRaw),
     uf: descOf(scope(['uf', 'sigla_uf'])),
     endereco,
