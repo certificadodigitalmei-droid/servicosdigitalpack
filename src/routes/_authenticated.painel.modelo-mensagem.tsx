@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { toast } from 'sonner';
-import { Copy, Download, RotateCcw, Save, Smartphone, Monitor } from 'lucide-react';
+import { Copy, Download, RotateCcw, Save, Smartphone, Monitor, Check, Sparkles } from 'lucide-react';
 import {
   DEFAULT_DESIGN,
   DEFAULT_SUBJECT,
@@ -21,6 +21,8 @@ import {
   substitute,
   type CampaignDesign,
 } from '@/lib/email-campaign/template';
+import { PRESETS } from '@/lib/email-campaign/presets';
+
 
 export const Route = createFileRoute('/_authenticated/painel/modelo-mensagem')({
   component: ModeloMensagem,
