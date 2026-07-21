@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 
 export type WipeStep = {
   label: string;
-  run: () => Promise<{ error: { message: string } | null }>;
+  run: () => PromiseLike<{ error: { message: string } | null }>;
 };
 
 type Props = {
