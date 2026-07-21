@@ -10,6 +10,8 @@ type Automation = {
   quantity_per_run: number;
   interval_minutes: number;
   filters: CasaFilters;
+  auto_import_enabled?: boolean;
+  auto_generate_links_enabled?: boolean;
 };
 
 type SkipReason =
