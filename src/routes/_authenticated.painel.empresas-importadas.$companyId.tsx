@@ -90,6 +90,15 @@ function DetalhesEmpresa() {
     : null;
   const origem = queue.length > 0 ? 'Consulta Automática' : 'Manual / Planilha';
 
+  const isTest = !!company.is_test_record;
+  const quality: string = company.data_quality_status ?? 'complete';
+  const missing: string[] = Array.isArray(company.missing_fields) ? company.missing_fields : [];
+  const qualityLabel =
+    quality === 'complete' ? 'Completa'
+    : quality === 'pending_enrichment' ? 'Pendente de complementação'
+    : quality === 'test_partial' ? 'Registro de teste (dados parciais)'
+    : quality;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -105,8 +114,41 @@ function DetalhesEmpresa() {
             </Button>
           </div>
         </div>
-        <Badge variant="secondary">{origem}</Badge>
+        <div className="flex flex-col items-end gap-1">
+          <Badge variant="secondary">{origem}</Badge>
+          {isTest
+            ? <Badge className="bg-amber-500 text-white">REGISTRO DE TESTE — DADOS INCOMPLETOS</Badge>
+            : quality === 'pending_enrichment'
+              ? <Badge className="bg-orange-500 text-white">Pendente de complementação</Badge>
+              : <Badge className="bg-emerald-600 text-white">Completa</Badge>}
+        </div>
       </div>
+
+      {(isTest || quality === 'pending_enrichment' || missing.length > 0) && (
+        <Card className={isTest ? 'border-amber-300 bg-amber-50' : 'border-orange-300 bg-orange-50'}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Qualidade dos dados: {qualityLabel}</CardTitle>
+            <CardDescription>
+              {isTest
+                ? 'Este registro foi criado em modo TESTE e pode estar incompleto. Não deve ser usado em campanhas, envios automáticos, exportações ou automações comerciais.'
+                : 'Alguns campos obrigatórios não vieram da API. Enquanto o registro não for complementado, nenhum link normal será gerado.'}
+            </CardDescription>
+          </CardHeader>
+          {missing.length > 0 && (
+            <CardContent>
+              <div className="text-xs font-semibold uppercase text-slate-600">Campos ausentes</div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {missing.map((f) => <Badge key={f} variant="outline" className="border-orange-400 text-orange-700">{f}</Badge>)}
+              </div>
+              {!isTest && (
+                <p className="mt-3 text-xs text-slate-600">
+                  Motivo pelo qual o link normal não foi gerado: dados obrigatórios ausentes acima.
+                </p>
+              )}
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Identificação">
@@ -191,8 +233,16 @@ function DetalhesEmpresa() {
                   <div key={l.id} className="rounded border border-slate-200 p-3 text-sm">
                     <div className="flex items-center gap-2">
                       {l.active ? <Badge className="bg-green-600">Ativo</Badge> : <Badge variant="secondary">Inativo</Badge>}
+                      {l.is_test_record
+                        ? <Badge className="bg-amber-500 text-white">Link de teste</Badge>
+                        : <Badge variant="outline">Link normal</Badge>}
                       <span className="text-xs text-slate-500">{new Date(l.created_at).toLocaleString('pt-BR')}</span>
                     </div>
+                    {l.is_test_record && (
+                      <p className="mt-1 text-xs text-amber-700">
+                        Este link foi gerado apenas para teste e os dados da empresa podem estar incompletos.
+                      </p>
+                    )}
                     <div className="mt-2 font-mono text-xs">Token: {l.public_token}</div>
                     {pub && (
                       <div className="mt-1 flex items-center gap-2">

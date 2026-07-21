@@ -45,7 +45,17 @@ type Row = {
   email: string | null;
   created_at: string;
   updated_at: string;
+  is_test_record: boolean | null;
+  data_quality_status: string | null;
+  missing_fields: string[] | null;
 };
+
+function QualityBadge({ status, isTest }: { status: string | null; isTest: boolean | null }) {
+  if (isTest) return <Badge className="bg-amber-500 text-white">Teste</Badge>;
+  if (status === 'pending_enrichment') return <Badge className="bg-orange-500 text-white">Pendente</Badge>;
+  if (status === 'incomplete') return <Badge variant="destructive">Incompleta</Badge>;
+  return <Badge className="bg-emerald-600 text-white">Completa</Badge>;
+}
 
 const PAGE_SIZE = 25;
 
@@ -63,6 +73,7 @@ function EmpresasImportadasPage() {
   const [uf, setUf] = useState<string>('all');
   const [emailFilter, setEmailFilter] = useState<string>('all');
   const [origin, setOrigin] = useState<string>('all'); // all | auto | manual
+  const [quality, setQuality] = useState<string>('all'); // all | complete | pending_enrichment | test_partial | test
   const [openingFrom, setOpeningFrom] = useState('');
   const [openingTo, setOpeningTo] = useState('');
   const [importedFrom, setImportedFrom] = useState('');
@@ -75,7 +86,7 @@ function EmpresasImportadasPage() {
       let q = supabase
         .from('companies')
         .select(
-          'id,cnpj,razao_social_original,nome_titular_exibicao,nome_fantasia,situacao_cadastral_desc,inicio_atividade,is_mei,is_matriz,uf,municipio_descricao,email,created_at,updated_at',
+          'id,cnpj,razao_social_original,nome_titular_exibicao,nome_fantasia,situacao_cadastral_desc,inicio_atividade,is_mei,is_matriz,uf,municipio_descricao,email,created_at,updated_at,is_test_record,data_quality_status,missing_fields',
           { count: 'exact' },
         )
         .order('created_at', { ascending: false });
@@ -96,6 +107,8 @@ function EmpresasImportadasPage() {
       if (uf !== 'all') q = q.eq('uf', uf);
       if (emailFilter === 'with') q = q.not('email', 'is', null).neq('email', '');
       if (emailFilter === 'without') q = q.or('email.is.null,email.eq.');
+      if (quality === 'test') q = q.eq('is_test_record', true);
+      else if (quality !== 'all') q = q.eq('data_quality_status', quality).eq('is_test_record', false);
       if (openingFrom) q = q.gte('inicio_atividade', openingFrom);
       if (openingTo) q = q.lte('inicio_atividade', openingTo);
       if (importedFrom) q = q.gte('created_at', importedFrom);
@@ -206,6 +219,18 @@ function EmpresasImportadasPage() {
             </Select>
           </div>
           <div>
+            <Label>Qualidade dos dados</Label>
+            <Select value={quality} onValueChange={setQuality}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="complete">Completa</SelectItem>
+                <SelectItem value="pending_enrichment">Pendente de complementação</SelectItem>
+                <SelectItem value="test">Registro de teste</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <Label>Abertura (de)</Label>
             <Input type="date" value={openingFrom} onChange={(e) => setOpeningFrom(e.target.value)} />
           </div>
@@ -249,6 +274,7 @@ function EmpresasImportadasPage() {
                 <TableRow>
                   <TableHead>Empresa</TableHead>
                   <TableHead>CNPJ</TableHead>
+                  <TableHead>Qualidade</TableHead>
                   <TableHead>Situação</TableHead>
                   <TableHead>Abertura</TableHead>
                   <TableHead>UF</TableHead>
@@ -260,11 +286,11 @@ function EmpresasImportadasPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={9} className="py-8 text-center">
+                  <TableRow><TableCell colSpan={10} className="py-8 text-center">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
                   </TableCell></TableRow>
                 ) : rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="py-8 text-center text-sm text-slate-500">
+                  <TableRow><TableCell colSpan={10} className="py-8 text-center text-sm text-slate-500">
                     Nenhuma empresa encontrada.
                   </TableCell></TableRow>
                 ) : rows.map((r) => (
@@ -279,6 +305,7 @@ function EmpresasImportadasPage() {
                         {formatCNPJ(r.cnpj)} <Copy className="h-3 w-3" />
                       </button>
                     </TableCell>
+                    <TableCell><QualityBadge status={r.data_quality_status} isTest={r.is_test_record} /></TableCell>
                     <TableCell>{r.situacao_cadastral_desc || 'Não informado'}</TableCell>
                     <TableCell>{r.inicio_atividade ? formatDateBR(r.inicio_atividade) : 'Não informado'}</TableCell>
                     <TableCell>{r.uf || '—'}</TableCell>
