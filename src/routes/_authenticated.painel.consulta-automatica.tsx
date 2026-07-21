@@ -541,6 +541,32 @@ function ConsultaPage() {
               />
               <span className="text-xs text-slate-500">mín. 5 seg</span>
             </div>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setListDialogOpen(true)}
+              >
+                <List className="mr-1 h-4 w-4" />
+                Ver lista de CNPJs ({foundList.length})
+              </Button>
+              {foundList.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    if (confirm('Limpar a lista salva desta data + filtros?')) {
+                      setFoundList([]);
+                    }
+                  }}
+                >
+                  <Trash2 className="mr-1 h-4 w-4" /> Limpar lista salva
+                </Button>
+              )}
+              <span className="text-xs text-slate-500">
+                Salva no navegador por data + filtros.
+              </span>
+            </div>
           </div>
 
           {countResult && (
