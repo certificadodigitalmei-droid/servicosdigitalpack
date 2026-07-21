@@ -56,6 +56,54 @@ export const countByDate = createServerFn({ method: 'POST' })
   });
 
 // ---------------------------------------------------------------------------
+// LISTAR CNPJs da data (grátis — modo descoberta, sem tipo_resultado=completo)
+// Usado pelo Modo Automático para acumular a lista em tempo real no navegador.
+// ---------------------------------------------------------------------------
+export const listByDate = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        date: dateSchema,
+        filters: filtersSchema,
+        limit: z.number().int().min(1).max(20).default(20),
+        page: z.number().int().min(1).max(500).default(1),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { searchOpeningsByDate } = await import('./client.server');
+    const r = await searchOpeningsByDate({
+      filters: data.filters,
+      date: data.date,
+      limit: data.limit,
+      page: data.page,
+      completo: false,
+      timeoutMs: 15_000,
+    });
+    const items = (r.items ?? []).map((raw: any) => {
+      const estab = raw?.estabelecimento && typeof raw.estabelecimento === 'object' ? raw.estabelecimento : raw;
+      const cnpjRaw =
+        raw?.cnpj ?? raw?.cnpj_completo ?? estab?.cnpj ?? estab?.cnpj_completo ?? '';
+      const cnpj = String(cnpjRaw).replace(/\D+/g, '');
+      const nome =
+        raw?.razao_social ??
+        raw?.nome_empresarial ??
+        estab?.razao_social ??
+        raw?.nome_fantasia ??
+        estab?.nome_fantasia ??
+        cnpj;
+      const fantasia = raw?.nome_fantasia ?? estab?.nome_fantasia ?? null;
+      const uf = raw?.uf ?? estab?.uf ?? raw?.endereco?.uf ?? null;
+      const municipio =
+        raw?.municipio ?? estab?.municipio ?? raw?.endereco?.municipio ?? null;
+      return { cnpj, nome: String(nome), fantasia, uf, municipio };
+    }).filter((it) => it.cnpj.length === 14);
+    return { ok: r.ok, status: r.status, total: r.total, date: data.date, items };
+  });
+
+// ---------------------------------------------------------------------------
 // IMPORTAR LOTE — manual (não dedup por padrão)
 // ---------------------------------------------------------------------------
 export const importBatch = createServerFn({ method: 'POST' })
