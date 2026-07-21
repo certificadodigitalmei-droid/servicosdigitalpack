@@ -28,13 +28,18 @@ export type QueueItem = {
   status: 'pending' | 'sending' | 'sent' | 'suppressed' | 'error' | 'skipped';
   message?: string;
   publicToken?: string | null;
+  publicUrl?: string | null;
 };
+
 
 type State = {
   // Config persistida
   subject: string;
   delaySec: number;
   batchLimit: number;
+  dailyLimit: number; // 0 = ilimitado
+  sentToday: number;
+  sentDay: string; // YYYY-MM-DD (reset diário)
   testMode: boolean;
   testRecipient: string;
   fromName: string;
@@ -51,10 +56,20 @@ type State = {
   logs: string[];
 };
 
+function todayStr() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+}
+
 const initial: State = {
   subject: DEFAULT_SUBJECT,
-  delaySec: 8,
+  delaySec: 60,
   batchLimit: 200,
+  dailyLimit: 50,
+  sentToday: 0,
+  sentDay: todayStr(),
   testMode: true,
   testRecipient: '',
   fromName: 'Certificado Digital MEI',
@@ -76,6 +91,9 @@ export const envioStore = createStore<State>(initial, {
     'subject',
     'delaySec',
     'batchLimit',
+    'dailyLimit',
+    'sentToday',
+    'sentDay',
     'testMode',
     'testRecipient',
     'fromName',
@@ -87,6 +105,7 @@ export const envioStore = createStore<State>(initial, {
     'logs',
   ],
 });
+
 
 
 // Flags de controle do loop (fora do store para não gerar re-render por tick).
@@ -105,9 +124,18 @@ function pushLog(msg: string) {
 
 /* -------------------------------- setters --------------------------------- */
 
+// Base URL de PRODUÇÃO usada nos links dos e-mails (o preview do editor
+// abre o Lovable — usar sempre o domínio publicado).
+const PUBLIC_BASE_URL = 'https://seu-certificado-mei-digital.online';
+
 export const setSubject = (v: string) => envioStore.set({ subject: v });
 export const setDelaySec = (n: number) => envioStore.set({ delaySec: Math.max(1, n) });
 export const setBatchLimit = (n: number) => envioStore.set({ batchLimit: Math.max(1, n) });
+export const setDailyLimit = (n: number) => envioStore.set({ dailyLimit: Math.max(0, n) });
+export const resetDailyCounter = () => {
+  envioStore.set({ sentToday: 0, sentDay: todayStr() });
+  pushLog('↻ Contador diário zerado.');
+};
 export const setTestMode = (v: boolean) => envioStore.set({ testMode: v });
 export const setTestRecipient = (v: string) => envioStore.set({ testRecipient: v });
 export const setFromName = (v: string) => envioStore.set({ fromName: v });
@@ -115,6 +143,16 @@ export const setFromAddress = (v: string) => envioStore.set({ fromAddress: v });
 export const setReplyTo = (v: string) => envioStore.set({ replyTo: v });
 export const setShowFloating = (v: boolean) => envioStore.set({ showFloating: v });
 export const setHeroImageUrl = (v: string) => envioStore.set({ heroImageUrl: v });
+
+function ensureDailyWindow() {
+  const s = envioStore.get();
+  const today = todayStr();
+  if (s.sentDay !== today) {
+    envioStore.set({ sentDay: today, sentToday: 0 });
+    pushLog(`📆 Novo dia (${today}) — contador diário resetado.`);
+  }
+}
+
 
 
 /* ----------------------------- queue actions ------------------------------ */
@@ -135,15 +173,21 @@ export async function loadRecipients() {
     if (error) throw error;
 
     const companyIds = (data ?? []).map((c: any) => c.id).filter(Boolean);
-    const linksMap: Record<string, string> = {};
+    const linksMap: Record<string, { token: string; url: string }> = {};
     if (companyIds.length > 0) {
       const { data: links } = await supabase
         .from('company_links')
-        .select('company_id, public_token')
-        .in('company_id', companyIds);
-      for (const l of (links ?? []) as Array<{ company_id: string | null; public_token: string }>) {
+        .select('company_id, public_token, public_url')
+        .in('company_id', companyIds)
+        .eq('active', true);
+      for (const l of (links ?? []) as Array<{ company_id: string | null; public_token: string; public_url: string | null }>) {
         if (l.company_id && l.public_token && !linksMap[l.company_id]) {
-          linksMap[l.company_id] = l.public_token;
+          // Preferir public_url do DB; se apontar para preview/lovable, reescreve p/ produção.
+          let url = l.public_url || '';
+          if (!url || /lovable\.app|localhost|127\.0\.0\.1/i.test(url)) {
+            url = `${PUBLIC_BASE_URL}/c/${l.public_token}`;
+          }
+          linksMap[l.company_id] = { token: l.public_token, url };
         }
       }
     }
@@ -152,15 +196,14 @@ export async function loadRecipients() {
     const validCompanies = (data ?? []).filter((c: any) => /.+@.+\..+/.test(c.email));
     const missing = validCompanies.filter((c: any) => !linksMap[c.id]);
     if (missing.length > 0) {
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const inserts = missing.map((c: any) => {
         const token = crypto.randomUUID().replace(/-/g, '');
         return {
           company_id: c.id,
           public_token: token,
           token,
-          public_url: `${origin}/c/${token}`,
-          checkout_url: `${origin}/checkout/${token}`,
+          public_url: `${PUBLIC_BASE_URL}/c/${token}`,
+          checkout_url: `${PUBLIC_BASE_URL}/checkout/${token}`,
           active: true,
           status: 'active',
           company_data: {
@@ -172,16 +215,22 @@ export async function loadRecipients() {
       const { data: inserted, error: insErr } = await supabase
         .from('company_links')
         .insert(inserts)
-        .select('company_id, public_token');
+        .select('company_id, public_token, public_url');
       if (insErr) {
         pushLog(`⚠ Falha ao criar links únicos: ${insErr.message}`);
       } else {
-        for (const l of (inserted ?? []) as Array<{ company_id: string | null; public_token: string }>) {
-          if (l.company_id) linksMap[l.company_id] = l.public_token;
+        for (const l of (inserted ?? []) as Array<{ company_id: string | null; public_token: string; public_url: string | null }>) {
+          if (l.company_id) {
+            linksMap[l.company_id] = {
+              token: l.public_token,
+              url: l.public_url || `${PUBLIC_BASE_URL}/c/${l.public_token}`,
+            };
+          }
         }
         pushLog(`🔗 Criados ${inserted?.length ?? 0} links únicos.`);
       }
     }
+
 
     const items: QueueItem[] = validCompanies
       .map((c: any) => ({
@@ -194,7 +243,9 @@ export async function loadRecipients() {
         uf: c.uf || '',
         municipio: c.municipio_descricao || '',
         status: 'pending',
-        publicToken: linksMap[c.id] || null,
+        publicToken: linksMap[c.id]?.token || null,
+        publicUrl: linksMap[c.id]?.url || null,
+
       }));
     envioStore.set({ queue: items });
     pushLog(`Carregados ${items.length} destinatários (limite ${batchLimit}).`);
@@ -241,10 +292,13 @@ function buildVarsFor(item: QueueItem) {
     MUNICIPIO: item.municipio || '',
     UF: item.uf || '',
     EMAIL: item.email,
-    LINK_PUBLICO: item.publicToken
-      ? `${typeof window !== 'undefined' ? window.location.origin : ''}/c/${item.publicToken}`
-      : `${typeof window !== 'undefined' ? window.location.origin : ''}/modelo`,
+    LINK_PUBLICO: item.publicUrl
+      ? item.publicUrl
+      : item.publicToken
+        ? `${PUBLIC_BASE_URL}/c/${item.publicToken}`
+        : `${PUBLIC_BASE_URL}/modelo`,
     TOKEN: item.publicToken || '',
+
   };
   return rowToVars(row, {
     name: s.fromName,
@@ -279,12 +333,15 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
     });
 
     if (res.sent) {
+      ensureDailyWindow();
       envioStore.set((s) => ({
         queue: s.queue.map((q) => (q.id === item.id ? { ...q, status: 'sent' } : q)),
+        sentToday: s.sentToday + 1,
       }));
-      pushLog(`✓ Enviado para ${res.recipient}`);
+      pushLog(`✓ Enviado para ${res.recipient} (${envioStore.get().sentToday} hoje)`);
       return { ok: true };
     }
+
     if (res.reason === 'recipient_suppressed') {
       envioStore.set((s) => ({
         queue: s.queue.map((q) =>
@@ -340,14 +397,22 @@ export async function startSending() {
 
   // Reavaliar a cada iteração com estado atualizado.
   while (!stopFlag) {
-    const q = envioStore.get().queue;
-    const item = q.find((x) => x.status === 'pending' || x.status === 'error');
+    ensureDailyWindow();
+    const cur = envioStore.get();
+    if (cur.dailyLimit > 0 && cur.sentToday >= cur.dailyLimit) {
+      pushLog(`🛑 Limite diário atingido (${cur.sentToday}/${cur.dailyLimit}). Envio parado.`);
+      toast.info(`Limite diário atingido (${cur.dailyLimit}).`);
+      break;
+    }
+    const item = cur.queue.find((x) => x.status === 'pending' || x.status === 'error');
     if (!item) break;
 
     while (paused && !stopFlag) {
       await new Promise((r) => setTimeout(r, 500));
     }
     if (stopFlag) break;
+
+
 
     const res = await sendOne(item);
     if (!res.ok && res.waitSec) {

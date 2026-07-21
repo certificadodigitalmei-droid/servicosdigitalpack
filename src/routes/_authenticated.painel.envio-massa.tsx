@@ -45,6 +45,8 @@ import {
   setSubject,
   setDelaySec,
   setBatchLimit,
+  setDailyLimit,
+  resetDailyCounter,
   setTestMode,
   setTestRecipient,
   setFromName,
@@ -54,6 +56,8 @@ import {
   setHeroImageUrl,
   type QueueItem,
 } from '@/lib/automation/envio-engine';
+import { consultaStore } from '@/lib/automation/consulta-engine';
+
 
 
 export const Route = createFileRoute('/_authenticated/painel/envio-massa')({
@@ -77,7 +81,11 @@ function EnvioMassa() {
   const logs = useStore(envioStore, (s) => s.logs);
   const showFloating = useStore(envioStore, (s) => s.showFloating);
   const heroImageUrl = useStore(envioStore, (s) => s.heroImageUrl);
+  const dailyLimit = useStore(envioStore, (s) => s.dailyLimit);
+  const sentToday = useStore(envioStore, (s) => s.sentToday);
+  const importDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
   const [uploadingImg, setUploadingImg] = useState(false);
+
 
 
   const [previewIdx, setPreviewIdx] = useState(0);
@@ -151,7 +159,7 @@ function EnvioMassa() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Delay (segundos)</Label>
+                <Label>Delay entre envios (segundos)</Label>
                 <Input
                   type="number"
                   min={1}
@@ -159,6 +167,16 @@ function EnvioMassa() {
                   value={delaySec}
                   onChange={(e) => setDelaySec(parseInt(e.target.value || '1', 10))}
                 />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Delay da importação automática: <strong>{importDelaySec}s</strong>.{' '}
+                  <button
+                    type="button"
+                    className="text-blue-600 underline"
+                    onClick={() => setDelaySec(importDelaySec)}
+                  >
+                    Igualar
+                  </button>
+                </p>
               </div>
               <div>
                 <Label>Limite da fila</Label>
@@ -171,6 +189,30 @@ function EnvioMassa() {
                 />
               </div>
             </div>
+
+            {/* Limite diário */}
+            <div className="rounded-md border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">Limite de envios por dia</Label>
+                <Badge className={sentToday >= dailyLimit && dailyLimit > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}>
+                  {sentToday} / {dailyLimit > 0 ? dailyLimit : '∞'} hoje
+                </Badge>
+              </div>
+              <Input
+                type="number"
+                min={0}
+                max={10000}
+                value={dailyLimit}
+                onChange={(e) => setDailyLimit(parseInt(e.target.value || '0', 10))}
+              />
+              <p className="text-[11px] text-slate-500">
+                Ex.: 50 ou 100. Use <strong>0</strong> para desativar o limite. O contador reseta automaticamente à meia-noite.
+              </p>
+              <Button size="sm" variant="outline" onClick={resetDailyCounter}>
+                <RotateCcw className="h-3.5 w-3.5" /> Zerar contador de hoje
+              </Button>
+            </div>
+
             <div className="flex items-center justify-between rounded-md border p-3">
               <div>
                 <div className="text-sm font-semibold flex items-center gap-2">
