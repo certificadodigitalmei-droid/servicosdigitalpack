@@ -775,8 +775,8 @@ function ConsultaPage() {
       )}
 
       <Dialog open={listDialogOpen} onOpenChange={setListDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-5xl w-[95vw] p-0 gap-0">
+          <DialogHeader className="p-6 pb-3 border-b">
             <DialogTitle className="flex items-center gap-2">
               {autoCount && (
                 <span className="relative flex h-2 w-2">
@@ -785,19 +785,22 @@ function ConsultaPage() {
                 </span>
               )}
               CNPJs encontrados — {formatBR(effectiveDate)}
+              <span className="ml-2 text-xs font-normal text-slate-500">
+                ({foundList.length} salvos)
+              </span>
             </DialogTitle>
             <DialogDescription>
-              {foundList.length} CNPJ(s) acumulado(s) para esta data + filtros.
               Total na API agora:{' '}
               <strong>
                 {countResult?.total != null
                   ? countResult.total.toLocaleString('pt-BR')
                   : '—'}
               </strong>
-              . {autoCount ? 'Atualizando automaticamente…' : 'Modo automático desligado.'}
+              . {autoCount ? 'Atualizando automaticamente…' : 'Modo automático desligado — a lista fica salva no navegador para esta data + filtros.'}
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="h-[420px] rounded border border-slate-200">
+          <ScrollArea className="h-[70vh] rounded-none border-t border-slate-200">
+
             {foundList.length === 0 ? (
               <div className="p-6 text-center text-sm text-slate-500">
                 Nenhum CNPJ ainda. Ligue o modo automático para começar.
