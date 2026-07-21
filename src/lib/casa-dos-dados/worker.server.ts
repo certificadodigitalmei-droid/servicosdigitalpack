@@ -825,7 +825,7 @@ export async function runAutomationOnce(
     apiSummary.error = msg;
     apiSummary.last_stage = lastStage;
     finalStatus = 'error';
-    outcome.error = errorMessage;
+    outcome.error = errorMessage ?? msg;
     outcome.status = 'error';
   } finally {
     clearTimeout(abortTimer);
