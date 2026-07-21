@@ -46,7 +46,7 @@ function headers(): Record<string, string> {
   };
 }
 
-function todayBR(): string {
+export function todayBR(): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
@@ -54,6 +54,11 @@ function todayBR(): string {
     day: '2-digit',
   }).format(new Date());
 }
+
+function isValidISODate(s: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(s);
+}
+
 
 export async function checkSaldo(): Promise<{ status: number; body: unknown; ok: boolean }> {
   const url = `${baseUrl()}/v5/saldo`;
