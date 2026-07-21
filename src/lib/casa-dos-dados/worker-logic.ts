@@ -96,7 +96,7 @@ function descOf(v: unknown): string | null {
   if (typeof v === 'number') return String(v);
   if (typeof v === 'object') {
     const o = v as Record<string, unknown>;
-    const s = pickStr(o, ['descricao', 'description', 'nome', 'sigla', 'texto', 'valor', 'codigo']);
+    const s = pickStr(o, ['situacao_atual', 'descricao', 'description', 'nome', 'sigla', 'texto', 'valor', 'codigo']);
     if (s) return s;
   }
   return null;
