@@ -110,124 +110,37 @@ export function GovConsultaLoader({
         </div>
       </div>
 
-      {/* ================= DESKTOP (split screen: hero photo + login-like menu) ================= */}
-      <div className="hidden h-full w-full md:grid md:grid-cols-[1.15fr_1fr] lg:grid-cols-[1.3fr_1fr]">
-        {/* LEFT — hero photo */}
-        <div className="relative h-full w-full overflow-hidden">
-          <img
-            src={heroDesktop.url}
-            alt="gov.br"
-            className="absolute inset-0 h-full w-full object-cover object-left"
-          />
-          {/* soft gradient fade into the right panel */}
+      {/* ================= DESKTOP (full gov.br photo, no floating button) ================= */}
+      <div className="relative hidden h-full w-full md:block">
+        <img
+          src={heroDesktop.url}
+          alt="gov.br"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+        {/* Progress strip on top of the image, aligned over the login card area */}
+        <div
+          className="absolute right-[6%] w-[36%] max-w-[520px]"
+          style={{ top: '78%' }}
+        >
           <div
-            className="pointer-events-none absolute inset-y-0 right-0 w-40"
-            style={{
-              background:
-                'linear-gradient(90deg, rgba(248,250,252,0) 0%, rgba(248,250,252,0.85) 70%, #f8fafc 100%)',
-            }}
-          />
-        </div>
-
-        {/* RIGHT — login-style menu with animated steps */}
-        <aside className="relative flex h-full w-full flex-col bg-[#f8fafc]">
-          <div className="mx-auto flex h-full w-full max-w-[520px] flex-col justify-center px-10 py-12">
-            {/* brand */}
-            <div className="mb-8 flex items-center gap-3">
-              <img src={govLogo.url} alt="gov.br" className="h-10 w-auto object-contain" />
-              <div className="h-8 w-px bg-slate-200" />
-              <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                Portal do MEI
-              </div>
-            </div>
-
-            {/* Card */}
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-[0_20px_60px_-24px_rgba(12,50,111,0.25)]">
-              <div className="mb-1 text-[13px] font-semibold uppercase tracking-wider text-slate-500">
-                Autenticação segura
-              </div>
-              <h1 className="text-[26px] font-black leading-tight tracking-tight" style={{ color: AZUL_ESCURO }}>
-                Entrando no gov.br
-              </h1>
-              <p className="mt-2 text-[13.5px] leading-relaxed text-slate-600">
-                Estamos validando seu acesso ao Portal do Microempreendedor Individual. Isso leva apenas alguns segundos.
-              </p>
-
-              {/* Progress bar */}
-              <div className="mt-6">
-                <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  <span>Progresso</span>
-                  <span style={{ color: AZUL }}>{Math.round(progress)}%</span>
-                </div>
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full transition-[width] duration-100 ease-linear"
-                    style={{
-                      width: `${progress}%`,
-                      background: `linear-gradient(90deg, ${AZUL}, ${AMARELO})`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Steps list */}
-              <ul className="mt-6 space-y-2.5">
-                {steps.map((label, i) => {
-                  const done = i < step;
-                  const active = i === step;
-                  return (
-                    <li
-                      key={label}
-                      className={`flex items-center gap-3 rounded-lg border px-3.5 py-2.5 text-[13.5px] transition-all ${
-                        active
-                          ? 'border-[#1351B4]/30 bg-[#1351B4]/5 shadow-sm'
-                          : done
-                            ? 'border-emerald-200/70 bg-emerald-50/50'
-                            : 'border-slate-200/70 bg-white'
-                      }`}
-                    >
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center">
-                        {done ? (
-                          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                        ) : active ? (
-                          <Loader2 className="h-5 w-5 animate-spin" style={{ color: AZUL }} />
-                        ) : (
-                          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-                        )}
-                      </span>
-                      <span
-                        className={`font-medium tracking-tight ${
-                          active ? 'text-[#0C326F]' : done ? 'text-emerald-700' : 'text-slate-500'
-                        }`}
-                      >
-                        {label}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-
-              {/* Trust badges */}
-              <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-100 pt-4 text-[11.5px] text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                  Conexão segura
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Fingerprint className="h-3.5 w-3.5" style={{ color: AZUL }} />
-                  Selo gov.br
-                </span>
-                <span className="font-semibold" style={{ color: AZUL_ESCURO }}>
-                  ICP-Brasil
-                </span>
-              </div>
-            </div>
-
-            <p className="mt-6 text-center text-[11px] text-slate-400">
-              Governo Federal · Ministério da Gestão e da Inovação em Serviços Públicos
-            </p>
+            className="flex items-center justify-center gap-2.5 rounded-md px-5 py-3 text-white shadow-lg ring-1 ring-white/40"
+            style={{ background: AZUL }}
+          >
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span key={currentLabel} className="animate-fade-in text-[13.5px] font-semibold tracking-tight">
+              {currentLabel}
+            </span>
           </div>
-        </aside>
+          <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/80 shadow-sm ring-1 ring-black/5">
+            <div
+              className="h-full rounded-full transition-[width] duration-100 ease-linear"
+              style={{
+                width: `${progress}%`,
+                background: `linear-gradient(90deg, ${AZUL}, ${AMARELO})`,
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       <style>{`
