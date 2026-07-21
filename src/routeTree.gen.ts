@@ -24,6 +24,7 @@ import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/
 import { Route as AuthenticatedPainelImportarEmpresasRouteImport } from './routes/_authenticated.painel.importar-empresas'
 import { Route as AuthenticatedPainelGeradorLinksRouteImport } from './routes/_authenticated.painel.gerador-links'
 import { Route as AuthenticatedPainelFiltrarMeiRouteImport } from './routes/_authenticated.painel.filtrar-mei'
+import { Route as AuthenticatedPainelConsultaAutomaticaRouteImport } from './routes/_authenticated.painel.consulta-automatica'
 import { Route as AuthenticatedPainelCampanhasEmailRouteImport } from './routes/_authenticated.painel.campanhas-email'
 import { Route as AuthenticatedPainelGeradorLinksHistoricoRouteImport } from './routes/_authenticated.painel.gerador-links.historico'
 
@@ -107,6 +108,12 @@ const AuthenticatedPainelFiltrarMeiRoute =
     path: '/filtrar-mei',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelConsultaAutomaticaRoute =
+  AuthenticatedPainelConsultaAutomaticaRouteImport.update({
+    id: '/consulta-automatica',
+    path: '/consulta-automatica',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 const AuthenticatedPainelCampanhasEmailRoute =
   AuthenticatedPainelCampanhasEmailRouteImport.update({
     id: '/campanhas-email',
@@ -130,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
+  '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -147,6 +155,7 @@ export interface FileRoutesByTo {
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
+  '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -167,6 +176,7 @@ export interface FileRoutesById {
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout_/$token': typeof CheckoutTokenRoute
   '/_authenticated/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
+  '/_authenticated/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/_authenticated/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/certificado-mei/$token'
     | '/checkout/$token'
     | '/painel/campanhas-email'
+    | '/painel/consulta-automatica'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel/importar-empresas'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/certificado-mei/$token'
     | '/checkout/$token'
     | '/painel/campanhas-email'
+    | '/painel/consulta-automatica'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
     | '/painel/importar-empresas'
@@ -223,6 +235,7 @@ export interface FileRouteTypes {
     | '/certificado-mei/$token'
     | '/checkout_/$token'
     | '/_authenticated/painel/campanhas-email'
+    | '/_authenticated/painel/consulta-automatica'
     | '/_authenticated/painel/filtrar-mei'
     | '/_authenticated/painel/gerador-links'
     | '/_authenticated/painel/importar-empresas'
@@ -352,6 +365,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelFiltrarMeiRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/consulta-automatica': {
+      id: '/_authenticated/painel/consulta-automatica'
+      path: '/consulta-automatica'
+      fullPath: '/painel/consulta-automatica'
+      preLoaderRoute: typeof AuthenticatedPainelConsultaAutomaticaRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
     '/_authenticated/painel/campanhas-email': {
       id: '/_authenticated/painel/campanhas-email'
       path: '/campanhas-email'
@@ -386,6 +406,7 @@ const AuthenticatedPainelGeradorLinksRouteWithChildren =
 
 interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelCampanhasEmailRoute: typeof AuthenticatedPainelCampanhasEmailRoute
+  AuthenticatedPainelConsultaAutomaticaRoute: typeof AuthenticatedPainelConsultaAutomaticaRoute
   AuthenticatedPainelFiltrarMeiRoute: typeof AuthenticatedPainelFiltrarMeiRoute
   AuthenticatedPainelGeradorLinksRoute: typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   AuthenticatedPainelImportarEmpresasRoute: typeof AuthenticatedPainelImportarEmpresasRoute
@@ -395,6 +416,8 @@ interface AuthenticatedPainelRouteChildren {
 const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelCampanhasEmailRoute:
     AuthenticatedPainelCampanhasEmailRoute,
+  AuthenticatedPainelConsultaAutomaticaRoute:
+    AuthenticatedPainelConsultaAutomaticaRoute,
   AuthenticatedPainelFiltrarMeiRoute: AuthenticatedPainelFiltrarMeiRoute,
   AuthenticatedPainelGeradorLinksRoute:
     AuthenticatedPainelGeradorLinksRouteWithChildren,
