@@ -1,6 +1,7 @@
 export type CampaignDesign = {
   logoText: string;
   logoUrl?: string;
+  heroImageUrl?: string;
   headerBg: string;
   headerText: string;
   bodyBg: string;
@@ -23,6 +24,7 @@ export type CampaignDesign = {
   unsubText: string;
   unsubHref: string;
 };
+
 
 export const DEFAULT_DESIGN: CampaignDesign = {
   logoText: 'CERTIFICADO DIGITAL MEI',
@@ -145,6 +147,9 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
       <div style="font-size:${d.titleSize}px;font-weight:700;line-height:1.2;margin:0;">${title}</div>
       <div style="font-size:12px;opacity:0.8;margin-top:8px;">${subtitle}</div>
     </td></tr>
+    ${d.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(d.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
+    
+
     
     <!-- Hero Title -->
     <tr><td style="padding:40px 32px 20px 32px;text-align:center;">
