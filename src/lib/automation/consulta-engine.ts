@@ -63,6 +63,7 @@ type State = {
   autoIntervalSec: number;
   autoImport: boolean;
   autoImportDelaySec: number;
+  autoImportTarget: number; // 0 = infinito, senão para quando autoImportTotal >= alvo
   dateMode: 'today' | 'specific';
   selectedDate: string; // ISO yyyy-mm-dd
   filters: Filters;
