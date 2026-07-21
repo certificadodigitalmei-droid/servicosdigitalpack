@@ -88,6 +88,21 @@ function ConsultaAutomaticaPage() {
     refetchInterval: 5000,
   });
 
+  const recentImportsQ = useQuery({
+    queryKey: ['casa-recent-imports'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('automatic_company_queue')
+        .select('id,query_date,created_at,cnpj,company_id,company_link_id,was_new_link,companies(id,nome_titular_exibicao,razao_social_original)')
+        .not('company_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data ?? [];
+    },
+    refetchInterval: 10000,
+  });
+
   const automation = (stateQ.data?.automation ?? null) as any;
   const runs = stateQ.data?.runs ?? [];
   const todayBR = stateQ.data?.todayBR ?? todayBRString();
