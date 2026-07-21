@@ -830,8 +830,71 @@ function ConsultaPage() {
               Aguarde… a chamada pode levar de 5 a 30 segundos.
             </p>
           )}
+
+          {/* Importação automática */}
+          <div className="mt-4 rounded-lg border-2 border-dashed border-brand-navy/40 bg-brand-navy/5 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-brand-navy">Importar automático</span>
+                  {autoImport && (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600" />
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-600">
+                  Fica importando sozinho a cada X segundos, respeitando a quantidade
+                  escolhida acima. <strong>Consome créditos.</strong> CNPJs repetidos são ignorados.
+                </p>
+              </div>
+              <Switch
+                checked={autoImport}
+                onCheckedChange={setAutoImport}
+                aria-label="Ativar importação automática"
+              />
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <div>
+                <Label className="mb-1 block text-xs">Delay entre importações (segundos)</Label>
+                <input
+                  type="number"
+                  min={5}
+                  step={5}
+                  value={autoImportDelaySec}
+                  onChange={(e) =>
+                    setAutoImportDelaySec(Math.max(5, Number(e.target.value) || 5))
+                  }
+                  disabled={autoImport}
+                  className="h-9 w-32 rounded-md border border-slate-300 bg-white px-3 text-sm disabled:bg-slate-100"
+                />
+              </div>
+              <div className="text-xs text-slate-600">
+                A cada ciclo: <strong>{quantidade}</strong> tentativa(s) · a cada{' '}
+                <strong>{autoImportDelaySec}s</strong>
+              </div>
+            </div>
+
+            {autoImport && (
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <Stat label="Ciclos" value={autoImportRuns.toString()} />
+                <Stat label="Importadas (sessão)" value={autoImportTotal.toString()} />
+                <Stat
+                  label="Créditos máx/ciclo"
+                  value={quantidade.toString()}
+                />
+                <Stat
+                  label="Próximo em"
+                  value={importMut.isPending ? 'rodando…' : `~${autoImportDelaySec}s`}
+                />
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
+
 
       {/* 3. Resultado do último lote */}
       {(importedRows.length > 0 || failedRows.length > 0) && (
