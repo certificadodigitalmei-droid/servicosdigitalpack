@@ -430,14 +430,22 @@ function restartImportLoop() {
   if (!s.autoImport) return;
   const tick = async () => {
     if (consultaStore.get().isImporting) return;
-    const r = await runImportOnce({ silent: true });
+    const cur0 = consultaStore.get();
+    const target = cur0.autoImportTarget || 0;
+    if (target > 0 && cur0.autoImportTotal >= target) {
+      // Meta atingida — desliga o modo automático.
+      setAutoImport(false);
+      toast.success(`Meta de ${target} importações atingida. Automático desligado.`);
+      return;
+    }
+    // Se houver meta, não estoure — limita a próxima chamada ao restante.
+    const remaining = target > 0 ? Math.max(1, target - cur0.autoImportTotal) : cur0.quantidade;
+    const r = await runImportOnce({ silent: true, overrideLimit: remaining });
     if (r.imported > 0) {
-      consultaStore.set((cur) => ({
-        autoImportTotal: cur.autoImportTotal + r.imported,
-      }));
+      consultaStore.set((c) => ({ autoImportTotal: c.autoImportTotal + r.imported }));
       pushFlash(r.imported);
     }
-    consultaStore.set((cur) => ({ autoImportRuns: cur.autoImportRuns + 1 }));
+    consultaStore.set((c) => ({ autoImportRuns: c.autoImportRuns + 1 }));
   };
   void tick();
   importIntervalId = window.setInterval(
