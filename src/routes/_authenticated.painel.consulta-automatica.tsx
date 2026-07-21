@@ -219,28 +219,100 @@ function ConsultaPage() {
     onError: (e: any) => toast.error(e?.message ?? 'Erro'),
   });
 
-  // Loop de consulta automática. Enquanto autoCount=true, chama countMut a
-  // cada autoIntervalSec segundos. Não consome créditos (endpoint grátis).
-  const countMutRef = useRef(countMut);
-  countMutRef.current = countMut;
+  // Chave estável para persistir a lista descoberta por data+filtros.
+  const listStorageKey = useMemo(
+    () => `casa:autoList:${effectiveDate}:${JSON.stringify(filters)}`,
+    [effectiveDate, filters],
+  );
+
+  // Carrega lista salva quando muda a chave (data/filtros).
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(listStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as FoundRow[];
+        if (Array.isArray(parsed)) {
+          setFoundList(parsed);
+          return;
+        }
+      }
+    } catch { /* ignore */ }
+    setFoundList([]);
+  }, [listStorageKey]);
+
+  // Persiste sempre que a lista muda.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(listStorageKey, JSON.stringify(foundList));
+    } catch { /* ignore quota */ }
+  }, [listStorageKey, foundList]);
+
+  const listMut = useMutation({
+    mutationFn: () =>
+      listFn({ data: { date: effectiveDate, filters, limit: 20, page: 1 } }),
+    onSuccess: (r) => {
+      setCountResult({ date: r.date, total: r.total, ok: r.ok, status: r.status });
+      const now = new Date().toISOString();
+      let addedCount = 0;
+      setFoundList((prev) => {
+        const seen = new Map(prev.map((it) => [it.cnpj, it]));
+        for (const it of r.items ?? []) {
+          if (!seen.has(it.cnpj)) {
+            seen.set(it.cnpj, { ...it, firstSeenAt: now });
+            addedCount += 1;
+          }
+        }
+        if (addedCount === 0) return prev;
+        return Array.from(seen.values()).sort((a, b) =>
+          b.firstSeenAt.localeCompare(a.firstSeenAt),
+        );
+      });
+      setAutoStats((prev) => {
+        const next = {
+          checks: prev.checks + 1,
+          prevTotal: prev.lastTotal,
+          lastTotal: r.total,
+          delta:
+            r.total != null && prev.lastTotal != null ? r.total - prev.lastTotal : 0,
+          peak:
+            r.total != null
+              ? prev.peak != null
+                ? Math.max(prev.peak, r.total)
+                : r.total
+              : prev.peak,
+          lastCheckAt: now,
+          startedAt: prev.startedAt ?? now,
+        };
+        return next;
+      });
+      if (addedCount > 0) {
+        toast.success(`+${addedCount} novo(s) CNPJ(s) na lista.`);
+      }
+      if (!r.ok) toast.error(`API respondeu ${r.status}`);
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Erro'),
+  });
+
+  // Loop de consulta automática. Enquanto autoCount=true, chama listMut a
+  // cada autoIntervalSec segundos, acumulando CNPJs. Não consome créditos.
+  const listMutRef = useRef(listMut);
+  listMutRef.current = listMut;
   useEffect(() => {
     if (!autoCount) return;
-    // Dispara imediatamente ao ligar.
-    countMutRef.current.mutate();
+    setListDialogOpen(true);
+    listMutRef.current.mutate();
     const id = window.setInterval(() => {
-      if (!countMutRef.current.isPending) {
-        countMutRef.current.mutate();
+      if (!listMutRef.current.isPending) {
+        listMutRef.current.mutate();
       }
     }, Math.max(5, autoIntervalSec) * 1000);
     return () => window.clearInterval(id);
-    // Reinicia o loop quando muda data/filtros/intervalo.
   }, [autoCount, autoIntervalSec, effectiveDate, filters]);
 
-  // Ao desligar, reseta estatísticas do próximo ciclo.
+  // Ao desligar, reseta apenas contadores de sessão (mantém lista salva).
   const prevAutoRef = useRef(autoCount);
   useEffect(() => {
     if (prevAutoRef.current && !autoCount) {
-      // desligou: mantém último resultado exibido, mas zera contadores
       setAutoStats((s) => ({ ...s, checks: 0, startedAt: null }));
     }
     prevAutoRef.current = autoCount;
