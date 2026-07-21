@@ -238,9 +238,9 @@ export async function runAutomationOnce(
             status: 'active',
             company_data: {
               cnpj,
-              nome: companyPayload.nome_titular_exibicao ?? companyPayload.razao_social_original,
+              nome: String(companyPayload.nome_titular_exibicao ?? companyPayload.razao_social_original ?? ''),
               origin: 'casa_dos_dados_automation',
-            },
+            } as any,
           })
           .select('id')
           .single();
