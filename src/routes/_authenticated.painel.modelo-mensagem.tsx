@@ -75,6 +75,18 @@ function ModeloMensagem() {
   const [subject, setSubject] = useState<string>(() => loadString(SUBJECT_KEY, DEFAULT_SUBJECT));
   const [preheader, setPreheader] = useState<string>(() => loadString(PREHEADER_KEY, DEFAULT_PREHEADER));
   const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop');
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+
+  const applyPreset = (id: string) => {
+    const p = PRESETS.find((x) => x.id === id);
+    if (!p) return;
+    setDesign({ ...DEFAULT_DESIGN, ...p.design });
+    setSubject(p.subject);
+    setPreheader(p.preheader);
+    setSelectedPreset(id);
+    toast.success(`Modelo "${p.name}" aplicado — clique em Salvar para usar nos envios`);
+  };
+
 
   useEffect(() => {
     try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(design)); } catch {}
