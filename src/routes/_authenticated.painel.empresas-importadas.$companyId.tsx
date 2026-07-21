@@ -1,12 +1,24 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Copy, ExternalLink, Loader2 } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink, Loader2, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
 
 export const Route = createFileRoute('/_authenticated/painel/empresas-importadas/$companyId')({
   head: () => ({ meta: [{ title: 'Detalhes da Empresa | Painel' }] }),
