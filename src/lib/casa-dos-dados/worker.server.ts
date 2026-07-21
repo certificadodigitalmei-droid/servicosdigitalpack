@@ -358,16 +358,18 @@ export async function runAutomationOnce(
       })
       .eq('id', runId);
 
+    const isTest = opts.trigger === 'test_manual';
     const now = new Date();
     const next = new Date(now.getTime() + Math.max(1, automation.interval_minutes) * 60_000);
+    const okPatch: Record<string, unknown> = {
+      status: 'active',
+      last_run_at: now.toISOString(),
+      last_error: null,
+    };
+    if (!isTest) okPatch.next_run_at = next.toISOString();
     await supabaseAdmin
       .from('automatic_company_queries')
-      .update({
-        status: 'active',
-        last_run_at: now.toISOString(),
-        next_run_at: next.toISOString(),
-        last_error: null,
-      })
+      .update(okPatch)
       .eq('id', automation.id);
 
     return outcome;
