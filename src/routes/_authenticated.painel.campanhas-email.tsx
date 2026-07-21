@@ -604,92 +604,12 @@ function CampanhasEmail() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Ou 1. Upload da planilha</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3">
-              <Label>Nome da campanha</Label>
-              <Input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} />
-            </div>
-
-            <div className="flex gap-3 items-center">
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".csv,.xls,.xlsx"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-              />
-              <Button onClick={() => inputRef.current?.click()} className="bg-brand-navy hover:bg-brand-blue">
-                <FileUp className="mr-2 h-4 w-4" /> Selecionar CSV / XLS / XLSX
-              </Button>
-              {fileName && <span className="text-sm text-muted-foreground">{fileName}</span>}
-            </div>
-
-            {rawHeaders.length > 0 && (
-              <>
-                <div className="rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="p-2 text-left">Campo</th>
-                        <th className="p-2 text-left">Coluna da planilha</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {FIELD_KEYS.map((k) => (
-                        <tr key={k} className="border-t">
-                          <td className="p-2 font-medium">{k}</td>
-                          <td className="p-2">
-                            <Select
-                              value={mapping[k] || '__none__'}
-                              onValueChange={(v) => remap(k, v === '__none__' ? null : v)}
-                            >
-                              <SelectTrigger className="w-full max-w-md">
-                                <SelectValue placeholder="—" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="__none__">— não mapear —</SelectItem>
-                                {rawHeaders.map((h) => (
-                                  <SelectItem key={h} value={h}>
-                                    {h}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {stats && (
-                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                    <StatBox label="Linhas" value={stats.total} />
-                    <StatBox label="E-mails válidos" value={stats.validEmails} tone="ok" />
-                    <StatBox label="E-mails inválidos" value={stats.invalidEmails} tone="warn" />
-                    <StatBox label="Sem LINK_PUBLICO" value={stats.missingLink} tone="warn" />
-                    <StatBox label="Duplicados" value={stats.duplicates} />
-                    <StatBox label="Prontos" value={stats.ready} tone="ok" />
-                  </div>
-                )}
-
-                <div className="flex justify-end">
-                  <Button onClick={importCampaign} disabled={importing} className="bg-brand-navy hover:bg-brand-blue">
-                    {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-                    Importar destinatários e continuar
-                  </Button>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
       </div>
     );
   }
+
+
+
 
   // ============= Editor =============
   return (
@@ -704,9 +624,11 @@ function CampanhasEmail() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setStep('upload')}>
-            Nova planilha
+          <Button variant="outline" onClick={loadFromCompanies} disabled={loadingCompanies}>
+            {loadingCompanies ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Recarregar empresas
           </Button>
+
           <Button variant="outline" onClick={downloadCsv}>
             <Download className="mr-2 h-4 w-4" /> CSV
           </Button>
