@@ -344,7 +344,7 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
         recipient: item.email,
         subject: subj,
         vars,
-        design: cfg.heroImageUrl ? { heroImageUrl: cfg.heroImageUrl } : undefined,
+        design: mergedDesign(cfg.heroImageUrl || undefined),
         fromName: cfg.fromName,
         fromAddress: cfg.fromAddress,
         replyTo: cfg.replyTo || undefined,
