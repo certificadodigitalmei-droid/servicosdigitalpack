@@ -754,6 +754,68 @@ function ConsultaPage() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={listDialogOpen} onOpenChange={setListDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {autoCount && (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
+                </span>
+              )}
+              CNPJs encontrados — {formatBR(effectiveDate)}
+            </DialogTitle>
+            <DialogDescription>
+              {foundList.length} CNPJ(s) acumulado(s) para esta data + filtros.
+              Total na API agora:{' '}
+              <strong>
+                {countResult?.total != null
+                  ? countResult.total.toLocaleString('pt-BR')
+                  : '—'}
+              </strong>
+              . {autoCount ? 'Atualizando automaticamente…' : 'Modo automático desligado.'}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[420px] rounded border border-slate-200">
+            {foundList.length === 0 ? (
+              <div className="p-6 text-center text-sm text-slate-500">
+                Nenhum CNPJ ainda. Ligue o modo automático para começar.
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {foundList.map((it) => (
+                  <li key={it.cnpj} className="flex items-start justify-between gap-3 p-3">
+                    <div className="min-w-0">
+                      <div className="font-mono text-sm">{formatCNPJ(it.cnpj)}</div>
+                      <div className="truncate text-sm text-slate-700">{it.nome}</div>
+                      {(it.municipio || it.uf) && (
+                        <div className="text-xs text-slate-500">
+                          {[it.municipio, it.uf].filter(Boolean).join(' / ')}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="text-[10px] text-slate-400">
+                        {new Date(it.firstSeenAt).toLocaleTimeString('pt-BR')}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2"
+                        onClick={() => copy(it.cnpj)}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
