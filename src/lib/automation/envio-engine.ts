@@ -112,6 +112,7 @@ const initial: State = {
   showFloating: true,
   heroImageUrl: '',
   queue: [],
+  sentEmails: [],
   running: false,
   paused: false,
   loading: false,
