@@ -171,15 +171,21 @@ export async function loadRecipients() {
     if (error) throw error;
 
     const companyIds = (data ?? []).map((c: any) => c.id).filter(Boolean);
-    const linksMap: Record<string, string> = {};
+    const linksMap: Record<string, { token: string; url: string }> = {};
     if (companyIds.length > 0) {
       const { data: links } = await supabase
         .from('company_links')
-        .select('company_id, public_token')
-        .in('company_id', companyIds);
-      for (const l of (links ?? []) as Array<{ company_id: string | null; public_token: string }>) {
+        .select('company_id, public_token, public_url')
+        .in('company_id', companyIds)
+        .eq('active', true);
+      for (const l of (links ?? []) as Array<{ company_id: string | null; public_token: string; public_url: string | null }>) {
         if (l.company_id && l.public_token && !linksMap[l.company_id]) {
-          linksMap[l.company_id] = l.public_token;
+          // Preferir public_url do DB; se apontar para preview/lovable, reescreve p/ produção.
+          let url = l.public_url || '';
+          if (!url || /lovable\.app|localhost|127\.0\.0\.1/i.test(url)) {
+            url = `${PUBLIC_BASE_URL}/c/${l.public_token}`;
+          }
+          linksMap[l.company_id] = { token: l.public_token, url };
         }
       }
     }
@@ -188,15 +194,14 @@ export async function loadRecipients() {
     const validCompanies = (data ?? []).filter((c: any) => /.+@.+\..+/.test(c.email));
     const missing = validCompanies.filter((c: any) => !linksMap[c.id]);
     if (missing.length > 0) {
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const inserts = missing.map((c: any) => {
         const token = crypto.randomUUID().replace(/-/g, '');
         return {
           company_id: c.id,
           public_token: token,
           token,
-          public_url: `${origin}/c/${token}`,
-          checkout_url: `${origin}/checkout/${token}`,
+          public_url: `${PUBLIC_BASE_URL}/c/${token}`,
+          checkout_url: `${PUBLIC_BASE_URL}/checkout/${token}`,
           active: true,
           status: 'active',
           company_data: {
@@ -208,16 +213,22 @@ export async function loadRecipients() {
       const { data: inserted, error: insErr } = await supabase
         .from('company_links')
         .insert(inserts)
-        .select('company_id, public_token');
+        .select('company_id, public_token, public_url');
       if (insErr) {
         pushLog(`⚠ Falha ao criar links únicos: ${insErr.message}`);
       } else {
-        for (const l of (inserted ?? []) as Array<{ company_id: string | null; public_token: string }>) {
-          if (l.company_id) linksMap[l.company_id] = l.public_token;
+        for (const l of (inserted ?? []) as Array<{ company_id: string | null; public_token: string; public_url: string | null }>) {
+          if (l.company_id) {
+            linksMap[l.company_id] = {
+              token: l.public_token,
+              url: l.public_url || `${PUBLIC_BASE_URL}/c/${l.public_token}`,
+            };
+          }
         }
         pushLog(`🔗 Criados ${inserted?.length ?? 0} links únicos.`);
       }
     }
+
 
     const items: QueueItem[] = validCompanies
       .map((c: any) => ({
