@@ -172,8 +172,10 @@ export const runAutomationNow = createServerFn({ method: 'POST' })
       .object({
         id: z.string().uuid(),
         overrideQuantity: z.number().int().min(1).max(1000).optional(),
-        // Data opcional para a execução manual; se omitida, usa o modo salvo.
         queryDate: dateSchema.nullable().optional(),
+        trigger: z.enum(['manual', 'test_manual']).default('manual'),
+        overrideAutoImport: z.boolean().optional(),
+        overrideAutoLinks: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -186,10 +188,22 @@ export const runAutomationNow = createServerFn({ method: 'POST' })
     const row = Array.isArray(claimed) ? claimed[0] : claimed;
     if (!row) return { ok: false, reason: 'already_running' as const };
 
+    // Load full row for auto flags
+    const { data: fullRow } = await supabase
+      .from('automatic_company_queries')
+      .select('*')
+      .eq('id', row.id)
+      .maybeSingle();
+
     const queryDate =
       data.queryDate && /^\d{4}-\d{2}-\d{2}$/.test(data.queryDate)
         ? data.queryDate
-        : resolveQueryDate((row as any).query_date_mode, (row as any).selected_query_date);
+        : resolveQueryDate((fullRow as any)?.query_date_mode, (fullRow as any)?.selected_query_date);
+
+    const autoImport =
+      data.overrideAutoImport ?? (fullRow as any)?.auto_import_enabled ?? true;
+    const autoLinks =
+      data.overrideAutoLinks ?? (fullRow as any)?.auto_generate_links_enabled ?? true;
 
     const { runAutomationOnce } = await import('./worker.server');
     const outcome = await runAutomationOnce(
@@ -200,8 +214,14 @@ export const runAutomationNow = createServerFn({ method: 'POST' })
         quantity_per_run: row.quantity_per_run,
         interval_minutes: row.interval_minutes,
         filters: (row.filters ?? {}) as any,
+        auto_import_enabled: autoImport,
+        auto_generate_links_enabled: autoLinks,
       },
-      { trigger: 'manual', overrideQuantity: data.overrideQuantity, queryDate },
+      {
+        trigger: data.trigger,
+        overrideQuantity: data.overrideQuantity,
+        queryDate,
+      },
     );
     return { ok: true as const, outcome, queryDate };
   });
