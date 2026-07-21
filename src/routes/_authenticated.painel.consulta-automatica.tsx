@@ -591,19 +591,7 @@ function ConsultaPage() {
         </Card>
       )}
 
-      {listDialogOpen && (
-        <DraggableCnpjPanel
-          onClose={() => setListDialogOpen(false)}
-          autoCount={autoCount}
-          dateLabel={formatBR(effectiveDate)}
-          savedCount={foundList.length}
-          apiTotal={countResult?.total ?? null}
-          foundList={foundList}
-          flashes={flashes}
-          importedSet={importedSet}
-          onCopy={copy}
-        />
-      )}
+      {/* Painel flutuante de CNPJs montado globalmente em _authenticated.painel.tsx */}
     </div>
   );
 }
