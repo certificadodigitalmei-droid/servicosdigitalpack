@@ -970,17 +970,35 @@ function DraggableCnpjPanel(props: {
           </div>
         ) : (
           <ul className="divide-y divide-slate-100">
-            {foundList.map((it) => (
-              <li key={it.cnpj} className="flex items-start justify-between gap-3 p-3">
+            {foundList.map((it) => {
+              const isImported = importedSet.has(it.cnpj);
+              return (
+              <li
+                key={it.cnpj}
+                className={cn(
+                  'flex items-start justify-between gap-3 p-3',
+                  isImported && 'bg-red-50',
+                )}
+              >
                 <div className="min-w-0">
-                  <div className="font-mono text-sm">{formatCNPJ(it.cnpj)}</div>
-                  <div className="truncate text-sm text-slate-700">{it.nome}</div>
+                  <div className={cn('font-mono text-sm', isImported && 'text-red-700 line-through decoration-red-400/60')}>
+                    {formatCNPJ(it.cnpj)}
+                  </div>
+                  <div className={cn('truncate text-sm', isImported ? 'text-red-800' : 'text-slate-700')}>
+                    {it.nome}
+                  </div>
                   {(it.municipio || it.uf) && (
-                    <div className="text-xs text-slate-500">
+                    <div className={cn('text-xs', isImported ? 'text-red-600' : 'text-slate-500')}>
                       {[it.municipio, it.uf].filter(Boolean).join(' / ')}
                     </div>
                   )}
+                  {isImported && (
+                    <div className="mt-1 inline-block rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+                      Já importado
+                    </div>
+                  )}
                 </div>
+
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <span className="text-[10px] text-slate-400">
                     {new Date(it.firstSeenAt).toLocaleTimeString('pt-BR')}
