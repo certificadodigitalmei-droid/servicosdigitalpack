@@ -246,47 +246,20 @@ export function PixModal({ open, amount, orderId, pixData, onClose }: PixModalPr
   );
 }
 
-function GovLoading({ stepIdx }: { stepIdx: number }) {
-  const progress = ((stepIdx + 1) / LOADING_STEPS.length) * 100;
+function GovLoading({ stepIdx: _stepIdx }: { stepIdx: number }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-5 px-6 py-8 text-center">
-      {/* Imagem oficial animada */}
-      <div className="relative">
-        <div className="absolute -inset-3 rounded-full bg-[#1351b4]/10 blur-xl animate-pulse" />
-        <div className="relative h-40 w-40 rounded-full bg-white shadow-[0_8px_30px_-8px_rgba(19,81,180,0.5)] ring-2 ring-[#1351b4]/20 overflow-hidden">
-          <img
-            src={pixLoader.url}
-            alt="Gerando cobrança Pix"
-            className="h-full w-full object-contain p-2 animate-[pulse_2.2s_ease-in-out_infinite]"
-          />
-          <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#1351b4] border-r-emerald-500 animate-spin [animation-duration:2.4s]" />
-        </div>
+    <div className="flex flex-col items-center justify-center gap-4 px-6 py-10 text-center">
+      <div className="relative h-24 w-24">
+        <img
+          src={pixLoader.url}
+          alt="Gerando cobrança Pix"
+          className="h-full w-full object-contain"
+        />
+        <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-[#1351b4] animate-spin" />
       </div>
-
-      <div className="space-y-1">
-        <div className="text-[16px] font-black text-[#0b1e3f] tracking-tight">Gerando sua guia PIX</div>
-        <div className="text-[12.5px] text-muted-foreground min-h-[18px]">
-          {LOADING_STEPS[stepIdx]}
-        </div>
-      </div>
-
-      {/* Barra de progresso */}
-      <div className="w-full max-w-[320px] space-y-2">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full bg-gradient-to-r from-[#1351b4] via-[#2670e8] to-emerald-500 transition-all duration-500 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <div className="flex justify-between text-[10.5px] font-medium text-muted-foreground">
-          <span>Etapa {stepIdx + 1} de {LOADING_STEPS.length}</span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-wider text-muted-foreground">
-        <ShieldCheck className="h-3 w-3 text-emerald-600" />
-        conexão segura · portal oficial
+      <div className="flex items-center gap-2 text-[13px] font-semibold text-[#0b1e3f]">
+        <Loader2 className="h-4 w-4 animate-spin text-[#1351b4]" />
+        Carregando...
       </div>
     </div>
   );
