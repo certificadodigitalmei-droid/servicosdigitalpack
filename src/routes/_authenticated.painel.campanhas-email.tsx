@@ -608,13 +608,8 @@ function CampanhasEmail() {
     );
   }
 
-  // placeholder to keep structure
-  if (false) {
-    return null;
 
-      </div>
-    );
-  }
+
 
   // ============= Editor =============
   return (
