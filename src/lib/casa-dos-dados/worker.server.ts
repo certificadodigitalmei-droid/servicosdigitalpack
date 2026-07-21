@@ -263,14 +263,25 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
   const shouldStop = (cursorPage = page, cursorOffset = offset): boolean => {
     if (input.signal?.aborted) throw new Error('Execução interrompida pelo controlador');
-    if (Date.now() - startedAt >= maxRunMs) {
+    const elapsed = Date.now() - startedAt;
+    if (elapsed >= maxRunMs) {
       setLimit('Tempo máximo da execução atingido', cursorPage, cursorOffset);
+      return true;
+    }
+    if (elapsed >= softLimitMs) {
+      setLimit('Tempo seguro da execução atingido — retomará no próximo ciclo', cursorPage, cursorOffset);
       return true;
     }
     if (outcome.itemsAnalyzed >= maxItemsAnalyzed) {
       setLimit('Limite máximo de itens analisados atingido', cursorPage, cursorOffset);
       return true;
     }
+    if (isTestRun && outcome.itemsAnalyzed >= maxTestManualItems) {
+      setLimit(`Limite de ${maxTestManualItems} itens do modo teste atingido`, cursorPage, cursorOffset);
+      return true;
+    }
+    return false;
+  };
     return false;
   };
 
