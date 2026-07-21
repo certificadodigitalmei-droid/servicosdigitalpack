@@ -189,8 +189,10 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
   const autoGenerateLinksEnabled = (automation.auto_generate_links_enabled ?? true) && autoImportEnabled;
   const startedAt = Date.now();
   const maxRunMs = Math.max(5_000, input.maxRunMs ?? 50_000);
+  const softLimitMs = Math.max(3_000, Math.min(maxRunMs - 3_000, input.softLimitMs ?? Math.min(35_000, maxRunMs - 10_000)));
   const httpTimeoutMs = Math.max(1_000, input.httpTimeoutMs ?? 12_000);
   const maxItemsAnalyzed = Math.max(1, input.maxItemsAnalyzed ?? Math.min(maxPages * pageSize + 10, 250));
+  const maxTestManualItems = Math.max(1, input.maxTestManualItems ?? 10);
   const maxDetailQueries = Math.max(0, input.maxDetailQueries ?? Math.min(maxItemsAnalyzed, 80));
 
   const outcome = {
