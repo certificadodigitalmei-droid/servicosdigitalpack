@@ -117,6 +117,9 @@ function CampanhasEmail() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [discoveryStatus, setDiscoveryStatus] = useState<string>('pending');
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [companiesInfo, setCompaniesInfo] = useState<{ total: number; withEmail: number; withLink: number } | null>(null);
+  const [companiesOnlyWithEmail, setCompaniesOnlyWithEmail] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const testConnectionFn = useServerFn(testGemMailConnection);
@@ -134,6 +137,115 @@ function CampanhasEmail() {
       setFromName(data.from_name || fromName);
       setFromEmail(data.from_email || fromEmail);
       setReplyTo(data.reply_to || replyTo);
+    }
+  };
+
+  // ============ Auto-carregar destinatários das Empresas Importadas ============
+  const loadFromCompanies = async () => {
+    setLoadingCompanies(true);
+    try {
+      // Puxa todas as empresas importadas (paginado)
+      const all: any[] = [];
+      const PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, cnpj, razao_social_original, nome_titular_exibicao, nome_fantasia, email, inicio_atividade, situacao_cadastral_desc, situacao_cadastral_data, municipio_descricao, uf, telefones')
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
+      }
+
+      if (!all.length) {
+        toast.error('Nenhuma empresa importada encontrada.');
+        setCompaniesInfo({ total: 0, withEmail: 0, withLink: 0 });
+        return;
+      }
+
+      // Puxa todos os links dessas empresas
+      const ids = all.map((c) => c.id);
+      const linksById = new Map<string, any>();
+      const LINK_CHUNK = 500;
+      for (let i = 0; i < ids.length; i += LINK_CHUNK) {
+        const slice = ids.slice(i, i + LINK_CHUNK);
+        const { data: links, error } = await supabase
+          .from('company_links')
+          .select('company_id, public_token, public_url, checkout_url, token, active, created_at')
+          .in('company_id', slice)
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        for (const l of links || []) {
+          if (!l.company_id) continue;
+          // Mantém o mais recente (o primeiro pela ordenação desc)
+          if (!linksById.has(l.company_id)) linksById.set(l.company_id, l);
+        }
+      }
+
+      // Filtra e monta linhas no formato esperado pelo parser
+      const source = companiesOnlyWithEmail
+        ? all.filter((c) => c.email && isValidEmail(String(c.email)))
+        : all;
+
+      const totalCount = all.length;
+      const withEmailCount = all.filter((c) => c.email && isValidEmail(String(c.email))).length;
+      const withLinkCount = source.filter((c) => linksById.has(c.id)).length;
+      setCompaniesInfo({ total: totalCount, withEmail: withEmailCount, withLink: withLinkCount });
+
+      const fmtDate = (d: any) => {
+        if (!d) return '';
+        try {
+          const dt = new Date(String(d));
+          if (Number.isNaN(dt.getTime())) return String(d);
+          return dt.toLocaleDateString('pt-BR');
+        } catch { return String(d || ''); }
+      };
+      const firstPhone = (arr: any): string => {
+        if (!Array.isArray(arr) || !arr.length) return '';
+        const p = arr[0] || {};
+        return (p.numero || p.telefone || p.ddd_numero || '') as string;
+      };
+
+      const rawRowsBuilt = source.map((c) => {
+        const link = linksById.get(c.id);
+        return {
+          EMAIL: c.email || '',
+          NOME_EMPRESARIAL: c.nome_fantasia || c.razao_social_original || c.nome_titular_exibicao || '',
+          RAZAO_SOCIAL: c.razao_social_original || '',
+          NOME_TITULAR: c.nome_titular_exibicao || c.razao_social_original || '',
+          CNPJ: c.cnpj || '',
+          DATA_ABERTURA: fmtDate(c.inicio_atividade),
+          DATA_SITUACAO: fmtDate(c.situacao_cadastral_data),
+          SITUACAO: c.situacao_cadastral_desc || '',
+          MUNICIPIO: c.municipio_descricao || '',
+          UF: c.uf || '',
+          LINK_PUBLICO: link?.public_url || (link?.public_token ? `https://seu-certificado-mei-digital.online/c/${link.public_token}` : ''),
+          LINK_CHECKOUT: link?.checkout_url || '',
+          TOKEN: link?.public_token || link?.token || '',
+          TELEFONE: firstPhone(c.telefones),
+        } as Record<string, any>;
+      });
+
+      const headers = Object.keys(rawRowsBuilt[0] || {
+        EMAIL: '', NOME_EMPRESARIAL: '', CNPJ: '', LINK_PUBLICO: '',
+      });
+      const m = autoMap(headers);
+      const norm = normalizeRows(rawRowsBuilt, m);
+
+      setFileName(`Empresas importadas (${rawRowsBuilt.length})`);
+      setRawHeaders(headers);
+      setRawRows(rawRowsBuilt);
+      setMapping(m);
+      setNormalized(norm);
+      setStats(analyzeRows(norm));
+
+      toast.success(`Carregadas ${rawRowsBuilt.length} empresas${companiesOnlyWithEmail ? ' com e-mail' : ''}.`);
+    } catch (e: any) {
+      toast.error('Erro ao carregar empresas: ' + (e.message || String(e)));
+    } finally {
+      setLoadingCompanies(false);
     }
   };
 
@@ -451,9 +563,50 @@ function CampanhasEmail() {
           </p>
         </div>
 
+        <Card className="border-emerald-300 bg-emerald-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-emerald-900">
+              <Zap className="h-5 w-5" /> Montar automaticamente das Empresas Importadas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-emerald-900/80">
+              A campanha é construída direto do banco (empresas já importadas + seus links gerados).
+              Não precisa mais subir planilha — a cada nova importação, basta clicar em <strong>Recarregar</strong>.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                onClick={loadFromCompanies}
+                disabled={loadingCompanies}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {loadingCompanies ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                {companiesInfo ? 'Recarregar empresas importadas' : 'Carregar empresas importadas'}
+              </Button>
+              <label className="flex items-center gap-2 text-xs text-emerald-900">
+                <input
+                  type="checkbox"
+                  checked={companiesOnlyWithEmail}
+                  onChange={(e) => setCompaniesOnlyWithEmail(e.target.checked)}
+                />
+                Somente empresas com e-mail válido
+              </label>
+              {companiesInfo && (
+                <span className="text-xs text-emerald-900/80">
+                  {companiesInfo.total} empresas · {companiesInfo.withEmail} com e-mail · {companiesInfo.withLink} com link
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
-            <CardTitle>1. Upload da planilha</CardTitle>
+            <CardTitle>Ou 1. Upload da planilha</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3">
