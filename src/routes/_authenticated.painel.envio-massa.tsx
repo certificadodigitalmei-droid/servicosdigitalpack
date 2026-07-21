@@ -105,15 +105,17 @@ function EnvioMassa() {
         .limit(batchLimit);
       if (error) throw error;
 
-      const cnpjs = (data ?? []).map((c: any) => c.cnpj).filter(Boolean);
-      let linksMap: Record<string, string> = {};
-      if (cnpjs.length > 0) {
+      const companyIds = (data ?? []).map((c: any) => c.id).filter(Boolean);
+      const linksMap: Record<string, string> = {};
+      if (companyIds.length > 0) {
         const { data: links } = await supabase
           .from('company_links')
-          .select('cnpj, public_token')
-          .in('cnpj', cnpjs);
-        for (const l of links ?? []) {
-          if (l.public_token && !linksMap[l.cnpj]) linksMap[l.cnpj] = l.public_token;
+          .select('company_id, public_token')
+          .in('company_id', companyIds);
+        for (const l of (links ?? []) as Array<{ company_id: string | null; public_token: string }>) {
+          if (l.company_id && l.public_token && !linksMap[l.company_id]) {
+            linksMap[l.company_id] = l.public_token;
+          }
         }
       }
 
@@ -125,7 +127,7 @@ function EnvioMassa() {
           cnpj: c.cnpj,
           company_name: c.nome_fantasia || c.razao_social || '',
           status: 'pending',
-          publicToken: linksMap[c.cnpj] || null,
+          publicToken: linksMap[c.id] || null,
         }));
       setQueue(items);
       pushLog(`Carregados ${items.length} destinatários (limite ${batchLimit}).`);
@@ -186,7 +188,7 @@ function EnvioMassa() {
         pushLog(`✓ Enviado para ${res.recipient}`);
         return { ok: true };
       }
-      if (res.reason === 'suppressed' || res.reason === 'recipient_suppressed') {
+      if (res.reason === 'recipient_suppressed') {
         setQueue((prev) =>
           prev.map((q) => (q.id === item.id ? { ...q, status: 'suppressed', message: res.message } : q))
         );
