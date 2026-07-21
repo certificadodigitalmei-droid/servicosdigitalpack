@@ -177,10 +177,12 @@ export type Database = {
           created_at: string
           enabled: boolean
           filters: Json
+          heartbeat_at: string | null
           id: string
           interval_minutes: number
           last_error: string | null
           last_run_at: string | null
+          lock_token: string | null
           max_pages_per_run: number
           mode: string
           name: string
@@ -200,10 +202,12 @@ export type Database = {
           created_at?: string
           enabled?: boolean
           filters?: Json
+          heartbeat_at?: string | null
           id?: string
           interval_minutes?: number
           last_error?: string | null
           last_run_at?: string | null
+          lock_token?: string | null
           max_pages_per_run?: number
           mode?: string
           name?: string
@@ -223,10 +227,12 @@ export type Database = {
           created_at?: string
           enabled?: boolean
           filters?: Json
+          heartbeat_at?: string | null
           id?: string
           interval_minutes?: number
           last_error?: string | null
           last_run_at?: string | null
+          lock_token?: string | null
           max_pages_per_run?: number
           mode?: string
           name?: string
@@ -253,6 +259,7 @@ export type Database = {
           duplicate_count: number
           error_message: string | null
           finished_at: string | null
+          heartbeat_at: string | null
           id: string
           imported_count: number
           incomplete_count: number
@@ -264,6 +271,7 @@ export type Database = {
           pages_fetched: number
           pending_enrichment_count: number
           query_date: string | null
+          recovered_reason: string | null
           requested_quantity: number | null
           started_at: string
           status: string
@@ -280,6 +288,7 @@ export type Database = {
           duplicate_count?: number
           error_message?: string | null
           finished_at?: string | null
+          heartbeat_at?: string | null
           id?: string
           imported_count?: number
           incomplete_count?: number
@@ -291,6 +300,7 @@ export type Database = {
           pages_fetched?: number
           pending_enrichment_count?: number
           query_date?: string | null
+          recovered_reason?: string | null
           requested_quantity?: number | null
           started_at?: string
           status?: string
@@ -307,6 +317,7 @@ export type Database = {
           duplicate_count?: number
           error_message?: string | null
           finished_at?: string | null
+          heartbeat_at?: string | null
           id?: string
           imported_count?: number
           incomplete_count?: number
@@ -318,6 +329,7 @@ export type Database = {
           pages_fetched?: number
           pending_enrichment_count?: number
           query_date?: string | null
+          recovered_reason?: string | null
           requested_quantity?: number | null
           started_at?: string
           status?: string
@@ -1389,6 +1401,10 @@ export type Database = {
           owner_user_id: string
           quantity_per_run: number
         }[]
+      }
+      recover_stale_automations: {
+        Args: { _older_than?: string }
+        Returns: number
       }
       resolve_company_link: {
         Args: { _token: string }

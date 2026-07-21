@@ -47,7 +47,7 @@ export const Route = createFileRoute('/api/internal/casa-dos-dados-worker')({
 
         const { data: fullRow } = await supabaseAdmin
           .from('automatic_company_queries')
-          .select('auto_import_enabled, auto_generate_links_enabled, pagination_cursors, max_pages_per_run, page_size')
+          .select('enabled, auto_import_enabled, auto_generate_links_enabled, pagination_cursors, max_pages_per_run, page_size')
           .eq('id', row.id)
           .maybeSingle();
 
@@ -56,6 +56,7 @@ export const Route = createFileRoute('/api/internal/casa-dos-dados-worker')({
           {
             id: row.id,
             owner_user_id: row.owner_user_id,
+            enabled: (fullRow as any)?.enabled ?? true,
             mode: row.mode,
             quantity_per_run: row.quantity_per_run,
             interval_minutes: row.interval_minutes,
