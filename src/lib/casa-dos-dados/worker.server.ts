@@ -282,8 +282,6 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
     }
     return false;
   };
-    return false;
-  };
 
   let itemsSeen = 0;
 
