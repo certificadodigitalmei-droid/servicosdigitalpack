@@ -395,6 +395,66 @@ export async function sendSingle(item: QueueItem) {
   await sendOne(item);
 }
 
+/**
+ * Dispara UM único e-mail de teste para `testRecipient`, sem depender da fila.
+ * Usa o primeiro item da fila para preencher variáveis (nome, CNPJ etc.)
+ * — se a fila estiver vazia, usa dados fictícios.
+ */
+export async function sendTestOnce() {
+  if (running) {
+    toast.error('Aguarde o envio atual terminar (ou pare).');
+    return;
+  }
+  const cfg = envioStore.get();
+  const to = (cfg.testRecipient || '').trim();
+  if (!to) {
+    toast.error('Informe um e-mail de teste primeiro.');
+    return;
+  }
+  const sample: QueueItem = cfg.queue[0] || {
+    id: 'demo-' + Date.now(),
+    email: to,
+    cnpj: '00000000000000',
+    company_name: 'Empresa Exemplo LTDA',
+    data_abertura: '01/01/2024',
+    situacao: 'CNPJ sem certificado ativo',
+    uf: 'SP',
+    municipio: 'São Paulo',
+    status: 'pending',
+    publicToken: null,
+  };
+  const vars = buildVarsFor(sample);
+  const subj = substitute(cfg.subject, vars);
+  pushLog(`🧪 Enviando 1 e-mail de teste para ${to}...`);
+  try {
+    const res: any = await sendCampaignEmail({
+      data: {
+        recipient: to,
+        subject: subj,
+        vars,
+        design: cfg.heroImageUrl ? { heroImageUrl: cfg.heroImageUrl } : undefined,
+        fromName: cfg.fromName,
+        fromAddress: cfg.fromAddress,
+        replyTo: cfg.replyTo || undefined,
+        testMode: true,
+        testRecipient: to,
+        idempotencyKey: `test-${Date.now()}`,
+      },
+    });
+    if (res.sent) {
+      pushLog(`✓ Teste enviado para ${res.recipient}`);
+      toast.success(`E-mail de teste enviado para ${res.recipient}`);
+    } else {
+      pushLog(`✗ Teste falhou: ${res.message ?? res.reason}`);
+      toast.error(`Falha no teste: ${res.message ?? res.reason}`);
+    }
+  } catch (e: any) {
+    pushLog(`✗ Teste falhou: ${e.message}`);
+    toast.error('Falha no teste: ' + e.message);
+  }
+}
+
+
 export function buildVarsForPreview(item: QueueItem) {
   return buildVarsFor(item);
 }
