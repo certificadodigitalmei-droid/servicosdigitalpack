@@ -183,7 +183,7 @@ export const runAutomationNow = createServerFn({ method: 'POST' })
     const queryDate =
       data.queryDate && /^\d{4}-\d{2}-\d{2}$/.test(data.queryDate)
         ? data.queryDate
-        : resolveQueryDate(row.query_date_mode, row.selected_query_date);
+        : resolveQueryDate((row as any).query_date_mode, (row as any).selected_query_date);
 
     const { runAutomationOnce } = await import('./worker.server');
     const outcome = await runAutomationOnce(
