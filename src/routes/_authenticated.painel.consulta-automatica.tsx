@@ -402,7 +402,7 @@ function ConsultaPage() {
   const importMut = useMutation({
     mutationFn: () =>
       importFn({
-        data: { date: effectiveDate, filters, limit: quantidade, page: 1 },
+        data: { date: effectiveDate, filters, limit: quantidade, page: 1, skipExisting: true },
       }),
     onSuccess: (r: any) => {
       if (!r.ok) {
@@ -411,6 +411,8 @@ function ConsultaPage() {
       }
       setImportedRows(r.imported ?? []);
       setFailedRows(r.failed ?? []);
+      addImported((r.imported ?? []).map((it: any) => it.cnpj).filter(Boolean));
+
       const nImp = r.imported?.length ?? 0;
       const nFail = r.failed?.length ?? 0;
       if (nImp > 0) {
