@@ -111,7 +111,8 @@ function CampanhasEmail() {
   const [search, setSearch] = useState('');
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
-  const [gemStatus, setGemStatus] = useState<{ connected: boolean; message?: string; testing?: boolean }>({ connected: false });
+
+
   const [emailSettings, setEmailSettings] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSending, setIsSending] = useState(false);
