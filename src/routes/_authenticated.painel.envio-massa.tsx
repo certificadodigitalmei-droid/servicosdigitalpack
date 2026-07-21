@@ -85,15 +85,29 @@ function EnvioMassa() {
   const dailyLimit = useStore(envioStore, (s) => s.dailyLimit);
   const sentToday = useStore(envioStore, (s) => s.sentToday);
   const importDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
+  const sentEmails = useStore(envioStore, (s) => s.sentEmails);
   const [uploadingImg, setUploadingImg] = useState(false);
 
-
+  const [emailStats, setEmailStats] = useState<EmailStatsResult | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const refreshStats = async () => {
+    setLoadingStats(true);
+    try {
+      const res = await getEmailStats();
+      setEmailStats(res as EmailStatsResult);
+    } catch (e: any) {
+      toast.error('Falha ao consultar limites: ' + e.message);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const [previewIdx, setPreviewIdx] = useState(0);
 
   // Carrega destinatários uma vez se a fila estiver vazia.
   useEffect(() => {
     if (queue.length === 0) void loadRecipients();
+    void refreshStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
