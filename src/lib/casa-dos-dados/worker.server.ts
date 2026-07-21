@@ -80,7 +80,7 @@ function toDate(v: unknown): string | null {
 
 export async function runAutomationOnce(
   automation: Automation,
-  opts: { trigger: 'cron' | 'manual'; overrideQuantity?: number; queryDate?: string },
+  opts: { trigger: 'cron' | 'manual' | 'test_manual'; overrideQuantity?: number; queryDate?: string },
 ): Promise<RunOutcome> {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const publicBaseUrl = (process.env.PUBLIC_APP_URL ?? '').replace(/\/+$/, '');
