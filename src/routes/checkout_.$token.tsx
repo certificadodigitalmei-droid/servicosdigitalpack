@@ -145,10 +145,10 @@ function CheckoutTokenPage() {
       />
 
       <main className="flex-1">
-        <div className="mx-auto w-full max-w-[700px] px-3.5 py-6 sm:px-4 lg:max-w-[1180px] lg:px-8 lg:py-10">
-          <div className="rounded-md border border-border bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] lg:p-8 lg:shadow-[0_20px_60px_-30px_rgba(0,72,132,0.25)]">
+        <div className="mx-auto w-full max-w-[700px] px-3 py-5 sm:px-4 sm:py-6 md:max-w-[860px] md:px-6 lg:max-w-[1180px] lg:px-8 lg:py-10">
+          <div className="rounded-md border border-border bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:p-5 md:p-6 lg:p-8 lg:shadow-[0_20px_60px_-30px_rgba(0,72,132,0.25)]">
             {/* Stepper */}
-            <div className="mb-6 flex items-center justify-between gap-2 text-[12px] lg:mb-8 lg:text-[13px]">
+            <div className="mb-5 flex items-center justify-between gap-1.5 text-[11px] sm:gap-2 sm:text-[12px] md:mb-7 lg:mb-8 lg:text-[13px]">
               <Step done label="Identificação" n={1} />
               <div className="mx-1 h-px flex-1 bg-border" />
               <Step done label="Dados" n={2} />
@@ -158,13 +158,13 @@ function CheckoutTokenPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <h1 className="text-[20px] font-bold text-foreground lg:text-[26px]">Pagamento da Guia</h1>
-                <p className="mt-1 text-[13px] text-muted-foreground lg:text-[14px]">
+                <h1 className="text-[18px] font-bold text-foreground sm:text-[20px] md:text-[22px] lg:text-[26px]">Pagamento da Guia</h1>
+                <p className="mt-1 text-[12.5px] text-muted-foreground sm:text-[13px] lg:text-[14px]">
                   Confira os dados da guia antes de realizar o pagamento.
                 </p>
               </div>
 
-              {/* Desktop 2 columns: form left, sticky summary right */}
+              {/* Responsive columns: stack on mobile/tablet, split on desktop */}
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
                 {/* LEFT column */}
                 <div className="space-y-5">
