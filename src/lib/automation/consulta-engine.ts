@@ -319,54 +319,80 @@ async function syncImportedFromDb() {
   if (found.length) addImported(found);
 }
 
-export async function runImportOnce(opts: { silent?: boolean } = {}) {
+export async function runImportOnce(opts: { silent?: boolean; overrideLimit?: number } = {}) {
   const s = consultaStore.get();
   const date = effectiveDate();
+  // Meta desta execução: pode ser um número grande (ex.: 100). A API oficial
+  // aceita no máximo 15 por chamada, então loopamos internamente em lotes de 15
+  // até bater a meta ou a API parar de retornar novos CNPJs.
+  const HARD_MAX_PER_CALL = 15;
+  const target = Math.max(1, opts.overrideLimit ?? s.quantidade ?? 1);
   consultaStore.set({ isImporting: true });
+  let totalImported: ImportedRow[] = [];
+  let totalFailed: Array<{ cnpj: string; error: string }> = [];
+  let totalSkipped = 0;
   try {
-    const r: any = await importBatch({
-      data: {
-        date,
-        filters: s.filters,
-        limit: s.quantidade,
-        page: 1,
-        skipExisting: true,
-      },
-    });
-    if (!r.ok) {
-      if (!opts.silent) toast.error(r.error ?? `API respondeu ${r.status}`);
-      return { imported: 0, failed: 0, skipped: 0 };
+    let remaining = target;
+    let emptyStreak = 0;
+    while (remaining > 0) {
+      const batchSize = Math.min(HARD_MAX_PER_CALL, remaining);
+      const r: any = await importBatch({
+        data: {
+          date,
+          filters: s.filters,
+          limit: batchSize,
+          page: 1,
+          skipExisting: true,
+        },
+      });
+      if (!r.ok) {
+        if (!opts.silent) toast.error(r.error ?? `API respondeu ${r.status}`);
+        break;
+      }
+      const imp: ImportedRow[] = r.imported ?? [];
+      const fld: Array<{ cnpj: string; error: string }> = r.failed ?? [];
+      totalImported.push(...imp);
+      totalFailed.push(...fld);
+      totalSkipped += r.skipped ?? 0;
+      if (imp.length === 0) {
+        emptyStreak++;
+        if (emptyStreak >= 2) break; // API não tem mais novos
+      } else {
+        emptyStreak = 0;
+      }
+      remaining -= imp.length || batchSize;
+      // Curto respiro entre lotes para não afogar a API.
+      if (remaining > 0) await new Promise((res) => setTimeout(res, 400));
     }
-    const newImported: ImportedRow[] = r.imported ?? [];
-    const newFailed: Array<{ cnpj: string; error: string }> = r.failed ?? [];
+
     const running = consultaStore.get().autoImport;
     consultaStore.set((cur) => ({
       importedRows: running
-        ? [...newImported, ...cur.importedRows].slice(0, 200)
-        : newImported,
+        ? [...totalImported, ...cur.importedRows].slice(0, 500)
+        : totalImported,
       failedRows: running
-        ? [...newFailed, ...cur.failedRows].slice(0, 200)
-        : newFailed,
+        ? [...totalFailed, ...cur.failedRows].slice(0, 500)
+        : totalFailed,
     }));
-    addImported(newImported.map((it) => it.cnpj).filter(Boolean));
+    addImported(totalImported.map((it) => it.cnpj).filter(Boolean));
 
-    const nImp = newImported.length;
-    const nFail = newFailed.length;
+    const nImp = totalImported.length;
+    const nFail = totalFailed.length;
     if (!opts.silent) {
       if (nImp > 0) {
         toast.success(`${nImp} empresa(s) importada(s). ${nImp} crédito(s) consumido(s).`);
       } else if (nFail > 0) {
         toast.error(`Nenhuma importada. ${nFail} falha(s).`);
-      } else if ((r.skipped ?? 0) > 0 && !running) {
+      } else if (totalSkipped > 0) {
         toast.info(`Nenhum CNPJ novo — todos já foram importados.`);
-      } else if (!running) {
+      } else {
         toast.info('Nenhuma empresa retornada pela API.');
       }
     }
-    return { imported: nImp, failed: nFail, skipped: r.skipped ?? 0 };
+    return { imported: nImp, failed: nFail, skipped: totalSkipped };
   } catch (e: any) {
     if (!opts.silent) toast.error(e?.message ?? 'Erro ao importar');
-    return { imported: 0, failed: 0, skipped: 0 };
+    return { imported: totalImported.length, failed: totalFailed.length, skipped: totalSkipped };
   } finally {
     consultaStore.set({ isImporting: false });
   }
