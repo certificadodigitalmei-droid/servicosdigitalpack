@@ -8,6 +8,7 @@ import {
   Link2,
   Upload,
   Mail,
+  Bot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,11 +40,12 @@ function PanelLayout() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success('Sessão encerrada');
-    navigate({ to: '/' });
+    navigate({ to: '/auth' });
   };
 
   const menuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, to: '/painel' },
+    { title: 'Consulta Automática', icon: Bot, to: '/painel/consulta-automatica' },
     { title: 'Filtrar Empresas MEI', icon: Filter, to: '/painel/filtrar-mei' },
     { title: 'Importar Empresas', icon: Upload, to: '/painel/importar-empresas' },
     { title: 'Gerador de Links', icon: Link2, to: '/painel/gerador-links' },
@@ -53,6 +55,7 @@ function PanelLayout() {
 
   const getBreadcrumbLabel = (path: string) => {
     if (path === '/painel') return 'Dashboard';
+    if (path === '/painel/consulta-automatica') return 'Consulta Automática';
     if (path === '/painel/importar-empresas') return 'Importar Empresas';
     if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
     if (path === '/painel/gerador-links') return 'Gerador de Links';
