@@ -239,13 +239,53 @@ function CampanhasEmail() {
       setNormalized(norm);
       setStats(analyzeRows(norm));
 
-      toast.success(`Carregadas ${rawRowsBuilt.length} empresas${companiesOnlyWithEmail ? ' com e-mail' : ''}.`);
+      // Monta as campanhas de e-mail direto na memória (sem envio, sem provider).
+      const { data: sup } = await supabase.from('suppression_list').select('email');
+      const blocked = new Set((sup || []).map((s: any) => (s.email || '').toLowerCase()));
+
+      const seen = new Set<string>();
+      const recs: Recipient[] = [];
+      norm.forEach((r, i) => {
+        const email = (r.EMAIL || '').toLowerCase().trim();
+        const validEmail = isValidEmail(email);
+        const hasLink = !!r.LINK_PUBLICO;
+        const isDup = email && seen.has(email);
+        if (email) seen.add(email);
+        let status: Recipient['status'] = 'ready';
+        if (!validEmail || !hasLink) status = 'invalid';
+        else if (blocked.has(email)) status = 'blocked';
+        else if (isDup) return;
+        const ref = genReference(i + 1);
+        const vars = rowToVars(r, { name: fromName, company: campaignName, reference: ref });
+        recs.push({
+          id: `local-${i}-${Date.now()}`,
+          email: r.EMAIL,
+          company_name: r.NOME_EMPRESARIAL || r.RAZAO_SOCIAL,
+          cnpj: r.CNPJ,
+          public_link: r.LINK_PUBLICO,
+          checkout_link: r.LINK_CHECKOUT,
+          reference_code: ref,
+          status,
+          personalized_subject: substitute(subject, vars),
+          row: r,
+        });
+      });
+      setRecipients(recs);
+      setCampaignId(null);
+      setStep('editor');
+      setSelectedIdx(0);
+
+      const validCount = recs.filter((r) => r.status === 'ready').length;
+      toast.success(
+        `Campanha montada: ${recs.length} destinatários (${validCount} prontos). Veja a prévia ao lado.`,
+      );
     } catch (e: any) {
       toast.error('Erro ao carregar empresas: ' + (e.message || String(e)));
     } finally {
       setLoadingCompanies(false);
     }
   };
+
 
   // Envio automático removido — a exportação (CSV/XLSX/HTML) alimenta uma ferramenta externa.
 
