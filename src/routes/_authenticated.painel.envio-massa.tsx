@@ -20,7 +20,8 @@ import {
   substitute,
   formatCnpj,
 } from '@/lib/email-campaign/template';
-import { Loader2, Play, Pause, Square, RefreshCw, Send, TestTube2, Eye } from 'lucide-react';
+import { Loader2, Play, Pause, Square, RefreshCw, Send, TestTube2, Eye, RotateCcw, Trash2, Zap, Activity } from 'lucide-react';
+import { FloatingStatsPanel } from '@/components/painel/FloatingStatsPanel';
 
 export const Route = createFileRoute('/_authenticated/painel/envio-massa')({
   component: EnvioMassa,
