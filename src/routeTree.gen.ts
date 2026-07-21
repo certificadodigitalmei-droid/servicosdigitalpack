@@ -22,6 +22,7 @@ import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
 import { Route as ApiPublicWebhookUniaopayRouteImport } from './routes/api/public/webhook-uniaopay'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
+import { Route as AuthenticatedPainelModeloMensagemRouteImport } from './routes/_authenticated.painel.modelo-mensagem'
 import { Route as AuthenticatedPainelLinksGeradosRouteImport } from './routes/_authenticated.painel.links-gerados'
 import { Route as AuthenticatedPainelImportarEmpresasRouteImport } from './routes/_authenticated.painel.importar-empresas'
 import { Route as AuthenticatedPainelGeradorLinksRouteImport } from './routes/_authenticated.painel.gerador-links'
@@ -102,6 +103,12 @@ const ApiInternalCasaDosDadosWorkerRoute =
     id: '/api/internal/casa-dos-dados-worker',
     path: '/api/internal/casa-dos-dados-worker',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedPainelModeloMensagemRoute =
+  AuthenticatedPainelModeloMensagemRouteImport.update({
+    id: '/modelo-mensagem',
+    path: '/modelo-mensagem',
+    getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelLinksGeradosRoute =
   AuthenticatedPainelLinksGeradosRouteImport.update({
@@ -200,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
+  '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
@@ -225,6 +233,7 @@ export interface FileRoutesByTo {
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
+  '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
@@ -254,6 +263,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   '/_authenticated/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/_authenticated/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
+  '/_authenticated/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
@@ -283,6 +293,7 @@ export interface FileRouteTypes {
     | '/painel/gerador-links'
     | '/painel/importar-empresas'
     | '/painel/links-gerados'
+    | '/painel/modelo-mensagem'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-uniaopay'
     | '/painel/'
@@ -308,6 +319,7 @@ export interface FileRouteTypes {
     | '/painel/gerador-links'
     | '/painel/importar-empresas'
     | '/painel/links-gerados'
+    | '/painel/modelo-mensagem'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-uniaopay'
     | '/painel'
@@ -336,6 +348,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/gerador-links'
     | '/_authenticated/painel/importar-empresas'
     | '/_authenticated/painel/links-gerados'
+    | '/_authenticated/painel/modelo-mensagem'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-uniaopay'
     | '/_authenticated/painel/'
@@ -454,6 +467,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/internal/casa-dos-dados-worker'
       preLoaderRoute: typeof ApiInternalCasaDosDadosWorkerRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/painel/modelo-mensagem': {
+      id: '/_authenticated/painel/modelo-mensagem'
+      path: '/modelo-mensagem'
+      fullPath: '/painel/modelo-mensagem'
+      preLoaderRoute: typeof AuthenticatedPainelModeloMensagemRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/links-gerados': {
       id: '/_authenticated/painel/links-gerados'
@@ -591,6 +611,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelGeradorLinksRoute: typeof AuthenticatedPainelGeradorLinksRouteWithChildren
   AuthenticatedPainelImportarEmpresasRoute: typeof AuthenticatedPainelImportarEmpresasRoute
   AuthenticatedPainelLinksGeradosRoute: typeof AuthenticatedPainelLinksGeradosRoute
+  AuthenticatedPainelModeloMensagemRoute: typeof AuthenticatedPainelModeloMensagemRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
 
@@ -608,6 +629,8 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelImportarEmpresasRoute:
     AuthenticatedPainelImportarEmpresasRoute,
   AuthenticatedPainelLinksGeradosRoute: AuthenticatedPainelLinksGeradosRoute,
+  AuthenticatedPainelModeloMensagemRoute:
+    AuthenticatedPainelModeloMensagemRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
 }
 
@@ -644,13 +667,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

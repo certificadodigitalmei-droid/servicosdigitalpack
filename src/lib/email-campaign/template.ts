@@ -1,58 +1,132 @@
 export type CampaignDesign = {
+  // Marca / cabeçalho
   logoText: string;
   logoUrl?: string;
+  logoSize: number;
   heroImageUrl?: string;
   headerBg: string;
   headerText: string;
+  headerPadding: number;
+
+  // Cores base
   bodyBg: string;
+  pageBg: string;
   cardBg: string;
   textColor: string;
   mutedColor: string;
+
+  // Botão
   buttonBg: string;
   buttonText: string;
+  buttonRadius: number;
+  buttonPaddingY: number;
+  buttonPaddingX: number;
+  buttonSize: number;
+
+  // Layout
   align: 'left' | 'center';
+  containerWidth: number;
+  contentPaddingX: number;
+
+  // Tipografia
   titleSize: number;
+  subtitleSize: number;
   bodySize: number;
+  heroTitleSize: number;
+  heroTitleColor: string;
+
+  // Textos principais
   title: string;
   subtitle: string;
+  heroTitle: string;
+  showHero: boolean;
   intro: string;
   cardTitle: string;
+  showCard: boolean;
   buttonLabel: string;
   buttonHref: string;
+
+  // Bloco de aviso
+  showWarning: boolean;
+  warningTitle: string;
+  warningItems: string; // uma linha por item
+  warningBg: string;
+  warningBorder: string;
+  warningTitleColor: string;
+  warningTextColor: string;
+
+  // Assinatura
+  showSignature: boolean;
+  signature: string;
+
+  // Rodapé
   footer: string;
   disclaimer: string;
+  showFooter: boolean;
   unsubText: string;
   unsubHref: string;
 };
 
-
 export const DEFAULT_DESIGN: CampaignDesign = {
   logoText: 'CERTIFICADO DIGITAL MEI',
+  logoSize: 13,
   headerBg: '#0b1e3f',
   headerText: '#ffffff',
+  headerPadding: 36,
+
   bodyBg: '#ffffff',
+  pageBg: '#f3f4f6',
   cardBg: '#f8fafc',
   textColor: '#1f2937',
   mutedColor: '#64748b',
+
   buttonBg: '#0b1e3f',
   buttonText: '#ffffff',
+  buttonRadius: 999,
+  buttonPaddingY: 16,
+  buttonPaddingX: 44,
+  buttonSize: 17,
+
   align: 'left',
+  containerWidth: 640,
+  contentPaddingX: 36,
+
   titleSize: 28,
+  subtitleSize: 14,
   bodySize: 17,
+  heroTitleSize: 26,
+  heroTitleColor: '#0b1e3f',
+
   title: 'Informação cadastral - {{NOME_TITULAR}}',
   subtitle: 'Referência: {{REFERENCIA}}',
-  intro:
-    '{{NOME_TITULAR}},\n\nDados do cadastro:',
+  heroTitle: 'Certificado Digital\ndisponível para seu CNPJ',
+  showHero: true,
+  intro: '{{NOME_TITULAR}},\n\nDados do cadastro:',
   cardTitle: 'Dados do cadastro:',
+  showCard: true,
   buttonLabel: 'Finalizar Certificado Digital MEI',
   buttonHref: '{{LINK_PUBLICO}}',
+
+  showWarning: true,
+  warningTitle: 'MEIs sem Certificado Digital:',
+  warningItems:
+    'Não conseguem emitir Nota Fiscal Eletrônica (NF-e)\nFicam impedidos de assinar contratos digitais\nEstão sujeitos a penalidades e restrições da Receita Federal',
+  warningBg: '#fef2f2',
+  warningBorder: '#ef4444',
+  warningTitleColor: '#b91c1c',
+  warningTextColor: '#4b5563',
+
+  showSignature: true,
+  signature:
+    'Atenciosamente,\n**Central de Atendimento**\nCertificado Digital MEI',
+
   footer: 'Atenciosamente,\nCentral de Atendimento\nCertificado Digital MEI',
   disclaimer:
     'Você recebeu este e-mail pois seu CNPJ consta em nossa base de cadastros MEI.',
+  showFooter: true,
   unsubText: '',
   unsubHref: '#',
 };
-
 
 export const DEFAULT_SUBJECT = '{{NOME_TITULAR}}, atualização pendente do seu CNPJ';
 export const DEFAULT_PREHEADER =
@@ -90,6 +164,11 @@ function nl2br(s: string): string {
   return esc(s).replace(/\n/g, '<br/>');
 }
 
+/** Suporta **negrito** dentro de textos livres. */
+function inlineFormat(s: string): string {
+  return nl2br(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
 function cleanPersonName(v: string): string {
   if (!v) return '';
   return v
@@ -107,17 +186,23 @@ export function formatCnpj(cnpj: string): string {
 }
 
 export function renderHtml(d: CampaignDesign, vars: Vars): string {
+  // Merge com defaults para não quebrar quando o design salvo estiver antigo.
+  const D: CampaignDesign = { ...DEFAULT_DESIGN, ...d };
   const S = (t: string) => substitute(t, vars);
-  const title = esc(S(d.title));
-  const subtitle = esc(S(d.subtitle));
-  const intro = nl2br(S(d.intro));
-  const cardTitle = esc(S(d.cardTitle));
-  const buttonLabel = esc(S(d.buttonLabel));
-  const buttonHref = esc(S(d.buttonHref));
-  const footer = nl2br(S(d.footer));
-  const disclaimer = nl2br(S(d.disclaimer));
-  const logo = esc(S(d.logoText));
-  const align = d.align;
+  const title = esc(S(D.title));
+  const subtitle = esc(S(D.subtitle));
+  const intro = inlineFormat(S(D.intro));
+  const cardTitle = esc(S(D.cardTitle));
+  const buttonLabel = esc(S(D.buttonLabel));
+  const buttonHref = esc(S(D.buttonHref));
+  const disclaimer = inlineFormat(S(D.disclaimer));
+  const signature = inlineFormat(S(D.signature));
+  const logo = esc(S(D.logoText));
+  const heroTitle = inlineFormat(S(D.heroTitle));
+  const warningTitle = esc(S(D.warningTitle));
+  const warningItems = inlineFormat(S(D.warningItems));
+  const align = D.align;
+  const px = D.contentPaddingX;
 
   const rowsHtml = [
     ['Nome', vars.NOME_TITULAR || vars.NOME_EMPRESARIAL],
@@ -126,103 +211,94 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     ['Situação', vars.SITUACAO || 'CNPJ sem certificado ativo'],
   ]
     .filter(([, v]) => v)
-    .map(
-      ([k, v]) => {
-        const isSituacao = k === 'Situação';
-        const valueStyle = isSituacao && String(v).toLowerCase().includes('sem certificado')
+    .map(([k, v]) => {
+      const isSituacao = k === 'Situação';
+      const valueStyle =
+        isSituacao && String(v).toLowerCase().includes('sem certificado')
           ? 'color:#dc2626;font-weight:700;'
-          : `color:${d.textColor};`;
-        return `<tr><td style="padding:8px 0;color:${d.textColor};font-size:${d.bodySize}px;line-height:1.5;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> <span style="${valueStyle}">${esc(String(v))}</span></td></tr>`;
-      }
-    )
+          : `color:${D.textColor};`;
+      return `<tr><td style="padding:8px 0;color:${D.textColor};font-size:${D.bodySize}px;line-height:1.5;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> <span style="${valueStyle}">${esc(String(v))}</span></td></tr>`;
+    })
     .join('');
 
   return `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${title}</title></head>
-<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:${d.textColor};">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 0;"><tr><td align="center">
-  <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;background:#ffffff;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+<body style="margin:0;padding:0;background:${D.pageBg};font-family:Arial,Helvetica,sans-serif;color:${D.textColor};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.pageBg};padding:40px 0;"><tr><td align="center">
+  <table role="presentation" width="${D.containerWidth}" cellpadding="0" cellspacing="0" style="max-width:${D.containerWidth}px;width:100%;background:${D.bodyBg};box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
     <!-- Header -->
-    <tr><td style="background:${d.headerBg};color:${d.headerText};padding:36px 36px;text-align:left;">
-      <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;margin-bottom:14px;">${logo}</div>
-      <div style="font-size:${d.titleSize}px;font-weight:800;line-height:1.2;margin:0;">${title}</div>
-      <div style="font-size:14px;opacity:0.85;margin-top:12px;">${subtitle}</div>
+    <tr><td style="background:${D.headerBg};color:${D.headerText};padding:${D.headerPadding}px ${px}px;text-align:left;">
+      <div style="font-size:${D.logoSize}px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;margin-bottom:14px;">${logo}</div>
+      <div style="font-size:${D.titleSize}px;font-weight:800;line-height:1.2;margin:0;">${title}</div>
+      <div style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:12px;">${subtitle}</div>
     </td></tr>
-    ${d.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(d.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:640px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
+    ${D.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(D.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:${D.containerWidth}px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
 
-    <!-- Hero Title -->
-    <tr><td style="padding:44px 36px 20px 36px;text-align:center;">
-      <h2 style="font-size:26px;font-weight:800;color:${d.headerBg};margin:0;line-height:1.25;">Certificado Digital<br/>disponível para seu CNPJ</h2>
+    ${D.showHero ? `
+    <tr><td style="padding:44px ${px}px 20px ${px}px;text-align:center;">
+      <h2 style="font-size:${D.heroTitleSize}px;font-weight:800;color:${D.heroTitleColor};margin:0;line-height:1.25;">${heroTitle}</h2>
       <div style="width:48px;height:1px;background:#e5e7eb;margin:28px auto;"></div>
-    </td></tr>
+    </td></tr>` : ''}
 
-    <!-- Intro Body -->
-    <tr><td style="padding:0 36px 24px 36px;text-align:${align};font-size:${d.bodySize}px;line-height:1.6;color:${d.textColor};font-weight:700;">
+    <tr><td style="padding:0 ${px}px 24px ${px}px;text-align:${align};font-size:${D.bodySize}px;line-height:1.6;color:${D.textColor};font-weight:700;">
       ${intro}
     </td></tr>
 
-    <!-- Data Card -->
-    <tr><td style="padding:0 36px 28px 36px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${d.cardBg};border-radius:8px;padding:24px 26px;border:1px solid #e5e7eb;">
+    ${D.showCard ? `
+    <tr><td style="padding:0 ${px}px 28px ${px}px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.cardBg};border-radius:8px;padding:24px 26px;border:1px solid #e5e7eb;">
         ${rowsHtml}
       </table>
-    </td></tr>
+    </td></tr>` : ''}
 
-    <!-- Warning Box -->
-    <tr><td style="padding:0 36px 32px 36px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border-left:4px solid #ef4444;padding:20px 22px;border-radius:4px;">
-        <tr><td style="color:#b91c1c;font-size:17px;font-weight:700;padding-bottom:10px;">MEIs sem Certificado Digital:</td></tr>
-        <tr><td style="color:#4b5563;font-size:15px;line-height:1.65;">
-          Não conseguem emitir Nota Fiscal Eletrônica (NF-e)<br/>
-          Ficam impedidos de assinar contratos digitais<br/>
-          Estão sujeitos a penalidades e restrições da Receita Federal
-        </td></tr>
+    ${D.showWarning ? `
+    <tr><td style="padding:0 ${px}px 32px ${px}px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.warningBg};border-left:4px solid ${D.warningBorder};padding:20px 22px;border-radius:4px;">
+        <tr><td style="color:${D.warningTitleColor};font-size:${D.bodySize}px;font-weight:700;padding-bottom:10px;">${warningTitle}</td></tr>
+        <tr><td style="color:${D.warningTextColor};font-size:${Math.max(13, D.bodySize - 2)}px;line-height:1.65;">${warningItems}</td></tr>
       </table>
+    </td></tr>` : ''}
+
+    <tr><td align="center" style="padding:0 ${px}px 44px ${px}px;">
+      <a href="${buttonHref}" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);">${buttonLabel}</a>
     </td></tr>
 
-    <!-- Button -->
-    <tr><td align="center" style="padding:0 36px 44px 36px;">
-      <a href="${buttonHref}" style="display:inline-block;background:${d.buttonBg};color:${d.buttonText};text-decoration:none;padding:16px 44px;border-radius:999px;font-weight:700;font-size:17px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);">${buttonLabel}</a>
-    </td></tr>
+    ${D.showSignature ? `
+    <tr><td style="padding:0 ${px}px 36px ${px}px;color:${D.mutedColor};font-size:${Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
+      ${signature}
+    </td></tr>` : ''}
 
-    <!-- Signature -->
-    <tr><td style="padding:0 36px 36px 36px;color:#4b5563;font-size:15px;line-height:1.6;">
-      Atenciosamente,<br/>
-      <strong style="color:${d.textColor};">Central de Atendimento</strong><br/>
-      Certificado Digital MEI
-    </td></tr>
-
-
-    <!-- Footer -->
+    ${D.showFooter ? `
     <tr><td style="padding:32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
-      <div style="color:${d.mutedColor};font-size:11px;line-height:1.6;">
+      <div style="color:${D.mutedColor};font-size:11px;line-height:1.6;">
         ${disclaimer}
       </div>
-    </td></tr>
+    </td></tr>` : ''}
   </table>
 </td></tr></table>
 </body></html>`;
 }
 
 export function renderText(d: CampaignDesign, vars: Vars): string {
+  const D: CampaignDesign = { ...DEFAULT_DESIGN, ...d };
   const S = (t: string) => substitute(t, vars);
   return [
-    S(d.title),
-    S(d.subtitle),
+    S(D.title),
+    S(D.subtitle),
     '',
-    S(d.intro),
+    S(D.intro),
     '',
-    S(d.cardTitle),
+    S(D.cardTitle),
     vars.NOME_TITULAR ? `- Nome: ${vars.NOME_TITULAR}` : '',
     vars.CNPJ ? `- CNPJ: ${formatCnpj(vars.CNPJ)}` : '',
     vars.DATA_ABERTURA ? `- Data de Abertura: ${vars.DATA_ABERTURA}` : '',
     vars.SITUACAO ? `- Situação: ${vars.SITUACAO}` : '',
     '',
-    `${S(d.buttonLabel)}: ${S(d.buttonHref)}`,
+    `${S(D.buttonLabel)}: ${S(D.buttonHref)}`,
     '',
-    S(d.footer),
+    S(D.signature).replace(/\*\*/g, ''),
     '',
-    S(d.disclaimer),
+    S(D.disclaimer),
   ]
     .filter(Boolean)
     .join('\n');

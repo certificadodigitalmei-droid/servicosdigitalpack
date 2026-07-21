@@ -12,6 +12,8 @@ import {
   Database,
   LinkIcon,
   Send,
+  Palette,
+
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -52,8 +54,10 @@ function PanelLayout() {
     { title: 'Empresas Importadas', icon: Database, to: '/painel/empresas-importadas' },
     { title: 'Links Gerados', icon: LinkIcon, to: '/painel/links-gerados' },
     { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
+    { title: 'Modelo de Mensagem', icon: Palette, to: '/painel/modelo-mensagem' },
     { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
   ];
+
 
 
   const getBreadcrumbLabel = (path: string) => {
@@ -66,6 +70,8 @@ function PanelLayout() {
     if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
     if (path === '/painel/gerador-links') return 'Gerador de Links';
     if (path === '/painel/campanhas-email') return 'Campanhas de E-mail';
+    if (path === '/painel/modelo-mensagem') return 'Modelo de Mensagem';
+
     if (path === '/painel/envio-massa') return 'Envio em Massa';
     if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
     return 'Painel';
