@@ -37,9 +37,27 @@ function TokenHomePage() {
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
   const aberturaFmt = row.abertura ? formatDateBR(row.abertura) : '—';
 
+  const [loading, setLoading] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return sessionStorage.getItem(`gov-consulta-${token}`) !== '1';
+  });
+
   useEffect(() => {
     trackEvent(token, 'view_link');
   }, [token]);
+
+  if (loading) {
+    return (
+      <GovConsultaLoader
+        cnpj={row.cnpj}
+        nome={nomeFmt !== '—' ? nomeFmt : undefined}
+        onFinish={() => {
+          try { sessionStorage.setItem(`gov-consulta-${token}`, '1'); } catch {}
+          setLoading(false);
+        }}
+      />
+    );
+  }
 
 
   return (
