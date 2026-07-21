@@ -166,7 +166,11 @@ export async function searchOpeningsByDate(opts: {
   date?: string;
 } & CasaRequestOptions): Promise<CasaSearchResult> {
   const body = buildSearchBody(opts);
-  const url = `${baseUrl()}/v5/cnpj/pesquisa`;
+  // tipo_resultado=completo devolve endereco, uf, municipio, matriz_filial,
+  // data_abertura, mei, contato_email e contato_telefonico. Sem esse parâmetro
+  // a API devolve apenas cnpj/razao_social/nome_fantasia/situacao (payload
+  // reduzido que não consome crédito e faz tudo virar pending_enrichment).
+  const url = `${baseUrl()}/v5/cnpj/pesquisa?tipo_resultado=completo`;
   const request: SanitizedRequestLog = { url, method: 'POST', body };
 
   const res = await fetchWithTimeout(url, {
