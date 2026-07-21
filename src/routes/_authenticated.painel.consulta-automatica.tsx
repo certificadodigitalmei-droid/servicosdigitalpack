@@ -165,6 +165,32 @@ function ConsultaPage() {
     }, 3200);
   };
 
+  // CNPJs já importados (persistidos globalmente no navegador).
+  // Marca visualmente no popup e evita reimportação junto com dedup do servidor.
+  const IMPORTED_KEY = 'casa:importedCnpjs';
+  const [importedSet, setImportedSet] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const raw = window.localStorage.getItem(IMPORTED_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return new Set(Array.isArray(arr) ? arr : []);
+    } catch {
+      return new Set();
+    }
+  });
+  const addImported = (cnpjs: string[]) => {
+    if (!cnpjs.length) return;
+    setImportedSet((prev) => {
+      const next = new Set(prev);
+      for (const c of cnpjs) next.add(c);
+      try {
+        window.localStorage.setItem(IMPORTED_KEY, JSON.stringify([...next]));
+      } catch { /* ignore quota */ }
+      return next;
+    });
+  };
+
+
 
 
 
