@@ -178,6 +178,7 @@ function CampanhasEmail() {
           .order('created_at', { ascending: false });
         if (error) throw error;
         for (const l of links || []) {
+          if (!l.company_id) continue;
           // Mantém o mais recente (o primeiro pela ordenação desc)
           if (!linksById.has(l.company_id)) linksById.set(l.company_id, l);
         }
