@@ -17,6 +17,7 @@ import { formatCPFOrCNPJ, maskCPFCNPJ, maskPhone, isValidEmail } from '@/lib/for
 import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/track';
 import { toast } from 'sonner';
+import { extractErrorMessage } from '@/lib/errors';
 import type { ResolvedCompany } from '@/lib/company-links.functions';
 
 export const Route = createFileRoute('/checkout_/$token')({
