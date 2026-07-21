@@ -80,19 +80,19 @@ export const importBatch = createServerFn({ method: 'POST' })
   .handler(async ({ context, data }) => {
     await assertAdmin(context.supabase, context.userId);
 
-    const { searchOpeningsByDate } = await import('./client.server');
+    const { searchOpeningsByDate, fetchCompanyDetailsByCnpj } = await import('./client.server');
     const { normalizeCasaDosDadosCompany } = await import('./worker-logic');
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const publicBaseUrl = (process.env.PUBLIC_APP_URL ?? '').replace(/\/+$/, '');
 
-    // Chamada PAGA — retorna dados completos, 1 crédito por CNPJ.
+    // 1) DESCOBERTA (grátis): pesquisa simples só para pegar os CNPJs.
     const r = await searchOpeningsByDate({
       filters: data.filters,
       date: data.date,
       limit: data.limit,
       page: data.page,
-      completo: true,
-      timeoutMs: 35_000,
+      completo: false,
+      timeoutMs: 20_000,
     });
 
     if (!r.ok) {
@@ -104,6 +104,7 @@ export const importBatch = createServerFn({ method: 'POST' })
         apiTotal: r.total,
       };
     }
+
 
     const imported: Array<{
       cnpj: string;
