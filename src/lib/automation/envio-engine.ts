@@ -292,10 +292,13 @@ function buildVarsFor(item: QueueItem) {
     MUNICIPIO: item.municipio || '',
     UF: item.uf || '',
     EMAIL: item.email,
-    LINK_PUBLICO: item.publicToken
-      ? `${typeof window !== 'undefined' ? window.location.origin : ''}/c/${item.publicToken}`
-      : `${typeof window !== 'undefined' ? window.location.origin : ''}/modelo`,
+    LINK_PUBLICO: item.publicUrl
+      ? item.publicUrl
+      : item.publicToken
+        ? `${PUBLIC_BASE_URL}/c/${item.publicToken}`
+        : `${PUBLIC_BASE_URL}/modelo`,
     TOKEN: item.publicToken || '',
+
   };
   return rowToVars(row, {
     name: s.fromName,
