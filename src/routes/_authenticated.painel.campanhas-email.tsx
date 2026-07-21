@@ -816,21 +816,7 @@ function CampanhasEmail() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Status da Integração</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="p-4 bg-slate-50 rounded border border-dashed text-center">
-                <p className="text-sm font-medium text-slate-500">
-                  GemMail ainda não conectada.
-                </p>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Métricas em tempo real serão exibidas após configuração oficial.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+
 
           <Card>
             <CardHeader className="pb-2">
