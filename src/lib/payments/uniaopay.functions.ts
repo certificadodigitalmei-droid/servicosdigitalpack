@@ -56,11 +56,21 @@ export const createPixCharge = createServerFn({ method: "POST" })
 
     console.error("[UniaoPay] Falha ao criar cobrança PIX", {
       status: lastStatus,
-      body: lastBody.slice(0, 500),
+      body: lastBody,
     });
-    throw new Error(
-      `UniaoPay ${lastStatus}: ${lastBody.slice(0, 200) || "sem resposta"}`
-    );
+
+    let errorMessage = lastBody.slice(0, 500) || "sem resposta";
+    try {
+      const parsed = JSON.parse(lastBody) as Record<string, unknown>;
+      errorMessage =
+        (typeof parsed.message === "string" && parsed.message) ||
+        (typeof parsed.error === "string" && parsed.error) ||
+        JSON.stringify(parsed);
+    } catch {
+      // mantém o texto bruto
+    }
+
+    throw new Error(`UniaoPay ${lastStatus}: ${errorMessage}`);
   });
 
 export const getPixStatus = createServerFn({ method: "GET" })
