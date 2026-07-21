@@ -119,8 +119,8 @@ function CheckoutTokenPage() {
       });
 
       if (result.orderId) setOrderId(result.orderId);
-      if (result.qrcode) {
-        setPixData({ qrcode: result.qrcode, transaction_id: result.transaction_id });
+      if (result.pix_code || result.qr_code_base64) {
+        setPixData({ pix_code: result.pix_code, qr_code_base64: result.qr_code_base64, transaction_id: result.transaction_id });
       }
 
       setPixOpen(true);
