@@ -170,6 +170,187 @@ export type Database = {
         }
         Relationships: []
       }
+      automatic_company_queries: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          filters: Json
+          id: string
+          interval_minutes: number
+          last_error: string | null
+          last_run_at: string | null
+          mode: string
+          name: string
+          next_run_at: string | null
+          owner_user_id: string
+          quantity_per_run: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          filters?: Json
+          id?: string
+          interval_minutes?: number
+          last_error?: string | null
+          last_run_at?: string | null
+          mode?: string
+          name?: string
+          next_run_at?: string | null
+          owner_user_id: string
+          quantity_per_run?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          filters?: Json
+          id?: string
+          interval_minutes?: number
+          last_error?: string | null
+          last_run_at?: string | null
+          mode?: string
+          name?: string
+          next_run_at?: string | null
+          owner_user_id?: string
+          quantity_per_run?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      automatic_company_query_runs: {
+        Row: {
+          api_summary: Json | null
+          api_total: number | null
+          automation_id: string
+          created_at: string
+          duplicate_count: number
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          imported_count: number
+          link_created_count: number
+          link_reused_count: number
+          requested_quantity: number | null
+          started_at: string
+          status: string
+          trigger: string
+        }
+        Insert: {
+          api_summary?: Json | null
+          api_total?: number | null
+          automation_id: string
+          created_at?: string
+          duplicate_count?: number
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          imported_count?: number
+          link_created_count?: number
+          link_reused_count?: number
+          requested_quantity?: number | null
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Update: {
+          api_summary?: Json | null
+          api_total?: number | null
+          automation_id?: string
+          created_at?: string
+          duplicate_count?: number
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          imported_count?: number
+          link_created_count?: number
+          link_reused_count?: number
+          requested_quantity?: number | null
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automatic_company_query_runs_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "automatic_company_queries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automatic_company_queue: {
+        Row: {
+          automation_id: string
+          cnpj: string
+          company_id: string | null
+          company_link_id: string | null
+          created_at: string
+          id: string
+          query_date: string
+          run_id: string | null
+          was_new_company: boolean
+          was_new_link: boolean
+        }
+        Insert: {
+          automation_id: string
+          cnpj: string
+          company_id?: string | null
+          company_link_id?: string | null
+          created_at?: string
+          id?: string
+          query_date?: string
+          run_id?: string | null
+          was_new_company?: boolean
+          was_new_link?: boolean
+        }
+        Update: {
+          automation_id?: string
+          cnpj?: string
+          company_id?: string | null
+          company_link_id?: string | null
+          created_at?: string
+          id?: string
+          query_date?: string
+          run_id?: string | null
+          was_new_company?: boolean
+          was_new_link?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automatic_company_queue_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "automatic_company_queries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automatic_company_queue_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automatic_company_queue_company_link_id_fkey"
+            columns: ["company_link_id"]
+            isOneToOne: false
+            referencedRelation: "company_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automatic_company_queue_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "automatic_company_query_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           bairro: string | null
@@ -1112,6 +1293,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_automation_by_id: {
+        Args: { _id: string }
+        Returns: {
+          filters: Json
+          id: string
+          interval_minutes: number
+          mode: string
+          owner_user_id: string
+          quantity_per_run: number
+        }[]
+      }
+      claim_due_automation: {
+        Args: never
+        Returns: {
+          filters: Json
+          id: string
+          interval_minutes: number
+          mode: string
+          owner_user_id: string
+          quantity_per_run: number
+        }[]
+      }
       resolve_company_link: {
         Args: { _token: string }
         Returns: {
