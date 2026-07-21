@@ -20,7 +20,8 @@ import {
   substitute,
   formatCnpj,
 } from '@/lib/email-campaign/template';
-import { Loader2, Play, Pause, Square, RefreshCw, Send, TestTube2, Eye } from 'lucide-react';
+import { Loader2, Play, Pause, Square, RefreshCw, Send, TestTube2, Eye, RotateCcw, Trash2, Zap, Activity } from 'lucide-react';
+import { FloatingStatsPanel } from '@/components/painel/FloatingStatsPanel';
 
 export const Route = createFileRoute('/_authenticated/painel/envio-massa')({
   component: EnvioMassa,
@@ -75,6 +76,13 @@ function EnvioMassa() {
 
   const [logs, setLogs] = useState<string[]>([]);
   const [previewIdx, setPreviewIdx] = useState(0);
+  const [showFloating, setShowFloating] = useState<boolean>(() => {
+    try { return localStorage.getItem('envio-massa-floating-open') !== '0'; } catch { return true; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('envio-massa-floating-open', showFloating ? '1' : '0'); } catch {}
+  }, [showFloating]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -276,6 +284,39 @@ function EnvioMassa() {
     pushLog('■ Parada solicitada.');
   }
 
+  async function sendSingle(item: QueueItem) {
+    if (runningRef.current) {
+      toast.error('Aguarde o envio atual terminar (ou pare).');
+      return;
+    }
+    if (testMode && !testRecipient) {
+      toast.error('Modo teste ativo: informe um e-mail de teste.');
+      return;
+    }
+    pushLog(`➤ Envio único para ${item.email}${testMode ? ' (TESTE)' : ''}`);
+    await sendOne(item);
+  }
+
+  function resetStatuses() {
+    setQueue((prev) => prev.map((q) => ({ ...q, status: 'pending', message: undefined })));
+    pushLog('↻ Status da fila resetados (todos como pendentes).');
+    toast.success('Status resetados.');
+  }
+
+  function clearQueue() {
+    if (runningRef.current) {
+      toast.error('Pare o envio antes de limpar a fila.');
+      return;
+    }
+    setQueue([]);
+    pushLog('🗑 Fila esvaziada.');
+    toast.success('Fila limpa.');
+  }
+
+  function clearLogs() {
+    setLogs([]);
+  }
+
   const previewItem = queue[previewIdx];
   const previewHtml = useMemo(() => {
     if (!previewItem) return '';
@@ -385,7 +426,7 @@ function EnvioMassa() {
               <Stat label="Erros" value={stats.errors} color="text-red-600" />
             </div>
             <Progress value={progress} />
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {!running ? (
                 <Button onClick={startSending} disabled={queue.length === 0}>
                   <Play className="h-4 w-4" /> {testMode ? 'Iniciar teste' : 'Iniciar envio real'}
@@ -401,6 +442,18 @@ function EnvioMassa() {
                   </Button>
                 </>
               )}
+              <Button variant="outline" onClick={resetStatuses} disabled={running || queue.length === 0}>
+                <RotateCcw className="h-4 w-4" /> Resetar envios
+              </Button>
+              <Button variant="outline" onClick={clearQueue} disabled={running || queue.length === 0}>
+                <Trash2 className="h-4 w-4" /> Limpar fila
+              </Button>
+              <Button variant="outline" onClick={clearLogs} disabled={logs.length === 0}>
+                <RotateCcw className="h-4 w-4" /> Limpar log
+              </Button>
+              <Button variant={showFloating ? 'default' : 'outline'} onClick={() => setShowFloating((v) => !v)}>
+                <Activity className="h-4 w-4" /> {showFloating ? 'Ocultar painel' : 'Painel flutuante'}
+              </Button>
               {testMode && <Badge className="bg-amber-100 text-amber-800">MODO TESTE ATIVO</Badge>}
             </div>
             <div>
@@ -474,16 +527,29 @@ function EnvioMassa() {
                     <th>E-mail</th>
                     <th>Empresa</th>
                     <th>Status</th>
+                    <th className="text-right">Ação</th>
                   </tr>
                 </thead>
                 <tbody>
                   {queue.map((q, i) => (
-                    <tr key={q.id} className="border-b last:border-0">
+                    <tr key={q.id} className="border-b last:border-0 hover:bg-slate-50">
                       <td className="py-2 text-slate-500">{i + 1}</td>
                       <td className="truncate">{q.email}</td>
                       <td className="max-w-[180px] truncate">{q.company_name}</td>
                       <td>
                         <StatusBadge status={q.status} message={q.message} />
+                      </td>
+                      <td className="text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2"
+                          disabled={running || q.status === 'sending'}
+                          onClick={() => sendSingle(q)}
+                          title="Enviar apenas este"
+                        >
+                          <Zap className="h-3.5 w-3.5" /> Enviar
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -493,6 +559,16 @@ function EnvioMassa() {
           </CardContent>
         </Card>
       </div>
+
+      {showFloating && (
+        <FloatingStatsPanel
+          stats={stats}
+          running={running}
+          paused={paused}
+          lastEvent={logs[0]}
+          onClose={() => setShowFloating(false)}
+        />
+      )}
     </div>
   );
 }
