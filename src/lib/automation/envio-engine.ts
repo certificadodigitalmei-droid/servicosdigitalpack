@@ -164,6 +164,9 @@ function pushLog(msg: string) {
 // abre o Lovable — usar sempre o domínio publicado).
 const PUBLIC_BASE_URL = 'https://seu-certificado-mei-digital.online';
 
+const normCnpj = (v: string | null | undefined) => (v || '').replace(/\D+/g, '');
+const normEmail = (v: string | null | undefined) => (v || '').trim().toLowerCase();
+
 export const setSubject = (v: string) => envioStore.set({ subject: v });
 export const setDelaySec = (n: number) => envioStore.set({ delaySec: Math.max(1, n) });
 export const setBatchLimit = (n: number) => envioStore.set({ batchLimit: Math.max(1, n) });
