@@ -624,9 +624,11 @@ function CampanhasEmail() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setStep('upload')}>
-            Nova planilha
+          <Button variant="outline" onClick={loadFromCompanies} disabled={loadingCompanies}>
+            {loadingCompanies ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Recarregar empresas
           </Button>
+
           <Button variant="outline" onClick={downloadCsv}>
             <Download className="mr-2 h-4 w-4" /> CSV
           </Button>
