@@ -147,6 +147,53 @@ function EnvioMassa() {
         )}
       </div>
 
+      {/* Limites do Lovable Emails + Enviados confirmados */}
+      <Card className="border-blue-100 bg-gradient-to-br from-blue-50/60 to-white">
+        <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Activity className="h-4 w-4 text-blue-600" />
+              Limites do Lovable Emails
+            </CardTitle>
+            <p className="mt-1 text-xs text-slate-600">
+              Os limites reais são enforçados pelo Lovable no servidor. Estes números vêm do log oficial de entregas.
+              Ao atingir o limite, os envios recebem <code className="rounded bg-slate-100 px-1">HTTP 429</code> e a fila
+              aguarda automaticamente antes de continuar.
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={refreshStats} disabled={loadingStats}>
+            {loadingStats ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Atualizar
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {!emailStats ? (
+            <div className="py-6 text-center text-sm text-slate-500">
+              {loadingStats ? 'Consultando limites...' : 'Sem dados. Clique em "Atualizar".'}
+            </div>
+          ) : !emailStats.ok ? (
+            <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+              Não foi possível consultar os limites: {emailStats.message}
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              <LimitBlock title="Última hora (janela de rate limit)" bucket={emailStats.lastHour} accent="blue" />
+              <LimitBlock title="Últimas 24 horas" bucket={emailStats.last24h} accent="emerald" />
+            </div>
+          )}
+          <div className="mt-4 grid gap-3 sm:grid-cols-4">
+            <MiniStat label="Enviados confirmados (histórico local)" value={sentEmails.length} color="text-emerald-700" />
+            <MiniStat label="Enviados hoje (contador)" value={sentToday} color="text-slate-900" />
+            <MiniStat label="Limite diário configurado" value={dailyLimit === 0 ? '∞' : dailyLimit} color="text-blue-700" />
+            <MiniStat label="Fila atual" value={queue.length} color="text-slate-700" />
+          </div>
+          <p className="mt-3 text-[11px] text-slate-500">
+            Após cada envio confirmado, o destinatário sai da fila e vai para a aba{' '}
+            <strong>E-mails Enviados</strong> automaticamente.
+          </p>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Config */}
         <Card className="lg:col-span-1">
