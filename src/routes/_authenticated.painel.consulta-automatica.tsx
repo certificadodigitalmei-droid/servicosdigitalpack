@@ -155,6 +155,16 @@ function ConsultaPage() {
   };
   const [foundList, setFoundList] = useState<FoundRow[]>([]);
   const [listDialogOpen, setListDialogOpen] = useState(false);
+  const [flashes, setFlashes] = useState<Array<{ id: number; count: number }>>([]);
+  const flashIdRef = useRef(0);
+  const pushFlash = (count: number) => {
+    const id = ++flashIdRef.current;
+    setFlashes((prev) => [...prev, { id, count }]);
+    window.setTimeout(() => {
+      setFlashes((prev) => prev.filter((f) => f.id !== id));
+    }, 3200);
+  };
+
 
 
 
