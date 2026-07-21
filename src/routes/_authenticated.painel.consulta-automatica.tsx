@@ -786,70 +786,163 @@ function ConsultaPage() {
         </Card>
       )}
 
-      <Dialog open={listDialogOpen} onOpenChange={setListDialogOpen}>
-        <DialogContent className="max-w-5xl w-[95vw] p-0 gap-0">
-          <DialogHeader className="p-6 pb-3 border-b">
-            <DialogTitle className="flex items-center gap-2">
-              {autoCount && (
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
-                </span>
-              )}
-              CNPJs encontrados — {formatBR(effectiveDate)}
-              <span className="ml-2 text-xs font-normal text-slate-500">
-                ({foundList.length} salvos)
-              </span>
-            </DialogTitle>
-            <DialogDescription>
-              Total na API agora:{' '}
-              <strong>
-                {countResult?.total != null
-                  ? countResult.total.toLocaleString('pt-BR')
-                  : '—'}
-              </strong>
-              . {autoCount ? 'Atualizando automaticamente…' : 'Modo automático desligado — a lista fica salva no navegador para esta data + filtros.'}
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="h-[70vh] rounded-none border-t border-slate-200">
-
-            {foundList.length === 0 ? (
-              <div className="p-6 text-center text-sm text-slate-500">
-                Nenhum CNPJ ainda. Ligue o modo automático para começar.
-              </div>
-            ) : (
-              <ul className="divide-y divide-slate-100">
-                {foundList.map((it) => (
-                  <li key={it.cnpj} className="flex items-start justify-between gap-3 p-3">
-                    <div className="min-w-0">
-                      <div className="font-mono text-sm">{formatCNPJ(it.cnpj)}</div>
-                      <div className="truncate text-sm text-slate-700">{it.nome}</div>
-                      {(it.municipio || it.uf) && (
-                        <div className="text-xs text-slate-500">
-                          {[it.municipio, it.uf].filter(Boolean).join(' / ')}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1">
-                      <span className="text-[10px] text-slate-400">
-                        {new Date(it.firstSeenAt).toLocaleTimeString('pt-BR')}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 px-2"
-                        onClick={() => copy(it.cnpj)}
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      {listDialogOpen && (
+        <DraggableCnpjPanel
+          onClose={() => setListDialogOpen(false)}
+          autoCount={autoCount}
+          dateLabel={formatBR(effectiveDate)}
+          savedCount={foundList.length}
+          apiTotal={countResult?.total ?? null}
+          foundList={foundList}
+          flashes={flashes}
+          onCopy={copy}
+        />
+      )}
     </div>
   );
 }
+
+function DraggableCnpjPanel(props: {
+  onClose: () => void;
+  autoCount: boolean;
+  dateLabel: string;
+  savedCount: number;
+  apiTotal: number | null;
+  foundList: Array<{
+    cnpj: string;
+    nome: string;
+    fantasia: string | null;
+    uf: string | null;
+    municipio: string | null;
+    firstSeenAt: string;
+  }>;
+  flashes: Array<{ id: number; count: number }>;
+  onCopy: (v: string) => void;
+}) {
+  const { onClose, autoCount, dateLabel, savedCount, apiTotal, foundList, flashes, onCopy } = props;
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [size, setSize] = useState({ w: 720, h: 560 });
+  const dragRef = useRef<{ dx: number; dy: number } | null>(null);
+
+  useEffect(() => {
+    if (pos != null) return;
+    const w = Math.min(720, window.innerWidth - 40);
+    const h = Math.min(560, window.innerHeight - 80);
+    setSize({ w, h });
+    setPos({ x: Math.max(20, (window.innerWidth - w) / 2), y: Math.max(20, (window.innerHeight - h) / 2) });
+  }, [pos]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragRef.current) return;
+      setPos({
+        x: Math.max(0, Math.min(window.innerWidth - 80, e.clientX - dragRef.current.dx)),
+        y: Math.max(0, Math.min(window.innerHeight - 40, e.clientY - dragRef.current.dy)),
+      });
+    };
+    const onUp = () => { dragRef.current = null; document.body.style.userSelect = ''; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, []);
+
+  const startDrag = (e: React.MouseEvent) => {
+    if (!pos) return;
+    dragRef.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
+    document.body.style.userSelect = 'none';
+  };
+
+  if (!pos) return null;
+
+  return (
+    <div
+      className="fixed z-50 flex flex-col rounded-lg border border-slate-300 bg-white shadow-2xl resize overflow-hidden"
+      style={{ left: pos.x, top: pos.y, width: size.w, height: size.h, minWidth: 380, minHeight: 280 }}
+    >
+      {/* Flashes empilhados acima do painel */}
+      <div className="pointer-events-none absolute -top-2 left-1/2 z-10 flex -translate-x-1/2 -translate-y-full flex-col items-center gap-1">
+        {flashes.map((f) => (
+          <div
+            key={f.id}
+            className="rounded-full bg-emerald-600 px-3 py-1 text-sm font-bold text-white shadow-lg animate-in fade-in slide-in-from-bottom-2"
+          >
+            +{f.count} novo{f.count === 1 ? '' : 's'}
+          </div>
+        ))}
+      </div>
+
+      {/* Header arrastável */}
+      <div
+        onMouseDown={startDrag}
+        className="flex cursor-move items-center justify-between gap-2 border-b bg-slate-50 px-4 py-2 select-none"
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          {autoCount && (
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
+            </span>
+          )}
+          <span className="truncate text-sm font-semibold">
+            CNPJs encontrados — {dateLabel}
+          </span>
+          <span className="shrink-0 text-xs text-slate-500">({savedCount} salvos)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="hidden text-xs text-slate-500 sm:inline">
+            Total API: <strong>{apiTotal != null ? apiTotal.toLocaleString('pt-BR') : '—'}</strong>
+          </span>
+          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onClose}>
+            ✕
+          </Button>
+        </div>
+      </div>
+
+      {/* Lista com scrollbar nativa visível */}
+      <div className="flex-1 overflow-y-scroll">
+        {foundList.length === 0 ? (
+          <div className="p-6 text-center text-sm text-slate-500">
+            Nenhum CNPJ ainda. Ligue o modo automático para começar.
+          </div>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {foundList.map((it) => (
+              <li key={it.cnpj} className="flex items-start justify-between gap-3 p-3">
+                <div className="min-w-0">
+                  <div className="font-mono text-sm">{formatCNPJ(it.cnpj)}</div>
+                  <div className="truncate text-sm text-slate-700">{it.nome}</div>
+                  {(it.municipio || it.uf) && (
+                    <div className="text-xs text-slate-500">
+                      {[it.municipio, it.uf].filter(Boolean).join(' / ')}
+                    </div>
+                  )}
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="text-[10px] text-slate-400">
+                    {new Date(it.firstSeenAt).toLocaleTimeString('pt-BR')}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2"
+                    onClick={() => onCopy(it.cnpj)}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="border-t bg-slate-50 px-3 py-1.5 text-[11px] text-slate-500">
+        Arraste pelo topo · redimensione pelo canto inferior direito · fica salvo no navegador
+      </div>
+    </div>
+  );
+}
+
