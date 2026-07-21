@@ -558,15 +558,7 @@ function EnvioMassa() {
         </Card>
       </div>
 
-      {showFloating && (
-        <FloatingStatsPanel
-          stats={stats}
-          running={running}
-          paused={paused}
-          lastEvent={logs[0]}
-          onClose={() => setShowFloating(false)}
-        />
-      )}
+      {/* Painel flutuante montado globalmente em _authenticated.painel.tsx */}
     </div>
   );
 }
