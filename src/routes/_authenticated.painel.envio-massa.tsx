@@ -181,21 +181,92 @@ function EnvioMassa() {
               <Switch checked={testMode} onCheckedChange={setTestMode} />
             </div>
             {testMode && (
-              <div>
+              <div className="space-y-2">
                 <Label>E-mail de teste</Label>
                 <Input
                   placeholder="seu-email@dominio.com"
                   value={testRecipient}
                   onChange={(e) => setTestRecipient(e.target.value)}
                 />
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={sendTestOnce}
+                  disabled={running || !testRecipient}
+                >
+                  <TestTube2 className="h-4 w-4" /> Enviar 1 e-mail de teste agora
+                </Button>
               </div>
             )}
+
+            {/* Imagem de topo do e-mail */}
+            <div className="space-y-2 rounded-md border p-3">
+              <Label>Imagem no topo do e-mail (opcional)</Label>
+              <p className="text-xs text-slate-500">
+                Aparece como banner grande logo abaixo do cabeçalho. Recomendado: 1200×400px.
+              </p>
+              <Input
+                placeholder="Cole uma URL de imagem (https://...)"
+                value={heroImageUrl}
+                onChange={(e) => setHeroImageUrl(e.target.value)}
+              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  disabled={uploadingImg}
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    if (f.size > 5 * 1024 * 1024) {
+                      toast.error('Imagem muito grande (máx. 5MB).');
+                      return;
+                    }
+                    setUploadingImg(true);
+                    try {
+                      const ext = f.name.split('.').pop() || 'png';
+                      const path = `email-hero/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+                      const { error: upErr } = await supabase.storage
+                        .from('site-assets')
+                        .upload(path, f, { contentType: f.type, upsert: false });
+                      if (upErr) throw upErr;
+                      const { data: signed, error: sErr } = await supabase.storage
+                        .from('site-assets')
+                        .createSignedUrl(path, 60 * 60 * 24 * 365 * 5); // 5 anos
+                      if (sErr) throw sErr;
+                      setHeroImageUrl(signed.signedUrl);
+                      toast.success('Imagem carregada.');
+                    } catch (err: any) {
+                      toast.error('Falha no upload: ' + err.message);
+                    } finally {
+                      setUploadingImg(false);
+                      (e.target as HTMLInputElement).value = '';
+                    }
+                  }}
+                />
+                {uploadingImg && <Loader2 className="h-4 w-4 animate-spin" />}
+                {heroImageUrl && (
+                  <Button size="sm" variant="ghost" onClick={() => setHeroImageUrl('')}>
+                    <Trash2 className="h-3.5 w-3.5" /> Remover
+                  </Button>
+                )}
+              </div>
+              {heroImageUrl && (
+                <img
+                  src={heroImageUrl}
+                  alt="preview banner"
+                  className="mt-2 max-h-32 w-full rounded border object-cover"
+                />
+              )}
+            </div>
+
             <div className="flex gap-2 pt-2">
               <Button variant="outline" onClick={loadRecipients} disabled={loading || running}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 Recarregar fila
               </Button>
             </div>
+
           </CardContent>
         </Card>
 
