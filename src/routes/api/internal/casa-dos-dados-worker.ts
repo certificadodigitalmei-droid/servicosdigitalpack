@@ -53,7 +53,7 @@ export const Route = createFileRoute('/api/internal/casa-dos-dados-worker')({
             mode: row.mode,
             quantity_per_run: row.quantity_per_run,
             interval_minutes: row.interval_minutes,
-            filters: row.filters ?? {},
+            filters: (row.filters ?? {}) as any,
           },
           { trigger: 'cron' },
         );
