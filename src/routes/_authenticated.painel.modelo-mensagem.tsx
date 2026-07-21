@@ -128,6 +128,14 @@ function ModeloMensagem() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={() => {
+            try {
+              window.localStorage.setItem(STORAGE_KEY, JSON.stringify(design));
+              window.localStorage.setItem(SUBJECT_KEY, subject);
+              window.localStorage.setItem(PREHEADER_KEY, preheader);
+              toast.success('Modelo salvo — será usado no próximo envio');
+            } catch { toast.error('Falha ao salvar no navegador'); }
+          }}><Save className="mr-2 h-4 w-4" />Salvar modelo</Button>
           <Button variant="outline" size="sm" onClick={copyHtml}><Copy className="mr-2 h-4 w-4" />Copiar HTML</Button>
           <Button variant="outline" size="sm" onClick={downloadHtml}><Download className="mr-2 h-4 w-4" />Baixar HTML</Button>
           <Button variant="outline" size="sm" onClick={resetAll} className="text-red-600"><RotateCcw className="mr-2 h-4 w-4" />Restaurar padrão</Button>
