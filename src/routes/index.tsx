@@ -52,8 +52,7 @@ function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-linear-to-br from-[#0b1e3f] via-[#12305e] to-[#0b1e3f]" />
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0b1e3f 0%, #12305e 50%, #0b1e3f 100%)" }}>
         <div className="absolute inset-0 -z-10 opacity-20 [background-image:radial-gradient(circle_at_20%_20%,white_1px,transparent_1px)] [background-size:24px_24px]" />
 
         <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 md:grid-cols-2 md:items-center md:py-24">
