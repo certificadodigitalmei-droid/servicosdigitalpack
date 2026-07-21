@@ -155,7 +155,9 @@ export type CoreLoopInput = {
   publicBaseUrl: string;
   isTestRun?: boolean;
   maxRunMs?: number;
+  softLimitMs?: number;
   maxItemsAnalyzed?: number;
+  maxTestManualItems?: number;
   maxDetailQueries?: number;
   httpTimeoutMs?: number;
   signal?: AbortSignal;
