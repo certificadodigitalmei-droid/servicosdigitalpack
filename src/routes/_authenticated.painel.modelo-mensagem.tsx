@@ -156,10 +156,60 @@ function ModeloMensagem() {
         </div>
       </div>
 
+      {/* ===== Galeria de Modelos Prontos ===== */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-brand-navy" />
+            Galeria de modelos prontos
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Clique em um modelo para aplicar. Depois clique em <strong>Salvar modelo</strong> para usar nos envios.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {PRESETS.map((p) => {
+              const previewHtml = renderHtml(p.design, PREVIEW_VARS);
+              const active = selectedPreset === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => applyPreset(p.id)}
+                  className={`group text-left rounded-xl border-2 overflow-hidden transition-all hover:shadow-lg ${active ? 'border-brand-navy ring-2 ring-brand-navy/30' : 'border-slate-200 hover:border-slate-400'}`}
+                >
+                  <div className="relative bg-slate-100 h-[260px] overflow-hidden">
+                    <iframe
+                      title={p.name}
+                      srcDoc={previewHtml}
+                      className="border-none pointer-events-none absolute top-0 left-0"
+                      style={{ width: '900px', height: '1100px', transform: 'scale(0.42)', transformOrigin: 'top left' }}
+                    />
+                    {active && (
+                      <div className="absolute top-2 right-2 bg-brand-navy text-white rounded-full p-1.5 shadow-lg">
+                        <Check className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3 bg-white border-t">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ background: p.accent }} />
+                      <div className="font-semibold text-sm">{p.name}</div>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{p.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 xl:grid-cols-[460px_1fr] gap-6">
         {/* ===== Editor ===== */}
         <div className="space-y-3">
           <Accordion type="multiple" defaultValue={['assunto', 'header', 'hero', 'body']} className="space-y-2">
+
 
             <SectionItem value="assunto" title="Assunto e preheader">
               <Field label="Assunto (aparece no Gmail)">
