@@ -122,8 +122,9 @@ export const importBatch = createServerFn({ method: 'POST' })
       const cnpj = nBase.cnpj;
       if (!cnpj || cnpj.length !== 14) continue;
 
+      let enrichmentError: string | null = null;
       try {
-        // 2) ENRIQUECIMENTO (paga): /v5/cnpj/{cnpj} — 1 crédito, dados completos
+        // 2) ENRIQUECIMENTO (paga): /v4/cnpj/{cnpj} — 1 crédito, dados completos
         //    (endereço, telefone, e-mail, CNAE, sócios, etc).
         let n = nBase;
         let raw: Record<string, unknown> = rawBase;
@@ -132,9 +133,13 @@ export const importBatch = createServerFn({ method: 'POST' })
           if (detail.ok && detail.item) {
             raw = detail.item as Record<string, unknown>;
             n = normalizeCasaDosDadosCompany(raw);
+          } else {
+            enrichmentError = `detalhe respondeu ${detail.status}`;
+            console.warn('[simple-flow] enrichment failed', cnpj, detail.status, detail.rawPreview);
           }
-        } catch {
-          // segue com dados da pesquisa se detalhe falhar
+        } catch (e) {
+          enrichmentError = e instanceof Error ? e.message : String(e);
+          console.warn('[simple-flow] enrichment threw', cnpj, enrichmentError);
         }
 
         const displayName =
