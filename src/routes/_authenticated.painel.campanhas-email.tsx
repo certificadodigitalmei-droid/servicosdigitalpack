@@ -806,14 +806,8 @@ function CampanhasEmail() {
                     <Button size="sm" variant="outline" onClick={openPreview}><Eye className="mr-2 h-4 w-4" />Abrir prévia</Button>
                     <Button size="sm" variant="outline" onClick={copyHtml}><Copy className="mr-2 h-4 w-4" />Copiar HTML</Button>
                     <Button size="sm" variant="outline" onClick={downloadHtml}><Download className="mr-2 h-4 w-4" />Baixar HTML</Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost"
-                      disabled={true}
-                      className="bg-slate-50 text-slate-400 cursor-not-allowed"
-                    >
-                      <Send className="mr-2 h-4 w-4" /> ENVIAR TESTE (Bloqueado: Autenticação Pendente)
-                    </Button>
+
+
                   </div>
                 </>
               ) : (
