@@ -315,6 +315,15 @@ export function clearLogs() {
   envioStore.set({ logs: [] });
 }
 
+export function clearSentEmails() {
+  envioStore.set({ sentEmails: [] });
+  pushLog('🗑 Lista de enviados limpa.');
+}
+
+export function removeSentEmail(id: string) {
+  envioStore.set((s) => ({ sentEmails: s.sentEmails.filter((e) => e.id !== id) }));
+}
+
 /* --------------------------------- send ----------------------------------- */
 
 function buildVarsFor(item: QueueItem) {
