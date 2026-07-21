@@ -1,6 +1,6 @@
 import { createFileRoute, notFound, redirect } from '@tanstack/react-router';
 import { resolveCompanyLink } from '@/lib/company-links.functions';
-import { createPixCharge } from '@/lib/payments/uniaopay.functions';
+import { createOrderAndPixCharge } from '@/lib/payments/checkout.functions';
 import { PixModal } from '@/components/checkout/PixModal';
 
 // Loads company data by token and forwards to the existing /checkout page.
@@ -14,7 +14,6 @@ import { useState, useEffect } from 'react';
 import { Check, QrCode, CreditCard, Barcode, ArrowLeft } from 'lucide-react';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { formatCPFOrCNPJ, maskCPFCNPJ, maskPhone, isValidEmail } from '@/lib/format';
-import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/track';
 import { toast } from 'sonner';
 import { extractErrorMessage } from '@/lib/errors';
@@ -105,47 +104,23 @@ function CheckoutTokenPage() {
     console.log('[Checkout] Validação passou, iniciando criação de cobrança');
     setSubmitting(true);
     try {
-      const { data: customer, error: custErr } = await supabase
-        .from('customers')
-        .insert({
+      const result = await createOrderAndPixCharge({
+        data: {
           name: form.nome,
           document: form.doc.replace(/\D/g, ''),
           email: form.email,
           phone: form.phone.replace(/\D/g, ''),
-        })
-        .select('id')
-        .single();
-      
-      if (custErr) throw custErr;
-
-      const { data: order, error: orderErr } = await supabase
-        .from('orders')
-        .insert({
-          customer_id: customer?.id,
-          reference_cnpj: row.cnpj,
-          reference_name: form.nome,
-          product_name: 'Certificado Digital MEI',
+          productName: 'Certificado Digital MEI',
           amount: AMOUNT,
-          status: 'awaiting_payment',
-        })
-        .select('id')
-        .single();
-
-      if (orderErr) throw orderErr;
-      if (order?.id) setOrderId(order.id);
-
-      // Integrar UniaoPay
-      const pix = await createPixCharge({
-        data: {
-          amount: AMOUNT,
-          description: `Certificado Digital MEI - ${form.nome}`,
-          external_id: order?.id || `demo-${Date.now()}`,
-          webhook_url: `${window.location.origin}/api/public/webhook-uniaopay`
+          webhookUrl: `${window.location.origin}/api/public/webhook-uniaopay`,
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+          token,
         }
       });
 
-      if (pix?.qrcode) {
-        setPixData({ qrcode: pix.qrcode, transaction_id: pix.transaction_id });
+      if (result.orderId) setOrderId(result.orderId);
+      if (result.qrcode) {
+        setPixData({ qrcode: result.qrcode, transaction_id: result.transaction_id });
       }
 
       setPixOpen(true);

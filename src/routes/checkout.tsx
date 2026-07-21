@@ -9,9 +9,8 @@ import {
   maskPhone,
   isValidEmail,
 } from "@/lib/format";
-import { supabase } from "@/integrations/supabase/client";
 import { resolveCompanyLink } from "@/lib/company-links.functions";
-import { createPixCharge } from "@/lib/payments/uniaopay.functions";
+import { createOrderAndPixCharge } from "@/lib/payments/checkout.functions";
 import { PixModal } from "@/components/checkout/PixModal";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/errors";
@@ -95,59 +94,25 @@ function CheckoutPage() {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      const { data: customer, error: custErr } = await supabase
-        .from("customers")
-        .insert({
+      const result = await createOrderAndPixCharge({
+        data: {
           name: form.nome,
           document: form.doc.replace(/\D/g, ""),
           email: form.email,
           phone: form.phone.replace(/\D/g, ""),
-        })
-        .select("id")
-        .single();
-      
-      if (custErr) throw custErr;
-
-      const { data: order, error: orderErr } = await supabase
-        .from("orders")
-        .insert({
-          customer_id: customer?.id,
-          reference_cnpj: cnpj || null,
-          reference_name: nome || null,
-          product_name: "Apoio Digital para MEI",
+          productName: "Apoio Digital para MEI",
           amount: AMOUNT,
-          status: "awaiting_payment",
-        })
-        .select("id")
-        .single();
-
-      if (orderErr) throw orderErr;
-
-      if (order?.id) {
-        setOrderId(order.id);
-        await supabase.from("consent_logs").insert({
-          order_id: order.id,
-          privacy_accepted: true,
-          terms_accepted: true,
-          service_private_acknowledged: true,
-          user_agent:
-            typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 500) : null,
-        });
-
-        // Integrar UniaoPay
-        const pix = await createPixCharge({
-          data: {
-            amount: AMOUNT,
-            description: `Apoio Digital MEI - ${form.nome}`,
-            external_id: order.id,
-            webhook_url: `${window.location.origin}/api/public/webhook-uniaopay`
-          }
-        });
-
-        if (pix?.qrcode) {
-          setPixData({ qrcode: pix.qrcode, transaction_id: pix.transaction_id });
+          webhookUrl: `${window.location.origin}/api/public/webhook-uniaopay`,
+          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+          token: token || undefined,
         }
+      });
+
+      if (result.orderId) setOrderId(result.orderId);
+      if (result.qrcode) {
+        setPixData({ qrcode: result.qrcode, transaction_id: result.transaction_id });
       }
+
       setPixOpen(true);
       if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
