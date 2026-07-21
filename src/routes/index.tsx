@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Emita o Certificado Digital vinculado ao seu CNPJ MEI. Documento eletrônico com validade jurídica reconhecida pela ICP-Brasil.",
+          "Certificado Digital para Microempreendedor Individual (MEI). Vinculado ao seu CNPJ, com validade jurídica, assinatura digital ICP-Brasil e acesso aos portais gov.br.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
