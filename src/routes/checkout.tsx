@@ -152,6 +152,9 @@ function CheckoutPage() {
       if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       console.error("[Checkout] Erro ao gerar cobrança PIX:", err);
+      try {
+        console.error("[Checkout] Erro serializado:", JSON.stringify(err, Object.getOwnPropertyNames(err as object)));
+      } catch {}
       const msg = extractErrorMessage(err);
       toast.error(`Erro ao gerar cobrança: ${msg}`, { duration: 12000 });
     } finally {
