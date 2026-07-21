@@ -1,20 +1,19 @@
-import { useState, useMemo, useRef } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { useMemo, useState } from 'react';
+import { createFileRoute } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/client';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
 import {
   Loader2,
   Play,
-  Search,
-  TestTube2,
   Calendar as CalendarIcon,
-  RefreshCw,
-  ListPlus,
   Wallet,
-  StopCircle,
+  ExternalLink,
+  Copy,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import {
   Card,
@@ -24,30 +23,26 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { formatCNPJ } from '@/lib/format';
-import { testApi, countByDateFn } from '@/lib/casa-dos-dados/automation.functions';
 import {
-  discoverList,
-  importOne,
-  getFlowStats,
-  retryErrors,
-} from '@/lib/casa-dos-dados/manual-flow.functions';
+  getSaldo,
+  countByDate,
+  importBatch,
+} from '@/lib/casa-dos-dados/simple-flow.functions';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
   head: () => ({ meta: [{ title: 'Consulta Casa dos Dados | Painel' }] }),
   component: ConsultaPage,
 });
 
-const QUICK_QUANTITIES = [1, 5, 10, 25, 50, 100];
+const QUANTIDADES = [1, 5, 10, 25];
 
 function todayBRString(): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -58,9 +53,9 @@ function todayBRString(): string {
   }).format(new Date());
 }
 
-function formatBR(dateISO: string | null | undefined): string {
-  if (!dateISO || !/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) return '—';
-  const [y, m, d] = dateISO.split('-');
+function formatBR(iso: string | null | undefined): string {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return '—';
+  const [y, m, d] = iso.split('-');
   return `${d}/${m}/${y}`;
 }
 
@@ -76,24 +71,22 @@ function isoToDate(iso: string): Date {
   return new Date(y, (m ?? 1) - 1, d ?? 1);
 }
 
-type ImportLog = {
-  ts: string;
+type ImportedRow = {
   cnpj: string;
-  ok: boolean;
-  nome?: string;
-  error?: string;
+  nome: string;
+  publicUrl: string;
+  checkoutUrl: string;
+  isNewCompany: boolean;
+  isNewLink: boolean;
 };
 
 function ConsultaPage() {
   const qc = useQueryClient();
   const todayBR = todayBRString();
 
-  const testFn = useServerFn(testApi);
-  const countFn = useServerFn(countByDateFn);
-  const discoverFn = useServerFn(discoverList);
-  const importFn = useServerFn(importOne);
-  const statsFn = useServerFn(getFlowStats);
-  const retryFn = useServerFn(retryErrors);
+  const saldoFn = useServerFn(getSaldo);
+  const countFn = useServerFn(countByDate);
+  const importFn = useServerFn(importBatch);
 
   const [dateMode, setDateMode] = useState<'today' | 'specific'>('today');
   const [selectedDate, setSelectedDate] = useState<string>(todayBR);
@@ -106,64 +99,23 @@ function ConsultaPage() {
     require_email: false,
   });
 
-  const [maxDiscover, setMaxDiscover] = useState<number>(500);
-  const [importCount, setImportCount] = useState<number>(10);
-  const [importCustom, setImportCustom] = useState<string>('');
+  const [quantidade, setQuantidade] = useState<number>(5);
 
+  const [saldo, setSaldo] = useState<string | null>(null);
   const [countResult, setCountResult] = useState<null | {
     date: string;
     total: number | null;
-    status: number;
     ok: boolean;
-    checkedAt: string;
-  }>(null);
-  const [discoverResult, setDiscoverResult] = useState<null | {
-    date: string;
-    enqueued: number;
-    duplicated: number;
-    apiTotal: number | null;
+    status: number;
   }>(null);
 
-  const [importing, setImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState({ done: 0, total: 0, failed: 0 });
-  const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
-  const stopRequested = useRef(false);
+  const [importedRows, setImportedRows] = useState<ImportedRow[]>([]);
+  const [failedRows, setFailedRows] = useState<Array<{ cnpj: string; error: string }>>([]);
 
   const effectiveDate = useMemo(
     () => (dateMode === 'today' ? todayBR : selectedDate || todayBR),
     [dateMode, selectedDate, todayBR],
   );
-
-  const statsQ = useQuery({
-    queryKey: ['casa-flow-stats'],
-    queryFn: () => statsFn(),
-    refetchInterval: importing ? 3000 : 8000,
-  });
-
-  const recentImportsQ = useQuery({
-    queryKey: ['casa-recent-imports'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('automatic_company_queue')
-        .select(
-          'id,query_date,created_at,cnpj,company_id,company_link_id,was_new_link,companies(id,nome_titular_exibicao,razao_social_original)',
-        )
-        .not('company_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (error) throw error;
-      return data ?? [];
-    },
-    refetchInterval: importing ? 3000 : 15000,
-  });
-
-  const byStatus = statsQ.data?.byStatus ?? {};
-  const byDate = statsQ.data?.byDate ?? {};
-  const dateStats = byDate[effectiveDate] ?? {};
-  const readyToImport =
-    (dateStats.discovered ?? 0) + (dateStats.pending_enrichment ?? 0);
-  const importedForDate = dateStats.imported ?? 0;
-  const errorForDate = dateStats.error ?? 0;
 
   const filtersSummary = useMemo(() => {
     const parts: string[] = [];
@@ -176,120 +128,60 @@ function ConsultaPage() {
 
   const disableFuture = (d: Date) => dateToISO(d) > todayBR;
 
-  // -------- MUTATIONS --------
-
-  const testMut = useMutation({
-    mutationFn: () => testFn({ data: undefined as any }),
-    onSuccess: (r) => toast.info(`API respondeu com status ${r.status}`),
-    onError: (e: any) => toast.error(e?.message ?? 'Erro ao testar API'),
-  });
-
-  const countMut = useMutation({
-    mutationFn: () =>
-      countFn({ data: { queryDate: effectiveDate, filters } }),
-    onSuccess: (r: any) => {
-      setCountResult({
-        date: r.date,
-        total: r.total,
-        status: r.status,
-        ok: r.ok,
-        checkedAt: r.checkedAt,
-      });
-      if (!r.ok) toast.error(`API retornou status ${r.status}`);
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Erro ao consultar'),
-  });
-
-  const discoverMut = useMutation({
-    mutationFn: () =>
-      discoverFn({
-        data: { date: effectiveDate, filters, maxCnpjs: maxDiscover },
-      }),
+  const saldoMut = useMutation({
+    mutationFn: () => saldoFn(),
     onSuccess: (r) => {
-      setDiscoverResult({
-        date: r.date,
-        enqueued: r.enqueued,
-        duplicated: r.duplicated,
-        apiTotal: r.apiTotal,
-      });
-      toast.success(
-        `Descoberta concluída: ${r.enqueued} novos, ${r.duplicated} já existiam. Nenhum crédito consumido.`,
-      );
-      qc.invalidateQueries({ queryKey: ['casa-flow-stats'] });
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Erro ao descobrir'),
-  });
-
-  const retryMut = useMutation({
-    mutationFn: () => retryFn({ data: { date: effectiveDate } }),
-    onSuccess: () => {
-      toast.success('Registros com erro voltaram para a fila.');
-      qc.invalidateQueries({ queryKey: ['casa-flow-stats'] });
+      setSaldo(r.body ?? '(sem corpo)');
+      if (!r.ok) toast.error(`API respondeu ${r.status}`);
+      else toast.success('Saldo consultado.');
     },
     onError: (e: any) => toast.error(e?.message ?? 'Erro'),
   });
 
-  const runImport = async (limit: number) => {
-    if (limit < 1) return;
-    setImporting(true);
-    stopRequested.current = false;
-    setImportProgress({ done: 0, total: limit, failed: 0 });
-    setImportLogs([]);
+  const countMut = useMutation({
+    mutationFn: () => countFn({ data: { date: effectiveDate, filters } }),
+    onSuccess: (r) => {
+      setCountResult({ date: r.date, total: r.total, ok: r.ok, status: r.status });
+      if (!r.ok) toast.error(`API respondeu ${r.status}`);
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Erro'),
+  });
 
-    let done = 0;
-    let failed = 0;
-
-    for (let i = 0; i < limit; i += 1) {
-      if (stopRequested.current) break;
-      try {
-        const r: any = await importFn({ data: { date: effectiveDate } });
-        if (r?.ok === false && r.reason === 'empty') {
-          toast.info('Fila vazia. Rode "Descobrir CNPJs" para pegar mais.');
-          break;
-        }
-        if (r?.ok) {
-          done += 1;
-          setImportLogs((prev) => [
-            { ts: new Date().toISOString(), cnpj: r.cnpj, ok: true, nome: r.nome },
-            ...prev,
-          ].slice(0, 50));
-        } else {
-          failed += 1;
-          setImportLogs((prev) => [
-            {
-              ts: new Date().toISOString(),
-              cnpj: r?.cnpj ?? '—',
-              ok: false,
-              error: r?.error ?? `${r?.reason ?? 'erro'} ${r?.status ?? ''}`,
-            },
-            ...prev,
-          ].slice(0, 50));
-        }
-      } catch (e: any) {
-        failed += 1;
-        setImportLogs((prev) => [
-          {
-            ts: new Date().toISOString(),
-            cnpj: '—',
-            ok: false,
-            error: e?.message ?? 'Erro',
-          },
-          ...prev,
-        ].slice(0, 50));
+  const importMut = useMutation({
+    mutationFn: () =>
+      importFn({
+        data: { date: effectiveDate, filters, limit: quantidade, page: 1 },
+      }),
+    onSuccess: (r: any) => {
+      if (!r.ok) {
+        toast.error(r.error ?? `API respondeu ${r.status}`);
+        return;
       }
-      setImportProgress({ done: done + failed, total: limit, failed });
-      qc.invalidateQueries({ queryKey: ['casa-flow-stats'] });
-      qc.invalidateQueries({ queryKey: ['casa-recent-imports'] });
+      setImportedRows(r.imported ?? []);
+      setFailedRows(r.failed ?? []);
+      const nImp = r.imported?.length ?? 0;
+      const nFail = r.failed?.length ?? 0;
+      if (nImp > 0) {
+        toast.success(
+          `${nImp} empresa(s) importada(s) e link(s) gerado(s). ${nImp} créditos consumidos.`,
+        );
+      } else if (nFail > 0) {
+        toast.error(`Nenhuma importada. ${nFail} falha(s).`);
+      } else {
+        toast.info('Nenhuma empresa retornada pela API para esta data/filtros.');
+      }
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Erro ao importar'),
+  });
+
+  const copy = async (v: string) => {
+    try {
+      await navigator.clipboard.writeText(v);
+      toast.success('Copiado');
+    } catch {
+      toast.error('Falha ao copiar');
     }
-
-    setImporting(false);
-    if (failed === 0 && done > 0) toast.success(`Importadas ${done} empresas (consumiu ${done} créditos).`);
-    else if (done > 0) toast.warning(`Importadas ${done}, falhas: ${failed}.`);
-    else if (failed > 0) toast.error(`Todas as ${failed} tentativas falharam.`);
   };
-
-  const canDiscover = !discoverMut.isPending;
-  const canImport = readyToImport > 0 && !importing;
 
   return (
     <div className="space-y-6">
@@ -297,73 +189,39 @@ function ConsultaPage() {
         <div>
           <h1 className="text-2xl font-bold text-brand-navy">Consulta Casa dos Dados</h1>
           <p className="text-sm text-slate-600">
-            Fluxo em <strong>2 etapas</strong>: descobrir CNPJs de uma data (grátis) e depois
-            importar 1-a-1 as empresas escolhidas (consome saldo).
+            Escolha a data, quantos CNPJs quer importar e clique em <strong>Importar agora</strong>.
+            Cada CNPJ importado consome <strong>1 crédito</strong> da sua conta Casa dos Dados.
           </p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <WipeAllButton
-            size="sm"
-            label="Apagar resultados"
-            title="Apagar toda a fila de descoberta?"
-            description="Remove todos os CNPJs descobertos, importados ou com erro. Empresas e links já criados NÃO são afetados."
-            steps={[
-              {
-                label: 'automatic_company_queue',
-                run: () =>
-                  supabase.from('automatic_company_queue').delete().neq('id', EMPTY_UUID),
-              },
-            ]}
-            onDone={async () => {
-              await qc.invalidateQueries({ queryKey: ['casa-flow-stats'] });
-              await qc.invalidateQueries({ queryKey: ['casa-recent-imports'] });
-              setDiscoverResult(null);
-            }}
-          />
-        </div>
+        <WipeAllButton
+          size="sm"
+          label="Apagar histórico"
+          title="Apagar toda a fila?"
+          description="Remove os registros de descoberta antigos. Empresas e links criados NÃO são apagados por aqui."
+          steps={[
+            {
+              label: 'automatic_company_queue',
+              run: () =>
+                supabase.from('automatic_company_queue').delete().neq('id', EMPTY_UUID),
+            },
+          ]}
+          onDone={async () => {
+            await qc.invalidateQueries();
+          }}
+        />
       </div>
 
-      {/* Stats globais */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Prontos p/ importar (total)</CardDescription>
-            <CardTitle className="text-2xl text-blue-600">
-              {(byStatus.discovered ?? 0) + (byStatus.pending_enrichment ?? 0)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Já importadas (total)</CardDescription>
-            <CardTitle className="text-2xl text-green-600">{byStatus.imported ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Com erro (total)</CardDescription>
-            <CardTitle className="text-2xl text-red-600">{byStatus.error ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Data em uso</CardDescription>
-            <CardTitle className="text-lg">{formatBR(effectiveDate)}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {/* Configuração de data e filtros */}
+      {/* 1. Data + filtros */}
       <Card>
         <CardHeader>
-          <CardTitle>1. Escolher data e filtros</CardTitle>
+          <CardTitle>1. Data e filtros</CardTitle>
           <CardDescription>
-            Estas escolhas valem para as três ações: consultar quantidade, descobrir CNPJs e importar.
+            Empresas abertas na data escolhida. Consultar a quantidade é <strong>grátis</strong>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <Label className="mb-2 block">Data</Label>
+            <Label className="mb-2 block">Data de abertura</Label>
             <RadioGroup
               value={dateMode}
               onValueChange={(v) => {
@@ -391,7 +249,10 @@ function ConsultaPage() {
               <div className="mt-3">
                 <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-[260px] justify-start text-left font-normal">
+                    <Button
+                      variant="outline"
+                      className="w-[260px] justify-start text-left font-normal"
+                    >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {selectedDate ? formatBR(selectedDate) : 'Selecione uma data'}
                     </Button>
@@ -421,7 +282,7 @@ function ConsultaPage() {
             <div className="grid gap-2 md:grid-cols-2">
               {[
                 { key: 'only_mei', label: 'Somente MEI' },
-                { key: 'only_active', label: 'Somente situação ATIVA' },
+                { key: 'only_active', label: 'Somente ATIVA' },
                 { key: 'only_matriz', label: 'Somente matriz' },
                 { key: 'require_email', label: 'Somente com e-mail' },
               ].map((f) => (
@@ -432,7 +293,9 @@ function ConsultaPage() {
                   <span className="text-sm">{f.label}</span>
                   <Switch
                     checked={(filters as any)[f.key]}
-                    onCheckedChange={(v) => setFilters((prev) => ({ ...prev, [f.key]: v }))}
+                    onCheckedChange={(v) =>
+                      setFilters((prev) => ({ ...prev, [f.key]: v }))
+                    }
                   />
                 </div>
               ))}
@@ -443,17 +306,29 @@ function ConsultaPage() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button variant="secondary" onClick={() => countMut.mutate()} disabled={countMut.isPending}>
+            <Button
+              variant="secondary"
+              onClick={() => countMut.mutate()}
+              disabled={countMut.isPending}
+            >
               {countMut.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <CalendarIcon className="mr-2 h-4 w-4" />
               )}
-              Consultar quantidade da data (grátis)
+              Consultar quantidade (grátis)
             </Button>
-            <Button variant="ghost" onClick={() => testMut.mutate()} disabled={testMut.isPending}>
-              <Wallet className="mr-2 h-4 w-4" />
-              Ver saldo API
+            <Button
+              variant="ghost"
+              onClick={() => saldoMut.mutate()}
+              disabled={saldoMut.isPending}
+            >
+              {saldoMut.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Wallet className="mr-2 h-4 w-4" />
+              )}
+              Ver saldo da API
             </Button>
           </div>
 
@@ -462,300 +337,152 @@ function ConsultaPage() {
               <div>
                 <strong>Data:</strong> {formatBR(countResult.date)} —{' '}
                 <strong>Total encontrado:</strong>{' '}
-                {countResult.total !== null ? countResult.total.toLocaleString('pt-BR') : '—'}{' '}
+                {countResult.total !== null
+                  ? countResult.total.toLocaleString('pt-BR')
+                  : '—'}{' '}
                 <Badge className={countResult.ok ? 'bg-green-600' : 'bg-red-600'}>
                   HTTP {countResult.status}
                 </Badge>
               </div>
-              <div className="text-xs text-slate-500">
-                Consultado às{' '}
-                {new Date(countResult.checkedAt).toLocaleTimeString('pt-BR', {
-                  timeZone: 'America/Sao_Paulo',
-                })}{' '}
-                — nenhum crédito consumido.
-              </div>
+              <p className="mt-1 text-xs text-slate-500">Nenhum crédito consumido.</p>
+            </div>
+          )}
+
+          {saldo && (
+            <div className="rounded border border-slate-200 bg-slate-50 p-3 text-xs">
+              <strong>Saldo:</strong>{' '}
+              <code className="break-all">{saldo}</code>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Descoberta */}
+      {/* 2. Importar */}
       <Card>
         <CardHeader>
           <CardTitle>
-            2. Descobrir CNPJs <Badge className="ml-2 bg-slate-500">Grátis</Badge>
+            2. Importar agora <Badge className="ml-2 bg-red-600">Paga créditos</Badge>
           </CardTitle>
           <CardDescription>
-            Busca a lista de CNPJs da data e coloca na fila para importar depois. Não consome saldo
-            porque não pega os dados completos.
+            Uma única chamada busca N CNPJs completos, salva as empresas e gera os links.
+            Cada CNPJ consome 1 crédito. Máx. por lote: <strong>25</strong>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="mb-2 block">Quantos CNPJs no máximo?</Label>
+            <Label className="mb-2 block">Quantidade</Label>
             <div className="flex flex-wrap gap-2">
-              {[50, 100, 250, 500, 1000, 2000].map((q) => (
+              {QUANTIDADES.map((n) => (
                 <Button
-                  key={q}
-                  type="button"
+                  key={n}
                   size="sm"
-                  variant={maxDiscover === q ? 'default' : 'outline'}
-                  onClick={() => setMaxDiscover(q)}
+                  variant={quantidade === n ? 'default' : 'outline'}
+                  onClick={() => setQuantidade(n)}
+                  disabled={importMut.isPending}
                 >
-                  {q}
+                  {n}
                 </Button>
               ))}
             </div>
+            <p className="mt-2 text-xs text-slate-500">
+              Vai consumir até <strong>{quantidade} créditos</strong> da Casa dos Dados
+              nesta ação.
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <Button
-              onClick={() => discoverMut.mutate()}
-              disabled={!canDiscover}
-              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => importMut.mutate()}
+              disabled={importMut.isPending}
+              className="bg-brand-navy hover:bg-brand-navy/90"
             >
-              {discoverMut.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="mr-2 h-4 w-4" />
-              )}
-              Descobrir CNPJs ({formatBR(effectiveDate)})
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => runImport(1)}
-              disabled={importing}
-              title="Faz uma descoberta + tentativa de importação limitada a 1 CNPJ, útil pra validar o fluxo."
-            >
-              <TestTube2 className="mr-2 h-4 w-4" /> Rodar teste com 1 empresa
-            </Button>
-          </div>
-
-          {discoverResult && (
-            <div className="rounded border border-blue-200 bg-blue-50 p-3 text-sm">
-              <div>
-                <strong>Data:</strong> {formatBR(discoverResult.date)} —{' '}
-                <strong>Total na API:</strong>{' '}
-                {discoverResult.apiTotal?.toLocaleString('pt-BR') ?? '—'}
-              </div>
-              <div>
-                Novos na fila: <strong>{discoverResult.enqueued}</strong> · Já existiam:{' '}
-                <strong>{discoverResult.duplicated}</strong>
-              </div>
-              <div className="text-xs text-slate-600">Nenhum crédito consumido.</div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Importação */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            3. Importar empresas <Badge className="ml-2 bg-red-600">Consome saldo</Badge>
-          </CardTitle>
-          <CardDescription>
-            Cada empresa importada = 1 crédito da Casa dos Dados. Importa 1-a-1 na ordem da fila,
-            criando empresa completa e link público automaticamente.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded border p-3">
-              <div className="text-xs text-slate-500">Prontos para importar ({formatBR(effectiveDate)})</div>
-              <div className="text-2xl font-bold text-blue-600">{readyToImport}</div>
-            </div>
-            <div className="rounded border p-3">
-              <div className="text-xs text-slate-500">Importadas ({formatBR(effectiveDate)})</div>
-              <div className="text-2xl font-bold text-green-600">{importedForDate}</div>
-            </div>
-            <div className="rounded border p-3">
-              <div className="text-xs text-slate-500">Com erro ({formatBR(effectiveDate)})</div>
-              <div className="text-2xl font-bold text-red-600">{errorForDate}</div>
-            </div>
-          </div>
-
-          <div>
-            <Label className="mb-2 block">Quantas importar agora?</Label>
-            <div className="flex flex-wrap items-center gap-2">
-              {QUICK_QUANTITIES.map((q) => (
-                <Button
-                  key={q}
-                  type="button"
-                  size="sm"
-                  variant={importCount === q ? 'default' : 'outline'}
-                  onClick={() => setImportCount(q)}
-                >
-                  {q}
-                </Button>
-              ))}
-              <Input
-                className="w-32"
-                type="number"
-                min={1}
-                max={1000}
-                placeholder="personalizada"
-                value={importCustom}
-                onChange={(e) => setImportCustom(e.target.value)}
-                onBlur={() => {
-                  const n = Number(importCustom);
-                  if (Number.isFinite(n) && n >= 1 && n <= 1000) setImportCount(n);
-                }}
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setImportCount(readyToImport)}
-                disabled={readyToImport === 0}
-              >
-                Todas ({readyToImport})
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={() => runImport(Math.min(importCount, readyToImport))}
-              disabled={!canImport}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {importing ? (
+              {importMut.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Play className="mr-2 h-4 w-4" />
               )}
-              Executar agora — Importar {Math.min(importCount, readyToImport)}
+              Importar {quantidade} empresa(s) agora
             </Button>
+          </div>
 
-            {importing && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  stopRequested.current = true;
-                  toast.info('Parada solicitada — vai terminar a empresa atual.');
-                }}
+          {importMut.isPending && (
+            <p className="text-sm text-slate-600">
+              Aguarde… a chamada pode levar de 5 a 30 segundos.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 3. Resultado do último lote */}
+      {(importedRows.length > 0 || failedRows.length > 0) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Resultado do último lote</CardTitle>
+            <CardDescription>
+              {importedRows.length} importada(s), {failedRows.length} falha(s).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {importedRows.map((row) => (
+              <div
+                key={row.cnpj}
+                className="flex flex-col gap-2 rounded border border-slate-200 p-3 md:flex-row md:items-center md:justify-between"
               >
-                <StopCircle className="mr-2 h-4 w-4" /> Parar
-              </Button>
-            )}
-
-            {errorForDate > 0 && !importing && (
-              <Button variant="outline" onClick={() => retryMut.mutate()} disabled={retryMut.isPending}>
-                <RefreshCw className="mr-2 h-4 w-4" /> Reenviar {errorForDate} com erro para a fila
-              </Button>
-            )}
-          </div>
-
-          {(importing || importProgress.total > 0) && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>
-                  Progresso: <strong>{importProgress.done}</strong> / {importProgress.total}
-                  {importProgress.failed > 0 && (
-                    <span className="text-red-600"> ({importProgress.failed} falhas)</span>
-                  )}
-                </span>
-                <span className="text-xs text-slate-500">
-                  Saldo consumido nesta rodada:{' '}
-                  {importProgress.done - importProgress.failed}
-                </span>
-              </div>
-              <Progress value={(importProgress.done / Math.max(1, importProgress.total)) * 100} />
-            </div>
-          )}
-
-          {importLogs.length > 0 && (
-            <div className="rounded border">
-              <div className="border-b bg-slate-50 px-3 py-2 text-xs font-medium uppercase text-slate-500">
-                Últimas importações
-              </div>
-              <ul className="max-h-64 divide-y overflow-y-auto text-sm">
-                {importLogs.map((l, i) => (
-                  <li key={`${l.ts}-${i}`} className="flex items-center justify-between px-3 py-2">
-                    <div>
-                      <div className="font-mono text-xs">{formatCNPJ(l.cnpj)}</div>
-                      {l.ok ? (
-                        <div className="text-xs text-slate-600">{l.nome}</div>
-                      ) : (
-                        <div className="text-xs text-red-600">{l.error}</div>
-                      )}
-                    </div>
-                    {l.ok ? (
-                      <Badge className="bg-green-600">Importada</Badge>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <strong className="truncate">{row.nome}</strong>
+                    {row.isNewCompany ? (
+                      <Badge className="bg-blue-600">NOVA</Badge>
                     ) : (
-                      <Badge variant="destructive">Erro</Badge>
+                      <Badge variant="outline">atualizada</Badge>
                     )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <div>
-            <CardTitle>Últimos registros importados</CardTitle>
-            <CardDescription>Os 10 mais recentes.</CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Button asChild size="sm" variant="outline">
-              <Link to="/painel/empresas-importadas">Ver todas as empresas</Link>
-            </Button>
-            <Button asChild size="sm" variant="outline">
-              <Link to="/painel/links-gerados">Ver todos os links</Link>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {(recentImportsQ.data ?? []).length === 0 ? (
-            <p className="text-sm text-slate-500">Nenhum registro importado ainda.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-                  <tr>
-                    <th className="p-2">Empresa</th>
-                    <th className="p-2">CNPJ</th>
-                    <th className="p-2">Data consultada</th>
-                    <th className="p-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(recentImportsQ.data ?? []).map((q: any) => {
-                    const c = q.companies;
-                    const nome = c
-                      ? (
-                          (c.nome_titular_exibicao || c.razao_social_original || '').replace(
-                            /^\d+[.\-/\s]*/,
-                            '',
-                          ).trim() || '—'
-                        )
-                      : '—';
-                    return (
-                      <tr key={q.id} className="border-t border-slate-100">
-                        <td className="p-2 font-medium">{nome}</td>
-                        <td className="p-2 font-mono text-xs">{formatCNPJ(q.cnpj)}</td>
-                        <td className="p-2">{formatBR(q.query_date)}</td>
-                        <td className="p-2">
-                          {q.company_link_id ? (
-                            <Badge className="bg-green-600">Com link</Badge>
-                          ) : (
-                            <Badge variant="secondary">Sem link</Badge>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    {row.isNewLink && <Badge className="bg-purple-600">novo link</Badge>}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    CNPJ: {formatCNPJ(row.cnpj)}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copy(row.publicUrl)}
+                  >
+                    <Copy className="mr-1 h-3 w-3" /> Link público
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copy(row.checkoutUrl)}
+                  >
+                    <Copy className="mr-1 h-3 w-3" /> Checkout
+                  </Button>
+                  <a href={row.publicUrl} target="_blank" rel="noreferrer">
+                    <Button size="sm" variant="ghost">
+                      <ExternalLink className="mr-1 h-3 w-3" /> Abrir
+                    </Button>
+                  </a>
+                </div>
+              </div>
+            ))}
+            {failedRows.map((row, i) => (
+              <div
+                key={`f-${i}`}
+                className="flex items-start gap-2 rounded border border-red-200 bg-red-50 p-3 text-sm"
+              >
+                <XCircle className="h-4 w-4 shrink-0 text-red-600" />
+                <div className="min-w-0">
+                  <div>
+                    <strong>{formatCNPJ(row.cnpj)}</strong>
+                  </div>
+                  <div className="text-xs text-red-700">{row.error}</div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
