@@ -45,6 +45,8 @@ import {
   setSubject,
   setDelaySec,
   setBatchLimit,
+  setDailyLimit,
+  resetDailyCounter,
   setTestMode,
   setTestRecipient,
   setFromName,
@@ -54,6 +56,8 @@ import {
   setHeroImageUrl,
   type QueueItem,
 } from '@/lib/automation/envio-engine';
+import { consultaStore } from '@/lib/automation/consulta-engine';
+
 
 
 export const Route = createFileRoute('/_authenticated/painel/envio-massa')({
