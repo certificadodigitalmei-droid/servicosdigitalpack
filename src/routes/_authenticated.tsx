@@ -1,46 +1,58 @@
-import { useState, useEffect } from 'react';
-import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { useEffect, useState } from 'react';
+import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export const Route = createFileRoute('/_authenticated')({
+  ssr: false,
   component: AuthenticatedLayout,
 });
 
-const PANEL_PASSWORD = '117711';
-const STORAGE_KEY = 'panel_auth_v1';
-
 function AuthenticatedLayout() {
-  const [password, setPassword] = useState('');
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+  const navigate = useNavigate();
+  const [state, setState] = useState<'checking' | 'ok' | 'no_user' | 'no_admin'>('checking');
 
   useEffect(() => {
-    try {
-      if (typeof window !== 'undefined' && localStorage.getItem(STORAGE_KEY) === 'ok') {
-        setIsAuthorized(true);
+    let cancelled = false;
+
+    async function check() {
+      const { data: userRes } = await supabase.auth.getUser();
+      if (cancelled) return;
+      if (!userRes.user) {
+        setState('no_user');
+        return;
       }
-    } catch {}
-    setHydrated(true);
+      const { data: roleRow } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userRes.user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      if (cancelled) return;
+      if (!roleRow) {
+        setState('no_admin');
+        return;
+      }
+      setState('ok');
+    }
+    check();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') setState('no_user');
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') check();
+    });
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password.trim() === PANEL_PASSWORD) {
-      try {
-        localStorage.setItem(STORAGE_KEY, 'ok');
-      } catch {}
-      setIsAuthorized(true);
-      toast.success('Acesso autorizado');
-    } else {
-      toast.error('Senha incorreta');
-    }
-  };
+  useEffect(() => {
+    if (state === 'no_user') navigate({ to: '/auth', replace: true });
+  }, [state, navigate]);
 
-  if (!hydrated) {
+  if (state === 'checking' || state === 'no_user') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-brand-navy">
         <Loader2 className="h-8 w-8 animate-spin text-white" />
@@ -48,35 +60,25 @@ function AuthenticatedLayout() {
     );
   }
 
-  if (!isAuthorized) {
+  if (state === 'no_admin') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-brand-navy p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold">Acesso Administrativo</CardTitle>
-            <CardDescription>Digite a senha para acessar o painel</CardDescription>
-          </CardHeader>
-          <form onSubmit={handleLogin}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Senha</label>
-                <Input
-                  type="password"
-                  placeholder="******"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoFocus
-                  required
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" className="w-full bg-brand-blue hover:bg-brand-navy">
-                Entrar no Painel
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
+      <div className="flex min-h-screen items-center justify-center bg-brand-navy p-6">
+        <div className="max-w-md rounded-lg bg-white p-6 text-center shadow">
+          <h1 className="mb-2 text-xl font-bold text-brand-navy">Acesso negado</h1>
+          <p className="mb-4 text-sm text-slate-600">
+            Sua conta está autenticada, mas não possui a permissão de administrador necessária para acessar o painel.
+          </p>
+          <button
+            type="button"
+            className="rounded bg-brand-blue px-4 py-2 text-white hover:bg-brand-navy"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              navigate({ to: '/auth', replace: true });
+            }}
+          >
+            Sair e trocar de conta
+          </button>
+        </div>
       </div>
     );
   }
