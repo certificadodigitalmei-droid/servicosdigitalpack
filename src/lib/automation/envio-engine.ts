@@ -243,7 +243,9 @@ export async function loadRecipients() {
         uf: c.uf || '',
         municipio: c.municipio_descricao || '',
         status: 'pending',
-        publicToken: linksMap[c.id] || null,
+        publicToken: linksMap[c.id]?.token || null,
+        publicUrl: linksMap[c.id]?.url || null,
+
       }));
     envioStore.set({ queue: items });
     pushLog(`Carregados ${items.length} destinatários (limite ${batchLimit}).`);
