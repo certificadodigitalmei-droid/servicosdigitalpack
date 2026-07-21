@@ -216,6 +216,9 @@ export const runAutomationNow = createServerFn({ method: 'POST' })
         filters: (row.filters ?? {}) as any,
         auto_import_enabled: autoImport,
         auto_generate_links_enabled: autoLinks,
+        pagination_cursors: (fullRow as any)?.pagination_cursors ?? {},
+        max_pages_per_run: (fullRow as any)?.max_pages_per_run ?? 20,
+        page_size: (fullRow as any)?.page_size ?? 50,
       },
       {
         trigger: data.trigger,
