@@ -247,54 +247,41 @@ export function PixModal({ open, amount, orderId, pixData, onClose }: PixModalPr
 }
 
 function GovLoading({ stepIdx }: { stepIdx: number }) {
+  const progress = ((stepIdx + 1) / LOADING_STEPS.length) * 100;
   return (
-    <div className="flex flex-col items-center justify-center gap-5 px-6 py-10 text-center">
-      {/* Selo gov.br animado */}
-      <div className="relative flex h-24 w-24 items-center justify-center">
-        <div className="absolute inset-0 rounded-full border-4 border-[#1351b4]/20" />
-        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#1351b4] animate-spin" />
-        <div className="absolute inset-2 rounded-full border-2 border-transparent border-b-emerald-500 animate-spin [animation-duration:1.6s] [animation-direction:reverse]" />
-        <div className="flex flex-col items-center justify-center rounded-full bg-white text-[#0b1e3f] font-black text-[13px] leading-none w-14 h-14 shadow-inner">
-          <span className="text-[11px] tracking-tight">gov</span>
-          <span className="text-[9px] tracking-widest text-emerald-600">.br</span>
+    <div className="flex flex-col items-center justify-center gap-5 px-6 py-8 text-center">
+      {/* Imagem oficial animada */}
+      <div className="relative">
+        <div className="absolute -inset-3 rounded-full bg-[#1351b4]/10 blur-xl animate-pulse" />
+        <div className="relative h-40 w-40 rounded-full bg-white shadow-[0_8px_30px_-8px_rgba(19,81,180,0.5)] ring-2 ring-[#1351b4]/20 overflow-hidden">
+          <img
+            src={pixLoader.url}
+            alt="Gerando cobrança Pix"
+            className="h-full w-full object-contain p-2 animate-[pulse_2.2s_ease-in-out_infinite]"
+          />
+          <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#1351b4] border-r-emerald-500 animate-spin [animation-duration:2.4s]" />
         </div>
       </div>
 
       <div className="space-y-1">
-        <div className="text-[15px] font-bold text-foreground">Gerando sua guia PIX</div>
-        <div className="text-[12.5px] text-muted-foreground min-h-[18px] transition-opacity">
+        <div className="text-[16px] font-black text-[#0b1e3f] tracking-tight">Gerando sua guia PIX</div>
+        <div className="text-[12.5px] text-muted-foreground min-h-[18px]">
           {LOADING_STEPS[stepIdx]}
         </div>
       </div>
 
-      {/* Passos */}
-      <div className="w-full max-w-[320px] space-y-1.5">
-        {LOADING_STEPS.map((label, i) => {
-          const done = i < stepIdx;
-          const active = i === stepIdx;
-          return (
-            <div
-              key={label}
-              className={
-                'flex items-center gap-2 rounded-md border px-3 py-1.5 text-[12px] transition-all ' +
-                (done
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                  : active
-                    ? 'border-[#1351b4]/30 bg-[#1351b4]/5 text-[#0b1e3f]'
-                    : 'border-border bg-muted/20 text-muted-foreground')
-              }
-            >
-              {done ? (
-                <Check className="h-3.5 w-3.5 text-emerald-600" />
-              ) : active ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#1351b4]" />
-              ) : (
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
-              )}
-              <span className="truncate">{label}</span>
-            </div>
-          );
-        })}
+      {/* Barra de progresso */}
+      <div className="w-full max-w-[320px] space-y-2">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full bg-gradient-to-r from-[#1351b4] via-[#2670e8] to-emerald-500 transition-all duration-500 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-[10.5px] font-medium text-muted-foreground">
+          <span>Etapa {stepIdx + 1} de {LOADING_STEPS.length}</span>
+          <span>{Math.round(progress)}%</span>
+        </div>
       </div>
 
       <div className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-wider text-muted-foreground">
