@@ -122,9 +122,18 @@ function pushLog(msg: string) {
 
 /* -------------------------------- setters --------------------------------- */
 
+// Base URL de PRODUÇÃO usada nos links dos e-mails (o preview do editor
+// abre o Lovable — usar sempre o domínio publicado).
+const PUBLIC_BASE_URL = 'https://seu-certificado-mei-digital.online';
+
 export const setSubject = (v: string) => envioStore.set({ subject: v });
 export const setDelaySec = (n: number) => envioStore.set({ delaySec: Math.max(1, n) });
 export const setBatchLimit = (n: number) => envioStore.set({ batchLimit: Math.max(1, n) });
+export const setDailyLimit = (n: number) => envioStore.set({ dailyLimit: Math.max(0, n) });
+export const resetDailyCounter = () => {
+  envioStore.set({ sentToday: 0, sentDay: todayStr() });
+  pushLog('↻ Contador diário zerado.');
+};
 export const setTestMode = (v: boolean) => envioStore.set({ testMode: v });
 export const setTestRecipient = (v: string) => envioStore.set({ testRecipient: v });
 export const setFromName = (v: string) => envioStore.set({ fromName: v });
@@ -132,6 +141,16 @@ export const setFromAddress = (v: string) => envioStore.set({ fromAddress: v });
 export const setReplyTo = (v: string) => envioStore.set({ replyTo: v });
 export const setShowFloating = (v: boolean) => envioStore.set({ showFloating: v });
 export const setHeroImageUrl = (v: string) => envioStore.set({ heroImageUrl: v });
+
+function ensureDailyWindow() {
+  const s = envioStore.get();
+  const today = todayStr();
+  if (s.sentDay !== today) {
+    envioStore.set({ sentDay: today, sentToday: 0 });
+    pushLog(`📆 Novo dia (${today}) — contador diário resetado.`);
+  }
+}
+
 
 
 /* ----------------------------- queue actions ------------------------------ */
