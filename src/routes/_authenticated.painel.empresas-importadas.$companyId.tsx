@@ -145,14 +145,39 @@ function DetalhesEmpresa() {
             </Button>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <Badge variant="secondary">{origem}</Badge>
-          {isTest
-            ? <Badge className="bg-amber-500 text-white">REGISTRO DE TESTE — DADOS INCOMPLETOS</Badge>
-            : quality === 'pending_enrichment'
-              ? <Badge className="bg-orange-500 text-white">Pendente de complementação</Badge>
-              : <Badge className="bg-emerald-600 text-white">Completa</Badge>}
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-col items-end gap-1">
+            <Badge variant="secondary">{origem}</Badge>
+            {isTest
+              ? <Badge className="bg-amber-500 text-white">REGISTRO DE TESTE — DADOS INCOMPLETOS</Badge>
+              : quality === 'pending_enrichment'
+                ? <Badge className="bg-orange-500 text-white">Pendente de complementação</Badge>
+                : <Badge className="bg-emerald-600 text-white">Completa</Badge>}
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="destructive" disabled={deleting}>
+                {deleting ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1 h-3 w-3" />}
+                Excluir empresa
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir esta empresa?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação vai remover permanentemente a empresa <strong>{nome}</strong> ({cnpjFmt}), todos os <strong>{links.length}</strong> link(s) associados e <strong>{queue.length}</strong> registro(s) de importação. Não é possível desfazer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                  Sim, excluir tudo
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
+
       </div>
 
       {(isTest || quality === 'pending_enrichment' || missing.length > 0) && (
