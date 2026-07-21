@@ -144,6 +144,20 @@ function ConsultaPage() {
   const [importedRows, setImportedRows] = useState<ImportedRow[]>([]);
   const [failedRows, setFailedRows] = useState<Array<{ cnpj: string; error: string }>>([]);
 
+  // Lista acumulada de CNPJs descobertos no Modo Automático.
+  type FoundRow = {
+    cnpj: string;
+    nome: string;
+    fantasia: string | null;
+    uf: string | null;
+    municipio: string | null;
+    firstSeenAt: string;
+  };
+  const [foundList, setFoundList] = useState<FoundRow[]>([]);
+  const [listDialogOpen, setListDialogOpen] = useState(false);
+
+
+
   const effectiveDate = useMemo(
     () => (dateMode === 'today' ? todayBR : selectedDate || todayBR),
     [dateMode, selectedDate, todayBR],
