@@ -1,7 +1,7 @@
 // Worker that executes a single automation "run".
 // Called by the internal server route (via pg_cron) OR from the "run now" server fn.
 
-import { searchOpeningsToday, type CasaFilters } from './client.server';
+import { searchOpeningsByDate, todayBR, type CasaFilters } from './client.server';
 
 type Automation = {
   id: string;
