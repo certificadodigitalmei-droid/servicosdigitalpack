@@ -1,12 +1,24 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Copy, ExternalLink, Loader2 } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink, Loader2, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
 
 export const Route = createFileRoute('/_authenticated/painel/empresas-importadas/$companyId')({
   head: () => ({ meta: [{ title: 'Detalhes da Empresa | Painel' }] }),
@@ -36,10 +48,12 @@ function DetalhesEmpresa() {
   const { companyId } = Route.useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const [company, setCompany] = useState<any>(null);
   const [links, setLinks] = useState<any[]>([]);
   const [queue, setQueue] = useState<any[]>([]);
   const [runs, setRuns] = useState<Record<string, any>>({});
+
 
   useEffect(() => {
     (async () => {
@@ -68,6 +82,23 @@ function DetalhesEmpresa() {
       }
     })();
   }, [companyId]);
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      const { error: e1 } = await supabase.from('company_links').delete().eq('company_id', companyId);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from('automatic_company_queue').delete().eq('company_id', companyId);
+      if (e2) throw e2;
+      const { error: e3 } = await supabase.from('companies').delete().eq('id', companyId);
+      if (e3) throw e3;
+      toast.success('Empresa, links e histórico de importação excluídos');
+      navigate({ to: '/painel/empresas-importadas' });
+    } catch (e: any) {
+      toast.error('Erro ao excluir: ' + (e?.message ?? 'desconhecido'));
+      setDeleting(false);
+    }
+  }
 
   if (loading) {
     return <div className="flex items-center gap-2 text-slate-500"><Loader2 className="h-4 w-4 animate-spin" /> Carregando...</div>;
@@ -114,14 +145,39 @@ function DetalhesEmpresa() {
             </Button>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <Badge variant="secondary">{origem}</Badge>
-          {isTest
-            ? <Badge className="bg-amber-500 text-white">REGISTRO DE TESTE — DADOS INCOMPLETOS</Badge>
-            : quality === 'pending_enrichment'
-              ? <Badge className="bg-orange-500 text-white">Pendente de complementação</Badge>
-              : <Badge className="bg-emerald-600 text-white">Completa</Badge>}
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-col items-end gap-1">
+            <Badge variant="secondary">{origem}</Badge>
+            {isTest
+              ? <Badge className="bg-amber-500 text-white">REGISTRO DE TESTE — DADOS INCOMPLETOS</Badge>
+              : quality === 'pending_enrichment'
+                ? <Badge className="bg-orange-500 text-white">Pendente de complementação</Badge>
+                : <Badge className="bg-emerald-600 text-white">Completa</Badge>}
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="destructive" disabled={deleting}>
+                {deleting ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1 h-3 w-3" />}
+                Excluir empresa
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir esta empresa?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação vai remover permanentemente a empresa <strong>{nome}</strong> ({cnpjFmt}), todos os <strong>{links.length}</strong> link(s) associados e <strong>{queue.length}</strong> registro(s) de importação. Não é possível desfazer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                  Sim, excluir tudo
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
+
       </div>
 
       {(isTest || quality === 'pending_enrichment' || missing.length > 0) && (
