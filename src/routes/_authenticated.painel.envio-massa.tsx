@@ -426,7 +426,7 @@ function EnvioMassa() {
               <Stat label="Erros" value={stats.errors} color="text-red-600" />
             </div>
             <Progress value={progress} />
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {!running ? (
                 <Button onClick={startSending} disabled={queue.length === 0}>
                   <Play className="h-4 w-4" /> {testMode ? 'Iniciar teste' : 'Iniciar envio real'}
@@ -442,6 +442,18 @@ function EnvioMassa() {
                   </Button>
                 </>
               )}
+              <Button variant="outline" onClick={resetStatuses} disabled={running || queue.length === 0}>
+                <RotateCcw className="h-4 w-4" /> Resetar envios
+              </Button>
+              <Button variant="outline" onClick={clearQueue} disabled={running || queue.length === 0}>
+                <Trash2 className="h-4 w-4" /> Limpar fila
+              </Button>
+              <Button variant="outline" onClick={clearLogs} disabled={logs.length === 0}>
+                <RotateCcw className="h-4 w-4" /> Limpar log
+              </Button>
+              <Button variant={showFloating ? 'default' : 'outline'} onClick={() => setShowFloating((v) => !v)}>
+                <Activity className="h-4 w-4" /> {showFloating ? 'Ocultar painel' : 'Painel flutuante'}
+              </Button>
               {testMode && <Badge className="bg-amber-100 text-amber-800">MODO TESTE ATIVO</Badge>}
             </div>
             <div>
