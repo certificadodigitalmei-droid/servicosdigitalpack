@@ -28,6 +28,7 @@ import { Route as AuthenticatedPainelImportarEmpresasRouteImport } from './route
 import { Route as AuthenticatedPainelGeradorLinksRouteImport } from './routes/_authenticated.painel.gerador-links'
 import { Route as AuthenticatedPainelFiltrarMeiRouteImport } from './routes/_authenticated.painel.filtrar-mei'
 import { Route as AuthenticatedPainelEnvioMassaRouteImport } from './routes/_authenticated.painel.envio-massa'
+import { Route as AuthenticatedPainelEnviadosRouteImport } from './routes/_authenticated.painel.enviados'
 import { Route as AuthenticatedPainelEmpresasImportadasRouteImport } from './routes/_authenticated.painel.empresas-importadas'
 import { Route as AuthenticatedPainelConsultaAutomaticaRouteImport } from './routes/_authenticated.painel.consulta-automatica'
 import { Route as AuthenticatedPainelCampanhasEmailRouteImport } from './routes/_authenticated.painel.campanhas-email'
@@ -140,6 +141,12 @@ const AuthenticatedPainelEnvioMassaRoute =
     path: '/envio-massa',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelEnviadosRoute =
+  AuthenticatedPainelEnviadosRouteImport.update({
+    id: '/enviados',
+    path: '/enviados',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 const AuthenticatedPainelEmpresasImportadasRoute =
   AuthenticatedPainelEmpresasImportadasRouteImport.update({
     id: '/empresas-importadas',
@@ -202,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
   '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
+  '/painel/enviados': typeof AuthenticatedPainelEnviadosRoute
   '/painel/envio-massa': typeof AuthenticatedPainelEnvioMassaRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
@@ -228,6 +236,7 @@ export interface FileRoutesByTo {
   '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
   '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
+  '/painel/enviados': typeof AuthenticatedPainelEnviadosRoute
   '/painel/envio-massa': typeof AuthenticatedPainelEnvioMassaRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
@@ -258,6 +267,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
   '/_authenticated/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/_authenticated/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
+  '/_authenticated/painel/enviados': typeof AuthenticatedPainelEnviadosRoute
   '/_authenticated/painel/envio-massa': typeof AuthenticatedPainelEnvioMassaRoute
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
@@ -288,6 +298,7 @@ export interface FileRouteTypes {
     | '/painel/campanhas-email'
     | '/painel/consulta-automatica'
     | '/painel/empresas-importadas'
+    | '/painel/enviados'
     | '/painel/envio-massa'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/checkout/$token'
     | '/painel/campanhas-email'
     | '/painel/consulta-automatica'
+    | '/painel/enviados'
     | '/painel/envio-massa'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
@@ -343,6 +355,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/campanhas-email'
     | '/_authenticated/painel/consulta-automatica'
     | '/_authenticated/painel/empresas-importadas'
+    | '/_authenticated/painel/enviados'
     | '/_authenticated/painel/envio-massa'
     | '/_authenticated/painel/filtrar-mei'
     | '/_authenticated/painel/gerador-links'
@@ -510,6 +523,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelEnvioMassaRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/enviados': {
+      id: '/_authenticated/painel/enviados'
+      path: '/enviados'
+      fullPath: '/painel/enviados'
+      preLoaderRoute: typeof AuthenticatedPainelEnviadosRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
     '/_authenticated/painel/empresas-importadas': {
       id: '/_authenticated/painel/empresas-importadas'
       path: '/empresas-importadas'
@@ -606,6 +626,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelCampanhasEmailRoute: typeof AuthenticatedPainelCampanhasEmailRoute
   AuthenticatedPainelConsultaAutomaticaRoute: typeof AuthenticatedPainelConsultaAutomaticaRoute
   AuthenticatedPainelEmpresasImportadasRoute: typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
+  AuthenticatedPainelEnviadosRoute: typeof AuthenticatedPainelEnviadosRoute
   AuthenticatedPainelEnvioMassaRoute: typeof AuthenticatedPainelEnvioMassaRoute
   AuthenticatedPainelFiltrarMeiRoute: typeof AuthenticatedPainelFiltrarMeiRoute
   AuthenticatedPainelGeradorLinksRoute: typeof AuthenticatedPainelGeradorLinksRouteWithChildren
@@ -622,6 +643,7 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
     AuthenticatedPainelConsultaAutomaticaRoute,
   AuthenticatedPainelEmpresasImportadasRoute:
     AuthenticatedPainelEmpresasImportadasRouteWithChildren,
+  AuthenticatedPainelEnviadosRoute: AuthenticatedPainelEnviadosRoute,
   AuthenticatedPainelEnvioMassaRoute: AuthenticatedPainelEnvioMassaRoute,
   AuthenticatedPainelFiltrarMeiRoute: AuthenticatedPainelFiltrarMeiRoute,
   AuthenticatedPainelGeradorLinksRoute:
