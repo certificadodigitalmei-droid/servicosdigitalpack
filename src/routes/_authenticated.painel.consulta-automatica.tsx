@@ -42,7 +42,7 @@ export const Route = createFileRoute('/_authenticated/painel/consulta-automatica
   component: ConsultaPage,
 });
 
-const QUANTIDADES = [1, 5, 10, 25];
+const QUANTIDADES = [1, 5, 10, 15];
 
 function todayBRString(): string {
   return new Intl.DateTimeFormat('en-CA', {
