@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/client';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
@@ -8,12 +8,13 @@ import { toast } from 'sonner';
 import {
   Loader2,
   Play,
-  Power,
-  PowerOff,
-  Save,
+  Search,
   TestTube2,
   Calendar as CalendarIcon,
   RefreshCw,
+  ListPlus,
+  Wallet,
+  StopCircle,
 } from 'lucide-react';
 import {
   Card,
@@ -27,26 +28,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { formatCNPJ } from '@/lib/format';
+import { testApi, countByDateFn } from '@/lib/casa-dos-dados/automation.functions';
 import {
-  getAutomationState,
-  upsertAutomation,
-  setAutomationEnabled,
-  runAutomationNow,
-  testApi,
-  countByDateFn,
-} from '@/lib/casa-dos-dados/automation.functions';
+  discoverList,
+  importOne,
+  getFlowStats,
+  retryErrors,
+} from '@/lib/casa-dos-dados/manual-flow.functions';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
-  head: () => ({ meta: [{ title: 'Consulta Automática | Painel' }] }),
-  component: ConsultaAutomaticaPage,
+  head: () => ({ meta: [{ title: 'Consulta Casa dos Dados | Painel' }] }),
+  component: ConsultaPage,
 });
 
-const QUICK_QUANTITIES = [1, 5, 10, 20, 50, 100, 500];
+const QUICK_QUANTITIES = [1, 5, 10, 25, 50, 100];
 
 function todayBRString(): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -75,195 +76,39 @@ function isoToDate(iso: string): Date {
   return new Date(y, (m ?? 1) - 1, d ?? 1);
 }
 
-function withClientTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${label} excedeu o tempo limite no navegador. Atualize o status para ver o resultado real.`)), timeoutMs);
-  });
-  return Promise.race([promise, timeout]).finally(() => {
-    if (timer) clearTimeout(timer);
-  });
-}
+type ImportLog = {
+  ts: string;
+  cnpj: string;
+  ok: boolean;
+  nome?: string;
+  error?: string;
+};
 
-function ConsultaAutomaticaPage() {
+function ConsultaPage() {
   const qc = useQueryClient();
-  const getState = useServerFn(getAutomationState);
-  const upsertFn = useServerFn(upsertAutomation);
-  const enableFn = useServerFn(setAutomationEnabled);
-  const runFn = useServerFn(runAutomationNow);
+  const todayBR = todayBRString();
+
   const testFn = useServerFn(testApi);
   const countFn = useServerFn(countByDateFn);
+  const discoverFn = useServerFn(discoverList);
+  const importFn = useServerFn(importOne);
+  const statsFn = useServerFn(getFlowStats);
+  const retryFn = useServerFn(retryErrors);
 
-  const stateQ = useQuery({
-    queryKey: ['casa-automation-state'],
-    queryFn: () => getState(),
-    refetchInterval: 5000,
-  });
-
-  const recentImportsQ = useQuery({
-    queryKey: ['casa-recent-imports'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('automatic_company_queue')
-        .select('id,query_date,created_at,cnpj,company_id,company_link_id,was_new_link,companies(id,nome_titular_exibicao,razao_social_original)')
-        .not('company_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data ?? [];
-    },
-    refetchInterval: 10000,
-  });
-
-  const automation = (stateQ.data?.automation ?? null) as any;
-  const runs = stateQ.data?.runs ?? [];
-  const todayBR = stateQ.data?.todayBR ?? todayBRString();
-
-  const filters = (automation?.filters as any) ?? {
-    only_mei: true,
-    only_active: true,
-    only_matriz: true,
-    require_email: true,
-  };
-
-  const [quantity, setQuantity] = useState<number>(1);
-  const [customQuantity, setCustomQuantity] = useState<string>('');
-  const [interval, setIntervalMinutes] = useState<number>(60);
-  const [localFilters, setLocalFilters] = useState({
-    only_mei: true,
-    only_active: true,
-    only_matriz: true,
-    require_email: true,
-  });
   const [dateMode, setDateMode] = useState<'today' | 'specific'>('today');
   const [selectedDate, setSelectedDate] = useState<string>(todayBR);
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [autoImport, setAutoImport] = useState<boolean>(true);
-  const [autoLinks, setAutoLinks] = useState<boolean>(true);
-  const [lastRunSummary, setLastRunSummary] = useState<any | null>(null);
 
-  useEffect(() => {
-    if (automation) {
-      setQuantity(automation.quantity_per_run);
-      setIntervalMinutes(automation.interval_minutes);
-      setLocalFilters({
-        only_mei: !!filters.only_mei,
-        only_active: !!filters.only_active,
-        only_matriz: !!filters.only_matriz,
-        require_email: !!filters.require_email,
-      });
-      const mode = automation.query_date_mode === 'specific' ? 'specific' : 'today';
-      setDateMode(mode);
-      setSelectedDate(automation.selected_query_date ?? todayBR);
-      setAutoImport(automation.auto_import_enabled ?? true);
-      setAutoLinks(automation.auto_generate_links_enabled ?? true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [automation?.id]);
-
-  // Enforce: cannot enable links without import
-  useEffect(() => {
-    if (!autoImport && autoLinks) setAutoLinks(false);
-  }, [autoImport, autoLinks]);
-
-  const effectiveDate = useMemo(
-    () => (dateMode === 'today' ? todayBR : selectedDate || todayBR),
-    [dateMode, selectedDate, todayBR],
-  );
-
-  const filtersSummary = useMemo(() => {
-    const parts: string[] = [];
-    if (localFilters.only_mei) parts.push('MEI');
-    if (localFilters.only_active) parts.push('ATIVA');
-    if (localFilters.only_matriz) parts.push('MATRIZ');
-    if (localFilters.require_email) parts.push('com e-mail');
-    return parts.length ? parts.join(', ') : 'nenhum';
-  }, [localFilters]);
-
-  const saveMut = useMutation({
-    mutationFn: () =>
-      upsertFn({
-        data: {
-          quantity_per_run: quantity,
-          interval_minutes: interval,
-          filters: localFilters,
-          query_date_mode: dateMode,
-          selected_query_date: dateMode === 'specific' ? selectedDate : null,
-          auto_import_enabled: autoImport,
-          auto_generate_links_enabled: autoLinks && autoImport,
-        },
-      }),
-    onSuccess: async () => {
-      toast.success('Configuração salva');
-      await qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
-      await stateQ.refetch();
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Erro ao salvar'),
+  const [filters, setFilters] = useState({
+    only_mei: true,
+    only_active: true,
+    only_matriz: true,
+    require_email: false,
   });
 
-  const enableMut = useMutation({
-    mutationFn: (enabled: boolean) =>
-      enableFn({ data: { id: automation!.id, enabled } }),
-    onSuccess: (_r, enabled) => {
-      toast.success(
-        enabled
-          ? 'Automação ativada — trabalhando sempre em "Hoje"'
-          : 'Automação desativada',
-      );
-      qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Erro'),
-  });
-
-  const runMut = useMutation({
-    mutationFn: (args?: { overrideQuantity?: number; trigger?: 'manual' | 'test_manual' }) =>
-      withClientTimeout(
-        runFn({
-          data: {
-            id: automation!.id,
-            overrideQuantity: args?.overrideQuantity,
-            queryDate: effectiveDate,
-            trigger: args?.trigger ?? 'manual',
-            overrideAutoImport: autoImport,
-            overrideAutoLinks: autoLinks && autoImport,
-          },
-        }),
-        75_000,
-        'Execução da Consulta Automática',
-      ),
-    onSuccess: (r: any) => {
-      if (r?.ok === false && r?.reason === 'already_running') {
-        toast.warning('Já existe uma execução em andamento');
-      } else if (r?.outcome?.status === 'error') {
-        toast.error(`Erro na execução: ${r.outcome.error}`);
-        setLastRunSummary({ ...r.outcome, queryDate: r.queryDate });
-      } else if (r?.outcome?.status === 'partial') {
-        toast.warning(
-          `Execução parcial (${formatBR(r.queryDate)}): ${r.outcome.imported} importada(s). ${r.outcome.partialReason ?? ''}`,
-        );
-        setLastRunSummary({ ...r.outcome, queryDate: r.queryDate });
-      } else {
-        toast.success(
-          `Execução concluída (${formatBR(r.queryDate)}): ${r.outcome.imported} importada(s), ${r.outcome.duplicated} duplicada(s)`,
-        );
-        setLastRunSummary({ ...r.outcome, queryDate: r.queryDate });
-      }
-      qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Erro ao executar'),
-    onSettled: async () => {
-      await qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
-      await stateQ.refetch();
-    },
-  });
-
-  const testMut = useMutation({
-    mutationFn: () => testFn({ data: undefined as any }),
-    onSuccess: (r) => {
-      toast.info(`API respondeu com status ${r.status}`);
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Erro ao testar API'),
-  });
+  const [maxDiscover, setMaxDiscover] = useState<number>(500);
+  const [importCount, setImportCount] = useState<number>(10);
+  const [importCustom, setImportCustom] = useState<string>('');
 
   const [countResult, setCountResult] = useState<null | {
     date: string;
@@ -271,18 +116,77 @@ function ConsultaAutomaticaPage() {
     status: number;
     ok: boolean;
     checkedAt: string;
-    filters: typeof localFilters;
-    error?: string;
   }>(null);
+  const [discoverResult, setDiscoverResult] = useState<null | {
+    date: string;
+    enqueued: number;
+    duplicated: number;
+    apiTotal: number | null;
+  }>(null);
+
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState({ done: 0, total: 0, failed: 0 });
+  const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
+  const stopRequested = useRef(false);
+
+  const effectiveDate = useMemo(
+    () => (dateMode === 'today' ? todayBR : selectedDate || todayBR),
+    [dateMode, selectedDate, todayBR],
+  );
+
+  const statsQ = useQuery({
+    queryKey: ['casa-flow-stats'],
+    queryFn: () => statsFn(),
+    refetchInterval: importing ? 3000 : 8000,
+  });
+
+  const recentImportsQ = useQuery({
+    queryKey: ['casa-recent-imports'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('automatic_company_queue')
+        .select(
+          'id,query_date,created_at,cnpj,company_id,company_link_id,was_new_link,companies(id,nome_titular_exibicao,razao_social_original)',
+        )
+        .not('company_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data ?? [];
+    },
+    refetchInterval: importing ? 3000 : 15000,
+  });
+
+  const byStatus = statsQ.data?.byStatus ?? {};
+  const byDate = statsQ.data?.byDate ?? {};
+  const dateStats = byDate[effectiveDate] ?? {};
+  const readyToImport =
+    (dateStats.discovered ?? 0) + (dateStats.pending_enrichment ?? 0);
+  const importedForDate = dateStats.imported ?? 0;
+  const errorForDate = dateStats.error ?? 0;
+
+  const filtersSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (filters.only_mei) parts.push('MEI');
+    if (filters.only_active) parts.push('ATIVA');
+    if (filters.only_matriz) parts.push('MATRIZ');
+    if (filters.require_email) parts.push('com e-mail');
+    return parts.length ? parts.join(', ') : 'nenhum';
+  }, [filters]);
+
+  const disableFuture = (d: Date) => dateToISO(d) > todayBR;
+
+  // -------- MUTATIONS --------
+
+  const testMut = useMutation({
+    mutationFn: () => testFn({ data: undefined as any }),
+    onSuccess: (r) => toast.info(`API respondeu com status ${r.status}`),
+    onError: (e: any) => toast.error(e?.message ?? 'Erro ao testar API'),
+  });
 
   const countMut = useMutation({
     mutationFn: () =>
-      countFn({
-        data: {
-          queryDate: effectiveDate,
-          filters: localFilters,
-        },
-      }),
+      countFn({ data: { queryDate: effectiveDate, filters } }),
     onSuccess: (r: any) => {
       setCountResult({
         date: r.date,
@@ -290,125 +194,176 @@ function ConsultaAutomaticaPage() {
         status: r.status,
         ok: r.ok,
         checkedAt: r.checkedAt,
-        filters: r.filters,
       });
       if (!r.ok) toast.error(`API retornou status ${r.status}`);
     },
-    onError: (e: any) => {
-      setCountResult({
-        date: effectiveDate,
-        total: null,
-        status: 0,
-        ok: false,
-        checkedAt: new Date().toISOString(),
-        filters: localFilters,
-        error: e?.message ?? 'Erro',
-      });
-      toast.error(e?.message ?? 'Erro ao consultar');
-    },
+    onError: (e: any) => toast.error(e?.message ?? 'Erro ao consultar'),
   });
 
-  const statusBadge = () => {
-    if (!automation) return <Badge variant="outline">Não configurada</Badge>;
-    if (automation.status === 'running') return <Badge className="bg-blue-600">Executando</Badge>;
-    if (automation.status === 'error') return <Badge variant="destructive">Erro</Badge>;
-    if (automation.enabled) return <Badge className="bg-green-600">Ativa</Badge>;
-    return <Badge variant="secondary">Inativa</Badge>;
+  const discoverMut = useMutation({
+    mutationFn: () =>
+      discoverFn({
+        data: { date: effectiveDate, filters, maxCnpjs: maxDiscover },
+      }),
+    onSuccess: (r) => {
+      setDiscoverResult({
+        date: r.date,
+        enqueued: r.enqueued,
+        duplicated: r.duplicated,
+        apiTotal: r.apiTotal,
+      });
+      toast.success(
+        `Descoberta concluída: ${r.enqueued} novos, ${r.duplicated} já existiam. Nenhum crédito consumido.`,
+      );
+      qc.invalidateQueries({ queryKey: ['casa-flow-stats'] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Erro ao descobrir'),
+  });
+
+  const retryMut = useMutation({
+    mutationFn: () => retryFn({ data: { date: effectiveDate } }),
+    onSuccess: () => {
+      toast.success('Registros com erro voltaram para a fila.');
+      qc.invalidateQueries({ queryKey: ['casa-flow-stats'] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Erro'),
+  });
+
+  const runImport = async (limit: number) => {
+    if (limit < 1) return;
+    setImporting(true);
+    stopRequested.current = false;
+    setImportProgress({ done: 0, total: limit, failed: 0 });
+    setImportLogs([]);
+
+    let done = 0;
+    let failed = 0;
+
+    for (let i = 0; i < limit; i += 1) {
+      if (stopRequested.current) break;
+      try {
+        const r: any = await importFn({ data: { date: effectiveDate } });
+        if (r?.ok === false && r.reason === 'empty') {
+          toast.info('Fila vazia. Rode "Descobrir CNPJs" para pegar mais.');
+          break;
+        }
+        if (r?.ok) {
+          done += 1;
+          setImportLogs((prev) => [
+            { ts: new Date().toISOString(), cnpj: r.cnpj, ok: true, nome: r.nome },
+            ...prev,
+          ].slice(0, 50));
+        } else {
+          failed += 1;
+          setImportLogs((prev) => [
+            {
+              ts: new Date().toISOString(),
+              cnpj: r?.cnpj ?? '—',
+              ok: false,
+              error: r?.error ?? `${r?.reason ?? 'erro'} ${r?.status ?? ''}`,
+            },
+            ...prev,
+          ].slice(0, 50));
+        }
+      } catch (e: any) {
+        failed += 1;
+        setImportLogs((prev) => [
+          {
+            ts: new Date().toISOString(),
+            cnpj: '—',
+            ok: false,
+            error: e?.message ?? 'Erro',
+          },
+          ...prev,
+        ].slice(0, 50));
+      }
+      setImportProgress({ done: done + failed, total: limit, failed });
+      qc.invalidateQueries({ queryKey: ['casa-flow-stats'] });
+      qc.invalidateQueries({ queryKey: ['casa-recent-imports'] });
+    }
+
+    setImporting(false);
+    if (failed === 0 && done > 0) toast.success(`Importadas ${done} empresas (consumiu ${done} créditos).`);
+    else if (done > 0) toast.warning(`Importadas ${done}, falhas: ${failed}.`);
+    else if (failed > 0) toast.error(`Todas as ${failed} tentativas falharam.`);
   };
 
-  const disableFuture = (d: Date) => {
-    const iso = dateToISO(d);
-    return iso > todayBR;
-  };
+  const canDiscover = !discoverMut.isPending;
+  const canImport = readyToImport > 0 && !importing;
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-brand-navy">Consulta Automática (Casa dos Dados)</h1>
+          <h1 className="text-2xl font-bold text-brand-navy">Consulta Casa dos Dados</h1>
           <p className="text-sm text-slate-600">
-            Consulta empresas abertas em uma data (padrão: hoje, fuso America/Sao_Paulo). A
-            automação horária só trabalha no modo <strong>Hoje</strong>.
+            Fluxo em <strong>2 etapas</strong>: descobrir CNPJs de uma data (grátis) e depois
+            importar 1-a-1 as empresas escolhidas (consome saldo).
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <WipeAllButton
             size="sm"
-            label="Apagar histórico"
-            title="Apagar todo o histórico de execuções?"
-            description="Remove permanentemente todos os registros de execuções da Consulta Automática (a lista embaixo desta tela). Não afeta empresas importadas nem links já criados."
-            steps={[
-              { label: 'automatic_company_query_runs', run: () => supabase.from('automatic_company_query_runs').delete().neq('id', EMPTY_UUID) },
-            ]}
-            onDone={async () => {
-              await qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
-            }}
-          />
-          <WipeAllButton
-            size="sm"
             label="Apagar resultados"
-            title="Apagar todos os resultados pendentes?"
-            description="Remove permanentemente todos os itens da fila da Consulta Automática (descobertos, aguardando enriquecimento e erros). Não afeta empresas já importadas nem links já criados."
+            title="Apagar toda a fila de descoberta?"
+            description="Remove todos os CNPJs descobertos, importados ou com erro. Empresas e links já criados NÃO são afetados."
             steps={[
-              { label: 'automatic_company_queue', run: () => supabase.from('automatic_company_queue').delete().neq('id', EMPTY_UUID) },
+              {
+                label: 'automatic_company_queue',
+                run: () =>
+                  supabase.from('automatic_company_queue').delete().neq('id', EMPTY_UUID),
+              },
             ]}
             onDone={async () => {
-              await qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
+              await qc.invalidateQueries({ queryKey: ['casa-flow-stats'] });
               await qc.invalidateQueries({ queryKey: ['casa-recent-imports'] });
+              setDiscoverResult(null);
             }}
           />
         </div>
       </div>
 
-
+      {/* Stats globais */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Status</CardDescription>
-            <CardTitle className="text-lg">{statusBadge()}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Última execução</CardDescription>
-            <CardTitle className="text-sm">
-              {automation?.last_run_at
-                ? new Date(automation.last_run_at).toLocaleString('pt-BR')
-                : '—'}
+            <CardDescription>Prontos p/ importar (total)</CardDescription>
+            <CardTitle className="text-2xl text-blue-600">
+              {(byStatus.discovered ?? 0) + (byStatus.pending_enrichment ?? 0)}
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Próxima execução</CardDescription>
-            <CardTitle className="text-sm">
-              {automation?.next_run_at
-                ? new Date(automation.next_run_at).toLocaleString('pt-BR')
-                : '—'}
-            </CardTitle>
+            <CardDescription>Já importadas (total)</CardDescription>
+            <CardTitle className="text-2xl text-green-600">{byStatus.imported ?? 0}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Último erro</CardDescription>
-            <CardTitle className="truncate text-sm text-red-600">
-              {automation?.last_error ?? '—'}
-            </CardTitle>
+            <CardDescription>Com erro (total)</CardDescription>
+            <CardTitle className="text-2xl text-red-600">{byStatus.error ?? 0}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Data em uso</CardDescription>
+            <CardTitle className="text-lg">{formatBR(effectiveDate)}</CardTitle>
           </CardHeader>
         </Card>
       </div>
 
+      {/* Configuração de data e filtros */}
       <Card>
         <CardHeader>
-          <CardTitle>Configuração</CardTitle>
+          <CardTitle>1. Escolher data e filtros</CardTitle>
           <CardDescription>
-            Modo atual: <strong>Empresas abertas na data selecionada</strong>.
+            Estas escolhas valem para as três ações: consultar quantidade, descobrir CNPJs e importar.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Data da consulta */}
           <div>
-            <Label className="mb-2 block">Data da consulta</Label>
+            <Label className="mb-2 block">Data</Label>
             <RadioGroup
               value={dateMode}
               onValueChange={(v) => {
@@ -421,7 +376,7 @@ function ConsultaAutomaticaPage() {
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="today" id="mode-today" />
                 <Label htmlFor="mode-today" className="cursor-pointer font-normal">
-                  Hoje — recomendada ({formatBR(todayBR)})
+                  Hoje ({formatBR(todayBR)})
                 </Label>
               </div>
               <div className="flex items-center gap-2">
@@ -457,60 +412,8 @@ function ConsultaAutomaticaPage() {
                     />
                   </PopoverContent>
                 </Popover>
-                <p className="mt-1 text-xs text-amber-700">
-                  Consultar uma data histórica pode consumir uma chamada da API.
-                </p>
               </div>
             )}
-          </div>
-
-          {/* Quantidade */}
-          <div>
-            <Label className="mb-2 block">Quantidade por execução</Label>
-            <div className="flex flex-wrap gap-2">
-              {QUICK_QUANTITIES.map((q) => (
-                <Button
-                  key={q}
-                  type="button"
-                  size="sm"
-                  variant={quantity === q ? 'default' : 'outline'}
-                  onClick={() => setQuantity(q)}
-                >
-                  {q}
-                </Button>
-              ))}
-              <div className="flex items-center gap-2">
-                <Input
-                  className="w-32"
-                  type="number"
-                  min={1}
-                  max={1000}
-                  placeholder="personalizada"
-                  value={customQuantity}
-                  onChange={(e) => setCustomQuantity(e.target.value)}
-                  onBlur={() => {
-                    const n = Number(customQuantity);
-                    if (Number.isFinite(n) && n >= 1 && n <= 1000) setQuantity(n);
-                  }}
-                />
-              </div>
-            </div>
-            <p className="mt-1 text-xs text-slate-500">Limite máximo desta fase: 1000 por execução.</p>
-          </div>
-
-          <div>
-            <Label className="mb-2 block">Intervalo entre execuções (minutos)</Label>
-            <Input
-              className="w-40"
-              type="number"
-              min={1}
-              max={1440}
-              value={interval}
-              onChange={(e) => setIntervalMinutes(Number(e.target.value) || 60)}
-            />
-            <p className="mt-1 text-xs text-slate-500">
-              Padrão: 60 (execução horária). A automação horária só roda no modo <strong>Hoje</strong>.
-            </p>
           </div>
 
           <div>
@@ -528,302 +431,275 @@ function ConsultaAutomaticaPage() {
                 >
                   <span className="text-sm">{f.label}</span>
                   <Switch
-                    checked={(localFilters as any)[f.key]}
-                    onCheckedChange={(v) =>
-                      setLocalFilters((prev) => ({ ...prev, [f.key]: v }))
-                    }
+                    checked={(filters as any)[f.key]}
+                    onCheckedChange={(v) => setFilters((prev) => ({ ...prev, [f.key]: v }))}
                   />
                 </div>
               ))}
             </div>
+            <p className="mt-2 text-xs text-slate-500">
+              Filtros ativos: <strong>{filtersSummary}</strong>
+            </p>
           </div>
 
-          {/* Processamento — importação + geração de links */}
-          <div>
-            <Label className="mb-2 block">Processamento</Label>
-            <div className="grid gap-2 md:grid-cols-2">
-              <div className="flex items-center justify-between rounded border border-slate-200 p-3">
-                <div>
-                  <div className="text-sm font-medium">Importar empresas automaticamente</div>
-                  <div className="text-xs text-slate-500">Salva/atualiza a empresa a cada CNPJ retornado.</div>
-                </div>
-                <Switch checked={autoImport} onCheckedChange={setAutoImport} />
-              </div>
-              <div
-                className={cn(
-                  'flex items-center justify-between rounded border border-slate-200 p-3',
-                  !autoImport && 'opacity-60',
-                )}
-              >
-                <div>
-                  <div className="text-sm font-medium">Gerar links automaticamente</div>
-                  <div className="text-xs text-slate-500">
-                    {autoImport
-                      ? 'Cria token e link público quando ainda não existe link ativo.'
-                      : 'Ative a importação para gerar links.'}
-                  </div>
-                </div>
-                <Switch
-                  checked={autoLinks && autoImport}
-                  disabled={!autoImport}
-                  onCheckedChange={setAutoLinks}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Resumo antes de executar */}
-          <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
-            <div><strong>Consulta:</strong> {formatBR(effectiveDate)}{dateMode === 'today' ? ' (hoje)' : ''}</div>
-            <div><strong>Quantidade por execução:</strong> {quantity}</div>
-            <div><strong>Filtros:</strong> {filtersSummary}</div>
-            <div>
-              <strong>Importar automaticamente:</strong> {autoImport ? 'Sim' : 'Não'}{' · '}
-              <strong>Gerar link automaticamente:</strong> {autoLinks && autoImport ? 'Sim' : 'Não'}
-            </div>
-          </div>
-
-          {/* BANNER DE STATUS DA AUTOMAÇÃO */}
-          {automation?.id && (
-            <div
-              className={cn(
-                'rounded-lg border-2 p-4',
-                automation.enabled
-                  ? 'border-green-500 bg-green-50'
-                  : 'border-slate-300 bg-slate-50',
+          <div className="flex flex-wrap gap-3">
+            <Button variant="secondary" onClick={() => countMut.mutate()} disabled={countMut.isPending}>
+              {countMut.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CalendarIcon className="mr-2 h-4 w-4" />
               )}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div
-                    className={cn(
-                      'text-lg font-bold',
-                      automation.enabled ? 'text-green-700' : 'text-slate-700',
-                    )}
-                  >
-                    {automation.enabled ? 'AUTOMAÇÃO ATIVA' : 'AUTOMAÇÃO DESATIVADA'}
-                  </div>
-                  <div className="mt-1 grid gap-x-6 gap-y-1 text-xs text-slate-600 sm:grid-cols-2">
-                    <div>Próxima execução: <strong>{automation.next_run_at ? new Date(automation.next_run_at).toLocaleString('pt-BR') : '—'}</strong></div>
-                    <div>Última execução: <strong>{automation.last_run_at ? new Date(automation.last_run_at).toLocaleString('pt-BR') : '—'}</strong></div>
-                    <div>Quantidade por execução: <strong>{automation.quantity_per_run}</strong></div>
-                    <div>Data usada: <strong>Hoje (America/Sao_Paulo)</strong></div>
-                    <div>Importação: <strong>{(automation.auto_import_enabled ?? true) ? 'Ligada' : 'Desligada'}</strong></div>
-                    <div>Geração de links: <strong>{(automation.auto_generate_links_enabled ?? true) ? 'Ligada' : 'Desligada'}</strong></div>
-                  </div>
-                </div>
+              Consultar quantidade da data (grátis)
+            </Button>
+            <Button variant="ghost" onClick={() => testMut.mutate()} disabled={testMut.isPending}>
+              <Wallet className="mr-2 h-4 w-4" />
+              Ver saldo API
+            </Button>
+          </div>
+
+          {countResult && (
+            <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+              <div>
+                <strong>Data:</strong> {formatBR(countResult.date)} —{' '}
+                <strong>Total encontrado:</strong>{' '}
+                {countResult.total !== null ? countResult.total.toLocaleString('pt-BR') : '—'}{' '}
+                <Badge className={countResult.ok ? 'bg-green-600' : 'bg-red-600'}>
+                  HTTP {countResult.status}
+                </Badge>
+              </div>
+              <div className="text-xs text-slate-500">
+                Consultado às{' '}
+                {new Date(countResult.checkedAt).toLocaleTimeString('pt-BR', {
+                  timeZone: 'America/Sao_Paulo',
+                })}{' '}
+                — nenhum crédito consumido.
               </div>
             </div>
           )}
-
-          {(() => {
-            const hasAutomation = !!automation?.id;
-            const isRunning = automation?.status === 'running';
-            const anyPending = saveMut.isPending || enableMut.isPending || runMut.isPending;
-
-            const runDisabledReason = !hasAutomation
-              ? 'Salve a configuração para criar a automação.'
-              : isRunning
-                ? 'Já existe uma execução em andamento.'
-                : runMut.isPending
-                  ? 'Requisição em andamento…'
-                  : anyPending
-                    ? 'Aguarde a operação atual terminar.'
-                    : null;
-
-            const confirmTest = () => {
-              const ok = window.confirm(
-                `Este teste fará uma consulta real e poderá consumir saldo da Casa dos Dados.\n\n` +
-                  `Data do teste: ${formatBR(effectiveDate)}\n` +
-                  `Quantidade: 1\n` +
-                  `Importar automaticamente: ${autoImport ? 'Sim' : 'Não'}\n` +
-                  `Gerar link automaticamente: ${autoLinks && autoImport ? 'Sim' : 'Não'}\n\n` +
-                  `Deseja continuar?`,
-              );
-              if (ok) runMut.mutate({ overrideQuantity: 1, trigger: 'test_manual' });
-            };
-
-            return (
-              <div className="flex flex-wrap gap-4">
-                <div className="flex flex-col">
-                  <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
-                    {saveMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Salvar configurações
-                  </Button>
-                </div>
-
-                {hasAutomation && (
-                  <div className="flex flex-col">
-                    {automation!.enabled ? (
-                      <Button
-                        variant="outline"
-                        onClick={() => enableMut.mutate(false)}
-                        disabled={enableMut.isPending}
-                      >
-                        <PowerOff className="mr-2 h-4 w-4" />
-                        Desativar automação
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => enableMut.mutate(true)}
-                        disabled={enableMut.isPending}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <Power className="mr-2 h-4 w-4" />
-                        Ativar automação (Hoje)
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex flex-col">
-                  <Button
-                    variant="outline"
-                    onClick={() => runMut.mutate({ trigger: 'manual' })}
-                    disabled={!!runDisabledReason}
-                  >
-                    {runMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                    Executar agora ({formatBR(effectiveDate)})
-                  </Button>
-                  {runDisabledReason && (
-                    <span className="mt-1 max-w-[240px] text-xs text-slate-500">{runDisabledReason}</span>
-                  )}
-                </div>
-
-                <div className="flex flex-col">
-                  <Button
-                    variant="outline"
-                    onClick={confirmTest}
-                    disabled={!!runDisabledReason}
-                  >
-                    <Play className="mr-2 h-4 w-4" />
-                    Rodar teste com 1 empresa
-                  </Button>
-                  {runDisabledReason && (
-                    <span className="mt-1 max-w-[240px] text-xs text-slate-500">{runDisabledReason}</span>
-                  )}
-                </div>
-
-                <div className="flex flex-col">
-                  <Button variant="secondary" onClick={() => testMut.mutate()} disabled={testMut.isPending}>
-                    <TestTube2 className="mr-2 h-4 w-4" />
-                    Testar API (/v5/saldo)
-                  </Button>
-                </div>
-                <div className="flex flex-col">
-                  <Button variant="secondary" onClick={() => countMut.mutate()} disabled={countMut.isPending}>
-                    {countMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarIcon className="mr-2 h-4 w-4" />}
-                    Consultar quantidade da data
-                  </Button>
-                </div>
-                <div className="flex flex-col">
-                  <Button variant="ghost" onClick={() => stateQ.refetch()}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Atualizar
-                  </Button>
-                </div>
-              </div>
-            );
-          })()}
         </CardContent>
       </Card>
 
-      {/* Card de resultado da contagem */}
-      {countResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Quantidade encontrada</CardTitle>
-            <CardDescription>
-              Consulta apenas de contagem — não importa empresa, não gera token, não gera link.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div><strong>Data:</strong> {formatBR(countResult.date)}</div>
-            <div>
-              <strong>Total com os filtros atuais:</strong>{' '}
-              {countResult.total !== null ? countResult.total.toLocaleString('pt-BR') : '—'}
+      {/* Descoberta */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            2. Descobrir CNPJs <Badge className="ml-2 bg-slate-500">Grátis</Badge>
+          </CardTitle>
+          <CardDescription>
+            Busca a lista de CNPJs da data e coloca na fila para importar depois. Não consome saldo
+            porque não pega os dados completos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label className="mb-2 block">Quantos CNPJs no máximo?</Label>
+            <div className="flex flex-wrap gap-2">
+              {[50, 100, 250, 500, 1000, 2000].map((q) => (
+                <Button
+                  key={q}
+                  type="button"
+                  size="sm"
+                  variant={maxDiscover === q ? 'default' : 'outline'}
+                  onClick={() => setMaxDiscover(q)}
+                >
+                  {q}
+                </Button>
+              ))}
             </div>
-            <div>
-              <strong>Consultado às:</strong>{' '}
-              {new Date(countResult.checkedAt).toLocaleTimeString('pt-BR', {
-                timeZone: 'America/Sao_Paulo',
-              })}
-            </div>
-            <div>
-              <strong>Status:</strong>{' '}
-              {countResult.status ? `HTTP ${countResult.status}` : '—'}{' '}
-              {countResult.ok ? (
-                <Badge className="bg-green-600">OK</Badge>
-              ) : (
-                <Badge variant="destructive">Falha</Badge>
-              )}
-            </div>
-            <div>
-              <strong>Filtros aplicados:</strong>{' '}
-              {[
-                countResult.filters.only_mei && 'MEI',
-                countResult.filters.only_active && 'ATIVA',
-                countResult.filters.only_matriz && 'MATRIZ',
-                countResult.filters.require_email && 'com e-mail',
-              ]
-                .filter(Boolean)
-                .join(', ') || 'nenhum'}
-            </div>
-            {countResult.error && (
-              <div className="text-red-600">
-                <strong>Erro:</strong> {countResult.error}
-              </div>
-            )}
-            {countResult.ok && countResult.total === 0 && (
-              <div className="rounded bg-amber-50 p-2 text-amber-800">
-                Nenhuma empresa foi encontrada nessa data com os filtros selecionados.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
 
-      {lastRunSummary && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Resultado da última execução manual</CardTitle>
-            <CardDescription>
-              Data consultada: <strong>{formatBR(lastRunSummary.queryDate)}</strong>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-2 text-sm md:grid-cols-2">
-            <div>Status: <strong>{lastRunSummary.status}</strong></div>
-            <div>API total: <strong>{lastRunSummary.apiTotal ?? '—'}</strong></div>
-            <div>Registros recebidos / colocados na fila: <strong>{lastRunSummary.requested}</strong></div>
-            <div>Empresas importadas (novas): <strong>{lastRunSummary.imported - (lastRunSummary.updated ?? 0)}</strong></div>
-            <div>Empresas atualizadas: <strong>{lastRunSummary.updated ?? 0}</strong></div>
-            <div>Duplicadas: <strong>{lastRunSummary.duplicated}</strong></div>
-            <div>Links novos: <strong>{lastRunSummary.linksCreated}</strong></div>
-            <div>Links reutilizados: <strong>{lastRunSummary.linksReused}</strong></div>
-            <div>Ignorados: <strong>{lastRunSummary.skipped?.length ?? 0}</strong></div>
-            <div>Erros: <strong>{lastRunSummary.error ? '1' : '0'}</strong></div>
-            {(!lastRunSummary.autoImportEnabled || !lastRunSummary.autoGenerateLinksEnabled) && (
-              <div className="md:col-span-2 rounded bg-amber-50 p-2 text-amber-800">
-                {!lastRunSummary.autoImportEnabled && (
-                  <div>Importação desligada — nenhuma empresa foi importada, apenas CNPJs enfileirados.</div>
-                )}
-                {lastRunSummary.autoImportEnabled && !lastRunSummary.autoGenerateLinksEnabled && (
-                  <div>Geração de links desligada — nenhum link foi gerado nesta execução.</div>
-                )}
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => discoverMut.mutate()}
+              disabled={!canDiscover}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {discoverMut.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="mr-2 h-4 w-4" />
+              )}
+              Descobrir CNPJs ({formatBR(effectiveDate)})
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => runImport(1)}
+              disabled={importing}
+              title="Faz uma descoberta + tentativa de importação limitada a 1 CNPJ, útil pra validar o fluxo."
+            >
+              <TestTube2 className="mr-2 h-4 w-4" /> Rodar teste com 1 empresa
+            </Button>
+          </div>
+
+          {discoverResult && (
+            <div className="rounded border border-blue-200 bg-blue-50 p-3 text-sm">
+              <div>
+                <strong>Data:</strong> {formatBR(discoverResult.date)} —{' '}
+                <strong>Total na API:</strong>{' '}
+                {discoverResult.apiTotal?.toLocaleString('pt-BR') ?? '—'}
               </div>
+              <div>
+                Novos na fila: <strong>{discoverResult.enqueued}</strong> · Já existiam:{' '}
+                <strong>{discoverResult.duplicated}</strong>
+              </div>
+              <div className="text-xs text-slate-600">Nenhum crédito consumido.</div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Importação */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            3. Importar empresas <Badge className="ml-2 bg-red-600">Consome saldo</Badge>
+          </CardTitle>
+          <CardDescription>
+            Cada empresa importada = 1 crédito da Casa dos Dados. Importa 1-a-1 na ordem da fila,
+            criando empresa completa e link público automaticamente.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded border p-3">
+              <div className="text-xs text-slate-500">Prontos para importar ({formatBR(effectiveDate)})</div>
+              <div className="text-2xl font-bold text-blue-600">{readyToImport}</div>
+            </div>
+            <div className="rounded border p-3">
+              <div className="text-xs text-slate-500">Importadas ({formatBR(effectiveDate)})</div>
+              <div className="text-2xl font-bold text-green-600">{importedForDate}</div>
+            </div>
+            <div className="rounded border p-3">
+              <div className="text-xs text-slate-500">Com erro ({formatBR(effectiveDate)})</div>
+              <div className="text-2xl font-bold text-red-600">{errorForDate}</div>
+            </div>
+          </div>
+
+          <div>
+            <Label className="mb-2 block">Quantas importar agora?</Label>
+            <div className="flex flex-wrap items-center gap-2">
+              {QUICK_QUANTITIES.map((q) => (
+                <Button
+                  key={q}
+                  type="button"
+                  size="sm"
+                  variant={importCount === q ? 'default' : 'outline'}
+                  onClick={() => setImportCount(q)}
+                >
+                  {q}
+                </Button>
+              ))}
+              <Input
+                className="w-32"
+                type="number"
+                min={1}
+                max={1000}
+                placeholder="personalizada"
+                value={importCustom}
+                onChange={(e) => setImportCustom(e.target.value)}
+                onBlur={() => {
+                  const n = Number(importCustom);
+                  if (Number.isFinite(n) && n >= 1 && n <= 1000) setImportCount(n);
+                }}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setImportCount(readyToImport)}
+                disabled={readyToImport === 0}
+              >
+                Todas ({readyToImport})
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => runImport(Math.min(importCount, readyToImport))}
+              disabled={!canImport}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {importing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Play className="mr-2 h-4 w-4" />
+              )}
+              Executar agora — Importar {Math.min(importCount, readyToImport)}
+            </Button>
+
+            {importing && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  stopRequested.current = true;
+                  toast.info('Parada solicitada — vai terminar a empresa atual.');
+                }}
+              >
+                <StopCircle className="mr-2 h-4 w-4" /> Parar
+              </Button>
             )}
-            {lastRunSummary.error && (
-              <div className="md:col-span-2 text-red-600"><strong>Erro:</strong> {lastRunSummary.error}</div>
+
+            {errorForDate > 0 && !importing && (
+              <Button variant="outline" onClick={() => retryMut.mutate()} disabled={retryMut.isPending}>
+                <RefreshCw className="mr-2 h-4 w-4" /> Reenviar {errorForDate} com erro para a fila
+              </Button>
             )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
+
+          {(importing || importProgress.total > 0) && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span>
+                  Progresso: <strong>{importProgress.done}</strong> / {importProgress.total}
+                  {importProgress.failed > 0 && (
+                    <span className="text-red-600"> ({importProgress.failed} falhas)</span>
+                  )}
+                </span>
+                <span className="text-xs text-slate-500">
+                  Saldo consumido nesta rodada:{' '}
+                  {importProgress.done - importProgress.failed}
+                </span>
+              </div>
+              <Progress value={(importProgress.done / Math.max(1, importProgress.total)) * 100} />
+            </div>
+          )}
+
+          {importLogs.length > 0 && (
+            <div className="rounded border">
+              <div className="border-b bg-slate-50 px-3 py-2 text-xs font-medium uppercase text-slate-500">
+                Últimas importações
+              </div>
+              <ul className="max-h-64 divide-y overflow-y-auto text-sm">
+                {importLogs.map((l, i) => (
+                  <li key={`${l.ts}-${i}`} className="flex items-center justify-between px-3 py-2">
+                    <div>
+                      <div className="font-mono text-xs">{formatCNPJ(l.cnpj)}</div>
+                      {l.ok ? (
+                        <div className="text-xs text-slate-600">{l.nome}</div>
+                      ) : (
+                        <div className="text-xs text-red-600">{l.error}</div>
+                      )}
+                    </div>
+                    {l.ok ? (
+                      <Badge className="bg-green-600">Importada</Badge>
+                    ) : (
+                      <Badge variant="destructive">Erro</Badge>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>
             <CardTitle>Últimos registros importados</CardTitle>
-            <CardDescription>5 empresas mais recentes vindas da automação.</CardDescription>
+            <CardDescription>Os 10 mais recentes.</CardDescription>
           </div>
           <div className="flex gap-2">
             <Button asChild size="sm" variant="outline">
@@ -846,32 +722,29 @@ function ConsultaAutomaticaPage() {
                     <th className="p-2">CNPJ</th>
                     <th className="p-2">Data consultada</th>
                     <th className="p-2">Status</th>
-                    <th className="p-2">Link</th>
-                    <th className="p-2 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(recentImportsQ.data ?? []).map((q: any) => {
                     const c = q.companies;
-                    const nome = c ? ((c.nome_titular_exibicao || c.razao_social_original || '').replace(/^\d+[.\-/\s]*/, '').trim() || '—') : '—';
+                    const nome = c
+                      ? (
+                          (c.nome_titular_exibicao || c.razao_social_original || '').replace(
+                            /^\d+[.\-/\s]*/,
+                            '',
+                          ).trim() || '—'
+                        )
+                      : '—';
                     return (
                       <tr key={q.id} className="border-t border-slate-100">
                         <td className="p-2 font-medium">{nome}</td>
                         <td className="p-2 font-mono text-xs">{formatCNPJ(q.cnpj)}</td>
                         <td className="p-2">{formatBR(q.query_date)}</td>
                         <td className="p-2">
-                          {q.company_link_id
-                            ? <Badge className="bg-green-600">Importada</Badge>
-                            : <Badge variant="secondary">Sem link</Badge>}
-                        </td>
-                        <td className="p-2">{q.was_new_link ? 'Novo' : 'Reutilizado'}</td>
-                        <td className="p-2 text-right">
-                          {q.company_id && (
-                            <Button asChild size="sm" variant="ghost">
-                              <Link to="/painel/empresas-importadas/$companyId" params={{ companyId: q.company_id }}>
-                                Ver
-                              </Link>
-                            </Button>
+                          {q.company_link_id ? (
+                            <Badge className="bg-green-600">Com link</Badge>
+                          ) : (
+                            <Badge variant="secondary">Sem link</Badge>
                           )}
                         </td>
                       </tr>
@@ -883,69 +756,6 @@ function ConsultaAutomaticaPage() {
           )}
         </CardContent>
       </Card>
-
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico de execuções</CardTitle>
-          <CardDescription>Últimas 20 execuções da automação.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {runs.length === 0 ? (
-            <p className="text-sm text-slate-500">Nenhuma execução ainda.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-                  <tr>
-                    <th className="p-2">Início</th>
-                    <th className="p-2">Data consultada</th>
-                    <th className="p-2">Origem</th>
-                    <th className="p-2">Status</th>
-                    <th className="p-2">Pedido</th>
-                    <th className="p-2">API Total</th>
-                    <th className="p-2">Importadas</th>
-                    <th className="p-2">Duplicadas</th>
-                    <th className="p-2">Links novos</th>
-                    <th className="p-2">Links reutil.</th>
-                    <th className="p-2">Erro</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {runs.map((r: any) => (
-                    <tr key={r.id} className="border-t border-slate-100">
-                      <td className="p-2">{new Date(r.started_at).toLocaleString('pt-BR')}</td>
-                      <td className="p-2">{formatBR(r.query_date)}</td>
-                      <td className="p-2">{r.trigger}</td>
-                      <td className="p-2">
-                        {r.status === 'ok' && <Badge className="bg-green-600">OK</Badge>}
-                        {r.status === 'running' && <Badge className="bg-blue-600">Executando</Badge>}
-                        {r.status === 'partial' && <Badge className="bg-amber-500 text-white">Parcial</Badge>}
-                        {r.status === 'error' && <Badge variant="destructive">Erro</Badge>}
-                      </td>
-                      <td className="p-2">{r.requested_quantity ?? '—'}</td>
-                      <td className="p-2">{r.api_total ?? '—'}</td>
-                      <td className="p-2">{r.imported_count}</td>
-                      <td className="p-2">{r.duplicate_count}</td>
-                      <td className="p-2">{r.link_created_count}</td>
-                      <td className="p-2">{r.link_reused_count}</td>
-                      <td className="max-w-[260px] truncate p-2 text-xs text-red-600" title={r.error_message ?? ''}>
-                        {r.error_message ?? ''}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {runs[0]?.status === 'ok' && (
-        <p className="text-xs text-slate-500">
-          Formatação CNPJ de exemplo: <code>{formatCNPJ('12345678000199')}</code>
-        </p>
-      )}
     </div>
   );
 }
