@@ -381,11 +381,11 @@ function ConsultaPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button
               variant="secondary"
               onClick={() => countMut.mutate()}
-              disabled={countMut.isPending}
+              disabled={countMut.isPending || autoCount}
             >
               {countMut.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -408,21 +408,93 @@ function ConsultaPage() {
             </Button>
           </div>
 
+          {/* Modo automático — polling grátis, sem parar */}
+          <div className="rounded-lg border-2 border-emerald-200 bg-emerald-50/50 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <Label htmlFor="auto-count" className="font-medium flex items-center gap-2">
+                  {autoCount && (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
+                    </span>
+                  )}
+                  Modo automático (consulta sem parar)
+                </Label>
+                <p className="text-xs text-slate-600">
+                  Fica consultando a quantidade sozinho a cada X segundos. Não consome créditos.
+                </p>
+              </div>
+              <Switch id="auto-count" checked={autoCount} onCheckedChange={setAutoCount} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="auto-interval" className="text-xs whitespace-nowrap">
+                Intervalo (seg):
+              </Label>
+              <input
+                id="auto-interval"
+                type="number"
+                min={5}
+                max={600}
+                value={autoIntervalSec}
+                onChange={(e) =>
+                  setAutoIntervalSec(Math.max(5, Math.min(600, Number(e.target.value) || 30)))
+                }
+                className="h-8 w-24 rounded border border-slate-300 px-2 text-sm"
+              />
+              <span className="text-xs text-slate-500">mín. 5 seg</span>
+            </div>
+          </div>
+
           {countResult && (
-            <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+            <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm space-y-2">
               <div>
                 <strong>Data:</strong> {formatBR(countResult.date)} —{' '}
                 <strong>Total encontrado:</strong>{' '}
-                {countResult.total !== null
-                  ? countResult.total.toLocaleString('pt-BR')
-                  : '—'}{' '}
+                <span className="text-lg font-bold text-brand-navy">
+                  {countResult.total !== null
+                    ? countResult.total.toLocaleString('pt-BR')
+                    : '—'}
+                </span>{' '}
                 <Badge className={countResult.ok ? 'bg-green-600' : 'bg-red-600'}>
                   HTTP {countResult.status}
                 </Badge>
+                {autoStats.delta > 0 && (
+                  <Badge className="ml-2 bg-emerald-600 animate-pulse">
+                    +{autoStats.delta} novas
+                  </Badge>
+                )}
               </div>
+              {autoCount && (
+                <div className="grid gap-1 text-xs text-slate-600 sm:grid-cols-2">
+                  <div>
+                    Consultas feitas: <strong>{autoStats.checks}</strong>
+                  </div>
+                  <div>
+                    Pico da sessão:{' '}
+                    <strong>
+                      {autoStats.peak != null
+                        ? autoStats.peak.toLocaleString('pt-BR')
+                        : '—'}
+                    </strong>
+                  </div>
+                  <div>
+                    Última verificação:{' '}
+                    <strong>
+                      {autoStats.lastCheckAt
+                        ? new Date(autoStats.lastCheckAt).toLocaleTimeString('pt-BR')
+                        : '—'}
+                    </strong>
+                  </div>
+                  <div>
+                    Próxima em: <strong>~{autoIntervalSec}s</strong>
+                  </div>
+                </div>
+              )}
               <p className="mt-1 text-xs text-slate-500">Nenhum crédito consumido.</p>
             </div>
           )}
+
 
           {saldo && (
             <div className="rounded border border-slate-200 bg-slate-50 p-3 text-xs">
