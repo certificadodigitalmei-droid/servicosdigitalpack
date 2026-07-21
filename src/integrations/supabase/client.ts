@@ -62,11 +62,7 @@ let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
 export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>, {
   get(_, prop, receiver) {
     if (!_supabase) _supabase = createSupabaseClient();
-    const value = Reflect.get(_supabase, prop, receiver);
-    if (prop === 'auth' && typeof window !== 'undefined') {
-        (window as any).supabase = _supabase;
-    }
-    return value;
+    return Reflect.get(_supabase, prop, receiver);
   },
 });
 

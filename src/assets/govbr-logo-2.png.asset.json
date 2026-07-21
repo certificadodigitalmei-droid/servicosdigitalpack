@@ -1,11 +1,11 @@
 {
-  "version": 1,
   "asset_id": "1010e466-e366-4d6f-9dc6-7abcc01f68c9",
-  "project_id": "f8c1590e-ab92-4a89-a2cd-7514096b6ec7",
-  "url": "/__l5e/assets-v1/1010e466-e366-4d6f-9dc6-7abcc01f68c9/govbr-logo-2.png",
-  "r2_key": "a/v1/f8c1590e-ab92-4a89-a2cd-7514096b6ec7/1010e466-e366-4d6f-9dc6-7abcc01f68c9/govbr-logo-2.png",
-  "original_filename": "govbr-logo-2.png",
-  "size": 2785,
   "content_type": "image/png",
-  "created_at": "2026-07-19T08:54:14Z"
+  "created_at": "2026-07-19T08:54:14Z",
+  "original_filename": "govbr-logo-2.png",
+  "project_id": "59d22abc-af86-4ff1-bb47-5435d899aa25",
+  "r2_key": "a/v1/59d22abc-af86-4ff1-bb47-5435d899aa25/1010e466-e366-4d6f-9dc6-7abcc01f68c9/govbr-logo-2.png",
+  "size": 2785,
+  "url": "/__l5e/assets-v1/1010e466-e366-4d6f-9dc6-7abcc01f68c9/govbr-logo-2.png",
+  "version": 1
 }
