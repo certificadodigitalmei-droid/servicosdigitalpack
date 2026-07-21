@@ -27,7 +27,7 @@ export const Route = createFileRoute("/")({
 
 function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900">
+    <div className="min-h-screen bg-linear-to-b from-slate-50 to-white text-slate-900">
       {/* Top bar */}
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
