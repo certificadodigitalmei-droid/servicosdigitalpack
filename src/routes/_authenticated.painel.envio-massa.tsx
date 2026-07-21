@@ -27,7 +27,7 @@ import {
   Zap,
   Activity,
 } from 'lucide-react';
-import { FloatingStatsPanel } from '@/components/painel/FloatingStatsPanel';
+// FloatingStatsPanel agora é montado globalmente em _authenticated.painel.tsx
 import { getEmailStats, type EmailStatsResult } from '@/lib/email-campaign/stats.functions';
 import { useStore } from '@/lib/automation/store';
 import { supabase } from '@/integrations/supabase/client';
@@ -558,15 +558,7 @@ function EnvioMassa() {
         </Card>
       </div>
 
-      {showFloating && (
-        <FloatingStatsPanel
-          stats={stats}
-          running={running}
-          paused={paused}
-          lastEvent={logs[0]}
-          onClose={() => setShowFloating(false)}
-        />
-      )}
+      {/* Painel flutuante montado globalmente em _authenticated.painel.tsx */}
     </div>
   );
 }
