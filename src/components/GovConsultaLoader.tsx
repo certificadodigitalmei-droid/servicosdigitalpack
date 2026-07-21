@@ -97,7 +97,7 @@ export function GovConsultaLoader({
         />
         <div
           className="absolute left-1/2 w-[86%] max-w-[440px] -translate-x-1/2"
-          style={{ top: '74%' }}
+          style={{ top: '66%' }}
         >
           {FloatingCTA}
         </div>
