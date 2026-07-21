@@ -37,8 +37,8 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   buttonBg: '#0b1e3f',
   buttonText: '#ffffff',
   align: 'left',
-  titleSize: 22,
-  bodySize: 15,
+  titleSize: 28,
+  bodySize: 17,
   title: 'Informação cadastral - {{NOME_TITULAR}}',
   subtitle: 'Referência: {{REFERENCIA}}',
   intro:
@@ -52,6 +52,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   unsubText: '',
   unsubHref: '#',
 };
+
 
 export const DEFAULT_SUBJECT = '{{NOME_TITULAR}}, atualização pendente do seu CNPJ';
 export const DEFAULT_PREHEADER =
@@ -128,10 +129,10 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     .map(
       ([k, v]) => {
         const isSituacao = k === 'Situação';
-        const valueStyle = isSituacao && String(v).toLowerCase().includes('sem certificado') 
-          ? 'color:#dc2626;font-weight:700;' 
+        const valueStyle = isSituacao && String(v).toLowerCase().includes('sem certificado')
+          ? 'color:#dc2626;font-weight:700;'
           : `color:${d.textColor};`;
-        return `<tr><td style="padding:6px 0;color:${d.textColor};font-size:${d.bodySize}px;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> <span style="${valueStyle}">${esc(String(v))}</span></td></tr>`;
+        return `<tr><td style="padding:8px 0;color:${d.textColor};font-size:${d.bodySize}px;line-height:1.5;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> <span style="${valueStyle}">${esc(String(v))}</span></td></tr>`;
       }
     )
     .join('');
@@ -140,41 +141,38 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 <html lang="pt-BR"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${title}</title></head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:${d.textColor};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 0;"><tr><td align="center">
-  <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+  <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;background:#ffffff;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
     <!-- Header -->
-    <tr><td style="background:${d.headerBg};color:${d.headerText};padding:32px;text-align:left;">
-      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:0.9;margin-bottom:8px;">${logo}</div>
-      <div style="font-size:${d.titleSize}px;font-weight:700;line-height:1.2;margin:0;">${title}</div>
-      <div style="font-size:12px;opacity:0.8;margin-top:8px;">${subtitle}</div>
+    <tr><td style="background:${d.headerBg};color:${d.headerText};padding:36px 36px;text-align:left;">
+      <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;margin-bottom:14px;">${logo}</div>
+      <div style="font-size:${d.titleSize}px;font-weight:800;line-height:1.2;margin:0;">${title}</div>
+      <div style="font-size:14px;opacity:0.85;margin-top:12px;">${subtitle}</div>
     </td></tr>
-    ${d.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(d.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
-    
+    ${d.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(d.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:640px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
 
-    
     <!-- Hero Title -->
-    <tr><td style="padding:40px 32px 20px 32px;text-align:center;">
-      <h2 style="font-size:20px;font-weight:700;color:${d.headerBg};margin:0;">Certificado Digital<br/>disponível para seu CNPJ</h2>
-      <div style="width:40px;height:1px;background:#e5e7eb;margin:24px auto;"></div>
+    <tr><td style="padding:44px 36px 20px 36px;text-align:center;">
+      <h2 style="font-size:26px;font-weight:800;color:${d.headerBg};margin:0;line-height:1.25;">Certificado Digital<br/>disponível para seu CNPJ</h2>
+      <div style="width:48px;height:1px;background:#e5e7eb;margin:28px auto;"></div>
     </td></tr>
 
     <!-- Intro Body -->
-    <tr><td style="padding:0 32px 24px 32px;text-align:${align};font-size:${d.bodySize}px;line-height:1.6;color:${d.textColor};">
+    <tr><td style="padding:0 36px 24px 36px;text-align:${align};font-size:${d.bodySize}px;line-height:1.6;color:${d.textColor};font-weight:700;">
       ${intro}
     </td></tr>
 
     <!-- Data Card -->
-    <tr><td style="padding:0 32px 24px 32px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${d.cardBg};border-radius:6px;padding:24px;border:1px solid #e5e7eb;">
-        <tr><td style="font-weight:700;color:${d.mutedColor};font-size:13px;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:12px;">${cardTitle}</td></tr>
+    <tr><td style="padding:0 36px 28px 36px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${d.cardBg};border-radius:8px;padding:24px 26px;border:1px solid #e5e7eb;">
         ${rowsHtml}
       </table>
     </td></tr>
 
     <!-- Warning Box -->
-    <tr><td style="padding:0 32px 32px 32px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border-left:4px solid #ef4444;padding:16px;">
-        <tr><td style="color:#b91c1c;font-size:14px;font-weight:700;padding-bottom:8px;">MEIs sem Certificado Digital:</td></tr>
-        <tr><td style="color:#4b5563;font-size:13px;line-height:1.5;">
+    <tr><td style="padding:0 36px 32px 36px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border-left:4px solid #ef4444;padding:20px 22px;border-radius:4px;">
+        <tr><td style="color:#b91c1c;font-size:17px;font-weight:700;padding-bottom:10px;">MEIs sem Certificado Digital:</td></tr>
+        <tr><td style="color:#4b5563;font-size:15px;line-height:1.65;">
           Não conseguem emitir Nota Fiscal Eletrônica (NF-e)<br/>
           Ficam impedidos de assinar contratos digitais<br/>
           Estão sujeitos a penalidades e restrições da Receita Federal
@@ -183,16 +181,17 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     </td></tr>
 
     <!-- Button -->
-    <tr><td align="center" style="padding:0 32px 40px 32px;">
-      <a href="${buttonHref}" style="display:inline-block;background:${d.buttonBg};color:${d.buttonText};text-decoration:none;padding:14px 40px;border-radius:999px;font-weight:700;font-size:15px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.2);">${buttonLabel}</a>
+    <tr><td align="center" style="padding:0 36px 44px 36px;">
+      <a href="${buttonHref}" style="display:inline-block;background:${d.buttonBg};color:${d.buttonText};text-decoration:none;padding:16px 44px;border-radius:999px;font-weight:700;font-size:17px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);">${buttonLabel}</a>
     </td></tr>
 
     <!-- Signature -->
-    <tr><td style="padding:0 32px 32px 32px;color:#4b5563;font-size:14px;line-height:1.5;">
+    <tr><td style="padding:0 36px 36px 36px;color:#4b5563;font-size:15px;line-height:1.6;">
       Atenciosamente,<br/>
-      <strong>Central de Atendimento</strong><br/>
+      <strong style="color:${d.textColor};">Central de Atendimento</strong><br/>
       Certificado Digital MEI
     </td></tr>
+
 
     <!-- Footer -->
     <tr><td style="padding:32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
