@@ -12,11 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useServerFn } from '@tanstack/react-start';
-import {
-  testGemMailConnection,
-  syncCampaignToGemMail,
-  sendGemMailCampaign,
-} from '@/lib/email-campaign/gemmail.functions';
+// Envio automatizado (GemMail/Gmail/Hotmail/etc) removido.
+// A tela agora é apenas geradora de e-mails prontos para exportação e uso
+// em ferramenta externa de disparo em massa.
+
 import {
   parseFile,
   autoMap,
