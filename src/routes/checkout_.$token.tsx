@@ -96,8 +96,13 @@ function CheckoutTokenPage() {
 
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
+    console.log('[Checkout] handleSubmit iniciado');
     trackEvent(token, 'click_guia');
-    if (!validate()) return;
+    if (!validate()) {
+      console.log('[Checkout] Validação falhou:', errors);
+      return;
+    }
+    console.log('[Checkout] Validação passou, iniciando criação de cobrança');
     setSubmitting(true);
     try {
       const { data: customer, error: custErr } = await supabase
