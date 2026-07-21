@@ -421,6 +421,10 @@ function ConsultaPage() {
         );
       } else if (nFail > 0) {
         toast.error(`Nenhuma importada. ${nFail} falha(s).`);
+      } else if ((r.skipped ?? 0) > 0) {
+        toast.info(
+          `Nenhum CNPJ novo — todos os ${r.skipped} encontrados já foram importados. Aumente a quantidade ou tente outra data.`,
+        );
       } else {
         toast.info('Nenhuma empresa retornada pela API para esta data/filtros.');
       }
