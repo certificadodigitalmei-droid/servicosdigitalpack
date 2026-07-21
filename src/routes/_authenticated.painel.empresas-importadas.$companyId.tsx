@@ -83,6 +83,23 @@ function DetalhesEmpresa() {
     })();
   }, [companyId]);
 
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      const { error: e1 } = await supabase.from('company_links').delete().eq('company_id', companyId);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from('automatic_company_queue').delete().eq('company_id', companyId);
+      if (e2) throw e2;
+      const { error: e3 } = await supabase.from('companies').delete().eq('id', companyId);
+      if (e3) throw e3;
+      toast.success('Empresa, links e histórico de importação excluídos');
+      navigate({ to: '/painel/empresas-importadas' });
+    } catch (e: any) {
+      toast.error('Erro ao excluir: ' + (e?.message ?? 'desconhecido'));
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return <div className="flex items-center gap-2 text-slate-500"><Loader2 className="h-4 w-4 animate-spin" /> Carregando...</div>;
   }
