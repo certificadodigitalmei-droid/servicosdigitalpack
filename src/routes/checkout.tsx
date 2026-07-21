@@ -150,8 +150,9 @@ function CheckoutPage() {
       setPixOpen(true);
       if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
-      console.error(err);
-      toast.error("Erro ao processar pagamento. Tente novamente.");
+      console.error("[Checkout] Erro ao gerar cobrança PIX:", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Erro ao gerar cobrança: ${msg}`, { duration: 10000 });
     } finally {
       setSubmitting(false);
     }
