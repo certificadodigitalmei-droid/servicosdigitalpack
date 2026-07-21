@@ -18,7 +18,7 @@ export type PixModalProps = {
   open: boolean;
   amount: number;
   orderId: string | null;
-  pixData: { qrcode: string; transaction_id: string } | null;
+  pixData: { pix_code: string; qr_code_base64?: string; transaction_id: string } | null;
   onClose: () => void;
 };
 
