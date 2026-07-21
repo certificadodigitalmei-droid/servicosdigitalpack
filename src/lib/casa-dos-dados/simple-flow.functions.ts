@@ -116,29 +116,105 @@ export const importBatch = createServerFn({ method: 'POST' })
     }> = [];
     const failed: Array<{ cnpj: string; error: string }> = [];
 
-    for (const raw of r.items) {
-      const n = normalizeCasaDosDadosCompany(raw);
-      const cnpj = n.cnpj;
+    for (const rawBase of r.items) {
+      const nBase = normalizeCasaDosDadosCompany(rawBase);
+      const cnpj = nBase.cnpj;
       if (!cnpj || cnpj.length !== 14) continue;
 
-      const displayName =
-        (n.razao_social ?? '').replace(/^\d+[.\-/\s]*/, '').trim() ||
-        n.nome_fantasia ||
-        cnpj;
-
       try {
+        // 2) ENRIQUECIMENTO (paga): /v5/cnpj/{cnpj} — 1 crédito, dados completos
+        //    (endereço, telefone, e-mail, CNAE, sócios, etc).
+        let n = nBase;
+        let raw: Record<string, unknown> = rawBase;
+        try {
+          const detail = await fetchCompanyDetailsByCnpj(cnpj, { timeoutMs: 15_000 });
+          if (detail.ok && detail.item) {
+            raw = detail.item as Record<string, unknown>;
+            n = normalizeCasaDosDadosCompany(raw);
+          }
+        } catch {
+          // segue com dados da pesquisa se detalhe falhar
+        }
+
+        const displayName =
+          (n.razao_social ?? nBase.razao_social ?? '').replace(/^\d+[.\-/\s]*/, '').trim() ||
+          n.nome_fantasia ||
+          cnpj;
+
+        const rawAny = raw as any;
+        const estab = rawAny?.estabelecimento && typeof rawAny.estabelecimento === 'object'
+          ? rawAny.estabelecimento
+          : rawAny;
+
+        const telefonesArr = Array.isArray(rawAny?.telefones)
+          ? rawAny.telefones
+          : Array.isArray(estab?.telefones)
+            ? estab.telefones
+            : n.telefone
+              ? [{ numero: n.telefone }]
+              : [];
+
+        const cnaesSec = Array.isArray(rawAny?.cnaes_secundarios)
+          ? rawAny.cnaes_secundarios
+          : Array.isArray(estab?.cnaes_secundarios)
+            ? estab.cnaes_secundarios
+            : [];
+
+        const socios = Array.isArray(rawAny?.qsa)
+          ? rawAny.qsa
+          : Array.isArray(rawAny?.socios)
+            ? rawAny.socios
+            : Array.isArray(rawAny?.quadro_societario)
+              ? rawAny.quadro_societario
+              : [];
+
+        const cnaePrinc = rawAny?.cnae_fiscal ?? estab?.cnae_fiscal ?? rawAny?.cnae_principal ?? estab?.cnae_principal ?? null;
+        const cnaePrincCodigo = typeof cnaePrinc === 'object' && cnaePrinc
+          ? (cnaePrinc.codigo ?? cnaePrinc.id ?? null)
+          : (rawAny?.cnae_fiscal_codigo ?? estab?.cnae_fiscal_codigo ?? null);
+        const cnaePrincDesc = typeof cnaePrinc === 'object' && cnaePrinc
+          ? (cnaePrinc.descricao ?? cnaePrinc.nome ?? null)
+          : (rawAny?.cnae_fiscal_descricao ?? estab?.cnae_fiscal_descricao ?? null);
+
+        const isMei = !!(rawAny?.opcao_pelo_mei ?? estab?.opcao_pelo_mei ?? rawAny?.mei);
+        const isSimples = !!(rawAny?.opcao_pelo_simples ?? estab?.opcao_pelo_simples ?? rawAny?.simples);
+
         const companyPayload: Record<string, unknown> = {
           cnpj,
-          razao_social_original: n.razao_social,
-          nome_fantasia: n.nome_fantasia,
+          razao_social_original: n.razao_social ?? nBase.razao_social,
+          nome_fantasia: n.nome_fantasia ?? nBase.nome_fantasia,
           nome_titular_exibicao: displayName,
           email: n.email,
           uf: n.uf,
           municipio_descricao: n.municipio,
+          municipio_codigo: (estab?.municipio?.codigo ?? estab?.codigo_municipio ?? null) as any,
           situacao_cadastral_desc: n.situacao_cadastral,
+          situacao_cadastral_data: (rawAny?.situacao_cadastral?.data ?? estab?.situacao_cadastral?.data ?? null) as any,
           inicio_atividade: n.data_abertura,
           is_matriz: n.matriz_filial ? /matriz/i.test(n.matriz_filial) : undefined,
+          is_filial: n.matriz_filial ? /filial/i.test(n.matriz_filial) : undefined,
+          is_mei: isMei,
+          is_simples: isSimples,
+          logradouro: (estab?.logradouro ?? rawAny?.logradouro ?? null) as any,
+          tipo_logradouro: (estab?.tipo_logradouro ?? rawAny?.tipo_logradouro ?? null) as any,
+          numero: (estab?.numero ?? rawAny?.numero ?? null) as any,
+          complemento: (estab?.complemento ?? rawAny?.complemento ?? null) as any,
+          bairro: (estab?.bairro ?? rawAny?.bairro ?? null) as any,
+          cep: (estab?.cep ?? rawAny?.cep ?? null) as any,
+          telefones: telefonesArr as any,
+          ddd: telefonesArr?.[0]?.ddd ?? estab?.ddd ?? rawAny?.ddd ?? null,
+          capital_social: n.capital_social,
+          natureza_id: (rawAny?.natureza_juridica?.codigo ?? rawAny?.natureza_juridica ?? null) as any,
+          porte: (rawAny?.porte?.descricao ?? rawAny?.porte ?? null) as any,
+          cnae_principal_codigo: cnaePrincCodigo as any,
+          cnae_principal_descricao: cnaePrincDesc as any,
+          cnaes_secundarios: cnaesSec as any,
+          socios: socios as any,
+          numero_socios: Array.isArray(socios) ? socios.length : null,
+          nivel_dados: 'completo',
+          complete_data_fetched_at: new Date().toISOString(),
           possui_email: !!n.email,
+          possui_telefone: Array.isArray(telefonesArr) && telefonesArr.length > 0,
           fonte: 'casa_dos_dados',
           last_seen_at: new Date().toISOString(),
           is_test_record: false,
@@ -146,8 +222,12 @@ export const importBatch = createServerFn({ method: 'POST' })
           missing_fields: [],
         };
         for (const k of Object.keys(companyPayload)) {
-          if (companyPayload[k] === undefined) delete companyPayload[k];
+          if (companyPayload[k] === undefined || companyPayload[k] === null) {
+            // mantém null para campos essenciais; remove undefined
+            if (companyPayload[k] === undefined) delete companyPayload[k];
+          }
         }
+
 
         const { data: existing } = await supabaseAdmin
           .from('companies')
