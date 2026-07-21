@@ -35,7 +35,17 @@ import {
   getSaldo,
   countByDate,
   importBatch,
+  listByDate,
 } from '@/lib/casa-dos-dados/simple-flow.functions';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { List, Trash2 } from 'lucide-react';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
   head: () => ({ meta: [{ title: 'Consulta Casa dos Dados | Painel' }] }),
