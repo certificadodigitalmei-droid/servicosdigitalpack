@@ -283,6 +283,29 @@ function ConsultaPage() {
     } catch { /* ignore quota */ }
   }, [listStorageKey, foundList]);
 
+  // Sincroniza com o banco: consulta quais CNPJs da lista já existem em `companies`.
+  useEffect(() => {
+    if (foundList.length === 0) return;
+    const cnpjs = foundList.map((f) => f.cnpj).filter(Boolean);
+    let cancelled = false;
+    (async () => {
+      const CHUNK = 200;
+      const found: string[] = [];
+      for (let i = 0; i < cnpjs.length; i += CHUNK) {
+        const slice = cnpjs.slice(i, i + CHUNK);
+        const { data } = await supabase
+          .from('companies')
+          .select('cnpj')
+          .in('cnpj', slice);
+        if (cancelled) return;
+        for (const row of data ?? []) if (row?.cnpj) found.push(row.cnpj);
+      }
+      if (!cancelled && found.length) addImported(found);
+    })();
+    return () => { cancelled = true; };
+  }, [foundList]);
+
+
   const listMut = useMutation({
     mutationFn: async () => {
       const pageSize = 20;
