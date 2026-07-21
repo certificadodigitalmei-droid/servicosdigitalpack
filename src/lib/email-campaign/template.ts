@@ -142,7 +142,20 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   showFooter: true,
   unsubText: '',
   unsubHref: '#',
+
+  showAvatar: false,
+  avatarUrl: '',
+  avatarSize: 68,
+
+  showGovBar: false,
+  govBarText: 'gov.br  ›  Portal do Empreendedor  ›  Certificado Digital MEI',
+  govBarBg: '#071d40',
+  govBarColor: '#c9d5ec',
+
+  showBadges: true,
+  badgesText: 'Portal gov.br  ·  Site Seguro (SSL)  ·  Receita Federal  ·  Dados Protegidos (LGPD)',
 };
+
 
 export const DEFAULT_SUBJECT = '{{NOME_TITULAR}}, atualização pendente do seu CNPJ';
 export const DEFAULT_PREHEADER =
