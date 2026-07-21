@@ -181,10 +181,13 @@ export type Database = {
           interval_minutes: number
           last_error: string | null
           last_run_at: string | null
+          max_pages_per_run: number
           mode: string
           name: string
           next_run_at: string | null
           owner_user_id: string
+          page_size: number
+          pagination_cursors: Json
           quantity_per_run: number
           query_date_mode: string
           selected_query_date: string | null
@@ -201,10 +204,13 @@ export type Database = {
           interval_minutes?: number
           last_error?: string | null
           last_run_at?: string | null
+          max_pages_per_run?: number
           mode?: string
           name?: string
           next_run_at?: string | null
           owner_user_id: string
+          page_size?: number
+          pagination_cursors?: Json
           quantity_per_run?: number
           query_date_mode?: string
           selected_query_date?: string | null
@@ -221,10 +227,13 @@ export type Database = {
           interval_minutes?: number
           last_error?: string | null
           last_run_at?: string | null
+          max_pages_per_run?: number
           mode?: string
           name?: string
           next_run_at?: string | null
           owner_user_id?: string
+          page_size?: number
+          pagination_cursors?: Json
           quantity_per_run?: number
           query_date_mode?: string
           selected_query_date?: string | null
@@ -239,13 +248,18 @@ export type Database = {
           api_total: number | null
           automation_id: string
           created_at: string
+          cursor_end: Json | null
+          cursor_start: Json | null
           duplicate_count: number
           error_message: string | null
           finished_at: string | null
           id: string
           imported_count: number
+          items_analyzed: number
+          items_received: number
           link_created_count: number
           link_reused_count: number
+          pages_fetched: number
           query_date: string | null
           requested_quantity: number | null
           started_at: string
@@ -257,13 +271,18 @@ export type Database = {
           api_total?: number | null
           automation_id: string
           created_at?: string
+          cursor_end?: Json | null
+          cursor_start?: Json | null
           duplicate_count?: number
           error_message?: string | null
           finished_at?: string | null
           id?: string
           imported_count?: number
+          items_analyzed?: number
+          items_received?: number
           link_created_count?: number
           link_reused_count?: number
+          pages_fetched?: number
           query_date?: string | null
           requested_quantity?: number | null
           started_at?: string
@@ -275,13 +294,18 @@ export type Database = {
           api_total?: number | null
           automation_id?: string
           created_at?: string
+          cursor_end?: Json | null
+          cursor_start?: Json | null
           duplicate_count?: number
           error_message?: string | null
           finished_at?: string | null
           id?: string
           imported_count?: number
+          items_analyzed?: number
+          items_received?: number
           link_created_count?: number
           link_reused_count?: number
+          pages_fetched?: number
           query_date?: string | null
           requested_quantity?: number | null
           started_at?: string
