@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Check, Loader2, ShieldCheck, Search, FileCheck2, Building2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
+import govLogo from '@/assets/gov-br-logo.png.asset.json';
+
+// Cores oficiais gov.br
+const AZUL = '#1351B4';
+const AMARELO = '#FFCD07';
+const VERDE = '#168821';
 
 const STEPS = [
-  { label: 'Conectando ao Portal gov.br', icon: ShieldCheck },
-  { label: 'Autenticando com a Receita Federal', icon: ShieldCheck },
-  { label: 'Consultando base do MEI', icon: Search },
-  { label: 'Validando dados do CNPJ', icon: Building2 },
-  { label: 'Cadastro localizado com sucesso', icon: FileCheck2 },
+  'Conectando ao Portal gov.br',
+  'Autenticando com a Receita Federal',
+  'Consultando base do MEI',
+  'Validando dados do CNPJ',
+  'Cadastro localizado com sucesso',
 ];
 
 const STEP_MS = 750;
@@ -41,103 +47,135 @@ export function GovConsultaLoader({
   }, [onFinish]);
 
   const cnpjMask = cnpj
-    ? cnpj.replace(/\D/g, '').padEnd(14, '•').slice(0, 14).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
+    ? cnpj
+        .replace(/\D/g, '')
+        .padEnd(14, '•')
+        .slice(0, 14)
+        .replace(/(.{2})(.{3})(.{3})(.{4})(.{2})/, '$1.$2.$3/$4-$5')
     : '••.•••.•••/••••-••';
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-gradient-to-b from-[#071a3a] via-[#0b1e3f] to-[#0b1e3f] text-white animate-fade-in">
-      {/* Barra gov.br */}
-      <div className="w-full bg-[#071a3a] border-b border-white/10">
-        <div className="mx-auto flex max-w-[720px] items-center gap-2 px-4 py-2 text-[11px] tracking-wider uppercase text-white/70">
-          <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-white text-[9px] font-black text-[#0b1e3f]">g</span>
-          gov.br · Portal do Empreendedor
+    <div className="fixed inset-0 z-[200] flex flex-col bg-white text-[#1351B4] animate-fade-in">
+      {/* Barra superior gov.br */}
+      <div className="w-full border-b-4" style={{ borderColor: AMARELO }}>
+        <div className="w-full h-1" style={{ background: `linear-gradient(90deg, ${AZUL} 0 33%, ${AMARELO} 33% 66%, ${VERDE} 66% 100%)` }} />
+        <div className="mx-auto flex max-w-[720px] items-center justify-between px-4 py-3">
+          <img src={govLogo.url} alt="gov.br" className="h-6 w-auto" />
+          <div className="text-[10.5px] uppercase tracking-widest text-[#1351B4]/70 font-semibold">
+            Portal do Empreendedor
+          </div>
         </div>
       </div>
 
       <div className="flex flex-1 items-center justify-center px-4 py-8">
-        <div className="w-full max-w-[440px] space-y-6">
-          {/* Selo animado */}
-          <div className="mx-auto relative flex h-28 w-28 items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-[3px] border-white/10" />
-            <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-emerald-400 border-r-emerald-400 animate-spin" />
-            <div className="absolute inset-3 rounded-full border-2 border-transparent border-b-white/60 animate-spin [animation-duration:2.2s] [animation-direction:reverse]" />
-            <div className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-white text-[#0b1e3f] shadow-inner">
-              <span className="text-[15px] font-black leading-none">gov</span>
-              <span className="text-[10px] font-black tracking-widest text-emerald-600 leading-none mt-0.5">.br</span>
+        <div className="w-full max-w-[440px] space-y-7">
+          {/* Logo gov.br animada com pulso */}
+          <div className="relative mx-auto flex items-center justify-center">
+            {/* Anéis coloridos */}
+            <div className="absolute h-40 w-40 rounded-full border-4 animate-spin"
+              style={{ borderColor: 'transparent', borderTopColor: AZUL, borderRightColor: AZUL, animationDuration: '1.4s' }} />
+            <div className="absolute h-32 w-32 rounded-full border-4 animate-spin"
+              style={{ borderColor: 'transparent', borderBottomColor: AMARELO, animationDuration: '2s', animationDirection: 'reverse' }} />
+            <div className="absolute h-24 w-24 rounded-full border-4 animate-spin"
+              style={{ borderColor: 'transparent', borderLeftColor: VERDE, animationDuration: '1.7s' }} />
+
+            {/* Pulso */}
+            <div className="absolute h-40 w-40 rounded-full animate-ping" style={{ background: `${AZUL}15` }} />
+
+            {/* Logo central */}
+            <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-[0_8px_30px_-8px_rgba(19,81,180,0.4)] p-3">
+              <img src={govLogo.url} alt="gov.br" className="w-full h-auto" />
             </div>
-            {/* Pings */}
-            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/20 animate-ping" />
           </div>
 
           {/* Título */}
-          <div className="text-center space-y-1.5">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-300 font-semibold">
-              Microempreendedor Individual
+          <div className="text-center space-y-2">
+            <div className="text-[10.5px] uppercase tracking-[0.24em] font-bold" style={{ color: VERDE }}>
+              ● Microempreendedor Individual
             </div>
-            <div className="text-[20px] font-black leading-tight">
+            <div className="text-[22px] font-black leading-tight text-[#0c3d8c]">
               Consultando dados do CNPJ
             </div>
-            <div className="text-[12px] text-white/60">
-              Conexão criptografada · Receita Federal do Brasil
+            <div className="text-[12.5px] text-[#1351B4]/70">
+              Conexão segura · Receita Federal do Brasil
             </div>
           </div>
 
-          {/* CNPJ scanner */}
-          <div className="rounded-lg border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-            <div className="text-[10px] uppercase tracking-widest text-white/50 font-semibold mb-1">
-              CNPJ em análise
+          {/* Painel CNPJ */}
+          <div className="rounded-lg border-2 p-4 shadow-sm" style={{ borderColor: `${AZUL}25`, background: `${AZUL}05` }}>
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-widest font-bold text-[#1351B4]/70 mb-1.5">
+              <span>CNPJ em análise</span>
+              <span className="flex items-center gap-1 text-[9px]" style={{ color: VERDE }}>
+                <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: VERDE }} />
+                ONLINE
+              </span>
             </div>
-            <div className="font-mono text-[18px] font-bold tabular-nums text-emerald-300 tracking-wider">
+            <div className="font-mono text-[19px] font-black tabular-nums tracking-wider text-[#0c3d8c]">
               {cnpjMask}
             </div>
             {nome && (
-              <div className="mt-2 text-[12px] text-white/70 truncate">
-                Titular: <span className="font-semibold text-white">{nome}</span>
+              <div className="mt-2 text-[12px] text-[#1351B4]/80 truncate">
+                Titular: <span className="font-bold text-[#0c3d8c]">{nome}</span>
               </div>
             )}
-            <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/10">
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[#1351B4]/10">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-500 transition-[width] duration-100 ease-linear"
-                style={{ width: `${progress}%` }}
+                className="h-full rounded-full transition-[width] duration-100 ease-linear"
+                style={{
+                  width: `${progress}%`,
+                  background: `linear-gradient(90deg, ${AZUL}, ${VERDE}, ${AMARELO})`,
+                }}
               />
             </div>
           </div>
 
           {/* Passos */}
           <div className="space-y-1.5">
-            {STEPS.map((s, i) => {
+            {STEPS.map((label, i) => {
               const done = i < step;
               const active = i === step;
-              const Icon = s.icon;
               return (
                 <div
-                  key={s.label}
+                  key={label}
                   className={
-                    'flex items-center gap-2.5 rounded-md border px-3 py-2 text-[12.5px] transition-all duration-300 ' +
+                    'flex items-center gap-2.5 rounded-md border px-3 py-2.5 text-[12.5px] transition-all duration-300 ' +
                     (done
-                      ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100'
+                      ? 'bg-white'
                       : active
-                        ? 'border-white/30 bg-white/10 text-white translate-x-0'
-                        : 'border-white/5 bg-white/[0.02] text-white/40')
+                        ? 'bg-white shadow-sm'
+                        : 'bg-[#1351B4]/[0.02]')
                   }
+                  style={{
+                    borderColor: done ? `${VERDE}40` : active ? `${AZUL}40` : `${AZUL}12`,
+                  }}
                 >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/20">
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                    style={{
+                      background: done ? VERDE : active ? AZUL : `${AZUL}10`,
+                    }}
+                  >
                     {done ? (
-                      <Check className="h-3.5 w-3.5 text-emerald-300" />
+                      <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
                     ) : active ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
                     ) : (
-                      <Icon className="h-3.5 w-3.5 text-white/40" />
+                      <span className="text-[10px] font-black text-[#1351B4]/40">{i + 1}</span>
                     )}
                   </span>
-                  <span className="truncate font-medium">{s.label}</span>
+                  <span
+                    className="truncate font-semibold"
+                    style={{ color: done ? '#0c3d8c' : active ? '#0c3d8c' : '#1351B450' }}
+                  >
+                    {label}
+                  </span>
                   {active && (
-                    <span className="ml-auto text-[10px] uppercase tracking-wider text-white/50">
-                      processando...
+                    <span className="ml-auto text-[9.5px] uppercase tracking-wider font-bold" style={{ color: AZUL }}>
+                      processando
                     </span>
                   )}
                   {done && (
-                    <span className="ml-auto text-[10px] uppercase tracking-wider text-emerald-300 font-bold">
+                    <span className="ml-auto text-[9.5px] uppercase tracking-wider font-bold" style={{ color: VERDE }}>
                       ok
                     </span>
                   )}
@@ -146,12 +184,19 @@ export function GovConsultaLoader({
             })}
           </div>
 
-          <div className="flex items-center justify-center gap-2 text-[10.5px] uppercase tracking-widest text-white/40">
-            <ShieldCheck className="h-3 w-3 text-emerald-400" />
-            SSL 256-bit · LGPD · Site oficial
+          {/* Selo rodapé */}
+          <div className="flex items-center justify-center gap-3 text-[10px] uppercase tracking-widest text-[#1351B4]/50 font-semibold">
+            <span>SSL 256-bit</span>
+            <span className="h-0.5 w-0.5 rounded-full bg-[#1351B4]/30" />
+            <span>LGPD</span>
+            <span className="h-0.5 w-0.5 rounded-full bg-[#1351B4]/30" />
+            <span>Site oficial</span>
           </div>
         </div>
       </div>
+
+      {/* Barra inferior tricolor */}
+      <div className="w-full h-1.5" style={{ background: `linear-gradient(90deg, ${AZUL} 0 33%, ${AMARELO} 33% 66%, ${VERDE} 66% 100%)` }} />
     </div>
   );
 }
