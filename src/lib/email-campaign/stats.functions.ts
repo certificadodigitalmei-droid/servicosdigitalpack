@@ -48,7 +48,7 @@ async function fetchWindow(apiKey: string, sinceIso: string) {
   let historyStartsAt: string | undefined;
   do {
     const res: any = await listEmailLogs(
-      { since: sinceIso, limit: 200, cursor } as any,
+      { since: sinceIso, limit: 100, cursor } as any,
       { apiKey },
     );
     historyStartsAt = res.history_starts_at ?? historyStartsAt;
