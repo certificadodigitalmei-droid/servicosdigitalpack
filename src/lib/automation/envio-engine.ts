@@ -41,6 +41,7 @@ type State = {
   fromAddress: string;
   replyTo: string;
   showFloating: boolean;
+  heroImageUrl: string;
 
   // Estado
   queue: QueueItem[];
@@ -60,12 +61,14 @@ const initial: State = {
   fromAddress: 'certificado.mei.estadual@seu-certificado-mei-digital.online',
   replyTo: '',
   showFloating: true,
+  heroImageUrl: '',
   queue: [],
   running: false,
   paused: false,
   loading: false,
   logs: [],
 };
+
 
 export const envioStore = createStore<State>(initial, {
   storageKey: 'automation:envio:v1',
@@ -79,10 +82,12 @@ export const envioStore = createStore<State>(initial, {
     'fromAddress',
     'replyTo',
     'showFloating',
+    'heroImageUrl',
     'queue',
     'logs',
   ],
 });
+
 
 // Flags de controle do loop (fora do store para não gerar re-render por tick).
 let running = false;
@@ -109,6 +114,8 @@ export const setFromName = (v: string) => envioStore.set({ fromName: v });
 export const setFromAddress = (v: string) => envioStore.set({ fromAddress: v });
 export const setReplyTo = (v: string) => envioStore.set({ replyTo: v });
 export const setShowFloating = (v: boolean) => envioStore.set({ showFloating: v });
+export const setHeroImageUrl = (v: string) => envioStore.set({ heroImageUrl: v });
+
 
 /* ----------------------------- queue actions ------------------------------ */
 
