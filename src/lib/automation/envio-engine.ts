@@ -596,10 +596,40 @@ export function buildVarsForPreview(item: QueueItem) {
 /* ------------------------- bootstrap (side-effect) ------------------------ */
 
 let booted = false;
+let syncTimer: any = null;
+function scheduleAutoSync(delay = 1500) {
+  if (typeof window === 'undefined') return;
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    syncTimer = null;
+    if (envioStore.get().loading) return;
+    void loadRecipients();
+  }, delay);
+}
+
 export function bootEnvioEngine() {
   if (booted || typeof window === 'undefined') return;
   booted = true;
-  // Loops assíncronos não retomam sozinhos após reload — o usuário reinicia.
-  // Mas a fila e logs persistidos já são visíveis.
   envioStore.set({ running: false, paused: false });
+
+  // Auto-sync: qualquer INSERT/DELETE/UPDATE em companies dispara reload
+  // debounced, garantindo que a fila sempre espelhe "Empresas Importadas".
+  try {
+    supabase
+      .channel('envio-engine:companies-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'companies' },
+        () => scheduleAutoSync(1500),
+      )
+      .subscribe();
+  } catch {
+    /* realtime opcional */
+  }
+
+  // Fallback polling leve (30s) — cobre casos em que o realtime falhe.
+  setInterval(() => {
+    if (!envioStore.get().running) scheduleAutoSync(500);
+  }, 30_000);
 }
+

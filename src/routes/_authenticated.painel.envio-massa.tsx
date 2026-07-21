@@ -36,6 +36,7 @@ import {
   envioStore,
   loadRecipients,
   resetStatuses,
+  clearQueue,
   clearLogs,
   startSending,
   togglePause,
@@ -411,12 +412,29 @@ function EnvioMassa() {
               )}
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex flex-wrap gap-2 pt-2">
               <Button variant="outline" onClick={loadRecipients} disabled={loading || running}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                Recarregar fila
+                Carregar fila
               </Button>
+              <Button
+                variant="outline"
+                className="text-red-600 hover:bg-red-50"
+                onClick={() => {
+                  if (confirm('Esvaziar a fila? As empresas importadas serão recarregadas automaticamente.')) {
+                    clearQueue();
+                  }
+                }}
+                disabled={running || queue.length === 0}
+              >
+                <Trash2 className="h-4 w-4" /> Limpar fila
+              </Button>
+              <span className="self-center text-xs text-slate-500">
+                A fila sincroniza automaticamente com <b>Empresas Importadas</b>.
+              </span>
             </div>
+
+
 
           </CardContent>
         </Card>
