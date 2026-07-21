@@ -2,8 +2,11 @@ import avatarAsset from '@/assets/modelo-avatar.png.asset.json';
 import heroAsset from '@/assets/modelo-hero.png.asset.json';
 import { DEFAULT_DESIGN, type CampaignDesign } from './template';
 
-const AVATAR = avatarAsset.url;
-const HERO = heroAsset.url;
+// E-mails são abertos em clientes externos (Gmail, Outlook), então precisam de URL absoluta.
+const SITE_ORIGIN = 'https://seu-certificado-mei-digital.online';
+const toAbs = (u: string) => (u.startsWith('http') ? u : `${SITE_ORIGIN}${u}`);
+const AVATAR = toAbs(avatarAsset.url);
+const HERO = toAbs(heroAsset.url);
 
 export type Preset = {
   id: string;

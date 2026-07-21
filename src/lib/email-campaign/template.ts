@@ -214,9 +214,23 @@ export function formatCnpj(cnpj: string): string {
   return clean.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
 }
 
+const EMAIL_SITE_ORIGIN = 'https://seu-certificado-mei-digital.online';
+function toAbsoluteUrl(u?: string): string {
+  if (!u) return '';
+  const s = String(u).trim();
+  if (!s) return '';
+  if (/^(https?:|data:|cid:)/i.test(s)) return s;
+  if (s.startsWith('//')) return `https:${s}`;
+  if (s.startsWith('/')) return `${EMAIL_SITE_ORIGIN}${s}`;
+  return `${EMAIL_SITE_ORIGIN}/${s}`;
+}
+
 export function renderHtml(d: CampaignDesign, vars: Vars): string {
   // Merge com defaults para não quebrar quando o design salvo estiver antigo.
   const D: CampaignDesign = { ...DEFAULT_DESIGN, ...d };
+  // Normaliza URLs de imagem para absolutas (clientes de e-mail não resolvem caminhos relativos).
+  D.heroImageUrl = toAbsoluteUrl(D.heroImageUrl);
+  D.avatarUrl = toAbsoluteUrl(D.avatarUrl);
   const S = (t: string) => substitute(t, vars);
   const title = esc(S(D.title));
   const subtitle = esc(S(D.subtitle));
