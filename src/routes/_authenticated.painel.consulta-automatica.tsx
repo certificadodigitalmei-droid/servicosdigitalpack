@@ -127,6 +127,9 @@ function ConsultaAutomaticaPage() {
   const [dateMode, setDateMode] = useState<'today' | 'specific'>('today');
   const [selectedDate, setSelectedDate] = useState<string>(todayBR);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [autoImport, setAutoImport] = useState<boolean>(true);
+  const [autoLinks, setAutoLinks] = useState<boolean>(true);
+  const [lastRunSummary, setLastRunSummary] = useState<any | null>(null);
 
   useEffect(() => {
     if (automation) {
@@ -141,9 +144,16 @@ function ConsultaAutomaticaPage() {
       const mode = automation.query_date_mode === 'specific' ? 'specific' : 'today';
       setDateMode(mode);
       setSelectedDate(automation.selected_query_date ?? todayBR);
+      setAutoImport(automation.auto_import_enabled ?? true);
+      setAutoLinks(automation.auto_generate_links_enabled ?? true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [automation?.id]);
+
+  // Enforce: cannot enable links without import
+  useEffect(() => {
+    if (!autoImport && autoLinks) setAutoLinks(false);
+  }, [autoImport, autoLinks]);
 
   const effectiveDate = useMemo(
     () => (dateMode === 'today' ? todayBR : selectedDate || todayBR),
