@@ -10,6 +10,8 @@ type Automation = {
   quantity_per_run: number;
   interval_minutes: number;
   filters: CasaFilters;
+  auto_import_enabled?: boolean;
+  auto_generate_links_enabled?: boolean;
 };
 
 type SkipReason =
@@ -28,12 +30,15 @@ export type RunOutcome = {
   apiTotal?: number | null;
   requested: number;
   imported: number;
+  updated: number;
   duplicated: number;
   linksCreated: number;
   linksReused: number;
   skipped: Array<{ index: number; cnpj: string | null; reason: SkipReason; detail?: string }>;
   responseKeys?: string[];
   error?: string;
+  autoImportEnabled: boolean;
+  autoGenerateLinksEnabled: boolean;
   sample?: {
     cnpj: string | null;
     nome: string | null;
@@ -78,7 +83,7 @@ function toDate(v: unknown): string | null {
 
 export async function runAutomationOnce(
   automation: Automation,
-  opts: { trigger: 'cron' | 'manual'; overrideQuantity?: number; queryDate?: string },
+  opts: { trigger: 'cron' | 'manual' | 'test_manual'; overrideQuantity?: number; queryDate?: string },
 ): Promise<RunOutcome> {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const publicBaseUrl = (process.env.PUBLIC_APP_URL ?? '').replace(/\/+$/, '');
@@ -103,15 +108,22 @@ export async function runAutomationOnce(
   if (runErr) throw new Error(`run insert: ${runErr.message}`);
   const runId = runRow.id as string;
 
+  const autoImportEnabled = automation.auto_import_enabled ?? true;
+  const autoGenerateLinksEnabled =
+    (automation.auto_generate_links_enabled ?? true) && autoImportEnabled;
+
   const outcome: RunOutcome = {
     runId,
     status: 'ok',
     requested,
     imported: 0,
+    updated: 0,
     duplicated: 0,
     linksCreated: 0,
     linksReused: 0,
     skipped: [],
+    autoImportEnabled,
+    autoGenerateLinksEnabled,
     sample: null,
   };
 
@@ -193,6 +205,11 @@ export async function runAutomationOnce(
       }
       const queueId = queueRow!.id as string;
 
+      // If auto-import is off, only queue the CNPJ, skip company/link work.
+      if (!autoImportEnabled) {
+        continue;
+      }
+
       const companyPayload: Record<string, unknown> = {
         cnpj,
         razao_social_original: pickString(item, ['razao_social', 'nome_empresarial']) ?? null,
@@ -229,6 +246,7 @@ export async function runAutomationOnce(
             .update(companyPayload)
             .eq('id', companyId);
           if (upErr) throw new Error(upErr.message);
+          outcome.updated += 1;
         } else {
           const { data: ins, error: insErr } = await (supabaseAdmin as any)
             .from('companies')
@@ -244,58 +262,60 @@ export async function runAutomationOnce(
         continue;
       }
 
-      const { data: activeLink } = await supabaseAdmin
-        .from('company_links')
-        .select('id, public_token, public_url, checkout_url')
-        .eq('company_id', companyId)
-        .eq('active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      let linkId: string;
-      let publicToken: string;
-      let publicUrl: string;
-      let checkoutUrl: string;
+      let linkId: string | null = null;
+      let publicToken: string | null = null;
+      let publicUrl: string | null = null;
+      let checkoutUrl: string | null = null;
       let wasNewLink = false;
 
-      try {
-        if (activeLink) {
-          linkId = activeLink.id as string;
-          publicToken = (activeLink as any).public_token as string;
-          publicUrl = (activeLink as any).public_url ?? `${publicBaseUrl}/c/${publicToken}`;
-          checkoutUrl = (activeLink as any).checkout_url ?? `${publicBaseUrl}/checkout/${publicToken}`;
-          outcome.linksReused += 1;
-        } else {
-          publicToken = crypto.randomUUID().replace(/-/g, '');
-          publicUrl = `${publicBaseUrl}/c/${publicToken}`;
-          checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
-          const { data: newLink, error: lErr } = await supabaseAdmin
-            .from('company_links')
-            .insert({
-              company_id: companyId,
-              public_token: publicToken,
-              token: publicToken,
-              public_url: publicUrl,
-              checkout_url: checkoutUrl,
-              active: true,
-              status: 'active',
-              company_data: {
-                cnpj,
-                nome: String(companyPayload.nome_titular_exibicao ?? companyPayload.razao_social_original ?? ''),
-                origin: 'casa_dos_dados_automation',
-              } as any,
-            })
-            .select('id')
-            .single();
-          if (lErr) throw new Error(lErr.message);
-          linkId = newLink.id as string;
-          wasNewLink = true;
-          outcome.linksCreated += 1;
+      if (autoGenerateLinksEnabled) {
+        const { data: activeLink } = await supabaseAdmin
+          .from('company_links')
+          .select('id, public_token, public_url, checkout_url')
+          .eq('company_id', companyId)
+          .eq('active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        try {
+          if (activeLink) {
+            linkId = activeLink.id as string;
+            publicToken = (activeLink as any).public_token as string;
+            publicUrl = (activeLink as any).public_url ?? `${publicBaseUrl}/c/${publicToken}`;
+            checkoutUrl = (activeLink as any).checkout_url ?? `${publicBaseUrl}/checkout/${publicToken}`;
+            outcome.linksReused += 1;
+          } else {
+            publicToken = crypto.randomUUID().replace(/-/g, '');
+            publicUrl = `${publicBaseUrl}/c/${publicToken}`;
+            checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
+            const { data: newLink, error: lErr } = await supabaseAdmin
+              .from('company_links')
+              .insert({
+                company_id: companyId,
+                public_token: publicToken,
+                token: publicToken,
+                public_url: publicUrl,
+                checkout_url: checkoutUrl,
+                active: true,
+                status: 'active',
+                company_data: {
+                  cnpj,
+                  nome: String(companyPayload.nome_titular_exibicao ?? companyPayload.razao_social_original ?? ''),
+                  origin: 'casa_dos_dados_automation',
+                } as any,
+              })
+              .select('id')
+              .single();
+            if (lErr) throw new Error(lErr.message);
+            linkId = newLink.id as string;
+            wasNewLink = true;
+            outcome.linksCreated += 1;
+          }
+        } catch (e: any) {
+          outcome.skipped.push({ index: i, cnpj, reason: 'link_error', detail: e?.message ?? String(e) });
+          continue;
         }
-      } catch (e: any) {
-        outcome.skipped.push({ index: i, cnpj, reason: 'link_error', detail: e?.message ?? String(e) });
-        continue;
       }
 
       await supabaseAdmin
@@ -338,16 +358,18 @@ export async function runAutomationOnce(
       })
       .eq('id', runId);
 
+    const isTest = opts.trigger === 'test_manual';
     const now = new Date();
     const next = new Date(now.getTime() + Math.max(1, automation.interval_minutes) * 60_000);
-    await supabaseAdmin
+    const okPatch: Record<string, unknown> = {
+      status: 'active',
+      last_run_at: now.toISOString(),
+      last_error: null,
+    };
+    if (!isTest) okPatch.next_run_at = next.toISOString();
+    await (supabaseAdmin as any)
       .from('automatic_company_queries')
-      .update({
-        status: 'active',
-        last_run_at: now.toISOString(),
-        next_run_at: next.toISOString(),
-        last_error: null,
-      })
+      .update(okPatch)
       .eq('id', automation.id);
 
     return outcome;
@@ -371,16 +393,18 @@ export async function runAutomationOnce(
       })
       .eq('id', runId);
 
-    const now = new Date();
-    const next = new Date(now.getTime() + Math.max(1, automation.interval_minutes) * 60_000);
-    await supabaseAdmin
+    const isTestErr = opts.trigger === 'test_manual';
+    const nowE = new Date();
+    const nextE = new Date(nowE.getTime() + Math.max(1, automation.interval_minutes) * 60_000);
+    const errPatch: Record<string, unknown> = {
+      status: 'error',
+      last_error: msg,
+      last_run_at: nowE.toISOString(),
+    };
+    if (!isTestErr) errPatch.next_run_at = nextE.toISOString();
+    await (supabaseAdmin as any)
       .from('automatic_company_queries')
-      .update({
-        status: 'error',
-        last_error: msg,
-        last_run_at: now.toISOString(),
-        next_run_at: next.toISOString(),
-      })
+      .update(errPatch)
       .eq('id', automation.id);
 
     outcome.status = 'error';

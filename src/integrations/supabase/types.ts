@@ -172,6 +172,8 @@ export type Database = {
       }
       automatic_company_queries: {
         Row: {
+          auto_generate_links_enabled: boolean
+          auto_import_enabled: boolean
           created_at: string
           enabled: boolean
           filters: Json
@@ -190,6 +192,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_generate_links_enabled?: boolean
+          auto_import_enabled?: boolean
           created_at?: string
           enabled?: boolean
           filters?: Json
@@ -208,6 +212,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_generate_links_enabled?: boolean
+          auto_import_enabled?: boolean
           created_at?: string
           enabled?: boolean
           filters?: Json

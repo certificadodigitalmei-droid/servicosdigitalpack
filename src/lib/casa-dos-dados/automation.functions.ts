@@ -78,6 +78,8 @@ export const upsertAutomation = createServerFn({ method: 'POST' })
         interval_minutes: z.number().int().min(1).max(1440).default(60),
         query_date_mode: z.enum(['today', 'specific']).default('today'),
         selected_query_date: dateSchema.nullable().optional(),
+        auto_import_enabled: z.boolean().default(true),
+        auto_generate_links_enabled: z.boolean().default(true),
         filters: z
           .object({
             only_mei: z.boolean().default(true),
@@ -87,6 +89,10 @@ export const upsertAutomation = createServerFn({ method: 'POST' })
           })
           .default({ only_mei: true, only_active: true, only_matriz: true, require_email: true }),
       })
+      .refine(
+        (v) => !(v.auto_generate_links_enabled && !v.auto_import_enabled),
+        { message: 'Ative a importação para gerar links.', path: ['auto_generate_links_enabled'] },
+      )
       .parse(data),
   )
   .handler(async ({ context, data }) => {
@@ -102,31 +108,31 @@ export const upsertAutomation = createServerFn({ method: 'POST' })
       .eq('owner_user_id', userId)
       .maybeSingle();
 
+    const patch = {
+      quantity_per_run: data.quantity_per_run,
+      interval_minutes: data.interval_minutes,
+      filters: data.filters,
+      query_date_mode: data.query_date_mode,
+      selected_query_date: selected,
+      auto_import_enabled: data.auto_import_enabled,
+      auto_generate_links_enabled: data.auto_generate_links_enabled,
+    };
+
     if (existing?.id) {
       const { error } = await (supabase as any)
         .from('automatic_company_queries')
-        .update({
-          quantity_per_run: data.quantity_per_run,
-          interval_minutes: data.interval_minutes,
-          filters: data.filters,
-          query_date_mode: data.query_date_mode,
-          selected_query_date: selected,
-        })
+        .update(patch)
         .eq('id', existing.id);
       if (error) throw new Error(error.message);
       return { id: existing.id };
     }
-    const { data: created, error } = await supabase
+    const { data: created, error } = await (supabase as any)
       .from('automatic_company_queries')
       .insert({
         owner_user_id: userId,
         name: 'Consulta padrão',
         mode: 'openings_today',
-        quantity_per_run: data.quantity_per_run,
-        interval_minutes: data.interval_minutes,
-        filters: data.filters,
-        query_date_mode: data.query_date_mode,
-        selected_query_date: selected,
+        ...patch,
       })
       .select('id')
       .single();
@@ -166,8 +172,10 @@ export const runAutomationNow = createServerFn({ method: 'POST' })
       .object({
         id: z.string().uuid(),
         overrideQuantity: z.number().int().min(1).max(1000).optional(),
-        // Data opcional para a execução manual; se omitida, usa o modo salvo.
         queryDate: dateSchema.nullable().optional(),
+        trigger: z.enum(['manual', 'test_manual']).default('manual'),
+        overrideAutoImport: z.boolean().optional(),
+        overrideAutoLinks: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -180,10 +188,22 @@ export const runAutomationNow = createServerFn({ method: 'POST' })
     const row = Array.isArray(claimed) ? claimed[0] : claimed;
     if (!row) return { ok: false, reason: 'already_running' as const };
 
+    // Load full row for auto flags
+    const { data: fullRow } = await supabase
+      .from('automatic_company_queries')
+      .select('*')
+      .eq('id', row.id)
+      .maybeSingle();
+
     const queryDate =
       data.queryDate && /^\d{4}-\d{2}-\d{2}$/.test(data.queryDate)
         ? data.queryDate
-        : resolveQueryDate((row as any).query_date_mode, (row as any).selected_query_date);
+        : resolveQueryDate((fullRow as any)?.query_date_mode, (fullRow as any)?.selected_query_date);
+
+    const autoImport =
+      data.overrideAutoImport ?? (fullRow as any)?.auto_import_enabled ?? true;
+    const autoLinks =
+      data.overrideAutoLinks ?? (fullRow as any)?.auto_generate_links_enabled ?? true;
 
     const { runAutomationOnce } = await import('./worker.server');
     const outcome = await runAutomationOnce(
@@ -194,8 +214,14 @@ export const runAutomationNow = createServerFn({ method: 'POST' })
         quantity_per_run: row.quantity_per_run,
         interval_minutes: row.interval_minutes,
         filters: (row.filters ?? {}) as any,
+        auto_import_enabled: autoImport,
+        auto_generate_links_enabled: autoLinks,
       },
-      { trigger: 'manual', overrideQuantity: data.overrideQuantity, queryDate },
+      {
+        trigger: data.trigger,
+        overrideQuantity: data.overrideQuantity,
+        queryDate,
+      },
     );
     return { ok: true as const, outcome, queryDate };
   });

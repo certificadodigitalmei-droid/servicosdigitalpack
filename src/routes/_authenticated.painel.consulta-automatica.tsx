@@ -127,6 +127,9 @@ function ConsultaAutomaticaPage() {
   const [dateMode, setDateMode] = useState<'today' | 'specific'>('today');
   const [selectedDate, setSelectedDate] = useState<string>(todayBR);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [autoImport, setAutoImport] = useState<boolean>(true);
+  const [autoLinks, setAutoLinks] = useState<boolean>(true);
+  const [lastRunSummary, setLastRunSummary] = useState<any | null>(null);
 
   useEffect(() => {
     if (automation) {
@@ -141,9 +144,16 @@ function ConsultaAutomaticaPage() {
       const mode = automation.query_date_mode === 'specific' ? 'specific' : 'today';
       setDateMode(mode);
       setSelectedDate(automation.selected_query_date ?? todayBR);
+      setAutoImport(automation.auto_import_enabled ?? true);
+      setAutoLinks(automation.auto_generate_links_enabled ?? true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [automation?.id]);
+
+  // Enforce: cannot enable links without import
+  useEffect(() => {
+    if (!autoImport && autoLinks) setAutoLinks(false);
+  }, [autoImport, autoLinks]);
 
   const effectiveDate = useMemo(
     () => (dateMode === 'today' ? todayBR : selectedDate || todayBR),
@@ -168,6 +178,8 @@ function ConsultaAutomaticaPage() {
           filters: localFilters,
           query_date_mode: dateMode,
           selected_query_date: dateMode === 'specific' ? selectedDate : null,
+          auto_import_enabled: autoImport,
+          auto_generate_links_enabled: autoLinks && autoImport,
         },
       }),
     onSuccess: async () => {
@@ -193,12 +205,15 @@ function ConsultaAutomaticaPage() {
   });
 
   const runMut = useMutation({
-    mutationFn: (overrideQuantity?: number) =>
+    mutationFn: (args?: { overrideQuantity?: number; trigger?: 'manual' | 'test_manual' }) =>
       runFn({
         data: {
           id: automation!.id,
-          overrideQuantity,
+          overrideQuantity: args?.overrideQuantity,
           queryDate: effectiveDate,
+          trigger: args?.trigger ?? 'manual',
+          overrideAutoImport: autoImport,
+          overrideAutoLinks: autoLinks && autoImport,
         },
       }),
     onSuccess: (r: any) => {
@@ -206,10 +221,12 @@ function ConsultaAutomaticaPage() {
         toast.warning('Já existe uma execução em andamento');
       } else if (r?.outcome?.status === 'error') {
         toast.error(`Erro na execução: ${r.outcome.error}`);
+        setLastRunSummary({ ...r.outcome, queryDate: r.queryDate });
       } else {
         toast.success(
           `Execução concluída (${formatBR(r.queryDate)}): ${r.outcome.imported} importada(s), ${r.outcome.duplicated} duplicada(s)`,
         );
+        setLastRunSummary({ ...r.outcome, queryDate: r.queryDate });
       }
       qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
     },
@@ -467,12 +484,83 @@ function ConsultaAutomaticaPage() {
             </div>
           </div>
 
+          {/* Processamento — importação + geração de links */}
+          <div>
+            <Label className="mb-2 block">Processamento</Label>
+            <div className="grid gap-2 md:grid-cols-2">
+              <div className="flex items-center justify-between rounded border border-slate-200 p-3">
+                <div>
+                  <div className="text-sm font-medium">Importar empresas automaticamente</div>
+                  <div className="text-xs text-slate-500">Salva/atualiza a empresa a cada CNPJ retornado.</div>
+                </div>
+                <Switch checked={autoImport} onCheckedChange={setAutoImport} />
+              </div>
+              <div
+                className={cn(
+                  'flex items-center justify-between rounded border border-slate-200 p-3',
+                  !autoImport && 'opacity-60',
+                )}
+              >
+                <div>
+                  <div className="text-sm font-medium">Gerar links automaticamente</div>
+                  <div className="text-xs text-slate-500">
+                    {autoImport
+                      ? 'Cria token e link público quando ainda não existe link ativo.'
+                      : 'Ative a importação para gerar links.'}
+                  </div>
+                </div>
+                <Switch
+                  checked={autoLinks && autoImport}
+                  disabled={!autoImport}
+                  onCheckedChange={setAutoLinks}
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Resumo antes de executar */}
           <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
             <div><strong>Consulta:</strong> {formatBR(effectiveDate)}{dateMode === 'today' ? ' (hoje)' : ''}</div>
             <div><strong>Quantidade por execução:</strong> {quantity}</div>
             <div><strong>Filtros:</strong> {filtersSummary}</div>
+            <div>
+              <strong>Importar automaticamente:</strong> {autoImport ? 'Sim' : 'Não'}{' · '}
+              <strong>Gerar link automaticamente:</strong> {autoLinks && autoImport ? 'Sim' : 'Não'}
+            </div>
           </div>
+
+          {/* BANNER DE STATUS DA AUTOMAÇÃO */}
+          {automation?.id && (
+            <div
+              className={cn(
+                'rounded-lg border-2 p-4',
+                automation.enabled
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-slate-300 bg-slate-50',
+              )}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div
+                    className={cn(
+                      'text-lg font-bold',
+                      automation.enabled ? 'text-green-700' : 'text-slate-700',
+                    )}
+                  >
+                    {automation.enabled ? 'AUTOMAÇÃO ATIVA' : 'AUTOMAÇÃO DESATIVADA'}
+                  </div>
+                  <div className="mt-1 grid gap-x-6 gap-y-1 text-xs text-slate-600 sm:grid-cols-2">
+                    <div>Próxima execução: <strong>{automation.next_run_at ? new Date(automation.next_run_at).toLocaleString('pt-BR') : '—'}</strong></div>
+                    <div>Última execução: <strong>{automation.last_run_at ? new Date(automation.last_run_at).toLocaleString('pt-BR') : '—'}</strong></div>
+                    <div>Quantidade por execução: <strong>{automation.quantity_per_run}</strong></div>
+                    <div>Data usada: <strong>Hoje (America/Sao_Paulo)</strong></div>
+                    <div>Importação: <strong>{(automation.auto_import_enabled ?? true) ? 'Ligada' : 'Desligada'}</strong></div>
+                    <div>Geração de links: <strong>{(automation.auto_generate_links_enabled ?? true) ? 'Ligada' : 'Desligada'}</strong></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {(() => {
             const hasAutomation = !!automation?.id;
@@ -488,6 +576,18 @@ function ConsultaAutomaticaPage() {
                   : anyPending
                     ? 'Aguarde a operação atual terminar.'
                     : null;
+
+            const confirmTest = () => {
+              const ok = window.confirm(
+                `Este teste fará uma consulta real e poderá consumir saldo da Casa dos Dados.\n\n` +
+                  `Data do teste: ${formatBR(effectiveDate)}\n` +
+                  `Quantidade: 1\n` +
+                  `Importar automaticamente: ${autoImport ? 'Sim' : 'Não'}\n` +
+                  `Gerar link automaticamente: ${autoLinks && autoImport ? 'Sim' : 'Não'}\n\n` +
+                  `Deseja continuar?`,
+              );
+              if (ok) runMut.mutate({ overrideQuantity: 1, trigger: 'test_manual' });
+            };
 
             return (
               <div className="flex flex-wrap gap-4">
@@ -525,7 +625,7 @@ function ConsultaAutomaticaPage() {
                 <div className="flex flex-col">
                   <Button
                     variant="outline"
-                    onClick={() => runMut.mutate(undefined)}
+                    onClick={() => runMut.mutate({ trigger: 'manual' })}
                     disabled={!!runDisabledReason}
                   >
                     {runMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
@@ -539,7 +639,7 @@ function ConsultaAutomaticaPage() {
                 <div className="flex flex-col">
                   <Button
                     variant="outline"
-                    onClick={() => runMut.mutate(1)}
+                    onClick={confirmTest}
                     disabled={!!runDisabledReason}
                   >
                     <Play className="mr-2 h-4 w-4" />
@@ -624,6 +724,42 @@ function ConsultaAutomaticaPage() {
               <div className="rounded bg-amber-50 p-2 text-amber-800">
                 Nenhuma empresa foi encontrada nessa data com os filtros selecionados.
               </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {lastRunSummary && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Resultado da última execução manual</CardTitle>
+            <CardDescription>
+              Data consultada: <strong>{formatBR(lastRunSummary.queryDate)}</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 text-sm md:grid-cols-2">
+            <div>Status: <strong>{lastRunSummary.status}</strong></div>
+            <div>API total: <strong>{lastRunSummary.apiTotal ?? '—'}</strong></div>
+            <div>Registros recebidos / colocados na fila: <strong>{lastRunSummary.requested}</strong></div>
+            <div>Empresas importadas (novas): <strong>{lastRunSummary.imported - (lastRunSummary.updated ?? 0)}</strong></div>
+            <div>Empresas atualizadas: <strong>{lastRunSummary.updated ?? 0}</strong></div>
+            <div>Duplicadas: <strong>{lastRunSummary.duplicated}</strong></div>
+            <div>Links novos: <strong>{lastRunSummary.linksCreated}</strong></div>
+            <div>Links reutilizados: <strong>{lastRunSummary.linksReused}</strong></div>
+            <div>Ignorados: <strong>{lastRunSummary.skipped?.length ?? 0}</strong></div>
+            <div>Erros: <strong>{lastRunSummary.error ? '1' : '0'}</strong></div>
+            {(!lastRunSummary.autoImportEnabled || !lastRunSummary.autoGenerateLinksEnabled) && (
+              <div className="md:col-span-2 rounded bg-amber-50 p-2 text-amber-800">
+                {!lastRunSummary.autoImportEnabled && (
+                  <div>Importação desligada — nenhuma empresa foi importada, apenas CNPJs enfileirados.</div>
+                )}
+                {lastRunSummary.autoImportEnabled && !lastRunSummary.autoGenerateLinksEnabled && (
+                  <div>Geração de links desligada — nenhum link foi gerado nesta execução.</div>
+                )}
+              </div>
+            )}
+            {lastRunSummary.error && (
+              <div className="md:col-span-2 text-red-600"><strong>Erro:</strong> {lastRunSummary.error}</div>
             )}
           </CardContent>
         </Card>
