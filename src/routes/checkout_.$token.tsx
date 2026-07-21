@@ -17,6 +17,7 @@ import { formatCPFOrCNPJ, maskCPFCNPJ, maskPhone, isValidEmail } from '@/lib/for
 import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/track';
 import { toast } from 'sonner';
+import { extractErrorMessage } from '@/lib/errors';
 import type { ResolvedCompany } from '@/lib/company-links.functions';
 
 export const Route = createFileRoute('/checkout_/$token')({
@@ -146,8 +147,8 @@ function CheckoutTokenPage() {
       if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('[Checkout] Erro ao gerar cobrança PIX:', err);
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Erro ao gerar cobrança: ${msg}`, { duration: 10000 });
+      const msg = extractErrorMessage(err);
+      toast.error(`Erro ao gerar cobrança: ${msg}`, { duration: 12000 });
     } finally {
       setSubmitting(false);
     }
