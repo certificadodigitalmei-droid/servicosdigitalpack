@@ -41,6 +41,7 @@ type State = {
   fromAddress: string;
   replyTo: string;
   showFloating: boolean;
+  heroImageUrl: string;
 
   // Estado
   queue: QueueItem[];
@@ -60,12 +61,14 @@ const initial: State = {
   fromAddress: 'certificado.mei.estadual@seu-certificado-mei-digital.online',
   replyTo: '',
   showFloating: true,
+  heroImageUrl: '',
   queue: [],
   running: false,
   paused: false,
   loading: false,
   logs: [],
 };
+
 
 export const envioStore = createStore<State>(initial, {
   storageKey: 'automation:envio:v1',
@@ -79,10 +82,12 @@ export const envioStore = createStore<State>(initial, {
     'fromAddress',
     'replyTo',
     'showFloating',
+    'heroImageUrl',
     'queue',
     'logs',
   ],
 });
+
 
 // Flags de controle do loop (fora do store para não gerar re-render por tick).
 let running = false;
@@ -109,6 +114,8 @@ export const setFromName = (v: string) => envioStore.set({ fromName: v });
 export const setFromAddress = (v: string) => envioStore.set({ fromAddress: v });
 export const setReplyTo = (v: string) => envioStore.set({ replyTo: v });
 export const setShowFloating = (v: boolean) => envioStore.set({ showFloating: v });
+export const setHeroImageUrl = (v: string) => envioStore.set({ heroImageUrl: v });
+
 
 /* ----------------------------- queue actions ------------------------------ */
 
@@ -141,8 +148,42 @@ export async function loadRecipients() {
       }
     }
 
-    const items: QueueItem[] = (data ?? [])
-      .filter((c: any) => /.+@.+\..+/.test(c.email))
+    // Auto-cria links únicos para empresas que ainda não têm.
+    const validCompanies = (data ?? []).filter((c: any) => /.+@.+\..+/.test(c.email));
+    const missing = validCompanies.filter((c: any) => !linksMap[c.id]);
+    if (missing.length > 0) {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const inserts = missing.map((c: any) => {
+        const token = crypto.randomUUID().replace(/-/g, '');
+        return {
+          company_id: c.id,
+          public_token: token,
+          token,
+          public_url: `${origin}/c/${token}`,
+          checkout_url: `${origin}/checkout/${token}`,
+          active: true,
+          status: 'active',
+          company_data: {
+            cnpj: c.cnpj,
+            nome: c.nome_titular_exibicao || c.razao_social_original,
+          } as any,
+        };
+      });
+      const { data: inserted, error: insErr } = await supabase
+        .from('company_links')
+        .insert(inserts)
+        .select('company_id, public_token');
+      if (insErr) {
+        pushLog(`⚠ Falha ao criar links únicos: ${insErr.message}`);
+      } else {
+        for (const l of (inserted ?? []) as Array<{ company_id: string | null; public_token: string }>) {
+          if (l.company_id) linksMap[l.company_id] = l.public_token;
+        }
+        pushLog(`🔗 Criados ${inserted?.length ?? 0} links únicos.`);
+      }
+    }
+
+    const items: QueueItem[] = validCompanies
       .map((c: any) => ({
         id: c.id,
         email: c.email,
@@ -157,6 +198,7 @@ export async function loadRecipients() {
       }));
     envioStore.set({ queue: items });
     pushLog(`Carregados ${items.length} destinatários (limite ${batchLimit}).`);
+
   } catch (e: any) {
     toast.error('Erro ao carregar destinatários: ' + e.message);
   } finally {
@@ -226,14 +268,16 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
         recipient: item.email,
         subject: subj,
         vars,
+        design: cfg.heroImageUrl ? { heroImageUrl: cfg.heroImageUrl } : undefined,
         fromName: cfg.fromName,
         fromAddress: cfg.fromAddress,
         replyTo: cfg.replyTo || undefined,
         testMode: cfg.testMode,
         testRecipient: cfg.testMode ? cfg.testRecipient || null : null,
-        idempotencyKey: `campaign-${item.id}-${new Date().toISOString().slice(0, 10)}`,
+        idempotencyKey: `campaign-${item.id}-${Date.now()}`,
       },
     });
+
     if (res.sent) {
       envioStore.set((s) => ({
         queue: s.queue.map((q) => (q.id === item.id ? { ...q, status: 'sent' } : q)),
@@ -350,6 +394,66 @@ export async function sendSingle(item: QueueItem) {
   pushLog(`➤ Envio único para ${item.email}${cfg.testMode ? ' (TESTE)' : ''}`);
   await sendOne(item);
 }
+
+/**
+ * Dispara UM único e-mail de teste para `testRecipient`, sem depender da fila.
+ * Usa o primeiro item da fila para preencher variáveis (nome, CNPJ etc.)
+ * — se a fila estiver vazia, usa dados fictícios.
+ */
+export async function sendTestOnce() {
+  if (running) {
+    toast.error('Aguarde o envio atual terminar (ou pare).');
+    return;
+  }
+  const cfg = envioStore.get();
+  const to = (cfg.testRecipient || '').trim();
+  if (!to) {
+    toast.error('Informe um e-mail de teste primeiro.');
+    return;
+  }
+  const sample: QueueItem = cfg.queue[0] || {
+    id: 'demo-' + Date.now(),
+    email: to,
+    cnpj: '00000000000000',
+    company_name: 'Empresa Exemplo LTDA',
+    data_abertura: '01/01/2024',
+    situacao: 'CNPJ sem certificado ativo',
+    uf: 'SP',
+    municipio: 'São Paulo',
+    status: 'pending',
+    publicToken: null,
+  };
+  const vars = buildVarsFor(sample);
+  const subj = substitute(cfg.subject, vars);
+  pushLog(`🧪 Enviando 1 e-mail de teste para ${to}...`);
+  try {
+    const res: any = await sendCampaignEmail({
+      data: {
+        recipient: to,
+        subject: subj,
+        vars,
+        design: cfg.heroImageUrl ? { heroImageUrl: cfg.heroImageUrl } : undefined,
+        fromName: cfg.fromName,
+        fromAddress: cfg.fromAddress,
+        replyTo: cfg.replyTo || undefined,
+        testMode: true,
+        testRecipient: to,
+        idempotencyKey: `test-${Date.now()}`,
+      },
+    });
+    if (res.sent) {
+      pushLog(`✓ Teste enviado para ${res.recipient}`);
+      toast.success(`E-mail de teste enviado para ${res.recipient}`);
+    } else {
+      pushLog(`✗ Teste falhou: ${res.message ?? res.reason}`);
+      toast.error(`Falha no teste: ${res.message ?? res.reason}`);
+    }
+  } catch (e: any) {
+    pushLog(`✗ Teste falhou: ${e.message}`);
+    toast.error('Falha no teste: ' + e.message);
+  }
+}
+
 
 export function buildVarsForPreview(item: QueueItem) {
   return buildVarsFor(item);
