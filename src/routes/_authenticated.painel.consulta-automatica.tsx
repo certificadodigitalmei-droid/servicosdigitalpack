@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/client';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
@@ -36,7 +36,6 @@ import {
   countByDate,
   importBatch,
 } from '@/lib/casa-dos-dados/simple-flow.functions';
-import { AutoImportCard } from '@/components/painel/AutoImportCard';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
   head: () => ({ meta: [{ title: 'Consulta Casa dos Dados | Painel' }] }),
@@ -110,6 +109,27 @@ function ConsultaPage() {
     status: number;
   }>(null);
 
+  // Consulta automática (loop): fica chamando countByDate a cada X segundos.
+  const [autoCount, setAutoCount] = useState(false);
+  const [autoIntervalSec, setAutoIntervalSec] = useState(30);
+  const [autoStats, setAutoStats] = useState<{
+    checks: number;
+    lastTotal: number | null;
+    prevTotal: number | null;
+    delta: number;
+    peak: number | null;
+    lastCheckAt: string | null;
+    startedAt: string | null;
+  }>({
+    checks: 0,
+    lastTotal: null,
+    prevTotal: null,
+    delta: 0,
+    peak: null,
+    lastCheckAt: null,
+    startedAt: null,
+  });
+
   const [importedRows, setImportedRows] = useState<ImportedRow[]>([]);
   const [failedRows, setFailedRows] = useState<Array<{ cnpj: string; error: string }>>([]);
 
@@ -143,10 +163,64 @@ function ConsultaPage() {
     mutationFn: () => countFn({ data: { date: effectiveDate, filters } }),
     onSuccess: (r) => {
       setCountResult({ date: r.date, total: r.total, ok: r.ok, status: r.status });
+      setAutoStats((prev) => {
+        const now = new Date().toISOString();
+        const next = {
+          checks: prev.checks + 1,
+          prevTotal: prev.lastTotal,
+          lastTotal: r.total,
+          delta:
+            r.total != null && prev.lastTotal != null ? r.total - prev.lastTotal : 0,
+          peak:
+            r.total != null
+              ? prev.peak != null
+                ? Math.max(prev.peak, r.total)
+                : r.total
+              : prev.peak,
+          lastCheckAt: now,
+          startedAt: prev.startedAt ?? now,
+        };
+        if (
+          next.delta > 0 &&
+          prev.lastTotal != null &&
+          r.total != null
+        ) {
+          toast.success(`+${next.delta} nova(s) empresa(s) encontrada(s)!`);
+        }
+        return next;
+      });
       if (!r.ok) toast.error(`API respondeu ${r.status}`);
     },
     onError: (e: any) => toast.error(e?.message ?? 'Erro'),
   });
+
+  // Loop de consulta automática. Enquanto autoCount=true, chama countMut a
+  // cada autoIntervalSec segundos. Não consome créditos (endpoint grátis).
+  const countMutRef = useRef(countMut);
+  countMutRef.current = countMut;
+  useEffect(() => {
+    if (!autoCount) return;
+    // Dispara imediatamente ao ligar.
+    countMutRef.current.mutate();
+    const id = window.setInterval(() => {
+      if (!countMutRef.current.isPending) {
+        countMutRef.current.mutate();
+      }
+    }, Math.max(5, autoIntervalSec) * 1000);
+    return () => window.clearInterval(id);
+    // Reinicia o loop quando muda data/filtros/intervalo.
+  }, [autoCount, autoIntervalSec, effectiveDate, filters]);
+
+  // Ao desligar, reseta estatísticas do próximo ciclo.
+  const prevAutoRef = useRef(autoCount);
+  useEffect(() => {
+    if (prevAutoRef.current && !autoCount) {
+      // desligou: mantém último resultado exibido, mas zera contadores
+      setAutoStats((s) => ({ ...s, checks: 0, startedAt: null }));
+    }
+    prevAutoRef.current = autoCount;
+  }, [autoCount]);
+
 
   const importMut = useMutation({
     mutationFn: () =>
@@ -212,7 +286,6 @@ function ConsultaPage() {
         />
       </div>
 
-      <AutoImportCard />
 
       {/* 1. Data + filtros */}
       <Card>
@@ -308,11 +381,11 @@ function ConsultaPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button
               variant="secondary"
               onClick={() => countMut.mutate()}
-              disabled={countMut.isPending}
+              disabled={countMut.isPending || autoCount}
             >
               {countMut.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -335,21 +408,93 @@ function ConsultaPage() {
             </Button>
           </div>
 
+          {/* Modo automático — polling grátis, sem parar */}
+          <div className="rounded-lg border-2 border-emerald-200 bg-emerald-50/50 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <Label htmlFor="auto-count" className="font-medium flex items-center gap-2">
+                  {autoCount && (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
+                    </span>
+                  )}
+                  Modo automático (consulta sem parar)
+                </Label>
+                <p className="text-xs text-slate-600">
+                  Fica consultando a quantidade sozinho a cada X segundos. Não consome créditos.
+                </p>
+              </div>
+              <Switch id="auto-count" checked={autoCount} onCheckedChange={setAutoCount} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="auto-interval" className="text-xs whitespace-nowrap">
+                Intervalo (seg):
+              </Label>
+              <input
+                id="auto-interval"
+                type="number"
+                min={5}
+                max={600}
+                value={autoIntervalSec}
+                onChange={(e) =>
+                  setAutoIntervalSec(Math.max(5, Math.min(600, Number(e.target.value) || 30)))
+                }
+                className="h-8 w-24 rounded border border-slate-300 px-2 text-sm"
+              />
+              <span className="text-xs text-slate-500">mín. 5 seg</span>
+            </div>
+          </div>
+
           {countResult && (
-            <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+            <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm space-y-2">
               <div>
                 <strong>Data:</strong> {formatBR(countResult.date)} —{' '}
                 <strong>Total encontrado:</strong>{' '}
-                {countResult.total !== null
-                  ? countResult.total.toLocaleString('pt-BR')
-                  : '—'}{' '}
+                <span className="text-lg font-bold text-brand-navy">
+                  {countResult.total !== null
+                    ? countResult.total.toLocaleString('pt-BR')
+                    : '—'}
+                </span>{' '}
                 <Badge className={countResult.ok ? 'bg-green-600' : 'bg-red-600'}>
                   HTTP {countResult.status}
                 </Badge>
+                {autoStats.delta > 0 && (
+                  <Badge className="ml-2 bg-emerald-600 animate-pulse">
+                    +{autoStats.delta} novas
+                  </Badge>
+                )}
               </div>
+              {autoCount && (
+                <div className="grid gap-1 text-xs text-slate-600 sm:grid-cols-2">
+                  <div>
+                    Consultas feitas: <strong>{autoStats.checks}</strong>
+                  </div>
+                  <div>
+                    Pico da sessão:{' '}
+                    <strong>
+                      {autoStats.peak != null
+                        ? autoStats.peak.toLocaleString('pt-BR')
+                        : '—'}
+                    </strong>
+                  </div>
+                  <div>
+                    Última verificação:{' '}
+                    <strong>
+                      {autoStats.lastCheckAt
+                        ? new Date(autoStats.lastCheckAt).toLocaleTimeString('pt-BR')
+                        : '—'}
+                    </strong>
+                  </div>
+                  <div>
+                    Próxima em: <strong>~{autoIntervalSec}s</strong>
+                  </div>
+                </div>
+              )}
               <p className="mt-1 text-xs text-slate-500">Nenhum crédito consumido.</p>
             </div>
           )}
+
 
           {saldo && (
             <div className="rounded border border-slate-200 bg-slate-50 p-3 text-xs">
