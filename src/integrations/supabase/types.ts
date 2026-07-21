@@ -389,8 +389,10 @@ export type Database = {
           is_test_record: boolean
           last_attempt_at: string | null
           last_error: string | null
+          last_normalized_at: string | null
           missing_fields: Json
           query_date: string
+          raw_data: Json | null
           run_id: string | null
           status: string
           was_new_company: boolean
@@ -408,8 +410,10 @@ export type Database = {
           is_test_record?: boolean
           last_attempt_at?: string | null
           last_error?: string | null
+          last_normalized_at?: string | null
           missing_fields?: Json
           query_date?: string
+          raw_data?: Json | null
           run_id?: string | null
           status?: string
           was_new_company?: boolean
@@ -427,8 +431,10 @@ export type Database = {
           is_test_record?: boolean
           last_attempt_at?: string | null
           last_error?: string | null
+          last_normalized_at?: string | null
           missing_fields?: Json
           query_date?: string
+          raw_data?: Json | null
           run_id?: string | null
           status?: string
           was_new_company?: boolean

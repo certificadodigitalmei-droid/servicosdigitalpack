@@ -54,6 +54,13 @@ export function writeCursor(
   next: { page: number; itemOffset: number; lastCnpj: string | null },
 ): CursorMap {
   const out: CursorMap = { ...(map ?? {}) };
+  const prev = out[date];
+  // Never regress a cursor: keep the further position (page, then item_offset).
+  if (prev) {
+    const prevKey = (Number(prev.page) || 1) * 1_000_000 + (Number(prev.item_offset) || 0);
+    const nextKey = (Number(next.page) || 1) * 1_000_000 + (Number(next.itemOffset) || 0);
+    if (nextKey < prevKey) return out;
+  }
   out[date] = {
     page: next.page,
     item_offset: next.itemOffset,
@@ -64,13 +71,33 @@ export function writeCursor(
 }
 
 // ---------------------------------------------------------------------------
-// Data-quality validation
+// Normalization
 // ---------------------------------------------------------------------------
 
 function pickStr(obj: Record<string, unknown>, keys: string[]): string | null {
   for (const k of keys) {
     const v = obj[k];
     if (typeof v === 'string' && v.trim().length > 0) return v.trim();
+  }
+  return null;
+}
+
+function pickAny(obj: Record<string, unknown>, keys: string[]): unknown {
+  for (const k of keys) {
+    const v = obj[k];
+    if (v !== undefined && v !== null && v !== '') return v;
+  }
+  return null;
+}
+
+function descOf(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'string') return v.trim() || null;
+  if (typeof v === 'number') return String(v);
+  if (typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    const s = pickStr(o, ['descricao', 'description', 'nome', 'sigla', 'texto', 'valor', 'codigo']);
+    if (s) return s;
   }
   return null;
 }
@@ -94,69 +121,157 @@ export function extractEmail(item: Record<string, unknown>): string | null {
       }
     }
   }
+  const estab = (item as any).estabelecimento;
+  if (estab && typeof estab === 'object') {
+    const s = pickStr(estab as Record<string, unknown>, ['email']);
+    if (isEmailLike(s)) return s;
+  }
   return null;
 }
 
-function hasMatrizFlag(item: Record<string, unknown>): boolean {
-  const v =
-    (item as any).matriz_filial ??
-    (item as any).matriz ??
-    (item as any).is_matriz ??
-    (item as any).tipo;
-  return v !== undefined && v !== null && v !== '';
+function extractPhone(item: Record<string, unknown>): string | null {
+  const direct = pickStr(item, ['telefone', 'telefone_contato']);
+  if (direct) return direct;
+  const tels = (item as any).telefones;
+  if (Array.isArray(tels)) {
+    for (const t of tels) {
+      if (typeof t === 'string' && t.trim()) return t.trim();
+      if (t && typeof t === 'object') {
+        const s = pickStr(t as Record<string, unknown>, ['numero', 'telefone']);
+        if (s) return s;
+      }
+    }
+  }
+  const estab = (item as any).estabelecimento;
+  if (estab && typeof estab === 'object') {
+    const s = pickStr(estab as Record<string, unknown>, ['telefone', 'ddd_telefone_1', 'ddd_telefone']);
+    if (s) return s;
+  }
+  return null;
+}
+
+export type NormalizedCompany = {
+  cnpj: string | null;
+  razao_social: string | null;
+  nome_fantasia: string | null;
+  matriz_filial: string | null;
+  situacao_cadastral: string | null;
+  data_abertura: string | null; // YYYY-MM-DD when possible
+  municipio: string | null;
+  uf: string | null;
+  endereco: string | null;
+  capital_social: string | null;
+  quadro_societario: unknown;
+  email: string | null;
+  telefone: string | null;
+  raw: Record<string, unknown>;
+};
+
+function toISODate(v: unknown): string | null {
+  if (typeof v !== 'string' || !v) return null;
+  const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const br = v.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  return null;
+}
+
+/**
+ * Normalizes one raw item from Casa dos Dados (`response.cnpjs[i]` or a
+ * detail payload) into a stable internal shape. Handles common variations:
+ *   - top-level string fields ("municipio", "uf", "situacao_cadastral")
+ *   - nested objects like `{codigo, descricao}` (municipio, situacao, natureza)
+ *   - `estabelecimento.*` grouping used by some payload versions
+ *   - alias keys (nome_empresarial ↔ razao_social, cnpj_completo ↔ cnpj)
+ */
+export function normalizeCasaDosDadosCompany(item: Record<string, unknown>): NormalizedCompany {
+  const estab = (item as any).estabelecimento && typeof (item as any).estabelecimento === 'object'
+    ? ((item as any).estabelecimento as Record<string, unknown>)
+    : null;
+
+  const scope = (keys: string[]): unknown => {
+    const direct = pickAny(item, keys);
+    if (direct !== null && direct !== undefined && direct !== '') return direct;
+    if (estab) return pickAny(estab, keys);
+    return null;
+  };
+
+  const cnpj = pickStr(item, ['cnpj', 'cnpj_completo'])
+    ?? (estab ? pickStr(estab, ['cnpj', 'cnpj_completo']) : null);
+
+  const municipioRaw = scope(['municipio', 'cidade', 'municipio_descricao']);
+  const situacaoRaw = scope(['situacao_cadastral', 'situacao', 'situacao_cadastral_desc']);
+  const matrizRaw = scope(['matriz_filial', 'matriz', 'tipo', 'identificador_matriz_filial']);
+  const naturezaRaw = scope(['natureza_juridica']);
+
+  const enderecoParts = [
+    descOf(scope(['tipo_logradouro'])),
+    descOf(scope(['logradouro'])),
+    descOf(scope(['numero'])),
+    descOf(scope(['complemento'])),
+    descOf(scope(['bairro'])),
+  ].filter(Boolean);
+  const enderecoDirect = descOf(scope(['endereco', 'endereco_completo']));
+  const endereco = enderecoDirect ?? (enderecoParts.length ? enderecoParts.join(', ') : null);
+
+  // matriz_filial may be a numeric flag: 1 = matriz, 2 = filial
+  let matrizStr: string | null = null;
+  if (matrizRaw === 1 || matrizRaw === '1') matrizStr = 'MATRIZ';
+  else if (matrizRaw === 2 || matrizRaw === '2') matrizStr = 'FILIAL';
+  else matrizStr = descOf(matrizRaw);
+  if (matrizStr === '1') matrizStr = 'MATRIZ';
+  else if (matrizStr === '2') matrizStr = 'FILIAL';
+
+  return {
+    cnpj: cnpj ? cnpj.replace(/\D+/g, '') : null,
+    razao_social: pickStr(item, ['razao_social', 'nome_empresarial', 'razao_social_original'])
+      ?? (estab ? pickStr(estab, ['razao_social', 'nome_empresarial']) : null),
+    nome_fantasia: pickStr(item, ['nome_fantasia'])
+      ?? (estab ? pickStr(estab, ['nome_fantasia']) : null),
+    matriz_filial: matrizStr,
+    situacao_cadastral: descOf(situacaoRaw),
+    data_abertura: toISODate(scope(['data_abertura', 'abertura', 'inicio_atividade'])),
+    municipio: descOf(municipioRaw),
+    uf: descOf(scope(['uf', 'sigla_uf'])),
+    endereco,
+    capital_social: descOf(scope(['capital_social'])),
+    quadro_societario: (item as any).qsa ?? (item as any).quadro_societario ?? null,
+    email: extractEmail(item),
+    telefone: extractPhone(item),
+    raw: item,
+  };
 }
 
 export type DataQualityResult = {
   complete: boolean;
   missingFields: string[];
   email: string | null;
+  normalized: NormalizedCompany;
 };
 
 export type ValidationFilters = { require_email?: boolean; only_matriz?: boolean };
 
 /**
- * Validates the raw Casa dos Dados item (from POST /v5/cnpj/pesquisa → response.cnpjs)
- * against the "seven required fields" spec:
+ * Validates the raw Casa dos Dados item against the seven required fields:
  *   cnpj, razao_social, situacao_cadastral, data_abertura,
  *   matriz_filial, municipio, uf.
- *
- * Email and telefone are OPTIONAL: they are captured when present but they
- * never mark a record as incomplete, and the `require_email`/`com_email`
- * filter is treated as an API-side hint only (it does NOT guarantee the
- * payload includes the address). Missing email → saved as null; UI shows
- * "Não informado".
+ * Email/telefone stay OPTIONAL — never mark a record incomplete.
+ * Normalization runs first so nested payload shapes (`municipio: {descricao}`,
+ * `estabelecimento.*`, etc.) are correctly recognized.
  */
 export function validateCompanyItem(
   item: Record<string, unknown>,
   filters?: ValidationFilters,
 ): DataQualityResult {
+  const n = normalizeCasaDosDadosCompany(item);
   const missing: string[] = [];
-
-  // cnpj presence/length is enforced upstream by classifyItem; still guard it.
-  const cnpj = pickStr(item, ['cnpj', 'cnpj_completo']);
-  if (!cnpj) missing.push('cnpj');
-
-  const razao = pickStr(item, ['razao_social', 'nome_empresarial']);
-  if (!razao) missing.push('razao_social');
-
-  const situacao = pickStr(item, ['situacao_cadastral', 'situacao', 'situacao_cadastral_desc']);
-  if (!situacao) missing.push('situacao_cadastral');
-
-  const abertura = pickStr(item, ['data_abertura', 'abertura', 'inicio_atividade']);
-  if (!abertura) missing.push('data_abertura');
-
-  // Filtro "somente matriz" já garante matriz na API; sem o filtro o payload
-  // precisa trazer o campo para podermos identificar matriz vs filial.
-  if (!filters?.only_matriz && !hasMatrizFlag(item)) missing.push('matriz_filial');
-
-  const municipio = pickStr(item, ['municipio', 'cidade', 'municipio_descricao']);
-  if (!municipio) missing.push('municipio');
-
-  const uf = pickStr(item, ['uf']);
-  if (!uf) missing.push('uf');
-
-  // Email é opcional: mapeamos se vier, mas nunca bloqueia a importação.
-  const email = extractEmail(item);
-
-  return { complete: missing.length === 0, missingFields: missing, email };
+  if (!n.cnpj) missing.push('cnpj');
+  if (!n.razao_social) missing.push('razao_social');
+  if (!n.situacao_cadastral) missing.push('situacao_cadastral');
+  if (!n.data_abertura) missing.push('data_abertura');
+  if (!filters?.only_matriz && !n.matriz_filial) missing.push('matriz_filial');
+  if (!n.municipio) missing.push('municipio');
+  if (!n.uf) missing.push('uf');
+  return { complete: missing.length === 0, missingFields: missing, email: n.email, normalized: n };
 }
+

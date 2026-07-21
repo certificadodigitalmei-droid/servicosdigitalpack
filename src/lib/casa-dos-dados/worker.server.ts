@@ -128,13 +128,18 @@ export type EnqueueArgs = {
   isTestRecord: boolean;
   dataQualityStatus: 'complete' | 'test_partial' | 'pending_enrichment';
   missingFields: string[];
+  rawData?: Record<string, unknown> | null;
 };
+
+export type EnqueueResult =
+  | { ok: true; queueId: string }
+  | { ok: false; reason: 'duplicate'; existing?: { id: string; status: string; dataQualityStatus: string } }
+  | { ok: false; reason: 'error'; message: string };
 
 export type WorkerDeps = {
   fetchPage: FetchPageFn;
   fetchDetails?: (cnpj: string, opts?: { signal?: AbortSignal; timeoutMs?: number }) => Promise<{ ok: boolean; status: number; item: Record<string, unknown> | null }>;
-  tryEnqueue: (args: EnqueueArgs) =>
-    Promise<{ ok: true; queueId: string } | { ok: false; reason: 'duplicate' } | { ok: false; reason: 'error'; message: string }>;
+  tryEnqueue: (args: EnqueueArgs) => Promise<EnqueueResult>;
   findActiveLinkByCnpj: (cnpj: string) => Promise<{ id: string; publicToken: string; publicUrl: string | null; checkoutUrl: string | null } | null>;
   upsertCompany: (payload: Record<string, unknown>) => Promise<{ companyId: string; wasNew: boolean }>;
   findActiveLinkByCompany: (companyId: string) => Promise<{ id: string; publicToken: string; publicUrl: string | null; checkoutUrl: string | null } | null>;
@@ -155,7 +160,9 @@ export type CoreLoopInput = {
   publicBaseUrl: string;
   isTestRun?: boolean;
   maxRunMs?: number;
+  softLimitMs?: number;
   maxItemsAnalyzed?: number;
+  maxTestManualItems?: number;
   maxDetailQueries?: number;
   httpTimeoutMs?: number;
   signal?: AbortSignal;
@@ -182,8 +189,10 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
   const autoGenerateLinksEnabled = (automation.auto_generate_links_enabled ?? true) && autoImportEnabled;
   const startedAt = Date.now();
   const maxRunMs = Math.max(5_000, input.maxRunMs ?? 50_000);
+  const softLimitMs = Math.max(3_000, Math.min(maxRunMs - 3_000, input.softLimitMs ?? Math.min(35_000, maxRunMs - 10_000)));
   const httpTimeoutMs = Math.max(1_000, input.httpTimeoutMs ?? 12_000);
   const maxItemsAnalyzed = Math.max(1, input.maxItemsAnalyzed ?? Math.min(maxPages * pageSize + 10, 250));
+  const maxTestManualItems = Math.max(1, input.maxTestManualItems ?? 10);
   const maxDetailQueries = Math.max(0, input.maxDetailQueries ?? Math.min(maxItemsAnalyzed, 80));
 
   const outcome = {
@@ -254,12 +263,21 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
   const shouldStop = (cursorPage = page, cursorOffset = offset): boolean => {
     if (input.signal?.aborted) throw new Error('Execução interrompida pelo controlador');
-    if (Date.now() - startedAt >= maxRunMs) {
+    const elapsed = Date.now() - startedAt;
+    if (elapsed >= maxRunMs) {
       setLimit('Tempo máximo da execução atingido', cursorPage, cursorOffset);
+      return true;
+    }
+    if (elapsed >= softLimitMs) {
+      setLimit('Tempo seguro da execução atingido — retomará no próximo ciclo', cursorPage, cursorOffset);
       return true;
     }
     if (outcome.itemsAnalyzed >= maxItemsAnalyzed) {
       setLimit('Limite máximo de itens analisados atingido', cursorPage, cursorOffset);
+      return true;
+    }
+    if (isTestRun && outcome.itemsAnalyzed >= maxTestManualItems) {
+      setLimit(`Limite de ${maxTestManualItems} itens do modo teste atingido`, cursorPage, cursorOffset);
       return true;
     }
     return false;
@@ -346,7 +364,9 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
       // ---- NORMAL MODE + INCOMPLETE ----
       // Enqueue as pending_enrichment (best effort), skip everything else,
-      // DO NOT consume quota.
+      // DO NOT consume quota. A queue-UNIQUE collision counts as a duplicate,
+      // NEVER as silent progress — otherwise the loop would spin forever on
+      // dates already fully seen.
       if (!isValid && !isTestRun) {
         outcome.incomplete += 1;
         outcome.pendingEnrichment += 1;
@@ -360,9 +380,10 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
           isTestRecord: false,
           dataQualityStatus: 'pending_enrichment',
           missingFields: validation.missingFields,
+          rawData: item,
         });
         if (!enq.ok && enq.reason === 'duplicate') {
-          // Already known — that's fine, just count skip.
+          outcome.duplicated += 1;
           outcome.skipped.push({ index: i, page, cnpj, reason: 'incomplete', missing: validation.missingFields, detail: 'duplicate_in_queue' });
         } else if (!enq.ok) {
           outcome.skipped.push({ index: i, page, cnpj, reason: 'queue_error', detail: enq.message });
@@ -382,6 +403,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         isTestRecord: isTestRun,
         dataQualityStatus,
         missingFields: validation.missingFields,
+        rawData: item,
       });
       if (!enq.ok && enq.reason === 'duplicate') {
         outcome.duplicated += 1;
@@ -409,23 +431,24 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
       if (!isValid) bumpMissing(validation.missingFields);
 
+      // Use the normalizer output so nested payload shapes are extracted.
+      const n = validation.normalized;
       const companyPayload: Record<string, unknown> = {
         cnpj,
-        razao_social_original: pickString(enrichedItem, ['razao_social', 'nome_empresarial', 'razao_social_original']) ?? null,
-        nome_fantasia: pickString(enrichedItem, ['nome_fantasia']),
+        razao_social_original: n.razao_social ?? null,
+        nome_fantasia: n.nome_fantasia,
         nome_titular_exibicao:
-          pickString(enrichedItem, ['nome_titular', 'nome']) ??
-          pickString(enrichedItem, ['razao_social', 'nome_empresarial', 'razao_social_original']),
-        email: validation.email,
-        uf: pickString(enrichedItem, ['uf']),
-        municipio_descricao: pickString(enrichedItem, ['municipio', 'cidade', 'municipio_descricao']),
-        situacao_cadastral_desc: pickString(enrichedItem, ['situacao_cadastral', 'situacao', 'situacao_cadastral_desc']),
-        inicio_atividade: toDate((enrichedItem as any).data_abertura ?? (enrichedItem as any).abertura ?? (enrichedItem as any).inicio_atividade),
+          pickString(enrichedItem, ['nome_titular', 'nome']) ?? n.razao_social,
+        email: n.email,
+        uf: n.uf,
+        municipio_descricao: n.municipio,
+        situacao_cadastral_desc: n.situacao_cadastral,
+        inicio_atividade: n.data_abertura,
         is_mei: automation.filters?.only_mei ? true : ((enrichedItem as any).mei === true || (enrichedItem as any).is_mei === true),
-        is_matriz: automation.filters?.only_matriz ? true : undefined,
+        is_matriz: automation.filters?.only_matriz ? true : (n.matriz_filial ? /matriz/i.test(n.matriz_filial) : undefined),
         fonte: 'casa_dos_dados',
         last_seen_at: new Date().toISOString(),
-        possui_email: !!validation.email,
+        possui_email: !!n.email,
         is_test_record: isTestRun,
         data_quality_status: dataQualityStatus,
         missing_fields: validation.missingFields,
@@ -557,6 +580,7 @@ export async function runAutomationOnce(
   const maxPages = Math.max(1, automation.max_pages_per_run ?? 20);
   const pageSize = Math.max(1, Math.min(200, automation.page_size ?? 50));
   const maxRunMs = Math.max(40_000, Math.min(60_000, Number(process.env.CASA_DOS_DADOS_RUN_TIMEOUT_MS ?? 50_000) || 50_000));
+  const softLimitMs = Math.max(10_000, Math.min(maxRunMs - 5_000, Number(process.env.CASA_DOS_DADOS_SOFT_LIMIT_MS ?? 35_000) || 35_000));
   const httpTimeoutMs = Math.max(3_000, Math.min(15_000, Number(process.env.CASA_DOS_DADOS_HTTP_TIMEOUT_MS ?? 12_000) || 12_000));
   const maxItemsAnalyzed = Math.max(1, Math.min(300, Number(process.env.CASA_DOS_DADOS_MAX_ITEMS_PER_RUN ?? Math.min(maxPages * pageSize + 10, 250)) || 250));
   const maxDetailQueries = Math.max(0, Math.min(maxItemsAnalyzed, Number(process.env.CASA_DOS_DADOS_MAX_DETAIL_QUERIES ?? Math.min(maxItemsAnalyzed, 80)) || 80));
@@ -619,7 +643,7 @@ export async function runAutomationOnce(
         updates.push(
           (supabaseAdmin as any)
             .from('automatic_company_query_runs')
-            .update({ heartbeat_at: nowIso, api_summary: summaryPatch as any })
+            .update({ heartbeat_at: nowIso, api_summary: summaryPatch as any, current_stage: stage })
             .eq('id', runId),
         );
       }
@@ -665,7 +689,7 @@ export async function runAutomationOnce(
       // fetchDetails intentionally omitted: response.cnpjs already carries
       // the seven required fields. GET /v5/cnpj/{cnpj} is no longer called
       // per-result to keep every run inside the timeout budget.
-      tryEnqueue: async ({ automationId, runId: rId, queryDate: qd, cnpj, isTestRecord, dataQualityStatus, missingFields }) => {
+      tryEnqueue: async ({ automationId, runId: rId, queryDate: qd, cnpj, isTestRecord, dataQualityStatus, missingFields, rawData }) => {
         const { data, error } = await supabaseAdmin
           .from('automatic_company_queue')
           .insert({
@@ -676,6 +700,8 @@ export async function runAutomationOnce(
             is_test_record: isTestRecord,
             data_quality_status: dataQualityStatus,
             missing_fields: missingFields as any,
+            raw_data: (rawData ?? null) as any,
+            last_normalized_at: new Date().toISOString(),
           })
           .select('id')
           .maybeSingle();
@@ -787,6 +813,7 @@ export async function runAutomationOnce(
         publicBaseUrl,
         isTestRun,
         maxRunMs,
+        softLimitMs,
         maxItemsAnalyzed,
         maxDetailQueries,
         httpTimeoutMs,
@@ -845,11 +872,13 @@ export async function runAutomationOnce(
         .from('automatic_company_query_runs')
         .update({
           status: finalStatus,
+          current_stage: finalStatus === 'error' ? lastStage : 'finalize',
           error_message: errorMessage,
           api_total: outcome.apiTotal,
           imported_count: outcome.imported,
           duplicate_count: outcome.duplicated,
           incomplete_count: outcome.incomplete,
+          complete_count: outcome.imported,
           pending_enrichment_count: outcome.pendingEnrichment,
           link_created_count: outcome.linksCreated,
           link_reused_count: outcome.linksReused,
