@@ -184,13 +184,13 @@ export async function runAutomationOnce(
       let wasNewCompany = false;
       if (existing?.id) {
         companyId = existing.id;
-        const { error: upErr } = await supabaseAdmin
+        const { error: upErr } = await (supabaseAdmin as any)
           .from('companies')
           .update(companyPayload)
           .eq('id', companyId);
         if (upErr) throw new Error(`company update: ${upErr.message}`);
       } else {
-        const { data: ins, error: insErr } = await supabaseAdmin
+        const { data: ins, error: insErr } = await (supabaseAdmin as any)
           .from('companies')
           .insert(companyPayload)
           .select('id')
