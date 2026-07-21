@@ -486,6 +486,10 @@ export function setAutoImportDelaySec(n: number) {
   if (consultaStore.get().autoImport) restartImportLoop();
 }
 
+export function setAutoImportTarget(n: number) {
+  consultaStore.set({ autoImportTarget: Math.max(0, Math.floor(n || 0)) });
+}
+
 export function setDateMode(m: 'today' | 'specific') {
   consultaStore.set({ dateMode: m });
   if (m === 'today') consultaStore.set({ selectedDate: todayBRString() });
