@@ -277,7 +277,6 @@ function ConsultaAutomaticaPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
           {(() => {
             const hasAutomation = !!automation?.id;
             const isRunning = automation?.status === 'running';
