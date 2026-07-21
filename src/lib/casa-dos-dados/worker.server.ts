@@ -813,6 +813,7 @@ export async function runAutomationOnce(
         publicBaseUrl,
         isTestRun,
         maxRunMs,
+        softLimitMs,
         maxItemsAnalyzed,
         maxDetailQueries,
         httpTimeoutMs,
