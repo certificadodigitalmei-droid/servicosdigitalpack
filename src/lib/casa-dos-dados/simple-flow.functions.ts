@@ -70,13 +70,14 @@ export const importBatch = createServerFn({ method: 'POST' })
       .object({
         date: dateSchema,
         filters: filtersSchema,
-        // Limite conservador para caber no timeout do worker (45s).
-        // 25 CNPJs completos + inserts ~ folga suficiente.
-        limit: z.number().int().min(1).max(25).default(10),
+        // Cada CNPJ faz 1 chamada extra de detalhe (~1-2s). 15 cabe no
+        // orçamento seguro do worker (~45s).
+        limit: z.number().int().min(1).max(15).default(10),
         page: z.number().int().min(1).max(200).default(1),
       })
       .parse(d),
   )
+
   .handler(async ({ context, data }) => {
     await assertAdmin(context.supabase, context.userId);
 
