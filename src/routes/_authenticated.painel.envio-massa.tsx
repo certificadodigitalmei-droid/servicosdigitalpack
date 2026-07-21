@@ -219,7 +219,54 @@ function EnvioMassa() {
                 onChange={(e) => setReplyTo(e.target.value)}
               />
             </div>
+            {/* Presets de envio recomendado */}
+            <div className="rounded-md border border-blue-200 bg-blue-50/60 p-3 space-y-3">
+              <div>
+                <div className="text-sm font-semibold text-blue-900">Perfis recomendados de envio</div>
+                <p className="text-[11px] text-blue-900/70">
+                  Clique para aplicar delay, limite diário e limite da fila de uma vez. Baseado em boas práticas anti-spam.
+                </p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {([
+                  { key: 'warmup1', title: 'Warm-up inicial', sub: 'Dias 1-3', daily: 40, delay: 90, batch: 40, hint: '~40/dia · 1 a cada 90s' },
+                  { key: 'warmup2', title: 'Warm-up médio', sub: 'Dias 4-7', daily: 150, delay: 60, batch: 150, hint: '~150/dia · 1 a cada 60s' },
+                  { key: 'warmup3', title: 'Warm-up avançado', sub: 'Dias 8-14', daily: 400, delay: 45, batch: 200, hint: '~400/dia · 1 a cada 45s' },
+                  { key: 'cruise', title: 'Ritmo saudável', sub: 'Após 15 dias', daily: 800, delay: 30, batch: 300, hint: '~800/dia · 1 a cada 30s' },
+                ] as const).map((p) => {
+                  const active = delaySec === p.delay && dailyLimit === p.daily && batchLimit === p.batch;
+                  return (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => {
+                        setDelaySec(p.delay);
+                        setDailyLimit(p.daily);
+                        setBatchLimit(p.batch);
+                        toast.success(`Perfil "${p.title}" aplicado`);
+                      }}
+                      className={`text-left rounded-md border p-2.5 transition-colors ${
+                        active
+                          ? 'border-blue-500 bg-white ring-2 ring-blue-400'
+                          : 'border-blue-200 bg-white hover:border-blue-400'
+                      }`}
+                    >
+                      <div className="text-[12.5px] font-bold text-slate-900">{p.title}</div>
+                      <div className="text-[10.5px] uppercase tracking-wider text-slate-500">{p.sub}</div>
+                      <div className="mt-1 text-[11px] text-slate-700">{p.hint}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="rounded border border-blue-200 bg-white p-2 text-[11px] text-slate-700 leading-relaxed">
+                <strong className="text-blue-900">Regra de ouro:</strong> não passe de <strong>~100 envios/hora</strong> e faça pausas
+                (ex.: envie por 2-3h, descanse 1h). Envios ideais entre <strong>09h-11h</strong> e <strong>14h-17h</strong>, dias úteis.
+                Se bounces &gt; 5% ou reclamações &gt; 0,1%, reduza volume imediatamente.
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
+
               <div>
                 <Label>Delay entre envios (segundos)</Label>
                 <Input
