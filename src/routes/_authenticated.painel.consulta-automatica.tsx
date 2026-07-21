@@ -35,7 +35,17 @@ import {
   getSaldo,
   countByDate,
   importBatch,
+  listByDate,
 } from '@/lib/casa-dos-dados/simple-flow.functions';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { List, Trash2 } from 'lucide-react';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
   head: () => ({ meta: [{ title: 'Consulta Casa dos Dados | Painel' }] }),
@@ -87,6 +97,7 @@ function ConsultaPage() {
   const saldoFn = useServerFn(getSaldo);
   const countFn = useServerFn(countByDate);
   const importFn = useServerFn(importBatch);
+  const listFn = useServerFn(listByDate);
 
   const [dateMode, setDateMode] = useState<'today' | 'specific'>('today');
   const [selectedDate, setSelectedDate] = useState<string>(todayBR);
@@ -132,6 +143,20 @@ function ConsultaPage() {
 
   const [importedRows, setImportedRows] = useState<ImportedRow[]>([]);
   const [failedRows, setFailedRows] = useState<Array<{ cnpj: string; error: string }>>([]);
+
+  // Lista acumulada de CNPJs descobertos no Modo Automático.
+  type FoundRow = {
+    cnpj: string;
+    nome: string;
+    fantasia: string | null;
+    uf: string | null;
+    municipio: string | null;
+    firstSeenAt: string;
+  };
+  const [foundList, setFoundList] = useState<FoundRow[]>([]);
+  const [listDialogOpen, setListDialogOpen] = useState(false);
+
+
 
   const effectiveDate = useMemo(
     () => (dateMode === 'today' ? todayBR : selectedDate || todayBR),
@@ -194,28 +219,100 @@ function ConsultaPage() {
     onError: (e: any) => toast.error(e?.message ?? 'Erro'),
   });
 
-  // Loop de consulta automática. Enquanto autoCount=true, chama countMut a
-  // cada autoIntervalSec segundos. Não consome créditos (endpoint grátis).
-  const countMutRef = useRef(countMut);
-  countMutRef.current = countMut;
+  // Chave estável para persistir a lista descoberta por data+filtros.
+  const listStorageKey = useMemo(
+    () => `casa:autoList:${effectiveDate}:${JSON.stringify(filters)}`,
+    [effectiveDate, filters],
+  );
+
+  // Carrega lista salva quando muda a chave (data/filtros).
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(listStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as FoundRow[];
+        if (Array.isArray(parsed)) {
+          setFoundList(parsed);
+          return;
+        }
+      }
+    } catch { /* ignore */ }
+    setFoundList([]);
+  }, [listStorageKey]);
+
+  // Persiste sempre que a lista muda.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(listStorageKey, JSON.stringify(foundList));
+    } catch { /* ignore quota */ }
+  }, [listStorageKey, foundList]);
+
+  const listMut = useMutation({
+    mutationFn: () =>
+      listFn({ data: { date: effectiveDate, filters, limit: 20, page: 1 } }),
+    onSuccess: (r) => {
+      setCountResult({ date: r.date, total: r.total, ok: r.ok, status: r.status });
+      const now = new Date().toISOString();
+      let addedCount = 0;
+      setFoundList((prev) => {
+        const seen = new Map(prev.map((it) => [it.cnpj, it]));
+        for (const it of r.items ?? []) {
+          if (!seen.has(it.cnpj)) {
+            seen.set(it.cnpj, { ...it, firstSeenAt: now });
+            addedCount += 1;
+          }
+        }
+        if (addedCount === 0) return prev;
+        return Array.from(seen.values()).sort((a, b) =>
+          b.firstSeenAt.localeCompare(a.firstSeenAt),
+        );
+      });
+      setAutoStats((prev) => {
+        const next = {
+          checks: prev.checks + 1,
+          prevTotal: prev.lastTotal,
+          lastTotal: r.total,
+          delta:
+            r.total != null && prev.lastTotal != null ? r.total - prev.lastTotal : 0,
+          peak:
+            r.total != null
+              ? prev.peak != null
+                ? Math.max(prev.peak, r.total)
+                : r.total
+              : prev.peak,
+          lastCheckAt: now,
+          startedAt: prev.startedAt ?? now,
+        };
+        return next;
+      });
+      if (addedCount > 0) {
+        toast.success(`+${addedCount} novo(s) CNPJ(s) na lista.`);
+      }
+      if (!r.ok) toast.error(`API respondeu ${r.status}`);
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Erro'),
+  });
+
+  // Loop de consulta automática. Enquanto autoCount=true, chama listMut a
+  // cada autoIntervalSec segundos, acumulando CNPJs. Não consome créditos.
+  const listMutRef = useRef(listMut);
+  listMutRef.current = listMut;
   useEffect(() => {
     if (!autoCount) return;
-    // Dispara imediatamente ao ligar.
-    countMutRef.current.mutate();
+    setListDialogOpen(true);
+    listMutRef.current.mutate();
     const id = window.setInterval(() => {
-      if (!countMutRef.current.isPending) {
-        countMutRef.current.mutate();
+      if (!listMutRef.current.isPending) {
+        listMutRef.current.mutate();
       }
     }, Math.max(5, autoIntervalSec) * 1000);
     return () => window.clearInterval(id);
-    // Reinicia o loop quando muda data/filtros/intervalo.
   }, [autoCount, autoIntervalSec, effectiveDate, filters]);
 
-  // Ao desligar, reseta estatísticas do próximo ciclo.
+  // Ao desligar, reseta apenas contadores de sessão (mantém lista salva).
   const prevAutoRef = useRef(autoCount);
   useEffect(() => {
     if (prevAutoRef.current && !autoCount) {
-      // desligou: mantém último resultado exibido, mas zera contadores
       setAutoStats((s) => ({ ...s, checks: 0, startedAt: null }));
     }
     prevAutoRef.current = autoCount;
@@ -444,6 +541,32 @@ function ConsultaPage() {
               />
               <span className="text-xs text-slate-500">mín. 5 seg</span>
             </div>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setListDialogOpen(true)}
+              >
+                <List className="mr-1 h-4 w-4" />
+                Ver lista de CNPJs ({foundList.length})
+              </Button>
+              {foundList.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    if (confirm('Limpar a lista salva desta data + filtros?')) {
+                      setFoundList([]);
+                    }
+                  }}
+                >
+                  <Trash2 className="mr-1 h-4 w-4" /> Limpar lista salva
+                </Button>
+              )}
+              <span className="text-xs text-slate-500">
+                Salva no navegador por data + filtros.
+              </span>
+            </div>
           </div>
 
           {countResult && (
@@ -631,6 +754,68 @@ function ConsultaPage() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={listDialogOpen} onOpenChange={setListDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {autoCount && (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
+                </span>
+              )}
+              CNPJs encontrados — {formatBR(effectiveDate)}
+            </DialogTitle>
+            <DialogDescription>
+              {foundList.length} CNPJ(s) acumulado(s) para esta data + filtros.
+              Total na API agora:{' '}
+              <strong>
+                {countResult?.total != null
+                  ? countResult.total.toLocaleString('pt-BR')
+                  : '—'}
+              </strong>
+              . {autoCount ? 'Atualizando automaticamente…' : 'Modo automático desligado.'}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[420px] rounded border border-slate-200">
+            {foundList.length === 0 ? (
+              <div className="p-6 text-center text-sm text-slate-500">
+                Nenhum CNPJ ainda. Ligue o modo automático para começar.
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {foundList.map((it) => (
+                  <li key={it.cnpj} className="flex items-start justify-between gap-3 p-3">
+                    <div className="min-w-0">
+                      <div className="font-mono text-sm">{formatCNPJ(it.cnpj)}</div>
+                      <div className="truncate text-sm text-slate-700">{it.nome}</div>
+                      {(it.municipio || it.uf) && (
+                        <div className="text-xs text-slate-500">
+                          {[it.municipio, it.uf].filter(Boolean).join(' / ')}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="text-[10px] text-slate-400">
+                        {new Date(it.firstSeenAt).toLocaleTimeString('pt-BR')}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2"
+                        onClick={() => copy(it.cnpj)}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
