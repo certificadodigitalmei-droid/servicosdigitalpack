@@ -81,7 +81,11 @@ function EnvioMassa() {
   const logs = useStore(envioStore, (s) => s.logs);
   const showFloating = useStore(envioStore, (s) => s.showFloating);
   const heroImageUrl = useStore(envioStore, (s) => s.heroImageUrl);
+  const dailyLimit = useStore(envioStore, (s) => s.dailyLimit);
+  const sentToday = useStore(envioStore, (s) => s.sentToday);
+  const importDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
   const [uploadingImg, setUploadingImg] = useState(false);
+
 
 
   const [previewIdx, setPreviewIdx] = useState(0);
