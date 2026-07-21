@@ -136,6 +136,7 @@ export const consultaStore = createStore<State>(initial, {
     'autoIntervalSec',
     'autoImport',
     'autoImportDelaySec',
+    'autoImportTarget',
     'dateMode',
     'selectedDate',
     'filters',
