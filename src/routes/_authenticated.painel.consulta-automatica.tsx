@@ -365,7 +365,7 @@ function ConsultaPage() {
           </CardTitle>
           <CardDescription>
             Uma única chamada busca N CNPJs completos, salva as empresas e gera os links.
-            Cada CNPJ consome 1 crédito. Máx. por lote: <strong>25</strong>.
+            Cada CNPJ consome 1 crédito. Máx. por lote: <strong>15</strong>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
