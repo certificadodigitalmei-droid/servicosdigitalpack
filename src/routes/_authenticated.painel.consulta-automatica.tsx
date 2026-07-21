@@ -74,6 +74,16 @@ function isoToDate(iso: string): Date {
   return new Date(y, (m ?? 1) - 1, d ?? 1);
 }
 
+function withClientTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} excedeu o tempo limite no navegador. Atualize o status para ver o resultado real.`)), timeoutMs);
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
 function ConsultaAutomaticaPage() {
   const qc = useQueryClient();
   const getState = useServerFn(getAutomationState);
@@ -206,21 +216,30 @@ function ConsultaAutomaticaPage() {
 
   const runMut = useMutation({
     mutationFn: (args?: { overrideQuantity?: number; trigger?: 'manual' | 'test_manual' }) =>
-      runFn({
-        data: {
-          id: automation!.id,
-          overrideQuantity: args?.overrideQuantity,
-          queryDate: effectiveDate,
-          trigger: args?.trigger ?? 'manual',
-          overrideAutoImport: autoImport,
-          overrideAutoLinks: autoLinks && autoImport,
-        },
-      }),
+      withClientTimeout(
+        runFn({
+          data: {
+            id: automation!.id,
+            overrideQuantity: args?.overrideQuantity,
+            queryDate: effectiveDate,
+            trigger: args?.trigger ?? 'manual',
+            overrideAutoImport: autoImport,
+            overrideAutoLinks: autoLinks && autoImport,
+          },
+        }),
+        75_000,
+        'Execução da Consulta Automática',
+      ),
     onSuccess: (r: any) => {
       if (r?.ok === false && r?.reason === 'already_running') {
         toast.warning('Já existe uma execução em andamento');
       } else if (r?.outcome?.status === 'error') {
         toast.error(`Erro na execução: ${r.outcome.error}`);
+        setLastRunSummary({ ...r.outcome, queryDate: r.queryDate });
+      } else if (r?.outcome?.status === 'partial') {
+        toast.warning(
+          `Execução parcial (${formatBR(r.queryDate)}): ${r.outcome.imported} importada(s). ${r.outcome.partialReason ?? ''}`,
+        );
         setLastRunSummary({ ...r.outcome, queryDate: r.queryDate });
       } else {
         toast.success(
@@ -231,6 +250,10 @@ function ConsultaAutomaticaPage() {
       qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
     },
     onError: (e: any) => toast.error(e?.message ?? 'Erro ao executar'),
+    onSettled: async () => {
+      await qc.invalidateQueries({ queryKey: ['casa-automation-state'] });
+      await stateQ.refetch();
+    },
   });
 
   const testMut = useMutation({
@@ -866,6 +889,7 @@ function ConsultaAutomaticaPage() {
                       <td className="p-2">
                         {r.status === 'ok' && <Badge className="bg-green-600">OK</Badge>}
                         {r.status === 'running' && <Badge className="bg-blue-600">Executando</Badge>}
+                        {r.status === 'partial' && <Badge className="bg-amber-500 text-white">Parcial</Badge>}
                         {r.status === 'error' && <Badge variant="destructive">Erro</Badge>}
                       </td>
                       <td className="p-2">{r.requested_quantity ?? '—'}</td>
