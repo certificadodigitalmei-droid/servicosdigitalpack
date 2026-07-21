@@ -14,7 +14,6 @@ import { useState, useEffect } from 'react';
 import { Check, QrCode, CreditCard, Barcode, ArrowLeft } from 'lucide-react';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { formatCPFOrCNPJ, maskCPFCNPJ, maskPhone, isValidEmail } from '@/lib/format';
-import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/track';
 import { toast } from 'sonner';
 import { extractErrorMessage } from '@/lib/errors';
