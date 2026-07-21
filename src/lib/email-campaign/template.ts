@@ -320,7 +320,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     ${D.showBadges && D.badgesText ? `
     <tr><td style="padding:20px ${px}px 8px ${px}px;text-align:center;">
       <div style="display:inline-block;font-size:11px;color:${D.mutedColor};letter-spacing:0.6px;text-transform:uppercase;font-weight:700;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:8px 16px;font-family:Arial,sans-serif;">
-        &#x1F512; ${esc(S(D.badgesText))}
+        <img src="${toAbsoluteUrl('/__l5e/assets-v1/6bf7fb2f-a72e-4a6e-8271-c7c1572cd687/gov-lock.png')}" alt="" width="14" height="14" style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;border:0;display:inline-block;" />${esc(S(D.badgesText))}
       </div>
     </td></tr>` : ''}
 
