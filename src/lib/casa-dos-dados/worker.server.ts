@@ -13,7 +13,7 @@
 //   - Cursors are persisted per query_date on
 //     `automatic_company_queries.pagination_cursors`.
 
-import { fetchCompanyDetailsByCnpj, searchOpeningsByDate, todayBR, type CasaFilters, type CasaSearchResult } from './client.server';
+import { searchOpeningsByDate, todayBR, type CasaFilters, type CasaSearchResult } from './client.server';
 import {
   classifyItem,
   readCursor,
@@ -662,11 +662,9 @@ export async function runAutomationOnce(
         await touchHeartbeat('pesquisa_avancada', { page: o.page, limit: o.limit, date: o.date });
         return searchOpeningsByDate(o);
       },
-      fetchDetails: async (cnpj, o) => {
-        await touchHeartbeat('consulta_detalhada_cnpj', { cnpj });
-        const detail = await fetchCompanyDetailsByCnpj(cnpj, o);
-        return { ok: detail.ok, status: detail.status, item: detail.item };
-      },
+      // fetchDetails intentionally omitted: response.cnpjs already carries
+      // the seven required fields. GET /v5/cnpj/{cnpj} is no longer called
+      // per-result to keep every run inside the timeout budget.
       tryEnqueue: async ({ automationId, runId: rId, queryDate: qd, cnpj, isTestRecord, dataQualityStatus, missingFields }) => {
         const { data, error } = await supabaseAdmin
           .from('automatic_company_queue')
