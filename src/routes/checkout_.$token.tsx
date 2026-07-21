@@ -11,7 +11,7 @@ import { PixModal } from '@/components/checkout/PixModal';
 import { useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 import { useState, useEffect } from 'react';
-import { Check, QrCode, CreditCard, Barcode, Copy, ArrowLeft, Clock, Loader2 } from 'lucide-react';
+import { Check, QrCode, CreditCard, Barcode, ArrowLeft } from 'lucide-react';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { formatCPFOrCNPJ, maskCPFCNPJ, maskPhone, isValidEmail } from '@/lib/format';
 import { supabase } from '@/integrations/supabase/client';
