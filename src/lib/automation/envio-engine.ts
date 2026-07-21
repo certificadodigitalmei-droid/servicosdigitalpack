@@ -164,6 +164,9 @@ function pushLog(msg: string) {
 // abre o Lovable — usar sempre o domínio publicado).
 const PUBLIC_BASE_URL = 'https://seu-certificado-mei-digital.online';
 
+const normCnpj = (v: string | null | undefined) => (v || '').replace(/\D+/g, '');
+const normEmail = (v: string | null | undefined) => (v || '').trim().toLowerCase();
+
 export const setSubject = (v: string) => envioStore.set({ subject: v });
 export const setDelaySec = (n: number) => envioStore.set({ delaySec: Math.max(1, n) });
 export const setBatchLimit = (n: number) => envioStore.set({ batchLimit: Math.max(1, n) });
@@ -278,9 +281,36 @@ export async function loadRecipients() {
       }
     }
 
-    const items: QueueItem[] = all.map((c: any) => {
+    // Índice de já-enviados (por CNPJ e por e-mail normalizado) para nunca
+    // reinserir alguém que já foi disparado — mesmo depois de reload.
+    const sentSet = new Set<string>();
+    for (const s of envioStore.get().sentEmails) {
+      const c = normCnpj(s.cnpj);
+      const e = normEmail(s.email);
+      if (c) sentSet.add('c:' + c);
+      if (e) sentSet.add('e:' + e);
+    }
+
+    // Deduplica por CNPJ e por e-mail; ordem já é mais-recente-primeiro.
+    const seenCnpj = new Set<string>();
+    const seenEmail = new Set<string>();
+    const items: QueueItem[] = [];
+    let skippedSent = 0;
+    for (const c of all) {
+      const cnpjKey = normCnpj(c.cnpj);
+      const emailKey = normEmail(c.email || '');
+      if (cnpjKey && seenCnpj.has(cnpjKey)) continue;
+      if (emailKey && seenEmail.has(emailKey)) continue;
+      if (cnpjKey) seenCnpj.add(cnpjKey);
+      if (emailKey) seenEmail.add(emailKey);
+
+      const alreadySent =
+        (cnpjKey && sentSet.has('c:' + cnpjKey)) ||
+        (emailKey && sentSet.has('e:' + emailKey));
+      if (alreadySent) { skippedSent++; continue; }
+
       const hasEmail = /.+@.+\..+/.test(c.email || '');
-      return {
+      items.push({
         id: c.id,
         email: c.email || '',
         cnpj: c.cnpj,
@@ -293,10 +323,11 @@ export async function loadRecipients() {
         message: hasEmail ? undefined : 'Sem e-mail',
         publicToken: linksMap[c.id]?.token || null,
         publicUrl: linksMap[c.id]?.url || null,
-      };
-    });
+      });
+    }
     envioStore.set({ queue: items });
-    pushLog(`Fila espelhada de Empresas Importadas: ${items.length} registros (${withEmail.length} com e-mail).`);
+    const pendingCount = items.filter((i) => i.status === 'pending').length;
+    pushLog(`Fila sincronizada: ${items.length} únicos (${pendingCount} pendentes, ${skippedSent} já enviados excluídos).`);
   } catch (e: any) {
     toast.error('Erro ao carregar destinatários: ' + e.message);
   } finally {
