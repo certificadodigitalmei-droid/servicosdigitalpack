@@ -62,55 +62,79 @@ export type RunImportBatchResult =
 export async function runImportBatch(
   input: RunImportBatchInput,
 ): Promise<RunImportBatchResult> {
-  const page = input.page ?? 1;
+  const startPage = input.page ?? 1;
   const publicBaseUrl = (process.env.PUBLIC_APP_URL ?? '').replace(/\/+$/, '');
 
-  // 1) Discovery (free)
-  const r = await searchOpeningsByDate({
-    filters: input.filters,
-    date: input.date,
-    limit: input.limit,
-    page,
-    completo: false,
-    timeoutMs: 20_000,
-  });
-
-  if (!r.ok) {
-    return {
-      ok: false,
-      status: r.status,
-      error: `API respondeu ${r.status}`,
-      imported: [],
-      failed: [],
-      apiTotal: r.total,
-      skipped: 0,
-      discovered: 0,
-    };
-  }
-
-  // Build list of candidate CNPJs from discovery
-  const candidates: Array<{ cnpj: string; raw: Record<string, unknown> }> = [];
-  for (const raw of r.items) {
-    const n = normalizeCasaDosDadosCompany(raw);
-    if (n.cnpj && n.cnpj.length === 14) {
-      candidates.push({ cnpj: n.cnpj, raw });
-    }
-  }
-  const discovered = candidates.length;
-
-  // 2) Dedup — filter existing CNPJs before paid enrichment
-  let toEnrich = candidates;
+  // 1) Discovery (free) — quando skipExisting está ativo, avançamos páginas
+  // até encontrar CNPJs novos ou atingir o limite de tentativas. Isso evita
+  // ficar "preso" na página 1 quando todos os primeiros resultados já foram
+  // importados anteriormente.
+  const maxPages = input.skipExisting ? 10 : 1;
+  let page = startPage;
+  let lastStatus = 0;
+  let apiTotal: number | null = null;
+  let discovered = 0;
   let skipped = 0;
-  if (input.skipExisting && candidates.length > 0) {
-    const cnpjs = candidates.map((c) => c.cnpj);
-    const { data: existingRows } = await supabaseAdmin
-      .from('companies')
-      .select('cnpj')
-      .in('cnpj', cnpjs);
-    const existingSet = new Set((existingRows ?? []).map((r: any) => r.cnpj as string));
-    toEnrich = candidates.filter((c) => !existingSet.has(c.cnpj));
-    skipped = candidates.length - toEnrich.length;
+  let toEnrich: Array<{ cnpj: string; raw: Record<string, unknown> }> = [];
+
+  for (let attempt = 0; attempt < maxPages; attempt++) {
+    const r = await searchOpeningsByDate({
+      filters: input.filters,
+      date: input.date,
+      limit: input.limit,
+      page,
+      completo: false,
+      timeoutMs: 20_000,
+    });
+
+    lastStatus = r.status;
+    apiTotal = r.total;
+
+    if (!r.ok) {
+      return {
+        ok: false,
+        status: r.status,
+        error: `API respondeu ${r.status}`,
+        imported: [],
+        failed: [],
+        apiTotal: r.total,
+        skipped: 0,
+        discovered: 0,
+      };
+    }
+
+    const candidates: Array<{ cnpj: string; raw: Record<string, unknown> }> = [];
+    for (const raw of r.items) {
+      const n = normalizeCasaDosDadosCompany(raw);
+      if (n.cnpj && n.cnpj.length === 14) {
+        candidates.push({ cnpj: n.cnpj, raw });
+      }
+    }
+    discovered += candidates.length;
+
+    if (candidates.length === 0) break; // sem mais resultados
+
+    let pageToEnrich = candidates;
+    if (input.skipExisting) {
+      const cnpjs = candidates.map((c) => c.cnpj);
+      const { data: existingRows } = await supabaseAdmin
+        .from('companies')
+        .select('cnpj')
+        .in('cnpj', cnpjs);
+      const existingSet = new Set((existingRows ?? []).map((r: any) => r.cnpj as string));
+      pageToEnrich = candidates.filter((c) => !existingSet.has(c.cnpj));
+      skipped += candidates.length - pageToEnrich.length;
+    }
+
+    if (pageToEnrich.length > 0) {
+      toEnrich = pageToEnrich;
+      break;
+    }
+
+    // Nada novo nesta página — tenta a próxima.
+    page += 1;
   }
+
 
   const imported: ImportedRow[] = [];
   const failed: Array<{ cnpj: string; error: string }> = [];
