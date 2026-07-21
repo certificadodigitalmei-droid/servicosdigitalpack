@@ -224,16 +224,6 @@ function CheckoutPage() {
   );
 }
 
-// (bloco antigo removido — o PIX agora é mostrado no modal <PixModal/>)
-function _RemovedMarker() { return null; }
-          </div>
-        </div>
-      </main>
-
-      <SiteFooter />
-    </Page>
-  );
-}
 
 function Step({ n, label, done, active }: { n: number; label: string; done?: boolean; active?: boolean }) {
   return (
