@@ -222,9 +222,6 @@ function EnvioMassa() {
               <Button variant="outline" onClick={resetStatuses} disabled={running || queue.length === 0}>
                 <RotateCcw className="h-4 w-4" /> Resetar envios
               </Button>
-              <Button variant="outline" onClick={clearQueue} disabled={running || queue.length === 0}>
-                <Trash2 className="h-4 w-4" /> Limpar fila
-              </Button>
               <Button variant="outline" onClick={clearLogs} disabled={logs.length === 0}>
                 <RotateCcw className="h-4 w-4" /> Limpar log
               </Button>
