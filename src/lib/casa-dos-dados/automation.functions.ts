@@ -183,7 +183,8 @@ export const runAutomationNow = createServerFn({ method: 'POST' })
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
 
-    const { data: claimed, error } = await supabase.rpc('claim_automation_by_id', { _id: data.id });
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { data: claimed, error } = await supabaseAdmin.rpc('claim_automation_by_id', { _id: data.id });
     if (error) throw new Error(error.message);
     const row = Array.isArray(claimed) ? claimed[0] : claimed;
     if (!row) return { ok: false, reason: 'already_running' as const };
