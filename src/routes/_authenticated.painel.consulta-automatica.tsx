@@ -1157,3 +1157,12 @@ function DraggableCnpjPanel(props: {
   );
 }
 
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded border border-slate-200 bg-white px-2 py-1.5 text-center">
+      <div className="text-[10px] uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="text-sm font-bold text-brand-navy">{value}</div>
+    </div>
+  );
+}
