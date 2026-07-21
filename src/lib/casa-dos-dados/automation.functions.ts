@@ -210,6 +210,7 @@ export const runAutomationNow = createServerFn({ method: 'POST' })
       {
         id: row.id,
         owner_user_id: row.owner_user_id,
+        enabled: (fullRow as any)?.enabled ?? false,
         mode: row.mode,
         quantity_per_run: row.quantity_per_run,
         interval_minutes: row.interval_minutes,

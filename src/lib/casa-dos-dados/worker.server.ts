@@ -13,7 +13,7 @@
 //   - Cursors are persisted per query_date on
 //     `automatic_company_queries.pagination_cursors`.
 
-import { searchOpeningsByDate, todayBR, type CasaFilters, type CasaSearchResult } from './client.server';
+import { fetchCompanyDetailsByCnpj, searchOpeningsByDate, todayBR, type CasaFilters, type CasaSearchResult } from './client.server';
 import {
   classifyItem,
   readCursor,
@@ -25,6 +25,7 @@ import {
 type Automation = {
   id: string;
   owner_user_id: string;
+  enabled?: boolean;
   mode: string;
   quantity_per_run: number;
   interval_minutes: number;
@@ -41,14 +42,16 @@ type SkipReason =
   | 'invalid_cnpj_length'
   | 'duplicate'
   | 'incomplete'
+  | 'detail_lookup_error'
   | 'company_upsert_error'
   | 'link_error'
   | 'queue_error'
+  | 'limit_reached'
   | 'other';
 
 export type RunOutcome = {
   runId: string | null;
-  status: 'ok' | 'error' | 'noop';
+  status: 'ok' | 'partial' | 'error' | 'noop';
   apiStatus?: number;
   apiTotal?: number | null;
   requested: number;
@@ -63,12 +66,15 @@ export type RunOutcome = {
   itemsReceived: number;
   itemsAnalyzed: number;
   pagesFetched: number;
+  detailQueries: number;
   cursorStart: { page: number; itemOffset: number } | null;
   cursorEnd: { page: number; itemOffset: number; lastCnpj: string | null } | null;
   skipped: Array<{ index: number; page: number; cnpj: string | null; reason: SkipReason; detail?: string; missing?: string[] }>;
   missingFieldsSummary: Record<string, number>;
   responseKeys?: string[];
   error?: string;
+  partialReason?: string;
+  limitReason?: string;
   autoImportEnabled: boolean;
   autoGenerateLinksEnabled: boolean;
   isTestRun: boolean;
@@ -110,6 +116,8 @@ export type FetchPageFn = (opts: {
   limit: number;
   page: number;
   date: string;
+  signal?: AbortSignal;
+  timeoutMs?: number;
 }) => Promise<CasaSearchResult>;
 
 export type EnqueueArgs = {
@@ -124,6 +132,7 @@ export type EnqueueArgs = {
 
 export type WorkerDeps = {
   fetchPage: FetchPageFn;
+  fetchDetails?: (cnpj: string, opts?: { signal?: AbortSignal; timeoutMs?: number }) => Promise<{ ok: boolean; status: number; item: Record<string, unknown> | null }>;
   tryEnqueue: (args: EnqueueArgs) =>
     Promise<{ ok: true; queueId: string } | { ok: false; reason: 'duplicate' } | { ok: false; reason: 'error'; message: string }>;
   findActiveLinkByCnpj: (cnpj: string) => Promise<{ id: string; publicToken: string; publicUrl: string | null; checkoutUrl: string | null } | null>;
@@ -145,7 +154,22 @@ export type CoreLoopInput = {
   pageSize: number;
   publicBaseUrl: string;
   isTestRun?: boolean;
+  maxRunMs?: number;
+  maxItemsAnalyzed?: number;
+  maxDetailQueries?: number;
+  httpTimeoutMs?: number;
+  signal?: AbortSignal;
 };
+
+function mergeCompanyData(summary: Record<string, unknown>, detail: Record<string, unknown> | null): Record<string, unknown> {
+  if (!detail) return summary;
+  return { ...summary, ...detail, cnpj: (detail as any).cnpj ?? (summary as any).cnpj ?? (summary as any).cnpj_completo };
+}
+
+function abortErrorMessage(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg || 'Execução interrompida';
+}
 
 export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promise<{
   outcome: Omit<RunOutcome, 'runId' | 'status' | 'autoImportEnabled' | 'autoGenerateLinksEnabled' | 'isTestRun'>;
@@ -155,6 +179,11 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
   const isTestRun = !!input.isTestRun;
   const autoImportEnabled = automation.auto_import_enabled ?? true;
   const autoGenerateLinksEnabled = (automation.auto_generate_links_enabled ?? true) && autoImportEnabled;
+  const startedAt = Date.now();
+  const maxRunMs = Math.max(5_000, input.maxRunMs ?? 50_000);
+  const httpTimeoutMs = Math.max(1_000, input.httpTimeoutMs ?? 12_000);
+  const maxItemsAnalyzed = Math.max(1, input.maxItemsAnalyzed ?? Math.min(maxPages * pageSize + 10, 250));
+  const maxDetailQueries = Math.max(0, input.maxDetailQueries ?? Math.min(maxItemsAnalyzed, 80));
 
   const outcome = {
     apiStatus: undefined as number | undefined,
@@ -171,11 +200,14 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
     itemsReceived: 0,
     itemsAnalyzed: 0,
     pagesFetched: 0,
+    detailQueries: 0,
     cursorStart: { page: startPage, itemOffset: startOffset } as { page: number; itemOffset: number },
     cursorEnd: null as { page: number; itemOffset: number; lastCnpj: string | null } | null,
     skipped: [] as RunOutcome['skipped'],
     missingFieldsSummary: {} as Record<string, number>,
     responseKeys: undefined as string[] | undefined,
+    partialReason: undefined as string | undefined,
+    limitReason: undefined as string | undefined,
     sample: null as RunOutcome['sample'],
   };
 
@@ -190,6 +222,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
     is_test_run: isTestRun,
     cursor_start: outcome.cursorStart,
     pages: [] as Array<Record<string, unknown>>,
+    limits: { max_run_ms: maxRunMs, max_pages: maxPages, max_items_analyzed: maxItemsAnalyzed, max_detail_queries: maxDetailQueries, http_timeout_ms: httpTimeoutMs },
   };
 
   let page = startPage;
@@ -197,14 +230,33 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
   let lastCnpj: string | null = null;
   let sampleSet = false;
 
-  const HARD_ITEM_CAP = maxPages * pageSize + 10;
+  const setLimit = (reason: string, cursorPage = page, cursorOffset = offset) => {
+    outcome.limitReason = reason;
+    outcome.partialReason = reason;
+    outcome.cursorEnd = { page: cursorPage, itemOffset: cursorOffset, lastCnpj };
+  };
+
+  const shouldStop = (cursorPage = page, cursorOffset = offset): boolean => {
+    if (input.signal?.aborted) throw new Error('Execução interrompida pelo controlador');
+    if (Date.now() - startedAt >= maxRunMs) {
+      setLimit('Tempo máximo da execução atingido', cursorPage, cursorOffset);
+      return true;
+    }
+    if (outcome.itemsAnalyzed >= maxItemsAnalyzed) {
+      setLimit('Limite máximo de itens analisados atingido', cursorPage, cursorOffset);
+      return true;
+    }
+    return false;
+  };
+
   let itemsSeen = 0;
 
   pageLoop: while (true) {
     if (outcome.pagesFetched >= maxPages) break;
     if (outcome.imported >= requested) break;
+    if (shouldStop(page, offset)) break;
 
-    const result = await deps.fetchPage({ filters: automation.filters ?? {}, limit: pageSize, page, date: queryDate });
+    const result = await deps.fetchPage({ filters: automation.filters ?? {}, limit: pageSize, page, date: queryDate, signal: input.signal, timeoutMs: httpTimeoutMs });
     outcome.pagesFetched += 1;
     outcome.apiStatus = result.status;
     outcome.apiTotal = result.total;
@@ -233,7 +285,11 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
     for (let i = offset; i < result.items.length; i += 1) {
       itemsSeen += 1;
-      if (itemsSeen > HARD_ITEM_CAP) break pageLoop;
+      if (itemsSeen > maxItemsAnalyzed) {
+        setLimit('Limite máximo de itens analisados atingido', page, i);
+        break pageLoop;
+      }
+      if (shouldStop(page, i)) break pageLoop;
 
       outcome.itemsAnalyzed += 1;
       const item = result.items[i];
@@ -250,8 +306,27 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
       const cnpj = cls.cnpj;
       lastCnpj = cnpj;
 
-      // Validate data quality BEFORE anything else.
-      const validation = validateCompanyItem(item, automation.filters ?? {});
+      let enrichedItem = item;
+      if (!isTestRun && deps.fetchDetails) {
+        if (outcome.detailQueries >= maxDetailQueries) {
+          setLimit('Limite máximo de consultas de complementação atingido', page, i);
+          break pageLoop;
+        }
+        try {
+          outcome.detailQueries += 1;
+          const detail = await deps.fetchDetails(cnpj, { signal: input.signal, timeoutMs: httpTimeoutMs });
+          if (detail.ok && detail.item) {
+            enrichedItem = mergeCompanyData(item, detail.item);
+          } else {
+            outcome.skipped.push({ index: i, page, cnpj, reason: 'detail_lookup_error', detail: `status=${detail.status}` });
+          }
+        } catch (e: any) {
+          outcome.skipped.push({ index: i, page, cnpj, reason: 'detail_lookup_error', detail: abortErrorMessage(e) });
+        }
+      }
+
+      // Validate data quality AFTER detailed lookup in normal mode.
+      const validation = validateCompanyItem(enrichedItem, automation.filters ?? {});
       const isValid = validation.complete;
       const dataQualityStatus: 'complete' | 'test_partial' | 'pending_enrichment' = isValid
         ? 'complete'
@@ -324,17 +399,17 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
       const companyPayload: Record<string, unknown> = {
         cnpj,
-        razao_social_original: pickString(item, ['razao_social', 'nome_empresarial']) ?? null,
-        nome_fantasia: pickString(item, ['nome_fantasia']),
+        razao_social_original: pickString(enrichedItem, ['razao_social', 'nome_empresarial', 'razao_social_original']) ?? null,
+        nome_fantasia: pickString(enrichedItem, ['nome_fantasia']),
         nome_titular_exibicao:
-          pickString(item, ['nome_titular', 'nome']) ??
-          pickString(item, ['razao_social', 'nome_empresarial']),
+          pickString(enrichedItem, ['nome_titular', 'nome']) ??
+          pickString(enrichedItem, ['razao_social', 'nome_empresarial', 'razao_social_original']),
         email: validation.email,
-        uf: pickString(item, ['uf']),
-        municipio_descricao: pickString(item, ['municipio', 'cidade']),
-        situacao_cadastral_desc: pickString(item, ['situacao_cadastral', 'situacao']),
-        inicio_atividade: toDate((item as any).data_abertura ?? (item as any).abertura),
-        is_mei: automation.filters?.only_mei ? true : ((item as any).mei === true || (item as any).is_mei === true),
+        uf: pickString(enrichedItem, ['uf']),
+        municipio_descricao: pickString(enrichedItem, ['municipio', 'cidade', 'municipio_descricao']),
+        situacao_cadastral_desc: pickString(enrichedItem, ['situacao_cadastral', 'situacao', 'situacao_cadastral_desc']),
+        inicio_atividade: toDate((enrichedItem as any).data_abertura ?? (enrichedItem as any).abertura ?? (enrichedItem as any).inicio_atividade),
+        is_mei: automation.filters?.only_mei ? true : ((enrichedItem as any).mei === true || (enrichedItem as any).is_mei === true),
         is_matriz: automation.filters?.only_matriz ? true : undefined,
         fonte: 'casa_dos_dados',
         last_seen_at: new Date().toISOString(),
@@ -466,145 +541,19 @@ export async function runAutomationOnce(
 
   const maxPages = Math.max(1, automation.max_pages_per_run ?? 20);
   const pageSize = Math.max(1, Math.min(200, automation.page_size ?? 50));
+  const maxRunMs = Math.max(40_000, Math.min(60_000, Number(process.env.CASA_DOS_DADOS_RUN_TIMEOUT_MS ?? 50_000) || 50_000));
+  const httpTimeoutMs = Math.max(3_000, Math.min(15_000, Number(process.env.CASA_DOS_DADOS_HTTP_TIMEOUT_MS ?? 12_000) || 12_000));
+  const maxItemsAnalyzed = Math.max(1, Math.min(300, Number(process.env.CASA_DOS_DADOS_MAX_ITEMS_PER_RUN ?? Math.min(maxPages * pageSize + 10, 250)) || 250));
+  const maxDetailQueries = Math.max(0, Math.min(maxItemsAnalyzed, Number(process.env.CASA_DOS_DADOS_MAX_DETAIL_QUERIES ?? Math.min(maxItemsAnalyzed, 80)) || 80));
 
   const cursors = (automation.pagination_cursors ?? {}) as CursorMap;
   const { page: startPage, itemOffset: startOffset } = readCursor(cursors, queryDate);
 
   const autoImportEnabled = automation.auto_import_enabled ?? true;
   const autoGenerateLinksEnabled = (automation.auto_generate_links_enabled ?? true) && autoImportEnabled;
-
-  const { data: runRow, error: runErr } = await supabaseAdmin
-    .from('automatic_company_query_runs')
-    .insert({
-      automation_id: automation.id,
-      status: 'running',
-      trigger: opts.trigger,
-      requested_quantity: requested,
-      query_date: queryDate,
-      cursor_start: { page: startPage, itemOffset: startOffset } as any,
-    })
-    .select('id')
-    .single();
-  if (runErr) throw new Error(`run insert: ${runErr.message}`);
-  const runId = runRow.id as string;
-
-  const deps: WorkerDeps = {
-    fetchPage: (o) => searchOpeningsByDate(o),
-    tryEnqueue: async ({ automationId, runId: rId, queryDate: qd, cnpj, isTestRecord, dataQualityStatus, missingFields }) => {
-      const { data, error } = await supabaseAdmin
-        .from('automatic_company_queue')
-        .insert({
-          automation_id: automationId,
-          run_id: rId,
-          query_date: qd,
-          cnpj,
-          is_test_record: isTestRecord,
-          data_quality_status: dataQualityStatus,
-          missing_fields: missingFields as any,
-        })
-        .select('id')
-        .maybeSingle();
-      if (error) {
-        if ((error as any).code === '23505') return { ok: false, reason: 'duplicate' };
-        return { ok: false, reason: 'error', message: error.message };
-      }
-      return { ok: true, queueId: data!.id as string };
-    },
-    findActiveLinkByCnpj: async (cnpj) => {
-      const { data: comp } = await supabaseAdmin.from('companies').select('id').eq('cnpj', cnpj).maybeSingle();
-      if (!comp?.id) return null;
-      const { data: lk } = await supabaseAdmin
-        .from('company_links')
-        .select('id, public_token, public_url, checkout_url')
-        .eq('company_id', comp.id)
-        .eq('active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!lk) return null;
-      return {
-        id: lk.id as string,
-        publicToken: (lk as any).public_token as string,
-        publicUrl: (lk as any).public_url ?? null,
-        checkoutUrl: (lk as any).checkout_url ?? null,
-      };
-    },
-    upsertCompany: async (payload) => {
-      const cnpj = String(payload.cnpj);
-      const { data: existing } = await supabaseAdmin
-        .from('companies')
-        .select('id, is_test_record, data_quality_status')
-        .eq('cnpj', cnpj)
-        .maybeSingle();
-      if (existing?.id) {
-        // Enriquecimento: se a empresa já existe e o registro atual está
-        // "complete", saímos do estado pending_enrichment / test_partial.
-        const nextPayload: Record<string, unknown> = { ...payload };
-        if (payload.data_quality_status === 'complete') {
-          nextPayload.data_quality_status = 'complete';
-          nextPayload.missing_fields = [];
-          // Só derruba flag de teste se o registro anterior era test_partial
-          // e agora temos dados completos (upgrade para registro real).
-          if ((existing as any).is_test_record) nextPayload.is_test_record = false;
-        }
-        const { error } = await (supabaseAdmin as any).from('companies').update(nextPayload).eq('id', existing.id);
-        if (error) throw new Error(error.message);
-        return { companyId: existing.id as string, wasNew: false };
-      }
-      const { data: ins, error } = await (supabaseAdmin as any).from('companies').insert(payload).select('id').single();
-      if (error) throw new Error(error.message);
-      return { companyId: ins.id as string, wasNew: true };
-    },
-    findActiveLinkByCompany: async (companyId) => {
-      const { data: lk } = await supabaseAdmin
-        .from('company_links')
-        .select('id, public_token, public_url, checkout_url')
-        .eq('company_id', companyId)
-        .eq('active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!lk) return null;
-      return {
-        id: lk.id as string,
-        publicToken: (lk as any).public_token as string,
-        publicUrl: (lk as any).public_url ?? null,
-        checkoutUrl: (lk as any).checkout_url ?? null,
-      };
-    },
-    insertLink: async ({ companyId, cnpj, nome, isTestRecord, dataQualityStatus }) => {
-      const publicToken = crypto.randomUUID().replace(/-/g, '');
-      const publicUrl = `${publicBaseUrl}/c/${publicToken}`;
-      const checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
-      const { data, error } = await supabaseAdmin
-        .from('company_links')
-        .insert({
-          company_id: companyId,
-          public_token: publicToken,
-          token: publicToken,
-          public_url: publicUrl,
-          checkout_url: checkoutUrl,
-          active: true,
-          status: 'active',
-          is_test_record: isTestRecord,
-          data_quality_status: dataQualityStatus,
-          company_data: { cnpj, nome, origin: 'casa_dos_dados_automation', is_test: isTestRecord } as any,
-        })
-        .select('id')
-        .single();
-      if (error) throw new Error(error.message);
-      return { id: data.id as string, publicToken, publicUrl, checkoutUrl };
-    },
-    updateQueueRow: async ({ queueId, companyId, companyLinkId, wasNewCompany, wasNewLink }) => {
-      await supabaseAdmin
-        .from('automatic_company_queue')
-        .update({ company_id: companyId, company_link_id: companyLinkId, was_new_company: wasNewCompany, was_new_link: wasNewLink })
-        .eq('id', queueId);
-    },
-  };
-
+  let runId: string | null = null;
   const outcome: RunOutcome = {
-    runId,
+    runId: null,
     status: 'ok',
     requested,
     imported: 0,
@@ -618,6 +567,7 @@ export async function runAutomationOnce(
     itemsReceived: 0,
     itemsAnalyzed: 0,
     pagesFetched: 0,
+    detailQueries: 0,
     cursorStart: { page: startPage, itemOffset: startOffset },
     cursorEnd: null,
     skipped: [],
@@ -629,93 +579,254 @@ export async function runAutomationOnce(
   };
 
   let apiSummary: Record<string, unknown> = {};
+  let finalStatus: RunOutcome['status'] = 'ok';
+  let errorMessage: string | null = null;
+  const controller = new AbortController();
+  const abortTimer = setTimeout(() => controller.abort(), maxRunMs + 2_000);
+
+  const touchHeartbeat = async () => {
+    if (!runId) return;
+    const nowIso = new Date().toISOString();
+    await Promise.all([
+      (supabaseAdmin as any).from('automatic_company_queries').update({ heartbeat_at: nowIso }).eq('id', automation.id),
+      (supabaseAdmin as any).from('automatic_company_query_runs').update({ heartbeat_at: nowIso }).eq('id', runId),
+    ]);
+  };
+
   try {
+    const { data: runRow, error: runErr } = await (supabaseAdmin as any)
+      .from('automatic_company_query_runs')
+      .insert({
+        automation_id: automation.id,
+        status: 'running',
+        trigger: opts.trigger,
+        requested_quantity: requested,
+        query_date: queryDate,
+        cursor_start: { page: startPage, itemOffset: startOffset } as any,
+        heartbeat_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+    if (runErr) throw new Error(`run insert: ${runErr.message}`);
+    runId = runRow.id as string;
+    outcome.runId = runId;
+    await touchHeartbeat();
+
+    const deps: WorkerDeps = {
+      fetchPage: async (o) => {
+        await touchHeartbeat();
+        return searchOpeningsByDate(o);
+      },
+      fetchDetails: async (cnpj, o) => {
+        await touchHeartbeat();
+        const detail = await fetchCompanyDetailsByCnpj(cnpj, o);
+        return { ok: detail.ok, status: detail.status, item: detail.item };
+      },
+      tryEnqueue: async ({ automationId, runId: rId, queryDate: qd, cnpj, isTestRecord, dataQualityStatus, missingFields }) => {
+        const { data, error } = await supabaseAdmin
+          .from('automatic_company_queue')
+          .insert({
+            automation_id: automationId,
+            run_id: rId,
+            query_date: qd,
+            cnpj,
+            is_test_record: isTestRecord,
+            data_quality_status: dataQualityStatus,
+            missing_fields: missingFields as any,
+          })
+          .select('id')
+          .maybeSingle();
+        if (error) {
+          if ((error as any).code === '23505') return { ok: false, reason: 'duplicate' };
+          return { ok: false, reason: 'error', message: error.message };
+        }
+        return { ok: true, queueId: data!.id as string };
+      },
+      findActiveLinkByCnpj: async (cnpj) => {
+        const { data: comp } = await supabaseAdmin.from('companies').select('id').eq('cnpj', cnpj).maybeSingle();
+        if (!comp?.id) return null;
+        const { data: lk } = await supabaseAdmin
+          .from('company_links')
+          .select('id, public_token, public_url, checkout_url')
+          .eq('company_id', comp.id)
+          .eq('active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!lk) return null;
+        return {
+          id: lk.id as string,
+          publicToken: (lk as any).public_token as string,
+          publicUrl: (lk as any).public_url ?? null,
+          checkoutUrl: (lk as any).checkout_url ?? null,
+        };
+      },
+      upsertCompany: async (payload) => {
+        const cnpj = String(payload.cnpj);
+        const { data: existing } = await supabaseAdmin
+          .from('companies')
+          .select('id, is_test_record, data_quality_status')
+          .eq('cnpj', cnpj)
+          .maybeSingle();
+        if (existing?.id) {
+          const nextPayload: Record<string, unknown> = { ...payload };
+          if (payload.data_quality_status === 'complete') {
+            nextPayload.data_quality_status = 'complete';
+            nextPayload.missing_fields = [];
+            if ((existing as any).is_test_record) nextPayload.is_test_record = false;
+          }
+          const { error } = await (supabaseAdmin as any).from('companies').update(nextPayload).eq('id', existing.id);
+          if (error) throw new Error(error.message);
+          return { companyId: existing.id as string, wasNew: false };
+        }
+        const { data: ins, error } = await (supabaseAdmin as any).from('companies').insert(payload).select('id').single();
+        if (error) throw new Error(error.message);
+        return { companyId: ins.id as string, wasNew: true };
+      },
+      findActiveLinkByCompany: async (companyId) => {
+        const { data: lk } = await supabaseAdmin
+          .from('company_links')
+          .select('id, public_token, public_url, checkout_url')
+          .eq('company_id', companyId)
+          .eq('active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!lk) return null;
+        return {
+          id: lk.id as string,
+          publicToken: (lk as any).public_token as string,
+          publicUrl: (lk as any).public_url ?? null,
+          checkoutUrl: (lk as any).checkout_url ?? null,
+        };
+      },
+      insertLink: async ({ companyId, cnpj, nome, isTestRecord, dataQualityStatus }) => {
+        const publicToken = crypto.randomUUID().replace(/-/g, '');
+        const publicUrl = `${publicBaseUrl}/c/${publicToken}`;
+        const checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
+        const { data, error } = await supabaseAdmin
+          .from('company_links')
+          .insert({
+            company_id: companyId,
+            public_token: publicToken,
+            token: publicToken,
+            public_url: publicUrl,
+            checkout_url: checkoutUrl,
+            active: true,
+            status: 'active',
+            is_test_record: isTestRecord,
+            data_quality_status: dataQualityStatus,
+            company_data: { cnpj, nome, origin: 'casa_dos_dados_automation', is_test: isTestRecord } as any,
+          })
+          .select('id')
+          .single();
+        if (error) throw new Error(error.message);
+        return { id: data.id as string, publicToken, publicUrl, checkoutUrl };
+      },
+      updateQueueRow: async ({ queueId, companyId, companyLinkId, wasNewCompany, wasNewLink }) => {
+        await supabaseAdmin
+          .from('automatic_company_queue')
+          .update({ company_id: companyId, company_link_id: companyLinkId, was_new_company: wasNewCompany, was_new_link: wasNewLink })
+          .eq('id', queueId);
+      },
+    };
+
     const res = await runCoreLoop(
-      { automation, requested, queryDate, runId, startPage, startOffset, maxPages, pageSize, publicBaseUrl, isTestRun },
+      {
+        automation,
+        requested,
+        queryDate,
+        runId,
+        startPage,
+        startOffset,
+        maxPages,
+        pageSize,
+        publicBaseUrl,
+        isTestRun,
+        maxRunMs,
+        maxItemsAnalyzed,
+        maxDetailQueries,
+        httpTimeoutMs,
+        signal: controller.signal,
+      },
       deps,
     );
     Object.assign(outcome, res.outcome);
-    outcome.status = 'ok';
-    apiSummary = res.apiSummary;
-
-    if (opts.trigger !== 'test_manual' && outcome.cursorEnd) {
-      const nextCursors = writeCursor(cursors, queryDate, {
-        page: outcome.cursorEnd.page,
-        itemOffset: outcome.cursorEnd.itemOffset,
-        lastCnpj: outcome.cursorEnd.lastCnpj,
-      });
-      await (supabaseAdmin as any)
-        .from('automatic_company_queries')
-        .update({ pagination_cursors: nextCursors as any })
-        .eq('id', automation.id);
+    if (!outcome.partialReason && outcome.imported === 0 && outcome.itemsAnalyzed > 0) {
+      outcome.partialReason = 'Nenhuma empresa completa encontrada dentro dos limites desta execução';
     }
-
-    await supabaseAdmin
-      .from('automatic_company_query_runs')
-      .update({
-        status: 'ok',
-        api_total: outcome.apiTotal,
-        imported_count: outcome.imported,
-        duplicate_count: outcome.duplicated,
-        incomplete_count: outcome.incomplete,
-        pending_enrichment_count: outcome.pendingEnrichment,
-        link_created_count: outcome.linksCreated,
-        link_reused_count: outcome.linksReused,
-        test_link_count: outcome.testLinksCreated,
-        missing_fields_summary: outcome.missingFieldsSummary as any,
-        pages_fetched: outcome.pagesFetched,
-        items_received: outcome.itemsReceived,
-        items_analyzed: outcome.itemsAnalyzed,
-        cursor_end: outcome.cursorEnd as any,
-        api_summary: apiSummary as any,
-        finished_at: new Date().toISOString(),
-      })
-      .eq('id', runId);
-
-    const isTest = opts.trigger === 'test_manual';
-    const now = new Date();
-    const next = new Date(now.getTime() + Math.max(1, automation.interval_minutes) * 60_000);
-    const okPatch: Record<string, unknown> = { status: 'active', last_run_at: now.toISOString(), last_error: null };
-    if (!isTest) okPatch.next_run_at = next.toISOString();
-    await (supabaseAdmin as any).from('automatic_company_queries').update(okPatch).eq('id', automation.id);
-
-    return outcome;
+    finalStatus = outcome.partialReason ? 'partial' : 'ok';
+    outcome.status = finalStatus;
+    apiSummary = res.apiSummary;
   } catch (err: any) {
     const msg = err?.message ?? String(err);
+    errorMessage = msg;
     apiSummary.error = msg;
-
-    await supabaseAdmin
-      .from('automatic_company_query_runs')
-      .update({
-        status: 'error',
-        error_message: msg,
-        api_total: outcome.apiTotal,
-        imported_count: outcome.imported,
-        duplicate_count: outcome.duplicated,
-        incomplete_count: outcome.incomplete,
-        pending_enrichment_count: outcome.pendingEnrichment,
-        link_created_count: outcome.linksCreated,
-        link_reused_count: outcome.linksReused,
-        test_link_count: outcome.testLinksCreated,
-        missing_fields_summary: outcome.missingFieldsSummary as any,
-        pages_fetched: outcome.pagesFetched,
-        items_received: outcome.itemsReceived,
-        items_analyzed: outcome.itemsAnalyzed,
-        cursor_end: outcome.cursorEnd as any,
-        api_summary: apiSummary as any,
-        finished_at: new Date().toISOString(),
-      })
-      .eq('id', runId);
-
-    const isTestErr = opts.trigger === 'test_manual';
-    const nowE = new Date();
-    const nextE = new Date(nowE.getTime() + Math.max(1, automation.interval_minutes) * 60_000);
-    const errPatch: Record<string, unknown> = { status: 'error', last_error: msg, last_run_at: nowE.toISOString() };
-    if (!isTestErr) errPatch.next_run_at = nextE.toISOString();
-    await (supabaseAdmin as any).from('automatic_company_queries').update(errPatch).eq('id', automation.id);
-
-    outcome.status = 'error';
+    finalStatus = 'error';
     outcome.error = msg;
-    return outcome;
+    outcome.status = 'error';
+  } finally {
+    clearTimeout(abortTimer);
+    const finishedAt = new Date();
+    if (!outcome.cursorEnd) outcome.cursorEnd = { page: startPage, itemOffset: startOffset, lastCnpj: null };
+    apiSummary.detail_queries = outcome.detailQueries;
+    apiSummary.partial_reason = outcome.partialReason ?? null;
+    apiSummary.limit_reason = outcome.limitReason ?? null;
+
+    if (opts.trigger !== 'test_manual' && outcome.cursorEnd) {
+      try {
+        const nextCursors = writeCursor(cursors, queryDate, {
+          page: outcome.cursorEnd.page,
+          itemOffset: outcome.cursorEnd.itemOffset,
+          lastCnpj: outcome.cursorEnd.lastCnpj,
+        });
+        await (supabaseAdmin as any)
+          .from('automatic_company_queries')
+          .update({ pagination_cursors: nextCursors as any })
+          .eq('id', automation.id);
+      } catch (e: any) {
+        apiSummary.cursor_save_error = e?.message ?? String(e);
+      }
+    }
+
+    if (runId) {
+      await (supabaseAdmin as any)
+        .from('automatic_company_query_runs')
+        .update({
+          status: finalStatus,
+          error_message: errorMessage,
+          api_total: outcome.apiTotal,
+          imported_count: outcome.imported,
+          duplicate_count: outcome.duplicated,
+          incomplete_count: outcome.incomplete,
+          pending_enrichment_count: outcome.pendingEnrichment,
+          link_created_count: outcome.linksCreated,
+          link_reused_count: outcome.linksReused,
+          test_link_count: outcome.testLinksCreated,
+          missing_fields_summary: outcome.missingFieldsSummary as any,
+          pages_fetched: outcome.pagesFetched,
+          items_received: outcome.itemsReceived,
+          items_analyzed: outcome.itemsAnalyzed,
+          cursor_end: outcome.cursorEnd as any,
+          api_summary: apiSummary as any,
+          heartbeat_at: finishedAt.toISOString(),
+          finished_at: finishedAt.toISOString(),
+        })
+        .eq('id', runId);
+    }
+
+    const next = new Date(finishedAt.getTime() + Math.max(1, automation.interval_minutes) * 60_000);
+    const finalAutomationStatus = automation.enabled ? 'active' : 'inactive';
+    const patch: Record<string, unknown> = {
+      status: finalAutomationStatus,
+      heartbeat_at: null,
+      lock_token: null,
+      last_run_at: finishedAt.toISOString(),
+      last_error: finalStatus === 'error' ? errorMessage : null,
+    };
+    if (opts.trigger !== 'test_manual') patch.next_run_at = next.toISOString();
+    await (supabaseAdmin as any).from('automatic_company_queries').update(patch).eq('id', automation.id);
   }
+
+  return outcome;
 }
