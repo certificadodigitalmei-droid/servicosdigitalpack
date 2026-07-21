@@ -165,6 +165,32 @@ function ConsultaPage() {
     }, 3200);
   };
 
+  // CNPJs já importados (persistidos globalmente no navegador).
+  // Marca visualmente no popup e evita reimportação junto com dedup do servidor.
+  const IMPORTED_KEY = 'casa:importedCnpjs';
+  const [importedSet, setImportedSet] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const raw = window.localStorage.getItem(IMPORTED_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return new Set(Array.isArray(arr) ? arr : []);
+    } catch {
+      return new Set();
+    }
+  });
+  const addImported = (cnpjs: string[]) => {
+    if (!cnpjs.length) return;
+    setImportedSet((prev) => {
+      const next = new Set(prev);
+      for (const c of cnpjs) next.add(c);
+      try {
+        window.localStorage.setItem(IMPORTED_KEY, JSON.stringify([...next]));
+      } catch { /* ignore quota */ }
+      return next;
+    });
+  };
+
+
 
 
 
@@ -256,6 +282,29 @@ function ConsultaPage() {
       window.localStorage.setItem(listStorageKey, JSON.stringify(foundList));
     } catch { /* ignore quota */ }
   }, [listStorageKey, foundList]);
+
+  // Sincroniza com o banco: consulta quais CNPJs da lista já existem em `companies`.
+  useEffect(() => {
+    if (foundList.length === 0) return;
+    const cnpjs = foundList.map((f) => f.cnpj).filter(Boolean);
+    let cancelled = false;
+    (async () => {
+      const CHUNK = 200;
+      const found: string[] = [];
+      for (let i = 0; i < cnpjs.length; i += CHUNK) {
+        const slice = cnpjs.slice(i, i + CHUNK);
+        const { data } = await supabase
+          .from('companies')
+          .select('cnpj')
+          .in('cnpj', slice);
+        if (cancelled) return;
+        for (const row of data ?? []) if (row?.cnpj) found.push(row.cnpj);
+      }
+      if (!cancelled && found.length) addImported(found);
+    })();
+    return () => { cancelled = true; };
+  }, [foundList]);
+
 
   const listMut = useMutation({
     mutationFn: async () => {
@@ -353,7 +402,7 @@ function ConsultaPage() {
   const importMut = useMutation({
     mutationFn: () =>
       importFn({
-        data: { date: effectiveDate, filters, limit: quantidade, page: 1 },
+        data: { date: effectiveDate, filters, limit: quantidade, page: 1, skipExisting: true },
       }),
     onSuccess: (r: any) => {
       if (!r.ok) {
@@ -362,6 +411,8 @@ function ConsultaPage() {
       }
       setImportedRows(r.imported ?? []);
       setFailedRows(r.failed ?? []);
+      addImported((r.imported ?? []).map((it: any) => it.cnpj).filter(Boolean));
+
       const nImp = r.imported?.length ?? 0;
       const nFail = r.failed?.length ?? 0;
       if (nImp > 0) {
@@ -795,7 +846,9 @@ function ConsultaPage() {
           apiTotal={countResult?.total ?? null}
           foundList={foundList}
           flashes={flashes}
+          importedSet={importedSet}
           onCopy={copy}
+
         />
       )}
     </div>
@@ -817,9 +870,11 @@ function DraggableCnpjPanel(props: {
     firstSeenAt: string;
   }>;
   flashes: Array<{ id: number; count: number }>;
-  onCopy: (v: string) => void;
+  importedSet: Set<string>;
+  onCopy: (v: string) => void | Promise<void>;
 }) {
-  const { onClose, autoCount, dateLabel, savedCount, apiTotal, foundList, flashes, onCopy } = props;
+  const { onClose, autoCount, dateLabel, savedCount, apiTotal, foundList, flashes, importedSet, onCopy } = props;
+
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const [size, setSize] = useState({ w: 720, h: 560 });
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
@@ -890,8 +945,14 @@ function DraggableCnpjPanel(props: {
             CNPJs encontrados — {dateLabel}
           </span>
           <span className="shrink-0 text-xs text-slate-500">({savedCount} salvos)</span>
+          {importedSet.size > 0 && (
+            <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+              {foundList.filter((f) => importedSet.has(f.cnpj)).length} já importados
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
+
           <span className="hidden text-xs text-slate-500 sm:inline">
             Total API: <strong>{apiTotal != null ? apiTotal.toLocaleString('pt-BR') : '—'}</strong>
           </span>
@@ -909,17 +970,35 @@ function DraggableCnpjPanel(props: {
           </div>
         ) : (
           <ul className="divide-y divide-slate-100">
-            {foundList.map((it) => (
-              <li key={it.cnpj} className="flex items-start justify-between gap-3 p-3">
+            {foundList.map((it) => {
+              const isImported = importedSet.has(it.cnpj);
+              return (
+              <li
+                key={it.cnpj}
+                className={cn(
+                  'flex items-start justify-between gap-3 p-3',
+                  isImported && 'bg-red-50',
+                )}
+              >
                 <div className="min-w-0">
-                  <div className="font-mono text-sm">{formatCNPJ(it.cnpj)}</div>
-                  <div className="truncate text-sm text-slate-700">{it.nome}</div>
+                  <div className={cn('font-mono text-sm', isImported && 'text-red-700 line-through decoration-red-400/60')}>
+                    {formatCNPJ(it.cnpj)}
+                  </div>
+                  <div className={cn('truncate text-sm', isImported ? 'text-red-800' : 'text-slate-700')}>
+                    {it.nome}
+                  </div>
                   {(it.municipio || it.uf) && (
-                    <div className="text-xs text-slate-500">
+                    <div className={cn('text-xs', isImported ? 'text-red-600' : 'text-slate-500')}>
                       {[it.municipio, it.uf].filter(Boolean).join(' / ')}
                     </div>
                   )}
+                  {isImported && (
+                    <div className="mt-1 inline-block rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+                      Já importado
+                    </div>
+                  )}
                 </div>
+
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <span className="text-[10px] text-slate-400">
                     {new Date(it.firstSeenAt).toLocaleTimeString('pt-BR')}
@@ -934,7 +1013,9 @@ function DraggableCnpjPanel(props: {
                   </Button>
                 </div>
               </li>
-            ))}
+              );
+            })}
+
           </ul>
         )}
       </div>
