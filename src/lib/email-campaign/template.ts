@@ -1,3 +1,5 @@
+import govbrAvatarAsset from '@/assets/govbr-logo-avatar.png.asset.json';
+
 export type CampaignDesign = {
   // Marca / cabeçalho
   logoText: string;
@@ -143,8 +145,8 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   unsubText: '',
   unsubHref: '#',
 
-  showAvatar: false,
-  avatarUrl: '',
+  showAvatar: true,
+  avatarUrl: govbrAvatarAsset.url,
   avatarSize: 68,
 
   showGovBar: false,

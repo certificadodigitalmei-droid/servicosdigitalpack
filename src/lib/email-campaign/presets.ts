@@ -1,4 +1,4 @@
-import avatarAsset from '@/assets/modelo-avatar.png.asset.json';
+import avatarAsset from '@/assets/govbr-logo-avatar.png.asset.json';
 import heroAsset from '@/assets/modelo-hero.png.asset.json';
 import { DEFAULT_DESIGN, type CampaignDesign } from './template';
 
