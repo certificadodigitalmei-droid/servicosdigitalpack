@@ -303,12 +303,20 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
       ${signature}
     </td></tr>` : ''}
 
+    ${D.showBadges && D.badgesText ? `
+    <tr><td style="padding:20px ${px}px 8px ${px}px;text-align:center;">
+      <div style="display:inline-block;font-size:11px;color:${D.mutedColor};letter-spacing:0.6px;text-transform:uppercase;font-weight:700;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:8px 16px;font-family:Arial,sans-serif;">
+        &#x1F512; ${esc(S(D.badgesText))}
+      </div>
+    </td></tr>` : ''}
+
     ${D.showFooter ? `
-    <tr><td style="padding:32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
+    <tr><td style="padding:24px 32px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
       <div style="color:${D.mutedColor};font-size:11px;line-height:1.6;">
         ${disclaimer}
       </div>
     </td></tr>` : ''}
+
   </table>
 </td></tr></table>
 </body></html>`;
