@@ -1,95 +1,85 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useServerFn } from '@tanstack/react-start';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { sendCampaignEmail } from '@/lib/email-campaign/send.functions';
 import {
   DEFAULT_DESIGN,
-  DEFAULT_SUBJECT,
   renderHtml,
-  rowToVars,
   substitute,
   formatCnpj,
 } from '@/lib/email-campaign/template';
-import { Loader2, Play, Pause, Square, RefreshCw, Send, TestTube2, Eye, RotateCcw, Trash2, Zap, Activity } from 'lucide-react';
+import {
+  Loader2,
+  Play,
+  Pause,
+  Square,
+  RefreshCw,
+  Send,
+  TestTube2,
+  Eye,
+  RotateCcw,
+  Trash2,
+  Zap,
+  Activity,
+} from 'lucide-react';
 import { FloatingStatsPanel } from '@/components/painel/FloatingStatsPanel';
+import { useStore } from '@/lib/automation/store';
+import {
+  envioStore,
+  loadRecipients,
+  resetStatuses,
+  clearQueue,
+  clearLogs,
+  startSending,
+  togglePause,
+  stopSending,
+  sendSingle,
+  buildVarsForPreview,
+  setSubject,
+  setDelaySec,
+  setBatchLimit,
+  setTestMode,
+  setTestRecipient,
+  setFromName,
+  setFromAddress,
+  setReplyTo,
+  setShowFloating,
+  type QueueItem,
+} from '@/lib/automation/envio-engine';
 
 export const Route = createFileRoute('/_authenticated/painel/envio-massa')({
   component: EnvioMassa,
 });
 
-type QueueItem = {
-  id: string;
-  email: string;
-  cnpj: string;
-  company_name: string;
-  data_abertura?: string;
-  situacao?: string;
-  uf?: string;
-  municipio?: string;
-  status: 'pending' | 'sending' | 'sent' | 'suppressed' | 'error' | 'skipped';
-  message?: string;
-  publicToken?: string | null;
-};
-
-const STORAGE_KEY = 'envio-massa-config-v1';
-
-function loadCfg() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  } catch {
-    return {};
-  }
-}
-
 function EnvioMassa() {
-  const sendFn = useServerFn(sendCampaignEmail);
-  const initial = loadCfg();
+  // Reads da engine global (persistem entre abas / o loop continua).
+  const queue = useStore(envioStore, (s) => s.queue);
+  const subject = useStore(envioStore, (s) => s.subject);
+  const delaySec = useStore(envioStore, (s) => s.delaySec);
+  const batchLimit = useStore(envioStore, (s) => s.batchLimit);
+  const testMode = useStore(envioStore, (s) => s.testMode);
+  const testRecipient = useStore(envioStore, (s) => s.testRecipient);
+  const fromName = useStore(envioStore, (s) => s.fromName);
+  const fromAddress = useStore(envioStore, (s) => s.fromAddress);
+  const replyTo = useStore(envioStore, (s) => s.replyTo);
+  const running = useStore(envioStore, (s) => s.running);
+  const paused = useStore(envioStore, (s) => s.paused);
+  const loading = useStore(envioStore, (s) => s.loading);
+  const logs = useStore(envioStore, (s) => s.logs);
+  const showFloating = useStore(envioStore, (s) => s.showFloating);
 
-  const [loading, setLoading] = useState(false);
-  const [queue, setQueue] = useState<QueueItem[]>([]);
-  const [subject, setSubject] = useState<string>(initial.subject ?? DEFAULT_SUBJECT);
-  const [delaySec, setDelaySec] = useState<number>(initial.delaySec ?? 8);
-  const [batchLimit, setBatchLimit] = useState<number>(initial.batchLimit ?? 200);
-  const [testMode, setTestMode] = useState<boolean>(initial.testMode ?? true);
-  const [testRecipient, setTestRecipient] = useState<string>(initial.testRecipient ?? '');
-  const [fromName, setFromName] = useState<string>(initial.fromName ?? 'Certificado Digital MEI');
-  const [fromAddress, setFromAddress] = useState<string>(
-    initial.fromAddress ?? 'certificado.mei.estadual@seu-certificado-mei-digital.online'
-  );
-  const [replyTo, setReplyTo] = useState<string>(initial.replyTo ?? '');
-
-  const [running, setRunning] = useState(false);
-  const [paused, setPaused] = useState(false);
-  const runningRef = useRef(false);
-  const pausedRef = useRef(false);
-  const stopRef = useRef(false);
-
-  const [logs, setLogs] = useState<string[]>([]);
   const [previewIdx, setPreviewIdx] = useState(0);
-  const [showFloating, setShowFloating] = useState<boolean>(() => {
-    try { return localStorage.getItem('envio-massa-floating-open') !== '0'; } catch { return true; }
-  });
 
+  // Carrega destinatários uma vez se a fila estiver vazia.
   useEffect(() => {
-    try { localStorage.setItem('envio-massa-floating-open', showFloating ? '1' : '0'); } catch {}
-  }, [showFloating]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ subject, delaySec, batchLimit, testMode, testRecipient, fromName, fromAddress, replyTo })
-    );
-  }, [subject, delaySec, batchLimit, testMode, testRecipient, fromName, fromAddress, replyTo]);
+    if (queue.length === 0) void loadRecipients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const stats = useMemo(() => {
     const total = queue.length;
@@ -100,231 +90,17 @@ function EnvioMassa() {
     return { total, sent, errors, suppressed, pending };
   }, [queue]);
 
-  const pushLog = (msg: string) => {
-    const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    setLogs((prev) => [line, ...prev].slice(0, 500));
-  };
-
-  async function loadRecipients() {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .select('id, cnpj, razao_social_original, nome_titular_exibicao, nome_fantasia, email, inicio_atividade, situacao_cadastral_desc, uf, municipio_descricao')
-        .not('email', 'is', null)
-        .neq('email', '')
-        .order('created_at', { ascending: false })
-        .limit(batchLimit);
-      if (error) throw error;
-
-      const companyIds = (data ?? []).map((c: any) => c.id).filter(Boolean);
-      const linksMap: Record<string, string> = {};
-      if (companyIds.length > 0) {
-        const { data: links } = await supabase
-          .from('company_links')
-          .select('company_id, public_token')
-          .in('company_id', companyIds);
-        for (const l of (links ?? []) as Array<{ company_id: string | null; public_token: string }>) {
-          if (l.company_id && l.public_token && !linksMap[l.company_id]) {
-            linksMap[l.company_id] = l.public_token;
-          }
-        }
-      }
-
-      const items: QueueItem[] = (data ?? [])
-        .filter((c: any) => /.+@.+\..+/.test(c.email))
-        .map((c: any) => ({
-          id: c.id,
-          email: c.email,
-          cnpj: c.cnpj,
-          company_name: c.nome_fantasia || c.razao_social_original || c.nome_titular_exibicao || '',
-          data_abertura: c.inicio_atividade || '',
-          situacao: c.situacao_cadastral_desc || '',
-          uf: c.uf || '',
-          municipio: c.municipio_descricao || '',
-          status: 'pending',
-          publicToken: linksMap[c.id] || null,
-        }));
-      setQueue(items);
-      pushLog(`Carregados ${items.length} destinatários (limite ${batchLimit}).`);
-    } catch (e: any) {
-      toast.error('Erro ao carregar destinatários: ' + e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadRecipients();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function buildVarsFor(item: QueueItem, extra?: Record<string, any>) {
-    const row: Record<string, any> = {
-      NOME_EMPRESARIAL: item.company_name,
-      NOME_TITULAR: item.company_name,
-      CNPJ: item.cnpj,
-      DATA_ABERTURA: extra?.data_abertura || item.data_abertura || '',
-      SITUACAO: extra?.situacao_cadastral || item.situacao || 'CNPJ sem certificado ativo',
-      MUNICIPIO: extra?.municipio || item.municipio || '',
-      UF: extra?.uf || item.uf || '',
-      EMAIL: item.email,
-      LINK_PUBLICO: item.publicToken
-        ? `${window.location.origin}/c/${item.publicToken}`
-        : `${window.location.origin}/modelo`,
-      TOKEN: item.publicToken || '',
-    };
-    return rowToVars(row, {
-      name: fromName,
-      company: fromName,
-      reference: `MEI-${new Date().getFullYear()}`,
-    });
-  }
-
-  async function sendOne(item: QueueItem) {
-    setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: 'sending', message: undefined } : q)));
-    const vars = buildVarsFor(item);
-    const subj = substitute(subject, vars);
-    try {
-      const res = await sendFn({
-        data: {
-          recipient: item.email,
-          subject: subj,
-          vars,
-          fromName,
-          fromAddress,
-          replyTo: replyTo || undefined,
-          testMode,
-          testRecipient: testMode ? testRecipient || null : null,
-          idempotencyKey: `campaign-${item.id}-${new Date().toISOString().slice(0, 10)}`,
-        },
-      });
-      if (res.sent) {
-        setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: 'sent' } : q)));
-        pushLog(`✓ Enviado para ${res.recipient}`);
-        return { ok: true };
-      }
-      if (res.reason === 'recipient_suppressed') {
-        setQueue((prev) =>
-          prev.map((q) => (q.id === item.id ? { ...q, status: 'suppressed', message: res.message } : q))
-        );
-        pushLog(`⊘ Suprimido ${item.email}: ${res.message ?? ''}`);
-        return { ok: true };
-      }
-      if (res.reason === 'rate_limited') {
-        setQueue((prev) =>
-          prev.map((q) => (q.id === item.id ? { ...q, status: 'pending', message: res.message } : q))
-        );
-        pushLog(`⏸ Rate-limited: aguardando ${res.retryAfterSeconds ?? 60}s`);
-        return { ok: false, waitSec: res.retryAfterSeconds ?? 60 };
-      }
-      setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: 'error', message: res.message } : q)));
-      pushLog(`✗ Erro ${item.email}: ${res.message}`);
-      return { ok: true };
-    } catch (e: any) {
-      setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: 'error', message: e.message } : q)));
-      pushLog(`✗ Falha ${item.email}: ${e.message}`);
-      return { ok: true };
-    }
-  }
-
-  async function startSending() {
-    if (runningRef.current) return;
-    if (testMode && !testRecipient) {
-      toast.error('Modo teste ativo: informe um e-mail de teste.');
-      return;
-    }
-    if (queue.length === 0) {
-      toast.error('Nenhum destinatário na fila.');
-      return;
-    }
-    runningRef.current = true;
-    stopRef.current = false;
-    pausedRef.current = false;
-    setRunning(true);
-    setPaused(false);
-    pushLog(`▶ Iniciando envio${testMode ? ' (MODO TESTE)' : ''}. Delay: ${delaySec}s`);
-
-    const list = queue.filter((q) => q.status === 'pending' || q.status === 'error');
-    for (const item of list) {
-      if (stopRef.current) break;
-      while (pausedRef.current && !stopRef.current) {
-        await new Promise((r) => setTimeout(r, 500));
-      }
-      if (stopRef.current) break;
-
-      const res = await sendOne(item);
-      if (!res.ok && res.waitSec) {
-        const waitMs = Math.min(res.waitSec, 300) * 1000;
-        await new Promise((r) => setTimeout(r, waitMs));
-        // retry this item
-        if (!stopRef.current) await sendOne(item);
-      }
-      // delay before next
-      if (!stopRef.current) {
-        await new Promise((r) => setTimeout(r, Math.max(1, delaySec) * 1000));
-      }
-    }
-
-    runningRef.current = false;
-    setRunning(false);
-    setPaused(false);
-    pushLog('■ Envio finalizado.');
-  }
-
-  function togglePause() {
-    pausedRef.current = !pausedRef.current;
-    setPaused(pausedRef.current);
-    pushLog(pausedRef.current ? '⏸ Pausado.' : '▶ Retomando...');
-  }
-
-  function stopSending() {
-    stopRef.current = true;
-    pausedRef.current = false;
-    pushLog('■ Parada solicitada.');
-  }
-
-  async function sendSingle(item: QueueItem) {
-    if (runningRef.current) {
-      toast.error('Aguarde o envio atual terminar (ou pare).');
-      return;
-    }
-    if (testMode && !testRecipient) {
-      toast.error('Modo teste ativo: informe um e-mail de teste.');
-      return;
-    }
-    pushLog(`➤ Envio único para ${item.email}${testMode ? ' (TESTE)' : ''}`);
-    await sendOne(item);
-  }
-
-  function resetStatuses() {
-    setQueue((prev) => prev.map((q) => ({ ...q, status: 'pending', message: undefined })));
-    pushLog('↻ Status da fila resetados (todos como pendentes).');
-    toast.success('Status resetados.');
-  }
-
-  function clearQueue() {
-    if (runningRef.current) {
-      toast.error('Pare o envio antes de limpar a fila.');
-      return;
-    }
-    setQueue([]);
-    pushLog('🗑 Fila esvaziada.');
-    toast.success('Fila limpa.');
-  }
-
-  function clearLogs() {
-    setLogs([]);
-  }
-
   const previewItem = queue[previewIdx];
   const previewHtml = useMemo(() => {
     if (!previewItem) return '';
-    const vars = buildVarsFor(previewItem);
+    const vars = buildVarsForPreview(previewItem);
     return renderHtml(DEFAULT_DESIGN, vars);
   }, [previewItem, fromName, fromAddress]);
 
-  const progress = stats.total > 0 ? Math.round(((stats.sent + stats.errors + stats.suppressed) / stats.total) * 100) : 0;
+  const progress =
+    stats.total > 0
+      ? Math.round(((stats.sent + stats.errors + stats.suppressed) / stats.total) * 100)
+      : 0;
 
   return (
     <div className="space-y-6">
@@ -333,14 +109,17 @@ function EnvioMassa() {
         <p className="text-sm text-slate-500">
           Dispara e-mails via Lovable Emails (domínio profissional) com controle de delay, pausa e modo teste.
         </p>
+        {running && (
+          <p className="mt-1 text-xs font-semibold text-emerald-700">
+            ● Envio ativo — continua rodando mesmo se você trocar de aba do painel.
+          </p>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Config */}
         <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle>Configuração</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Configuração</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div>
               <Label>Assunto</Label>
@@ -370,7 +149,7 @@ function EnvioMassa() {
                   min={1}
                   max={600}
                   value={delaySec}
-                  onChange={(e) => setDelaySec(Math.max(1, parseInt(e.target.value || '1', 10)))}
+                  onChange={(e) => setDelaySec(parseInt(e.target.value || '1', 10))}
                 />
               </div>
               <div>
@@ -380,7 +159,7 @@ function EnvioMassa() {
                   min={1}
                   max={5000}
                   value={batchLimit}
-                  onChange={(e) => setBatchLimit(Math.max(1, parseInt(e.target.value || '1', 10)))}
+                  onChange={(e) => setBatchLimit(parseInt(e.target.value || '1', 10))}
                 />
               </div>
             </div>
@@ -414,9 +193,7 @@ function EnvioMassa() {
 
         {/* Progress & Controls */}
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Progresso</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Progresso</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-5 gap-3">
               <Stat label="Total" value={stats.total} />
@@ -451,7 +228,7 @@ function EnvioMassa() {
               <Button variant="outline" onClick={clearLogs} disabled={logs.length === 0}>
                 <RotateCcw className="h-4 w-4" /> Limpar log
               </Button>
-              <Button variant={showFloating ? 'default' : 'outline'} onClick={() => setShowFloating((v) => !v)}>
+              <Button variant={showFloating ? 'default' : 'outline'} onClick={() => setShowFloating(!showFloating)}>
                 <Activity className="h-4 w-4" /> {showFloating ? 'Ocultar painel' : 'Painel flutuante'}
               </Button>
               {testMode && <Badge className="bg-amber-100 text-amber-800">MODO TESTE ATIVO</Badge>}
@@ -479,12 +256,8 @@ function EnvioMassa() {
             </CardTitle>
             {queue.length > 0 && (
               <div className="flex items-center gap-2 text-xs">
-                <Button size="sm" variant="outline" onClick={() => setPreviewIdx(Math.max(0, previewIdx - 1))}>
-                  ◀
-                </Button>
-                <span>
-                  {previewIdx + 1} / {queue.length}
-                </span>
+                <Button size="sm" variant="outline" onClick={() => setPreviewIdx(Math.max(0, previewIdx - 1))}>◀</Button>
+                <span>{previewIdx + 1} / {queue.length}</span>
                 <Button
                   size="sm"
                   variant="outline"
@@ -502,7 +275,7 @@ function EnvioMassa() {
                   Para: <strong>{previewItem.email}</strong> · CNPJ {formatCnpj(previewItem.cnpj)}
                 </div>
                 <div className="mb-2 text-xs text-slate-600">
-                  Assunto: <strong>{substitute(subject, buildVarsFor(previewItem))}</strong>
+                  Assunto: <strong>{substitute(subject, buildVarsForPreview(previewItem))}</strong>
                 </div>
                 <iframe title="preview" srcDoc={previewHtml} className="h-[600px] w-full rounded-md border" />
               </>
@@ -536,9 +309,7 @@ function EnvioMassa() {
                       <td className="py-2 text-slate-500">{i + 1}</td>
                       <td className="truncate">{q.email}</td>
                       <td className="max-w-[180px] truncate">{q.company_name}</td>
-                      <td>
-                        <StatusBadge status={q.status} message={q.message} />
-                      </td>
+                      <td><StatusBadge status={q.status} message={q.message} /></td>
                       <td className="text-right">
                         <Button
                           size="sm"
