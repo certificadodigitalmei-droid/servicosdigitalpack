@@ -236,8 +236,10 @@ export async function fetchCompanyDetailsByCnpj(
 ): Promise<CasaDetailResult> {
   const clean = digitsOnly(cnpj);
   if (clean.length !== 14) throw new Error('CNPJ inválido para consulta detalhada');
-  const url = `${baseUrl()}/v5/cnpj/${clean}`;
-  const request: SanitizedRequestLog = { url: `${baseUrl()}/v5/cnpj/{cnpj}`, method: 'GET', body: null };
+  // A API oficial expõe consulta individual em /v4/cnpj/{cnpj}.
+  // Não existe /v5/cnpj/{cnpj} — v5 tem apenas /v5/cnpj/pesquisa.
+  const url = `${baseUrl()}/v4/cnpj/${clean}`;
+  const request: SanitizedRequestLog = { url: `${baseUrl()}/v4/cnpj/{cnpj}`, method: 'GET', body: null };
   const res = await fetchWithTimeout(url, { method: 'GET', headers: headers() }, opts);
   const text = await res.text();
   let raw: unknown = text;
