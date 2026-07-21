@@ -199,24 +199,33 @@ function CheckoutPage() {
               <Step active label="Pagamento" n={3} />
             </div>
 
-            {!pixOpen ? (
-              <CheckoutForm
-                form={form}
-                setForm={setForm}
-                errors={errors}
-                onSubmit={handleSubmit}
-                submitting={submitting}
-                backSearch={backSearch}
-              />
-            ) : (
-              <PixDemo
-                orderId={orderId}
-                nome={form.nome}
-                doc={form.doc}
-                pixData={pixData}
-                onBack={() => navigate({ to: "/", search: backSearch })}
-              />
-            )}
+            <CheckoutForm
+              form={form}
+              setForm={setForm}
+              errors={errors}
+              onSubmit={handleSubmit}
+              submitting={submitting}
+              backSearch={backSearch}
+            />
+          </div>
+        </div>
+      </main>
+
+      <PixModal
+        open={pixOpen}
+        amount={AMOUNT}
+        orderId={orderId}
+        pixData={pixData}
+        onClose={() => setPixOpen(false)}
+      />
+
+      <SiteFooter />
+    </Page>
+  );
+}
+
+// (bloco antigo removido — o PIX agora é mostrado no modal <PixModal/>)
+function _RemovedMarker() { return null; }
           </div>
         </div>
       </main>
