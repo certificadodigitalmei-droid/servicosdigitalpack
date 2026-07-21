@@ -549,3 +549,52 @@ function StatusBadge({ status, message }: { status: QueueItem['status']; message
     </span>
   );
 }
+
+function LimitBlock({
+  title,
+  bucket,
+  accent,
+}: {
+  title: string;
+  bucket: EmailStatsResult['lastHour'];
+  accent: 'blue' | 'emerald';
+}) {
+  const cls =
+    accent === 'blue'
+      ? 'border-blue-200 bg-blue-50/50'
+      : 'border-emerald-200 bg-emerald-50/50';
+  return (
+    <div className={`rounded-lg border ${cls} p-3`}>
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-600">{title}</div>
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <SubStat label="Enviados" value={bucket.sent} color="text-emerald-700" />
+        <SubStat label="Rejeitados" value={bucket.rejected} color="text-red-600" />
+        <SubStat label="Bounces" value={bucket.bounced} color="text-red-600" />
+        <SubStat label="Reclamações" value={bucket.complaint} color="text-amber-600" />
+        <SubStat label="Descadastros" value={bucket.unsubscribed} color="text-amber-600" />
+        <SubStat label="Rate-limit" value={bucket.rateLimited} color="text-orange-700" />
+      </div>
+      <div className="mt-2 border-t pt-2 text-[11px] text-slate-500">
+        Total de eventos: <strong>{bucket.total}</strong>
+      </div>
+    </div>
+  );
+}
+
+function SubStat({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div>
+      <div className={`text-lg font-bold ${color}`}>{value}</div>
+      <div className="text-[10px] uppercase text-slate-500">{label}</div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, color }: { label: string; value: number | string; color: string }) {
+  return (
+    <div className="rounded-md border bg-white p-3">
+      <div className="text-[11px] uppercase tracking-wide text-slate-500">{label}</div>
+      <div className={`mt-0.5 text-xl font-bold ${color}`}>{value}</div>
+    </div>
+  );
+}
