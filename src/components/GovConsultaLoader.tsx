@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, ShieldCheck, QrCode } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import heroImg from '@/assets/gov-entrar-hero.jpg.asset.json';
 
 const AZUL = '#1351B4';
@@ -19,7 +19,7 @@ function buildSteps(nome?: string | null) {
 const STEP_MS = 700;
 
 export function GovConsultaLoader({
-  cnpj,
+  cnpj: _cnpj,
   nome,
   onFinish,
 }: {
@@ -49,76 +49,51 @@ export function GovConsultaLoader({
   const currentLabel = steps[step] ?? steps[steps.length - 1];
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-white animate-fade-in">
-      {/* Tricolor top bar */}
-      <div
-        className="h-1 w-full"
-        style={{ background: `linear-gradient(90deg, ${AZUL} 0 33%, ${AMARELO} 33% 66%, #168821 66% 100%)` }}
+    <div className="fixed inset-0 z-[200] bg-white animate-fade-in overflow-hidden">
+      {/* Imagem de referência preenchendo a tela */}
+      <img
+        src={heroImg.url}
+        alt="gov.br"
+        className="absolute inset-0 h-full w-full object-contain object-center sm:object-cover"
       />
 
-      <div className="mx-auto flex w-full max-w-[440px] flex-1 flex-col px-5 pb-8 pt-2">
-        {/* Hero image (recreates the reference) */}
-        <div className="relative mx-auto w-full flex-1 min-h-0 overflow-hidden">
-          <img
-            src={heroImg.url}
-            alt="gov.br"
-            className="h-full w-full object-contain object-center"
+      {/* Botão flutuante posicionado sobre o "Entrar com gov.br" da imagem
+          (a imagem tem 815x1600 e o botão está aproximadamente a 74% da altura) */}
+      <div
+        className="absolute left-1/2 w-[86%] max-w-[440px] -translate-x-1/2 space-y-3"
+        style={{ top: '74%' }}
+      >
+        <button
+          type="button"
+          disabled
+          aria-live="polite"
+          className="relative flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-full px-6 py-4 text-white shadow-[0_10px_30px_-8px_rgba(19,81,180,0.55)]"
+          style={{ background: AZUL }}
+        >
+          <span
+            className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_1.8s_infinite]"
+            style={{
+              background:
+                'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)',
+            }}
           />
-        </div>
-
-        {/* Botão "Entrar com gov.br" com animação de status no lugar do texto */}
-        <div className="mt-4 space-y-3">
-          <button
-            type="button"
-            disabled
-            aria-live="polite"
-            className="relative flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-full px-6 py-4 text-white shadow-lg"
-            style={{ background: '#1351B4' }}
+          <Loader2 className="h-[18px] w-[18px] shrink-0 animate-spin" />
+          <span
+            key={currentLabel}
+            className="animate-fade-in text-[15.5px] font-semibold tracking-tight"
           >
-            {/* Shimmer */}
-            <span
-              className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_1.8s_infinite]"
-              style={{
-                background:
-                  'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.28) 50%, transparent 100%)',
-              }}
-            />
-            <Loader2 className="h-[18px] w-[18px] shrink-0 animate-spin" />
-            <span
-              key={currentLabel}
-              className="animate-fade-in text-[15.5px] font-semibold tracking-tight"
-            >
-              {currentLabel}
-            </span>
-          </button>
+            {currentLabel}
+          </span>
+        </button>
 
-          {/* Progress bar sob o botão */}
-          <div className="h-1 w-full overflow-hidden rounded-full bg-[#1351B4]/10">
-            <div
-              className="h-full rounded-full transition-[width] duration-100 ease-linear"
-              style={{
-                width: `${progress}%`,
-                background: `linear-gradient(90deg, ${AZUL}, ${AMARELO})`,
-              }}
-            />
-          </div>
-
-          <p className="text-center text-[13px] text-[#4a4a4a]">
-            Aguarde… <span className="font-semibold text-[#1351B4]">estamos validando</span> sua conta gov.br
-          </p>
-
-          <div className="space-y-2 pt-2">
-            <div className="flex items-center justify-center gap-2 text-[14px] font-semibold text-[#1351B4]">
-              <ShieldCheck className="h-[18px] w-[18px]" />
-              Gerar código de acesso
-            </div>
-            <div className="flex items-center justify-center gap-2 text-[14px] font-semibold text-[#1351B4]">
-              <QrCode className="h-[18px] w-[18px]" />
-              Ler QR code
-            </div>
-          </div>
-
-          <div className="pt-1 text-right text-[11px] text-[#9a9a9a]">3.8.4</div>
+        <div className="h-1 w-full overflow-hidden rounded-full bg-white/70 shadow-sm">
+          <div
+            className="h-full rounded-full transition-[width] duration-100 ease-linear"
+            style={{
+              width: `${progress}%`,
+              background: `linear-gradient(90deg, ${AZUL}, ${AMARELO})`,
+            }}
+          />
         </div>
       </div>
 
