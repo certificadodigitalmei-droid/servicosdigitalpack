@@ -30,6 +30,7 @@ import { Route as AuthenticatedPainelEmpresasImportadasRouteImport } from './rou
 import { Route as AuthenticatedPainelConsultaAutomaticaRouteImport } from './routes/_authenticated.painel.consulta-automatica'
 import { Route as AuthenticatedPainelCampanhasEmailRouteImport } from './routes/_authenticated.painel.campanhas-email'
 import { Route as AuthenticatedPainelEmpresasImportadasIndexRouteImport } from './routes/_authenticated.painel.empresas-importadas.index'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as ApiPublicHooksAutoImportMeiRouteImport } from './routes/api/public/hooks/auto-import-mei'
 import { Route as AuthenticatedPainelGeradorLinksHistoricoRouteImport } from './routes/_authenticated.painel.gerador-links.historico'
 import { Route as AuthenticatedPainelEmpresasImportadasCompanyIdRouteImport } from './routes/_authenticated.painel.empresas-importadas.$companyId'
@@ -149,6 +150,12 @@ const AuthenticatedPainelEmpresasImportadasIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPainelEmpresasImportadasRoute,
   } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksAutoImportMeiRoute =
   ApiPublicHooksAutoImportMeiRouteImport.update({
     id: '/api/public/hooks/auto-import-mei',
@@ -191,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
   '/api/public/hooks/auto-import-mei': typeof ApiPublicHooksAutoImportMeiRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/painel/empresas-importadas/': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
 export interface FileRoutesByTo {
@@ -214,6 +222,7 @@ export interface FileRoutesByTo {
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
   '/api/public/hooks/auto-import-mei': typeof ApiPublicHooksAutoImportMeiRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
 export interface FileRoutesById {
@@ -241,6 +250,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/_authenticated/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
   '/api/public/hooks/auto-import-mei': typeof ApiPublicHooksAutoImportMeiRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/_authenticated/painel/empresas-importadas/': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
 export interface FileRouteTypes {
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/painel/empresas-importadas/$companyId'
     | '/painel/gerador-links/historico'
     | '/api/public/hooks/auto-import-mei'
+    | '/lovable/email/transactional/preview'
     | '/painel/empresas-importadas/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/painel/empresas-importadas/$companyId'
     | '/painel/gerador-links/historico'
     | '/api/public/hooks/auto-import-mei'
+    | '/lovable/email/transactional/preview'
     | '/painel/empresas-importadas'
   id:
     | '__root__'
@@ -317,6 +329,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/empresas-importadas/$companyId'
     | '/_authenticated/painel/gerador-links/historico'
     | '/api/public/hooks/auto-import-mei'
+    | '/lovable/email/transactional/preview'
     | '/_authenticated/painel/empresas-importadas/'
   fileRoutesById: FileRoutesById
 }
@@ -333,6 +346,7 @@ export interface RootRouteChildren {
   ApiInternalCasaDosDadosWorkerRoute: typeof ApiInternalCasaDosDadosWorkerRoute
   ApiPublicWebhookUniaopayRoute: typeof ApiPublicWebhookUniaopayRoute
   ApiPublicHooksAutoImportMeiRoute: typeof ApiPublicHooksAutoImportMeiRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -484,6 +498,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelEmpresasImportadasIndexRouteImport
       parentRoute: typeof AuthenticatedPainelEmpresasImportadasRoute
     }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/auto-import-mei': {
       id: '/api/public/hooks/auto-import-mei'
       path: '/api/public/hooks/auto-import-mei'
@@ -596,6 +617,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiInternalCasaDosDadosWorkerRoute: ApiInternalCasaDosDadosWorkerRoute,
   ApiPublicWebhookUniaopayRoute: ApiPublicWebhookUniaopayRoute,
   ApiPublicHooksAutoImportMeiRoute: ApiPublicHooksAutoImportMeiRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
