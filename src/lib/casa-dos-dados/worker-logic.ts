@@ -54,6 +54,13 @@ export function writeCursor(
   next: { page: number; itemOffset: number; lastCnpj: string | null },
 ): CursorMap {
   const out: CursorMap = { ...(map ?? {}) };
+  const prev = out[date];
+  // Never regress a cursor: keep the further position (page, then item_offset).
+  if (prev) {
+    const prevKey = (Number(prev.page) || 1) * 1_000_000 + (Number(prev.item_offset) || 0);
+    const nextKey = (Number(next.page) || 1) * 1_000_000 + (Number(next.itemOffset) || 0);
+    if (nextKey < prevKey) return out;
+  }
   out[date] = {
     page: next.page,
     item_offset: next.itemOffset,
