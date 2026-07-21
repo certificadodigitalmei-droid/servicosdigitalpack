@@ -426,31 +426,55 @@ function ConsultaPage() {
             2. Importar agora <Badge className="ml-2 bg-red-600">Paga créditos</Badge>
           </CardTitle>
           <CardDescription>
-            Uma única chamada busca N CNPJs completos, salva as empresas e gera os links.
-            Cada CNPJ consome 1 crédito. Máx. por lote: <strong>15</strong>.
+            Digite quantos CNPJs quer importar de uma vez. A API oficial entrega em lotes de 15,
+            então valores maiores são feitos em várias chamadas automaticamente.
+            Cada CNPJ consome 1 crédito.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="mb-2 block">Quantidade</Label>
-            <div className="flex flex-wrap gap-2">
-              {QUANTIDADES.map((n) => (
-                <Button
-                  key={n}
-                  size="sm"
-                  variant={quantidade === n ? 'default' : 'outline'}
-                  onClick={() => setQuantidade(n)}
-                  disabled={isImporting}
-                >
-                  {n}
-                </Button>
-              ))}
+            <Label className="mb-2 block">Quantidade a importar</Label>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={quantidade}
+                onChange={(e) => setQuantidade(Math.max(1, Number(e.target.value) || 1))}
+                disabled={isImporting}
+                className="h-10 w-32 rounded-md border border-slate-300 bg-white px-3 text-sm disabled:bg-slate-100"
+              />
+              <div className="flex flex-wrap gap-1">
+                {QUANTIDADES.map((n) => (
+                  <Button
+                    key={n}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setQuantidade(n)}
+                    disabled={isImporting}
+                  >
+                    {n}
+                  </Button>
+                ))}
+                {[50, 100, 500].map((n) => (
+                  <Button
+                    key={n}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setQuantidade(n)}
+                    disabled={isImporting}
+                  >
+                    {n}
+                  </Button>
+                ))}
+              </div>
             </div>
             <p className="mt-2 text-xs text-slate-500">
               Vai consumir até <strong>{quantidade} créditos</strong> da Casa dos Dados
               nesta ação.
             </p>
           </div>
+
 
           <div className="flex flex-wrap gap-3">
             <Button
