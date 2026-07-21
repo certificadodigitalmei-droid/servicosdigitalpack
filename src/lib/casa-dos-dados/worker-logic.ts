@@ -188,11 +188,25 @@ export function normalizeCasaDosDadosCompany(item: Record<string, unknown>): Nor
   const estab = (item as any).estabelecimento && typeof (item as any).estabelecimento === 'object'
     ? ((item as any).estabelecimento as Record<string, unknown>)
     : null;
+  // v4 /v4/cnpj/{cnpj} nests address under `endereco` and contact under `contato`.
+  const enderecoObj = (item as any).endereco && typeof (item as any).endereco === 'object' && !Array.isArray((item as any).endereco)
+    ? ((item as any).endereco as Record<string, unknown>)
+    : null;
+  const contatoObj = (item as any).contato && typeof (item as any).contato === 'object'
+    ? ((item as any).contato as Record<string, unknown>)
+    : null;
 
   const scope = (keys: string[]): unknown => {
     const direct = pickAny(item, keys);
     if (direct !== null && direct !== undefined && direct !== '') return direct;
-    if (estab) return pickAny(estab, keys);
+    if (enderecoObj) {
+      const v = pickAny(enderecoObj, keys);
+      if (v !== null && v !== undefined && v !== '') return v;
+    }
+    if (estab) {
+      const v = pickAny(estab, keys);
+      if (v !== null && v !== undefined && v !== '') return v;
+    }
     return null;
   };
 
@@ -200,9 +214,13 @@ export function normalizeCasaDosDadosCompany(item: Record<string, unknown>): Nor
     ?? (estab ? pickStr(estab, ['cnpj', 'cnpj_completo']) : null);
 
   const municipioRaw = scope(['municipio', 'cidade', 'municipio_descricao']);
-  const situacaoRaw = scope(['situacao_cadastral', 'situacao', 'situacao_cadastral_desc']);
+  // v4: situacao_cadastral is an object with an inner `situacao_cadastral` string ("ATIVA", ...)
+  const situacaoNode = (item as any).situacao_cadastral;
+  const situacaoRaw = (situacaoNode && typeof situacaoNode === 'object' && !Array.isArray(situacaoNode))
+    ? ((situacaoNode as any).situacao_cadastral ?? (situacaoNode as any).situacao ?? (situacaoNode as any).descricao ?? situacaoNode)
+    : scope(['situacao_cadastral', 'situacao', 'situacao_cadastral_desc']);
   const matrizRaw = scope(['matriz_filial', 'matriz', 'tipo', 'identificador_matriz_filial']);
-  const naturezaRaw = scope(['natureza_juridica']);
+  const naturezaRaw = pickAny(item, ['natureza_juridica', 'descricao_natureza_juridica']);
 
   const enderecoParts = [
     descOf(scope(['tipo_logradouro'])),
@@ -211,16 +229,19 @@ export function normalizeCasaDosDadosCompany(item: Record<string, unknown>): Nor
     descOf(scope(['complemento'])),
     descOf(scope(['bairro'])),
   ].filter(Boolean);
-  const enderecoDirect = descOf(scope(['endereco', 'endereco_completo']));
+  const enderecoDirect = descOf(scope(['endereco_completo']));
   const endereco = enderecoDirect ?? (enderecoParts.length ? enderecoParts.join(', ') : null);
 
-  // matriz_filial may be a numeric flag: 1 = matriz, 2 = filial
   let matrizStr: string | null = null;
   if (matrizRaw === 1 || matrizRaw === '1') matrizStr = 'MATRIZ';
   else if (matrizRaw === 2 || matrizRaw === '2') matrizStr = 'FILIAL';
   else matrizStr = descOf(matrizRaw);
   if (matrizStr === '1') matrizStr = 'MATRIZ';
   else if (matrizStr === '2') matrizStr = 'FILIAL';
+
+  // Contato override — v4 exposes contato.{email,telefone}
+  const contatoEmail = contatoObj ? pickStr(contatoObj, ['email']) : null;
+  const contatoTelefone = contatoObj ? pickStr(contatoObj, ['telefone', 'ddd_telefone']) : null;
 
   return {
     cnpj: cnpj ? cnpj.replace(/\D+/g, '') : null,
@@ -235,10 +256,10 @@ export function normalizeCasaDosDadosCompany(item: Record<string, unknown>): Nor
     municipio: descOf(municipioRaw),
     uf: descOf(scope(['uf', 'sigla_uf'])),
     endereco,
-    capital_social: descOf(scope(['capital_social'])),
+    capital_social: descOf(pickAny(item, ['capital_social'])),
     quadro_societario: (item as any).qsa ?? (item as any).quadro_societario ?? null,
-    email: extractEmail(item),
-    telefone: extractPhone(item),
+    email: (isEmailLike(contatoEmail) ? contatoEmail : null) ?? extractEmail(item),
+    telefone: contatoTelefone ?? extractPhone(item),
     raw: item,
   };
 }
