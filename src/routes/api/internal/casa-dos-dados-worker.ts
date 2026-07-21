@@ -47,7 +47,7 @@ export const Route = createFileRoute('/api/internal/casa-dos-dados-worker')({
 
         const { data: fullRow } = await supabaseAdmin
           .from('automatic_company_queries')
-          .select('auto_import_enabled, auto_generate_links_enabled')
+          .select('auto_import_enabled, auto_generate_links_enabled, pagination_cursors, max_pages_per_run, page_size')
           .eq('id', row.id)
           .maybeSingle();
 
@@ -62,6 +62,9 @@ export const Route = createFileRoute('/api/internal/casa-dos-dados-worker')({
             filters: (row.filters ?? {}) as any,
             auto_import_enabled: (fullRow as any)?.auto_import_enabled ?? true,
             auto_generate_links_enabled: (fullRow as any)?.auto_generate_links_enabled ?? true,
+            pagination_cursors: (fullRow as any)?.pagination_cursors ?? {},
+            max_pages_per_run: (fullRow as any)?.max_pages_per_run ?? 20,
+            page_size: (fullRow as any)?.page_size ?? 50,
           },
           { trigger: 'cron' },
         );
