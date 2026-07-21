@@ -231,23 +231,41 @@ async function testIncompleteTestMode() {
   console.log('OK  test6 incomplete-test → imported as test_partial, test link created');
 }
 
-async function testRequireEmailButMissing() {
-  // Filter require_email=true; API returned item without email → incomplete.
-  const noEmail = makeCompleteItem('44444444000101', { email: undefined });
+async function testEmailMissingStillComplete() {
+  // Payload without email must still count as complete (email is optional).
+  // require_email filter is treated as an API-side hint only.
+  const noEmail = makeCompleteItem('44444444000101');
   delete (noEmail as any).email;
-  const withEmail = makeCompleteItem('55555555000101');
   const autoWithEmail = { ...automation, filters: { require_email: true } };
-  const { deps } = makeDeps({
-    pages: [makePage([noEmail, withEmail], 2)],
+  const { deps, state, calls } = makeDeps({
+    pages: [makePage([noEmail], 1)],
   });
   const { outcome } = await runCoreLoop(
     { automation: autoWithEmail, requested: 1, queryDate: '2026-07-20', runId: 'r13', startPage: 1, startOffset: 0, maxPages: 3, pageSize: 50, publicBaseUrl: 'https://x' },
     deps,
   );
   assert(outcome.imported === 1, `imported=${outcome.imported}`);
-  assert(outcome.incomplete === 1, `incomplete=${outcome.incomplete}`);
-  assert(outcome.missingFieldsSummary.email === 1, `missing.email=${outcome.missingFieldsSummary.email}`);
-  console.log('OK  test7 require_email missing → incomplete, quota not consumed');
+  assert(outcome.incomplete === 0, `incomplete must be 0 when only email is missing, got ${outcome.incomplete}`);
+  assert(outcome.linksCreated === 1, `linksCreated=${outcome.linksCreated}`);
+  assert(calls.fetchPage === 1, `fetchPage=${calls.fetchPage} — no per-cnpj GET must happen`);
+  const comp = state.companies.get('44444444000101')!;
+  assert(comp.dataQuality === 'complete', `quality=${comp.dataQuality}`);
+  console.log('OK  test7 email-missing → still complete, no GET /v5/cnpj/{cnpj}');
+}
+
+async function testNoDetailLookupHappens() {
+  // Complete payload — must NEVER call fetchDetails (deps.fetchDetails absent).
+  const items = ['77777777000101', '88888888000101'].map((c) => makeCompleteItem(c));
+  const { deps, calls } = makeDeps({ pages: [makePage(items, 2)] });
+  assert(deps.fetchDetails === undefined, 'deps.fetchDetails not wired in mock');
+  const { outcome } = await runCoreLoop(
+    { automation, requested: 2, queryDate: '2026-07-20', runId: 'r15', startPage: 1, startOffset: 0, maxPages: 3, pageSize: 50, publicBaseUrl: 'https://x' },
+    deps,
+  );
+  assert(outcome.imported === 2, `imported=${outcome.imported}`);
+  assert(outcome.detailQueries === 0, `detailQueries must be 0, got ${outcome.detailQueries}`);
+  assert(calls.fetchPage === 1, `fetchPage=${calls.fetchPage}`);
+  console.log('OK  test9 no detail lookup — response.cnpjs consumed directly');
 }
 
 async function testEnrichmentUpgrade() {
@@ -285,8 +303,9 @@ async function testEnrichmentUpgrade() {
   await testCompleteNormal();
   await testIncompleteNormalPendingEnrichment();
   await testIncompleteTestMode();
-  await testRequireEmailButMissing();
+  await testEmailMissingStillComplete();
   await testEnrichmentUpgrade();
+  await testNoDetailLookupHappens();
   console.log('\nAll tests passed.');
 })().catch((e) => {
   console.error(e);

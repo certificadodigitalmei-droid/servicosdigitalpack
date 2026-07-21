@@ -13,7 +13,7 @@
 //   - Cursors are persisted per query_date on
 //     `automatic_company_queries.pagination_cursors`.
 
-import { fetchCompanyDetailsByCnpj, searchOpeningsByDate, todayBR, type CasaFilters, type CasaSearchResult } from './client.server';
+import { searchOpeningsByDate, todayBR, type CasaFilters, type CasaSearchResult } from './client.server';
 import {
   classifyItem,
   readCursor,
@@ -327,27 +327,14 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
       const cnpj = cls.cnpj;
       lastCnpj = cnpj;
 
-      let enrichedItem = item;
-      if (!isTestRun && deps.fetchDetails) {
-        if (outcome.detailQueries >= maxDetailQueries) {
-          setLimit('Limite máximo de consultas de complementação atingido', page, i);
-          break pageLoop;
-        }
-        try {
-          outcome.detailQueries += 1;
-          await progress('consulta_detalhada_cnpj', { page, item_offset: i, cnpj, detail_queries: outcome.detailQueries });
-          const detail = await deps.fetchDetails(cnpj, { signal: input.signal, timeoutMs: httpTimeoutMs });
-          if (detail.ok && detail.item) {
-            enrichedItem = mergeCompanyData(item, detail.item);
-          } else {
-            outcome.skipped.push({ index: i, page, cnpj, reason: 'detail_lookup_error', detail: `status=${detail.status}` });
-          }
-        } catch (e: any) {
-          outcome.skipped.push({ index: i, page, cnpj, reason: 'detail_lookup_error', detail: abortErrorMessage(e) });
-        }
-      }
+      // Per official spec (July 2026), response.cnpjs already contains all
+      // 7 core fields (cnpj, razao_social, situacao_cadastral, data_abertura,
+      // matriz_filial, municipio, uf) plus optional email/telefone/etc.
+      // We do NOT loop GET /v5/cnpj/{cnpj} per result — it does not add value
+      // and does not guarantee email/telefone either. See client.server.ts.
+      const enrichedItem = item;
 
-      // Validate data quality AFTER detailed lookup in normal mode.
+      // Validate data quality directly from search payload.
       await progress('validacao_dos_campos', { page, item_offset: i, cnpj });
       const validation = validateCompanyItem(enrichedItem, automation.filters ?? {});
       const isValid = validation.complete;
@@ -675,11 +662,9 @@ export async function runAutomationOnce(
         await touchHeartbeat('pesquisa_avancada', { page: o.page, limit: o.limit, date: o.date });
         return searchOpeningsByDate(o);
       },
-      fetchDetails: async (cnpj, o) => {
-        await touchHeartbeat('consulta_detalhada_cnpj', { cnpj });
-        const detail = await fetchCompanyDetailsByCnpj(cnpj, o);
-        return { ok: detail.ok, status: detail.status, item: detail.item };
-      },
+      // fetchDetails intentionally omitted: response.cnpjs already carries
+      // the seven required fields. GET /v5/cnpj/{cnpj} is no longer called
+      // per-result to keep every run inside the timeout budget.
       tryEnqueue: async ({ automationId, runId: rId, queryDate: qd, cnpj, isTestRecord, dataQualityStatus, missingFields }) => {
         const { data, error } = await supabaseAdmin
           .from('automatic_company_queue')
