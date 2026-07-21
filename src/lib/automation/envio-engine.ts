@@ -14,7 +14,29 @@ import {
   DEFAULT_SUBJECT,
   rowToVars,
   substitute,
+  type CampaignDesign,
 } from '@/lib/email-campaign/template';
+
+/** Lê o design salvo pela aba "Modelo de Mensagem" para aplicar no envio real. */
+function loadSavedDesign(): Partial<CampaignDesign> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem('campanha:design:v1');
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+function loadSavedSubject(): string | null {
+  if (typeof window === 'undefined') return null;
+  try { return window.localStorage.getItem('campanha:subject:v1'); } catch { return null; }
+}
+function mergedDesign(heroImageUrl?: string): Partial<CampaignDesign> {
+  const saved = loadSavedDesign();
+  return heroImageUrl ? { ...saved, heroImageUrl } : saved;
+}
 
 export type QueueItem = {
   id: string;
@@ -315,14 +337,14 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
   }));
   const cfg = envioStore.get();
   const vars = buildVarsFor(item);
-  const subj = substitute(cfg.subject, vars);
+  const subj = substitute(loadSavedSubject() || cfg.subject, vars);
   try {
     const res: any = await sendCampaignEmail({
       data: {
         recipient: item.email,
         subject: subj,
         vars,
-        design: cfg.heroImageUrl ? { heroImageUrl: cfg.heroImageUrl } : undefined,
+        design: mergedDesign(cfg.heroImageUrl || undefined),
         fromName: cfg.fromName,
         fromAddress: cfg.fromAddress,
         replyTo: cfg.replyTo || undefined,
@@ -489,7 +511,7 @@ export async function sendTestOnce() {
     publicToken: null,
   };
   const vars = buildVarsFor(sample);
-  const subj = substitute(cfg.subject, vars);
+  const subj = substitute(loadSavedSubject() || cfg.subject, vars);
   pushLog(`🧪 Enviando 1 e-mail de teste para ${to}...`);
   try {
     const res: any = await sendCampaignEmail({
@@ -497,7 +519,7 @@ export async function sendTestOnce() {
         recipient: to,
         subject: subj,
         vars,
-        design: cfg.heroImageUrl ? { heroImageUrl: cfg.heroImageUrl } : undefined,
+        design: mergedDesign(cfg.heroImageUrl || undefined),
         fromName: cfg.fromName,
         fromAddress: cfg.fromAddress,
         replyTo: cfg.replyTo || undefined,
