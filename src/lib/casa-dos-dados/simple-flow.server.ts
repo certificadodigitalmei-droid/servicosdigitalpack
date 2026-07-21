@@ -388,8 +388,8 @@ export async function runImportBatch(
 
   return {
     ok: true,
-    status: r.status,
-    apiTotal: r.total,
+    status: lastStatus,
+    apiTotal,
     requested: input.limit,
     page,
     discovered,
