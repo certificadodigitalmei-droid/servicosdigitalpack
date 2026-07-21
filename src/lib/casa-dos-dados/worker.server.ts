@@ -364,7 +364,9 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
       // ---- NORMAL MODE + INCOMPLETE ----
       // Enqueue as pending_enrichment (best effort), skip everything else,
-      // DO NOT consume quota.
+      // DO NOT consume quota. A queue-UNIQUE collision counts as a duplicate,
+      // NEVER as silent progress — otherwise the loop would spin forever on
+      // dates already fully seen.
       if (!isValid && !isTestRun) {
         outcome.incomplete += 1;
         outcome.pendingEnrichment += 1;
@@ -378,9 +380,10 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
           isTestRecord: false,
           dataQualityStatus: 'pending_enrichment',
           missingFields: validation.missingFields,
+          rawData: item,
         });
         if (!enq.ok && enq.reason === 'duplicate') {
-          // Already known — that's fine, just count skip.
+          outcome.duplicated += 1;
           outcome.skipped.push({ index: i, page, cnpj, reason: 'incomplete', missing: validation.missingFields, detail: 'duplicate_in_queue' });
         } else if (!enq.ok) {
           outcome.skipped.push({ index: i, page, cnpj, reason: 'queue_error', detail: enq.message });
@@ -400,6 +403,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         isTestRecord: isTestRun,
         dataQualityStatus,
         missingFields: validation.missingFields,
+        rawData: item,
       });
       if (!enq.ok && enq.reason === 'duplicate') {
         outcome.duplicated += 1;
@@ -427,23 +431,24 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
       if (!isValid) bumpMissing(validation.missingFields);
 
+      // Use the normalizer output so nested payload shapes are extracted.
+      const n = validation.normalized;
       const companyPayload: Record<string, unknown> = {
         cnpj,
-        razao_social_original: pickString(enrichedItem, ['razao_social', 'nome_empresarial', 'razao_social_original']) ?? null,
-        nome_fantasia: pickString(enrichedItem, ['nome_fantasia']),
+        razao_social_original: n.razao_social ?? null,
+        nome_fantasia: n.nome_fantasia,
         nome_titular_exibicao:
-          pickString(enrichedItem, ['nome_titular', 'nome']) ??
-          pickString(enrichedItem, ['razao_social', 'nome_empresarial', 'razao_social_original']),
-        email: validation.email,
-        uf: pickString(enrichedItem, ['uf']),
-        municipio_descricao: pickString(enrichedItem, ['municipio', 'cidade', 'municipio_descricao']),
-        situacao_cadastral_desc: pickString(enrichedItem, ['situacao_cadastral', 'situacao', 'situacao_cadastral_desc']),
-        inicio_atividade: toDate((enrichedItem as any).data_abertura ?? (enrichedItem as any).abertura ?? (enrichedItem as any).inicio_atividade),
+          pickString(enrichedItem, ['nome_titular', 'nome']) ?? n.razao_social,
+        email: n.email,
+        uf: n.uf,
+        municipio_descricao: n.municipio,
+        situacao_cadastral_desc: n.situacao_cadastral,
+        inicio_atividade: n.data_abertura,
         is_mei: automation.filters?.only_mei ? true : ((enrichedItem as any).mei === true || (enrichedItem as any).is_mei === true),
-        is_matriz: automation.filters?.only_matriz ? true : undefined,
+        is_matriz: automation.filters?.only_matriz ? true : (n.matriz_filial ? /matriz/i.test(n.matriz_filial) : undefined),
         fonte: 'casa_dos_dados',
         last_seen_at: new Date().toISOString(),
-        possui_email: !!validation.email,
+        possui_email: !!n.email,
         is_test_record: isTestRun,
         data_quality_status: dataQualityStatus,
         missing_fields: validation.missingFields,
