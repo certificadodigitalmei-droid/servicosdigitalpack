@@ -72,7 +72,7 @@ export const upsertAutomation = createServerFn({ method: 'POST' })
       .maybeSingle();
 
     if (existing?.id) {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('automatic_company_queries')
         .update({
           quantity_per_run: data.quantity_per_run,
