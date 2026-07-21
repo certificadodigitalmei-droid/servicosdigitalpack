@@ -255,13 +255,19 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 <body style="margin:0;padding:0;background:${D.pageBg};font-family:Arial,Helvetica,sans-serif;color:${D.textColor};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.pageBg};padding:40px 0;"><tr><td align="center">
   <table role="presentation" width="${D.containerWidth}" cellpadding="0" cellspacing="0" style="max-width:${D.containerWidth}px;width:100%;background:${D.bodyBg};box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+    ${D.showGovBar ? `
+    <tr><td style="background:${D.govBarBg};color:${D.govBarColor};padding:10px ${px}px;font-size:12px;letter-spacing:0.5px;font-family:Arial,sans-serif;">
+      ${esc(S(D.govBarText || ''))}
+    </td></tr>` : ''}
     <!-- Header -->
     <tr><td style="background:${D.headerBg};color:${D.headerText};padding:${D.headerPadding}px ${px}px;text-align:left;">
+      ${D.showAvatar && D.avatarUrl ? `<div style="margin-bottom:16px;"><img src="${esc(D.avatarUrl)}" alt="" width="${D.avatarSize}" height="${D.avatarSize}" style="width:${D.avatarSize}px;height:${D.avatarSize}px;border-radius:50%;border:3px solid rgba(255,255,255,0.9);display:block;" /></div>` : ''}
       <div style="font-size:${D.logoSize}px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;margin-bottom:14px;">${logo}</div>
       <div style="font-size:${D.titleSize}px;font-weight:800;line-height:1.2;margin:0;">${title}</div>
       <div style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:12px;">${subtitle}</div>
     </td></tr>
     ${D.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(D.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:${D.containerWidth}px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
+
 
     ${D.showHero ? `
     <tr><td style="padding:44px ${px}px 20px ${px}px;text-align:center;">
