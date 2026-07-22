@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
-import { Link2, Link as LinkIcon, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link2, Link as LinkIcon, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet, Trash2, Calendar as CalendarIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { formatCNPJ } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,17 +66,57 @@ const EMPTY: Stats = {
 };
 
 
+type Preset = 'hoje' | 'ontem' | '7d' | '15d' | '30d' | 'tudo' | 'custom';
+
+function computeRange(preset: Preset, customFrom?: string, customTo?: string): { from?: Date; to?: Date } {
+  const now = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+  const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+  if (preset === 'tudo') return {};
+  if (preset === 'hoje') return { from: startOfDay(now), to: endOfDay(now) };
+  if (preset === 'ontem') {
+    const y = new Date(now); y.setDate(now.getDate() - 1);
+    return { from: startOfDay(y), to: endOfDay(y) };
+  }
+  if (preset === '7d' || preset === '15d' || preset === '30d') {
+    const days = preset === '7d' ? 7 : preset === '15d' ? 15 : 30;
+    const from = new Date(now); from.setDate(now.getDate() - (days - 1));
+    return { from: startOfDay(from), to: endOfDay(now) };
+  }
+  // custom
+  const f = customFrom ? startOfDay(new Date(customFrom + 'T00:00:00')) : undefined;
+  const t = customTo ? endOfDay(new Date(customTo + 'T00:00:00')) : undefined;
+  return { from: f, to: t };
+}
+
 function DashboardPage() {
   const [stats, setStats] = useState<Stats>(EMPTY);
   const [recent, setRecent] = useState<(EventRow & { cnpj?: string })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [preset, setPreset] = useState<Preset>('tudo');
+  const [customFrom, setCustomFrom] = useState<string>('');
+  const [customTo, setCustomTo] = useState<string>('');
+
+  const range = useMemo(() => computeRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
 
   async function load() {
     setLoading(true);
     try {
+      let linksCountQ = supabase.from('company_links').select('id', { count: 'exact', head: true });
+      let evQ = supabase.from('link_events').select('event_type,browser,os,device,visitor_id,token,created_at').limit(50000);
+      if (range.from) {
+        const iso = range.from.toISOString();
+        linksCountQ = linksCountQ.gte('created_at', iso);
+        evQ = evQ.gte('created_at', iso);
+      }
+      if (range.to) {
+        const iso = range.to.toISOString();
+        linksCountQ = linksCountQ.lte('created_at', iso);
+        evQ = evQ.lte('created_at', iso);
+      }
       const [{ count: linksTotal }, evRes, linksRes] = await Promise.all([
-        supabase.from('company_links').select('id', { count: 'exact', head: true }),
-        supabase.from('link_events').select('event_type,browser,os,device,visitor_id,token,created_at').limit(50000),
+        linksCountQ,
+        evQ,
         supabase.from('company_links').select('token, cnpj'),
       ]);
       const events = (evRes.data ?? []) as EventRow[];
@@ -127,7 +168,8 @@ function DashboardPage() {
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preset, customFrom, customTo]);
 
   const [clearing, setClearing] = useState(false);
   async function clearAll() {
@@ -178,6 +220,43 @@ function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-600 mr-2">
+              <CalendarIcon className="h-4 w-4" /> Período:
+            </div>
+            {([
+              ['hoje', 'Hoje'],
+              ['ontem', 'Ontem'],
+              ['7d', '7 dias'],
+              ['15d', '15 dias'],
+              ['30d', '30 dias'],
+              ['tudo', 'Tudo'],
+              ['custom', 'Personalizado'],
+            ] as [Preset, string][]).map(([key, label]) => (
+              <Button
+                key={key}
+                size="sm"
+                variant={preset === key ? 'default' : 'outline'}
+                onClick={() => setPreset(key)}
+              >
+                {label}
+              </Button>
+            ))}
+            {preset === 'custom' && (
+              <div className="flex flex-wrap items-center gap-2 ml-2">
+                <Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="h-9 w-auto" />
+                <span className="text-slate-400 text-sm">até</span>
+                <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="h-9 w-auto" />
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+
 
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
