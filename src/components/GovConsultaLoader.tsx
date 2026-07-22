@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import heroMobile from '@/assets/gov-entrar-mobile.jpg.asset.json';
-import heroDesktop from '@/assets/gov-entrar-desktop-v2.png.asset.json';
+
 
 const AZUL = '#1351B4';
 const AMARELO = '#FFCD07';
