@@ -110,24 +110,25 @@ export function GovConsultaLoader({
         </div>
       </div>
 
-      {/* ================= DESKTOP (full gov.br photo, no floating button) ================= */}
-      <div className="relative hidden h-full w-full md:block">
-        <img
-          src={heroDesktop.url}
-          alt="gov.br"
-          className="absolute inset-0 h-full w-full object-cover object-center"
-        />
-        {/* Thin top progress bar — no floating button on desktop */}
-        <div className="absolute inset-x-0 top-0 h-1 bg-white/40">
-          <div
-            className="h-full transition-[width] duration-100 ease-linear"
-            style={{
-              width: `${progress}%`,
-              background: `linear-gradient(90deg, ${AZUL}, ${AMARELO})`,
-            }}
+      {/* ================= DESKTOP (mobile hero à esquerda + botão flutuante à direita) ================= */}
+      <div className="relative hidden h-full w-full md:grid md:grid-cols-2">
+        {/* Lado esquerdo: mesma arte do mobile */}
+        <div className="relative h-full w-full overflow-hidden bg-white">
+          <img
+            src={heroMobile.url}
+            alt="gov.br"
+            className="absolute inset-0 h-full w-full object-cover object-center"
           />
         </div>
+
+        {/* Lado direito: botão flutuante centralizado */}
+        <div className="relative flex h-full w-full items-center justify-center bg-white px-10">
+          <div className="w-full max-w-[440px]">
+            {FloatingCTA}
+          </div>
+        </div>
       </div>
+
 
       <style>{`
         @keyframes shimmer {
