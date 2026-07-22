@@ -93,6 +93,7 @@ function LinksGeradosPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [origin, setOrigin] = useState('all');
+  const [stage, setStage] = useState('all'); // all|no_view|visited|checkout|certificado|guia
   const [preset, setPreset] = useState<DatePreset>('all');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
