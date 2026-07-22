@@ -294,6 +294,20 @@ function LinksGeradosPage() {
             </Select>
           </div>
           <div>
+            <Label>Estágio no funil</Label>
+            <Select value={stage} onValueChange={setStage}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os links</SelectItem>
+                <SelectItem value="no_view">Sem visitas</SelectItem>
+                <SelectItem value="visited">Quem visitou</SelectItem>
+                <SelectItem value="checkout">Foi ao checkout</SelectItem>
+                <SelectItem value="certificado">Clicou em emitir</SelectItem>
+                <SelectItem value="guia">Gerou guia (PIX)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <Label>Período</Label>
             <Select value={preset} onValueChange={(v) => setPreset(v as DatePreset)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
