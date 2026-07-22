@@ -221,6 +221,43 @@ function DashboardPage() {
         </div>
       </div>
 
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-600 mr-2">
+              <CalendarIcon className="h-4 w-4" /> Período:
+            </div>
+            {([
+              ['hoje', 'Hoje'],
+              ['ontem', 'Ontem'],
+              ['7d', '7 dias'],
+              ['15d', '15 dias'],
+              ['30d', '30 dias'],
+              ['tudo', 'Tudo'],
+              ['custom', 'Personalizado'],
+            ] as [Preset, string][]).map(([key, label]) => (
+              <Button
+                key={key}
+                size="sm"
+                variant={preset === key ? 'default' : 'outline'}
+                onClick={() => setPreset(key)}
+              >
+                {label}
+              </Button>
+            ))}
+            {preset === 'custom' && (
+              <div className="flex flex-wrap items-center gap-2 ml-2">
+                <Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="h-9 w-auto" />
+                <span className="text-slate-400 text-sm">até</span>
+                <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="h-9 w-auto" />
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+
+
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <MetricCard icon={<LinkIcon className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-slate-100 text-slate-700" hint="Total de links criados" />
