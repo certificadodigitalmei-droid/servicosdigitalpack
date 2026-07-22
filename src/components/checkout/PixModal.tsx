@@ -169,45 +169,10 @@ export function PixModal({ open, amount, orderId, pixData, onClose }: PixModalPr
               </p>
             </div>
 
-            {/* QR + valor */}
-            <div className="flex flex-col items-center gap-3 rounded-md border border-border bg-white p-5">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Escaneie com o app do seu banco
-              </div>
-              <div
-                className="relative cursor-pointer group"
-                onClick={handleCopy}
-                title="Clique para copiar"
-              >
-                {pixData?.qr_code_base64 ? (
-                  <img
-                    src={
-                      pixData.qr_code_base64.startsWith('data:')
-                        ? pixData.qr_code_base64
-                        : `data:image/png;base64,${pixData.qr_code_base64.replace(/^base64,/, '')}`
-                    }
-                    alt="QR Code PIX"
-                    className="h-48 w-48 rounded bg-white p-2 shadow-inner ring-1 ring-border object-contain"
-                  />
-                ) : pixData?.pix_code ? (
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixData.pix_code)}`}
-                    alt="QR Code PIX"
-                    className="h-48 w-48 rounded bg-white p-2 shadow-inner ring-1 ring-border object-contain"
-                  />
-                ) : (
-                  <div className="grid h-48 w-48 place-items-center rounded bg-white p-2 shadow-inner ring-1 ring-border text-[11px] text-muted-foreground">
-                    QR indisponível
-                  </div>
-                )}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity rounded">
-                  <span className="bg-white px-3 py-1 rounded-full text-[10px] font-bold shadow-sm">
-                    CLIQUE PARA COPIAR
-                  </span>
-                </div>
-              </div>
-              <div className="text-[20px] font-black text-[#0b1e3f]">{brl(amount)}</div>
-              <div className="flex items-center gap-2 text-[11.5px] text-muted-foreground">
+            {/* Valor */}
+            <div className="text-center">
+              <div className="text-[24px] font-black text-[#0b1e3f]">{brl(amount)}</div>
+              <div className="mt-1 flex items-center justify-center gap-2 text-[11.5px] text-muted-foreground">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
@@ -217,26 +182,31 @@ export function PixModal({ open, amount, orderId, pixData, onClose }: PixModalPr
             </div>
 
             {/* Copia e cola */}
-            <div className="space-y-2">
-              <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+            <div className="space-y-3">
+              <div className="text-center text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 PIX Copia e Cola
               </div>
-              <div className="flex gap-2">
-                <input
-                  readOnly
-                  value={pixData?.pix_code || ''}
-                  onFocus={(e) => e.currentTarget.select()}
-                  className="w-full truncate rounded-md border border-input bg-muted/30 px-3 py-2.5 text-[12px] font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-[#1351b4] px-4 text-[13px] font-bold text-white hover:bg-[#0b1e3f] transition-colors"
-                >
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  {copied ? 'Copiado' : 'Copiar'}
-                </button>
+              <div
+                className="max-h-40 overflow-y-auto break-all rounded-md border border-input bg-muted/30 p-4 text-center text-[13px] font-mono leading-relaxed select-all"
+                onClick={(e) => {
+                  const selection = window.getSelection();
+                  const range = document.createRange();
+                  range.selectNodeContents(e.currentTarget);
+                  selection?.removeAllRanges();
+                  selection?.addRange(range);
+                }}
+                title="Clique para selecionar o código"
+              >
+                {pixData?.pix_code || '—'}
               </div>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-[#1351b4] px-4 py-3 text-[14px] font-bold text-white hover:bg-[#0b1e3f] transition-colors"
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? 'Código copiado!' : 'Copiar código PIX'}
+              </button>
             </div>
 
             {/* Detalhes */}
