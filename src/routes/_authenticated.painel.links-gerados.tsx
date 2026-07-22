@@ -155,18 +155,15 @@ function LinksGeradosPage() {
         setAutoLinkIds(new Set());
       }
 
-      setRows(list);
-      setTotal(count ?? list.length);
-
       // Load events for the visible tokens
       const tokens = list.map((r) => r.public_token).filter(Boolean);
+      let per: Record<string, Stats> = {};
+      let agg = emptyStats();
       if (tokens.length) {
         let eq = supabase.from('link_events').select('token,event_type,device,visitor_id,created_at').in('token', tokens);
         if (range.gte) eq = eq.gte('created_at', range.gte);
         if (range.lte) eq = eq.lte('created_at', range.lte);
         const { data: events } = await eq;
-        const per: Record<string, Stats> = {};
-        const agg = emptyStats();
         const visitorsGlobal = new Set<string>();
         const visitorsPer: Record<string, Set<string>> = {};
         for (const e of (events ?? []) as any[]) {
@@ -183,12 +180,28 @@ function LinksGeradosPage() {
         }
         for (const t of Object.keys(per)) per[t].unique_visitors = visitorsPer[t].size;
         agg.unique_visitors = visitorsGlobal.size;
-        setStatsByToken(per);
-        setAggregate(agg);
-      } else {
-        setStatsByToken({});
-        setAggregate(emptyStats());
       }
+
+      // Filter by funnel stage reached (deepest event wins)
+      if (stage !== 'all') {
+        list = list.filter((r) => {
+          const s = per[r.public_token] ?? emptyStats();
+          switch (stage) {
+            case 'no_view': return s.view_link === 0;
+            case 'visited': return s.view_link > 0;
+            case 'checkout': return s.view_checkout > 0;
+            case 'certificado': return s.click_certificado > 0;
+            case 'guia': return s.click_guia > 0;
+            default: return true;
+          }
+        });
+      }
+
+      setRows(list);
+      setTotal(count ?? list.length);
+      setStatsByToken(per);
+      setAggregate(agg);
+
     } catch (e: any) {
       toast.error('Erro ao carregar links: ' + (e?.message ?? 'desconhecido'));
     } finally {
