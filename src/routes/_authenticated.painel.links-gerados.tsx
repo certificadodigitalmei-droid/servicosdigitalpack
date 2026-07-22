@@ -364,7 +364,7 @@ function LinksGeradosPage() {
                   const topDevices = Object.entries(s.devices).sort((a, b) => b[1] - a[1]).slice(0, 3);
                   const isOpen = expanded[r.id];
                   return (
-                    <>
+                    <Fragment key={r.id}>
                       <TableRow key={r.id}>
                         <TableCell>
                           <button className="text-slate-400 hover:text-slate-700" onClick={() => setExpanded((x) => ({ ...x, [r.id]: !x[r.id] }))}>
