@@ -340,7 +340,7 @@ function LinksGeradosPage() {
               Aplicar
             </Button>
             <Button variant="outline" onClick={() => {
-              setSearch(''); setStatus('all'); setOrigin('all'); setPreset('all'); setFrom(''); setTo('');
+              setSearch(''); setStatus('all'); setOrigin('all'); setStage('all'); setPreset('all'); setFrom(''); setTo('');
               setPage(0); setTimeout(load, 0);
             }}>
               <RefreshCw className="mr-2 h-4 w-4" /> Limpar
