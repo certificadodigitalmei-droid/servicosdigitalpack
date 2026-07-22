@@ -93,6 +93,7 @@ function LinksGeradosPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [origin, setOrigin] = useState('all');
+  const [stage, setStage] = useState('all'); // all|no_view|visited|checkout|certificado|guia
   const [preset, setPreset] = useState<DatePreset>('all');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -154,18 +155,15 @@ function LinksGeradosPage() {
         setAutoLinkIds(new Set());
       }
 
-      setRows(list);
-      setTotal(count ?? list.length);
-
       // Load events for the visible tokens
       const tokens = list.map((r) => r.public_token).filter(Boolean);
+      let per: Record<string, Stats> = {};
+      let agg = emptyStats();
       if (tokens.length) {
         let eq = supabase.from('link_events').select('token,event_type,device,visitor_id,created_at').in('token', tokens);
         if (range.gte) eq = eq.gte('created_at', range.gte);
         if (range.lte) eq = eq.lte('created_at', range.lte);
         const { data: events } = await eq;
-        const per: Record<string, Stats> = {};
-        const agg = emptyStats();
         const visitorsGlobal = new Set<string>();
         const visitorsPer: Record<string, Set<string>> = {};
         for (const e of (events ?? []) as any[]) {
@@ -182,12 +180,28 @@ function LinksGeradosPage() {
         }
         for (const t of Object.keys(per)) per[t].unique_visitors = visitorsPer[t].size;
         agg.unique_visitors = visitorsGlobal.size;
-        setStatsByToken(per);
-        setAggregate(agg);
-      } else {
-        setStatsByToken({});
-        setAggregate(emptyStats());
       }
+
+      // Filter by funnel stage reached (deepest event wins)
+      if (stage !== 'all') {
+        list = list.filter((r) => {
+          const s = per[r.public_token] ?? emptyStats();
+          switch (stage) {
+            case 'no_view': return s.view_link === 0;
+            case 'visited': return s.view_link > 0;
+            case 'checkout': return s.view_checkout > 0;
+            case 'certificado': return s.click_certificado > 0;
+            case 'guia': return s.click_guia > 0;
+            default: return true;
+          }
+        });
+      }
+
+      setRows(list);
+      setTotal(count ?? list.length);
+      setStatsByToken(per);
+      setAggregate(agg);
+
     } catch (e: any) {
       toast.error('Erro ao carregar links: ' + (e?.message ?? 'desconhecido'));
     } finally {
@@ -280,6 +294,20 @@ function LinksGeradosPage() {
             </Select>
           </div>
           <div>
+            <Label>Estágio no funil</Label>
+            <Select value={stage} onValueChange={setStage}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os links</SelectItem>
+                <SelectItem value="no_view">Sem visitas</SelectItem>
+                <SelectItem value="visited">Quem visitou</SelectItem>
+                <SelectItem value="checkout">Foi ao checkout</SelectItem>
+                <SelectItem value="certificado">Clicou em emitir</SelectItem>
+                <SelectItem value="guia">Gerou guia (PIX)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <Label>Período</Label>
             <Select value={preset} onValueChange={(v) => setPreset(v as DatePreset)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -312,7 +340,7 @@ function LinksGeradosPage() {
               Aplicar
             </Button>
             <Button variant="outline" onClick={() => {
-              setSearch(''); setStatus('all'); setOrigin('all'); setPreset('all'); setFrom(''); setTo('');
+              setSearch(''); setStatus('all'); setOrigin('all'); setStage('all'); setPreset('all'); setFrom(''); setTo('');
               setPage(0); setTimeout(load, 0);
             }}>
               <RefreshCw className="mr-2 h-4 w-4" /> Limpar
