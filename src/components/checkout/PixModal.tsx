@@ -85,10 +85,24 @@ export function PixModal({ open, amount, orderId, pixData, onClose }: PixModalPr
     };
   }, [expiresAt, now]);
 
-  function handleCopy() {
+  async function handleCopy() {
     if (!pixData?.pix_code) return;
     try {
-      navigator.clipboard.writeText(pixData.pix_code);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(pixData.pix_code);
+      } else {
+        // Fallback para contextos não seguros ou clipboard API indisponível
+        const textarea = document.createElement('textarea');
+        textarea.value = pixData.pix_code;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (!ok) throw new Error('execCommand copy failed');
+      }
       setCopied(true);
       toast.success('Código PIX copiado!');
       setTimeout(() => setCopied(false), 2000);
