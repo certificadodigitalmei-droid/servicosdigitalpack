@@ -25,7 +25,7 @@ export const Route = createFileRoute('/_authenticated/painel/links-gerados')({
   component: LinksGeradosPage,
 });
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 10000;
 
 type DatePreset = 'all' | 'today' | 'yesterday' | '7d' | '15d' | '30d' | 'custom';
 
@@ -352,7 +352,7 @@ function LinksGeradosPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Resultados</CardTitle>
-          <CardDescription>{total} link(s) — página {page + 1} de {totalPages}</CardDescription>
+          <CardDescription>{total} link(s) exibidos em uma única página</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -490,16 +490,8 @@ function LinksGeradosPage() {
             </Table>
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-xs text-slate-500">Página {page + 1} de {totalPages}</div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={page === 0 || loading} onClick={() => setPage((p) => Math.max(0, p - 1))}>
-                Anterior
-              </Button>
-              <Button variant="outline" size="sm" disabled={page + 1 >= totalPages || loading} onClick={() => setPage((p) => p + 1)}>
-                Próxima
-              </Button>
-            </div>
+          <div className="mt-4 text-xs text-slate-500">
+            {rows.length.toLocaleString('pt-BR')} de {total.toLocaleString('pt-BR')} links carregados
           </div>
         </CardContent>
       </Card>
