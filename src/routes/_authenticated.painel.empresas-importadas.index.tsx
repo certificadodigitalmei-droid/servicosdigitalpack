@@ -58,7 +58,7 @@ function QualityBadge({ status, isTest }: { status: string | null; isTest: boole
   return <Badge className="bg-emerald-600 text-white">Completa</Badge>;
 }
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 10000;
 
 function niceName(r: Row): string {
   const raw = r.nome_titular_exibicao || r.razao_social_original || '';
@@ -282,7 +282,7 @@ function EmpresasImportadasPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Resultados</CardTitle>
-          <CardDescription>{total} registro(s) — página {page + 1} de {totalPages}</CardDescription>
+          <CardDescription>{total} registro(s) exibidos em uma única página</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -346,16 +346,8 @@ function EmpresasImportadasPage() {
             </Table>
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-xs text-slate-500">Página {page + 1} de {totalPages}</div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={page === 0 || loading} onClick={() => setPage((p) => Math.max(0, p - 1))}>
-                Anterior
-              </Button>
-              <Button variant="outline" size="sm" disabled={page + 1 >= totalPages || loading} onClick={() => setPage((p) => p + 1)}>
-                Próxima
-              </Button>
-            </div>
+          <div className="mt-4 text-xs text-slate-500">
+            {rows.length.toLocaleString('pt-BR')} de {total.toLocaleString('pt-BR')} empresas carregadas
           </div>
         </CardContent>
       </Card>
