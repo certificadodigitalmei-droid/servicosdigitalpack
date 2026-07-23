@@ -4,6 +4,7 @@ import pixLoader from '@/assets/pix-loader.png.asset.json';
 import { formatCPFOrCNPJ } from '@/lib/format';
 import { toast } from 'sonner';
 import { useServerFn } from '@tanstack/react-start';
+import { useNavigate } from '@tanstack/react-router';
 import { checkOrderStatus } from '@/lib/payments/status.functions';
 
 const brl = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`;
