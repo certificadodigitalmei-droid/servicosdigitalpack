@@ -456,7 +456,6 @@ function SectionEditor({
           <SliderRow label="Tamanho subtítulo" unit="px" min={11} max={20} value={design.subtitleSize} onChange={(v) => set('subtitleSize', v)} />
           <ColorRow label="Fundo cabeçalho" value={design.headerBg} onChange={(v) => set('headerBg', v)} />
           <ColorRow label="Cor do texto" value={design.headerText} onChange={(v) => set('headerText', v)} />
-          <ImageRow label="Imagem hero (abaixo do cabeçalho)" value={design.heroImageUrl || ''} onChange={(v) => set('heroImageUrl', v)} />
         </>
       );
     case 'avatar':
