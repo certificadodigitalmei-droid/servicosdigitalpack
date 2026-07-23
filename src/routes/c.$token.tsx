@@ -1,12 +1,12 @@
 import { createFileRoute, Link, notFound, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { Info, FileCheck2, Lock, User } from 'lucide-react';
+import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, CalendarClock } from 'lucide-react';
 import { GovConsultaLoader } from '@/components/GovConsultaLoader';
 import { CertificatePopup } from '@/components/CertificatePopup';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
-import { resolveCompanyLink, type ResolvedCompany } from '@/lib/company-links.functions';
+import { resolveCompanyLink, getLinkPaymentStatus, type ResolvedCompany } from '@/lib/company-links.functions';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
 
 export const Route = createFileRoute('/c/$token')({
