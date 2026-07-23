@@ -582,8 +582,15 @@ export async function startSending() {
     return;
   }
   if (cfg.queue.length === 0) {
-    toast.error('Nenhum destinatário na fila.');
-    return;
+    let autoImportOn = false;
+    try {
+      const mod = await import('./consulta-engine');
+      autoImportOn = !!mod.consultaStore.get().autoImport;
+    } catch { /* noop */ }
+    if (!autoImportOn) {
+      toast.error('Nenhum destinatário na fila.');
+      return;
+    }
   }
   running = true;
   paused = false;
