@@ -268,28 +268,39 @@ function EnvioMassa() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Config */}
         <Card className="lg:col-span-1">
-          <CardHeader><CardTitle>Configuração</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Configuração</CardTitle>
+            <p className="text-xs text-slate-500">
+              Preenchido automaticamente pelo{' '}
+              <Link to="/painel/modelo-mensagem" className="text-blue-600 hover:underline font-medium">
+                Modelo de Mensagem
+              </Link>
+              .
+            </p>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <Label>Assunto</Label>
-              <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
+              <Input value={subject} readOnly className="bg-slate-50 text-slate-600" />
             </div>
             <div>
               <Label>Nome do remetente</Label>
-              <Input value={fromName} onChange={(e) => setFromName(e.target.value)} />
+              <Input value={fromName} readOnly className="bg-slate-50 text-slate-600" />
             </div>
             <div>
               <Label>E-mail remetente</Label>
-              <Input value={fromAddress} onChange={(e) => setFromAddress(e.target.value)} />
+              <Input value={fromAddress} readOnly className="bg-slate-50 text-slate-600" />
             </div>
             <div>
               <Label>Responder para (opcional)</Label>
               <Input
                 placeholder="atendimento@seu-dominio.online"
                 value={replyTo}
-                onChange={(e) => setReplyTo(e.target.value)}
+                readOnly
+                className="bg-slate-50 text-slate-600"
               />
             </div>
+
             {/* Ritmo & Limites */}
             <div className="rounded-lg border-2 border-blue-200 bg-gradient-to-br from-blue-50/80 to-white p-4 space-y-4">
               <div className="flex items-center gap-2">
