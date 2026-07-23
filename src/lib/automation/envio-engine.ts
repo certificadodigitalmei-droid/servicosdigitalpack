@@ -575,7 +575,7 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
 }
 
 export async function startSending() {
-  if (running) return;
+  if (running || envioStore.get().running) return;
   const cfg = envioStore.get();
   if (cfg.testMode && !cfg.testRecipient) {
     toast.error('Modo teste ativo: informe um e-mail de teste.');
@@ -689,16 +689,18 @@ export async function startSending() {
 }
 
 export function togglePause() {
-  if (!running) return;
+  if (!running && !envioStore.get().running) return;
   paused = !paused;
   envioStore.set({ paused });
   pushLog(paused ? '⏸ Pausado.' : '▶ Retomando...');
 }
 
 export function stopSending() {
-  if (!running) return;
+  // Sempre sinaliza parada, mesmo se o módulo estiver dessincronizado do store.
   stopFlag = true;
   paused = false;
+  running = false;
+  envioStore.set({ running: false, paused: false });
   pushLog('■ Parada solicitada.');
 }
 
