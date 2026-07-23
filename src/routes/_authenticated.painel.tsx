@@ -60,6 +60,7 @@ function PanelLayout() {
     { title: 'Links Gerados', icon: LinkIcon, to: '/painel/links-gerados' },
     { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
     { title: 'Configurações de Pagamento', icon: DollarSign, to: '/painel/configuracoes-pagamento' },
+    { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
     { title: 'API Casa dos Dados', icon: KeyRound, to: '/painel/api-casa-dos-dados' },
     { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
     { title: 'Modelo de Mensagem', icon: Palette, to: '/painel/modelo-mensagem' },
