@@ -120,6 +120,23 @@ function HomePage() {
 
           {/* Service card */}
           <div className="rounded-md border border-border bg-card p-0 overflow-hidden shadow-sm">
+            {/* Certificate image with pending overlay */}
+            <div className="relative border-b border-border bg-[#f0f5ff]">
+              <img
+                src={certificadoA1Asset.url}
+                alt="Certificado Digital A1 e-MEI"
+                className="block w-full h-auto opacity-60 grayscale-[30%] select-none pointer-events-none"
+                draggable={false}
+              />
+              <div className="absolute inset-0 bg-slate-900/10" />
+              <div className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-[#ffc107] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[#856404] shadow-md">
+                <span className="h-2 w-2 rounded-full bg-[#856404] animate-pulse" />
+                Pendente
+              </div>
+              <div className="absolute bottom-3 left-3 rounded-md bg-white/95 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-wide text-[#8a6d3b] shadow">
+                Certificado desativado — aguardando emissão
+              </div>
+            </div>
             <div className="flex items-start gap-4 p-5">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#f0f5ff] text-[#004884]">
                 <User className="h-6 w-6" />
