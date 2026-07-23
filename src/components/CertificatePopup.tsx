@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Bell, ShieldAlert, Scale, Award, ShieldCheck, X, Lock, KeyRound, Headphones, ArrowRight, FileText } from 'lucide-react';
 import { getSitePopup, POPUP_DEFAULTS, type SitePopupSettings } from '@/lib/site-popup.functions';
 import { formatCNPJ } from '@/lib/format';
+import { renderRich } from '@/lib/rich-text';
 
 const FOOTER_ICONS: Record<string, any> = {
   lock: Lock,
