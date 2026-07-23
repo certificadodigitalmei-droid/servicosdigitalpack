@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   DollarSign,
   KeyRound,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
