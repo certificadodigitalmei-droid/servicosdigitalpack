@@ -524,7 +524,7 @@ function EnvioMassa() {
                   Para: <strong>{previewItem.email}</strong> · CNPJ {formatCnpj(previewItem.cnpj)}
                 </div>
                 <div className="mb-2 text-xs text-slate-600">
-                  Assunto: <strong>{substitute(subject, buildVarsForPreview(previewItem))}</strong>
+                  Assunto: <strong>{substitute(effectiveSubject, buildVarsForPreview(previewItem))}</strong>
                 </div>
                 <iframe title="preview" srcDoc={previewHtml} className="h-[600px] w-full rounded-md border" />
               </>
