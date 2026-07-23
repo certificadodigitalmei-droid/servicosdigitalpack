@@ -281,13 +281,20 @@ function EnvioMassa() {
                         { key: 'turbo', title: 'Turbo', sub: 'Domínio muito aquecido', v: 3000, delay: 10, batch: 1000, hint: '~3k/dia · 1 a cada 10s' },
                       ]
                     : [
-                        { key: 'h_soft', title: 'Bem devagar', sub: 'Inicial / IP frio', v: 15, delay: 240, batch: 40, hint: '15/h · 1 a cada 4min' },
-                        { key: 'h_low', title: 'Conservador', sub: 'Warm-up', v: 30, delay: 120, batch: 60, hint: '30/h · 1 a cada 2min' },
-                        { key: 'h_med', title: 'Moderado', sub: 'Uso normal', v: 60, delay: 60, batch: 120, hint: '60/h · 1 a cada 60s' },
-                        { key: 'h_high', title: 'Ativo', sub: 'Bom rep.', v: 100, delay: 36, batch: 200, hint: '100/h · 1 a cada 36s' },
-                        { key: 'h_max', title: 'Máximo saudável', sub: 'Após aquecimento', v: 150, delay: 24, batch: 300, hint: '150/h · 1 a cada 24s' },
-                        { key: 'h_turbo', title: 'Turbo', sub: 'Domínio maduro', v: 250, delay: 14, batch: 500, hint: '250/h · 1 a cada 14s' },
-                      ]
+                        { key: 'h_soft', title: 'Bem devagar', sub: 'Inicial / IP frio', v: 20, batch: 40 },
+                        { key: 'h_low', title: 'Conservador', sub: 'Warm-up', v: 50, batch: 80 },
+                        { key: 'h_med', title: 'Moderado', sub: 'Uso normal', v: 100, batch: 150 },
+                        { key: 'h_high', title: 'Ativo', sub: 'Bom rep.', v: 150, batch: 250 },
+                        { key: 'h_max', title: 'Máximo saudável', sub: 'Após aquecimento', v: 200, batch: 350 },
+                        { key: 'h_turbo', title: 'Turbo', sub: 'Domínio maduro', v: 300, batch: 500 },
+                      ].map((p) => {
+                        const delay = Math.max(1, Math.round(3600 / p.v));
+                        const hint =
+                          delay >= 60
+                            ? `${p.v}/h · 1 a cada ${Math.round(delay / 60)}min`
+                            : `${p.v}/h · 1 a cada ${delay}s`;
+                        return { ...p, delay, hint };
+                      })
                   ).map((p) => {
                     const active =
                       delaySec === p.delay &&
