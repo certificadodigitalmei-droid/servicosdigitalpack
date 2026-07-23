@@ -1,4 +1,6 @@
 import { createFileRoute, Outlet, Link, useLocation, useNavigate } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { useServerFn } from '@tanstack/react-start';
 import {
   LayoutDashboard,
   LogOut,
@@ -17,6 +19,9 @@ import {
   DollarSign,
   KeyRound,
   MessageSquare,
+  Cloud,
+  CloudDownload,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,6 +43,31 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { GlobalFloatingPanels } from '@/components/painel/GlobalFloatingPanels';
+import { getCloudState, saveCloudState } from '@/lib/cloud-state.functions';
+
+// Chaves de localStorage que compõem o "estado do painel" salvo na nuvem.
+const CLOUD_PREFIXES = ['automation:', 'campanha:', 'envio:', 'consulta:', 'monitor:', 'painel:'];
+
+function collectLocalSnapshot(): Record<string, string> {
+  const snap: Record<string, string> = {};
+  if (typeof window === 'undefined') return snap;
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (!key) continue;
+    if (CLOUD_PREFIXES.some((p) => key.startsWith(p))) {
+      const val = window.localStorage.getItem(key);
+      if (val != null) snap[key] = val;
+    }
+  }
+  return snap;
+}
+
+function applyLocalSnapshot(snap: Record<string, string> | null) {
+  if (!snap || typeof window === 'undefined') return;
+  for (const [k, v] of Object.entries(snap)) {
+    try { window.localStorage.setItem(k, v); } catch { /* quota */ }
+  }
+}
 
 export const Route = createFileRoute('/_authenticated/painel')({
   component: PanelLayout,
@@ -52,6 +82,58 @@ function PanelLayout() {
     toast.success('Sessão encerrada');
     navigate({ to: '/auth' });
   };
+
+  // Salvar tudo na nuvem (todas as configurações do painel).
+  const [saving, setSaving] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const doSave = useServerFn(saveCloudState);
+  const doLoad = useServerFn(getCloudState);
+
+  const saveAll = async () => {
+    setSaving(true);
+    try {
+      const snapshot = collectLocalSnapshot();
+      const r = await doSave({ data: { snapshot } });
+      setLastSavedAt(r.savedAt);
+      toast.success('Configurações do site salvas na nuvem.');
+    } catch (e: any) {
+      toast.error('Falha ao salvar: ' + (e?.message ?? 'erro'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const restoreAll = async () => {
+    if (!confirm('Restaurar todas as configurações salvas na nuvem? A página será recarregada.')) return;
+    setRestoring(true);
+    try {
+      const r = await doLoad();
+      if (!r.snapshot) {
+        toast.info('Nada salvo na nuvem ainda.');
+        setRestoring(false);
+        return;
+      }
+      applyLocalSnapshot(r.snapshot as Record<string, string>);
+      toast.success('Configurações restauradas. Recarregando…');
+      setTimeout(() => window.location.reload(), 600);
+    } catch (e: any) {
+      toast.error('Falha ao restaurar: ' + (e?.message ?? 'erro'));
+      setRestoring(false);
+    }
+  };
+
+  // Ao montar, busca updated_at para exibir "última nuvem" (sem restaurar automaticamente).
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await doLoad();
+        if (r.updatedAt) setLastSavedAt(r.updatedAt);
+      } catch { /* silencioso */ }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const menuGroups: { label: string; items: { title: string; icon: typeof LayoutDashboard; to: string }[] }[] = [
     {
@@ -185,8 +267,35 @@ function PanelLayout() {
                 </nav>
               </div>
 
-              <div className="flex shrink-0 items-center gap-3">
-                <div className="hidden text-right sm:block">
+              <div className="flex shrink-0 items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={saveAll}
+                  disabled={saving}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                  title="Salva TODAS as configurações do site (modelo, envio, filtros, pop-ups…) na nuvem."
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cloud className="h-4 w-4" />}
+                  <span className="hidden sm:inline">Salvar tudo na nuvem</span>
+                  <span className="sm:hidden">Salvar</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={restoreAll}
+                  disabled={restoring}
+                  className="gap-2"
+                  title="Restaura as configurações salvas na nuvem neste dispositivo."
+                >
+                  {restoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
+                  <span className="hidden md:inline">Restaurar</span>
+                </Button>
+                {lastSavedAt && (
+                  <span className="hidden lg:inline text-[10px] text-slate-400">
+                    Nuvem: {new Date(lastSavedAt).toLocaleString('pt-BR')}
+                  </span>
+                )}
+                <div className="hidden text-right sm:block ml-2">
                   <div className="text-xs font-semibold text-slate-700">Administrador</div>
                   <div className="text-[10px] text-slate-400">Sessão ativa</div>
                 </div>

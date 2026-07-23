@@ -1561,6 +1561,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_cloud_state: {
+        Row: {
+          snapshot: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          snapshot?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          snapshot?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
