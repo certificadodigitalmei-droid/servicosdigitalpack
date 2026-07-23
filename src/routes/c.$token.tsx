@@ -253,7 +253,69 @@ function TokenHomePage() {
   );
 }
 
-function DataRow({ label, value, last }: { label: string; value: React.ReactNode; last?: boolean }) {
+function SuccessCard({ paidAt, cnpjFmt }: { paidAt: string; cnpjFmt: string }) {
+  const issued = new Date(paidAt);
+  const expires = new Date(issued);
+  expires.setMonth(expires.getMonth() + 12);
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  return (
+    <div className="overflow-hidden rounded-md border-2 border-emerald-500 bg-white shadow-[0_20px_60px_-24px_rgba(19,136,53,0.45)]">
+      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-6 text-center text-white lg:px-6 lg:py-7">
+        <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-white/20 backdrop-blur">
+          <CheckCircle2 className="h-8 w-8" />
+        </div>
+        <div className="text-[18px] font-black leading-tight lg:text-[20px]">
+          Parabéns! Certificado emitido com sucesso
+        </div>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-white/95">
+          Vinculado automaticamente ao seu <span className="font-bold">CNPJ {cnpjFmt}</span>.
+        </p>
+      </div>
+
+      <div className="border-b border-emerald-100 bg-emerald-50/60 px-5 py-3 text-center lg:px-6">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+          <BadgeCheck className="h-3.5 w-3.5" />
+          Válido por 12 meses
+        </span>
+      </div>
+
+      <dl className="divide-y divide-emerald-100/70">
+        <div className="flex items-center gap-3 px-5 py-3 lg:px-6">
+          <div className="grid h-9 w-9 place-items-center rounded-md bg-emerald-100 text-emerald-700">
+            <CalendarCheck className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Data de emissão
+            </dt>
+            <dd className="text-[14px] font-bold text-emerald-800">{fmt(issued)}</dd>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 px-5 py-3 lg:px-6">
+          <div className="grid h-9 w-9 place-items-center rounded-md bg-emerald-100 text-emerald-700">
+            <CalendarClock className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Válido até
+            </dt>
+            <dd className="text-[14px] font-bold text-emerald-800">{fmt(expires)}</dd>
+          </div>
+        </div>
+      </dl>
+
+      <div className="flex items-center justify-between gap-2 border-t border-emerald-100 bg-emerald-50/40 px-5 py-3 text-[11px] text-emerald-800 lg:px-6">
+        <span className="flex items-center gap-1.5 font-semibold">
+          <Lock className="h-3 w-3" /> ICP-Brasil
+        </span>
+        <span className="font-bold uppercase tracking-wide">Ativo</span>
+      </div>
+    </div>
+  );
+}
+
   return (
     <div className={last ? 'px-4 py-3' : 'border-b border-border px-4 py-3'}>
       <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
