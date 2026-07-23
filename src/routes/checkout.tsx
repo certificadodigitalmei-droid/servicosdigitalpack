@@ -186,6 +186,7 @@ function CheckoutPage() {
         amount={AMOUNT}
         orderId={orderId}
         pixData={pixData}
+        cnpj={form.doc || cnpj}
         onClose={() => setPixOpen(false)}
       />
 
