@@ -18,13 +18,15 @@ export function SiteHeader({ userName, userDoc }: HeaderProps) {
       {/* 1. Top white bar with gov.br brand + user session info */}
       <div className="border-b border-border bg-background">
         <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-4 py-1.5">
-          <Link to="/" className="flex shrink-0 items-center">
-            <img 
-              src={logoAsset.url} 
-              alt="gov.br" 
-              className="h-10 w-auto object-contain"
+          <div className="flex shrink-0 items-center select-none" aria-label="gov.br">
+            <img
+              src={logoAsset.url}
+              alt="gov.br"
+              className="h-10 w-auto object-contain pointer-events-none"
+              draggable={false}
             />
-          </Link>
+          </div>
+
 
           <div className="flex min-w-0 items-center gap-2">
             <div className="min-w-0 text-right">
