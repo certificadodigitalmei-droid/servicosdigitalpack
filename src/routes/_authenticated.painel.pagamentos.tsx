@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCPFOrCNPJ } from '@/lib/format';
+import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
 
 export const Route = createFileRoute('/_authenticated/painel/pagamentos')({
   head: () => ({
