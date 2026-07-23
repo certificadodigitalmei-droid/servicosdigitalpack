@@ -280,10 +280,40 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     .join('');
 
   return `<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${title}</title></head>
-<body style="margin:0;padding:0;background:${D.pageBg};font-family:Arial,Helvetica,sans-serif;color:${D.textColor};">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.pageBg};padding:40px 0;"><tr><td align="center">
-  <table role="presentation" width="${D.containerWidth}" cellpadding="0" cellspacing="0" style="max-width:${D.containerWidth}px;width:100%;background:${D.bodyBg};box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+<html lang="pt-BR" dir="ltr"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="color-scheme" content="light only"/>
+<meta name="supported-color-schemes" content="light only"/>
+<meta name="x-apple-disable-message-reformatting"/>
+<meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no"/>
+<title>${title}</title>
+<style>
+  :root { color-scheme: light only; supported-color-schemes: light only; }
+  /* Force light mode on clients that auto-invert (Outlook.com, Yahoo, Gmail iOS) */
+  [data-ogsc] body, [data-ogsb] body,
+  u + .body, u + #body {
+    background:${D.pageBg} !important;
+    color:${D.textColor} !important;
+  }
+  [data-ogsc] .l-page, [data-ogsb] .l-page { background:${D.pageBg} !important; }
+  [data-ogsc] .l-card, [data-ogsb] .l-card { background:${D.bodyBg} !important; color:${D.textColor} !important; }
+  [data-ogsc] .l-text, [data-ogsb] .l-text { color:${D.textColor} !important; }
+  [data-ogsc] .l-muted, [data-ogsb] .l-muted { color:${D.mutedColor} !important; }
+  [data-ogsc] .l-btn, [data-ogsb] .l-btn { background:${D.buttonBg} !important; color:${D.buttonText} !important; }
+  @media (prefers-color-scheme: dark) {
+    body, .l-page { background:${D.pageBg} !important; color:${D.textColor} !important; }
+    .l-card { background:${D.bodyBg} !important; color:${D.textColor} !important; }
+    .l-text { color:${D.textColor} !important; }
+    .l-muted { color:${D.mutedColor} !important; }
+    .l-btn { background:${D.buttonBg} !important; color:${D.buttonText} !important; }
+  }
+</style>
+</head>
+<body id="body" class="body l-page" style="margin:0;padding:0;background:${D.pageBg};font-family:Arial,Helvetica,sans-serif;color:${D.textColor};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="l-page" bgcolor="${D.pageBg}" style="background:${D.pageBg};padding:40px 0;"><tr><td align="center">
+  <table role="presentation" width="${D.containerWidth}" cellpadding="0" cellspacing="0" class="l-card" bgcolor="${D.bodyBg}" style="max-width:${D.containerWidth}px;width:100%;background:${D.bodyBg};box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+
     ${D.showGovBar ? `
     <tr><td style="background:${D.govBarBg};color:${D.govBarColor};padding:10px ${px}px;font-size:12px;letter-spacing:0.5px;font-family:Arial,sans-serif;">
       ${esc(S(D.govBarText || ''))}
