@@ -95,13 +95,11 @@ function CheckoutTokenPage() {
 
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
-    console.log('[Checkout] handleSubmit iniciado');
     trackEvent(token, 'click_guia');
     if (!validate()) {
-      console.log('[Checkout] Validação falhou:', errors);
+      toast.error('Preencha corretamente os campos destacados antes de gerar a guia.');
       return;
     }
-    console.log('[Checkout] Validação passou, iniciando criação de cobrança');
     setSubmitting(true);
     try {
       const result = await createOrderAndPixCharge({
@@ -121,21 +119,20 @@ function CheckoutTokenPage() {
       if (result.orderId) setOrderId(result.orderId);
       if (result.pix_code || result.qr_code_base64) {
         setPixData({ pix_code: result.pix_code, qr_code_base64: result.qr_code_base64, transaction_id: result.transaction_id });
+        setPixOpen(true);
+        if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        toast.error('A cobrança foi criada mas o PIX não foi retornado. Tente novamente em instantes.');
       }
-
-      setPixOpen(true);
-      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('[Checkout] Erro ao gerar cobrança PIX:', err);
-      try {
-        console.error('[Checkout] Erro serializado:', JSON.stringify(err, Object.getOwnPropertyNames(err as object)));
-      } catch {}
       const msg = extractErrorMessage(err);
       toast.error(`Erro ao gerar cobrança: ${msg}`, { duration: 12000 });
     } finally {
       setSubmitting(false);
     }
   }
+
 
   return (
     <Page>
