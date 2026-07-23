@@ -297,10 +297,21 @@ function ModeloMensagem() {
           }}
         />
         <Button size="sm" variant="outline" onClick={resetAll} className="text-red-600"><RotateCcw className="mr-1.5 h-3.5 w-3.5" />Restaurar</Button>
-        <Button size="sm" onClick={() => toast.success('Modelo salvo — pronto para envio')}>
-          <Save className="mr-1.5 h-3.5 w-3.5" />Salvar
-        </Button>
+        <div className="ml-1 flex items-center gap-1.5 text-xs">
+          {!hydrated ? (
+            <span className="text-slate-400">Carregando…</span>
+          ) : savingCloud ? (
+            <span className="text-blue-600">Salvando na nuvem…</span>
+          ) : lastSavedAt ? (
+            <span className="text-emerald-600" title={new Date(lastSavedAt).toLocaleString('pt-BR')}>
+              ● Salvo na nuvem
+            </span>
+          ) : (
+            <span className="text-slate-400">Rascunho local</span>
+          )}
+        </div>
       </div>
+
 
       {/* ===== 3-column workspace ===== */}
       <div className="flex h-[calc(100vh-8rem)] overflow-hidden">
