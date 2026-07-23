@@ -118,6 +118,7 @@ const initial: State = {
   limitMode: 'daily',
   dailyLimit: 50,
   hourlyLimit: 30,
+  hourlyRestMin: 0,
   stopAtDaily: 0,
 
   sentToday: 0,
