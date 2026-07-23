@@ -296,6 +296,26 @@ function ModeloMensagem() {
             e.target.value = '';
           }}
         />
+        <Button
+          size="sm"
+          onClick={async () => {
+            try {
+              setSavingCloud(true);
+              const res = await saveMessageTemplate({ data: { design, subject, preheader, fromName, fromAddress, replyTo } });
+              setLastSavedAt(res.updatedAt);
+              toast.success('Modelo salvo na nuvem');
+            } catch (e: any) {
+              toast.error('Falha ao salvar: ' + (e?.message ?? 'erro'));
+            } finally {
+              setSavingCloud(false);
+            }
+          }}
+          disabled={!hydrated || savingCloud}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+        >
+          <Save className="mr-1.5 h-3.5 w-3.5" />
+          {savingCloud ? 'Salvando…' : 'Salvar na nuvem'}
+        </Button>
         <Button size="sm" variant="outline" onClick={resetAll} className="text-red-600"><RotateCcw className="mr-1.5 h-3.5 w-3.5" />Restaurar</Button>
         <div className="ml-1 flex items-center gap-1.5 text-xs">
           {!hydrated ? (
