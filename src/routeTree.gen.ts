@@ -22,6 +22,7 @@ import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
 import { Route as ApiPublicWebhookUniaopayRouteImport } from './routes/api/public/webhook-uniaopay'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
+import { Route as AuthenticatedPainelPagamentosRouteImport } from './routes/_authenticated.painel.pagamentos'
 import { Route as AuthenticatedPainelModeloMensagemRouteImport } from './routes/_authenticated.painel.modelo-mensagem'
 import { Route as AuthenticatedPainelLinksGeradosRouteImport } from './routes/_authenticated.painel.links-gerados'
 import { Route as AuthenticatedPainelImportarEmpresasRouteImport } from './routes/_authenticated.painel.importar-empresas'
@@ -104,6 +105,12 @@ const ApiInternalCasaDosDadosWorkerRoute =
     id: '/api/internal/casa-dos-dados-worker',
     path: '/api/internal/casa-dos-dados-worker',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedPainelPagamentosRoute =
+  AuthenticatedPainelPagamentosRouteImport.update({
+    id: '/pagamentos',
+    path: '/pagamentos',
+    getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelModeloMensagemRoute =
   AuthenticatedPainelModeloMensagemRouteImport.update({
@@ -216,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
+  '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
@@ -243,6 +251,7 @@ export interface FileRoutesByTo {
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
+  '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
@@ -274,6 +283,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/_authenticated/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/_authenticated/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
+  '/_authenticated/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
@@ -305,6 +315,7 @@ export interface FileRouteTypes {
     | '/painel/importar-empresas'
     | '/painel/links-gerados'
     | '/painel/modelo-mensagem'
+    | '/painel/pagamentos'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-uniaopay'
     | '/painel/'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/painel/importar-empresas'
     | '/painel/links-gerados'
     | '/painel/modelo-mensagem'
+    | '/painel/pagamentos'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-uniaopay'
     | '/painel'
@@ -362,6 +374,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/importar-empresas'
     | '/_authenticated/painel/links-gerados'
     | '/_authenticated/painel/modelo-mensagem'
+    | '/_authenticated/painel/pagamentos'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-uniaopay'
     | '/_authenticated/painel/'
@@ -480,6 +493,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/internal/casa-dos-dados-worker'
       preLoaderRoute: typeof ApiInternalCasaDosDadosWorkerRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/painel/pagamentos': {
+      id: '/_authenticated/painel/pagamentos'
+      path: '/pagamentos'
+      fullPath: '/painel/pagamentos'
+      preLoaderRoute: typeof AuthenticatedPainelPagamentosRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/modelo-mensagem': {
       id: '/_authenticated/painel/modelo-mensagem'
@@ -633,6 +653,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelImportarEmpresasRoute: typeof AuthenticatedPainelImportarEmpresasRoute
   AuthenticatedPainelLinksGeradosRoute: typeof AuthenticatedPainelLinksGeradosRoute
   AuthenticatedPainelModeloMensagemRoute: typeof AuthenticatedPainelModeloMensagemRoute
+  AuthenticatedPainelPagamentosRoute: typeof AuthenticatedPainelPagamentosRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
 
@@ -653,6 +674,7 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelLinksGeradosRoute: AuthenticatedPainelLinksGeradosRoute,
   AuthenticatedPainelModeloMensagemRoute:
     AuthenticatedPainelModeloMensagemRoute,
+  AuthenticatedPainelPagamentosRoute: AuthenticatedPainelPagamentosRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
 }
 

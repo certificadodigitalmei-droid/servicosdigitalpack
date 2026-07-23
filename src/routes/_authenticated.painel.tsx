@@ -14,7 +14,7 @@ import {
   Send,
   Palette,
   CheckCircle2,
-
+  DollarSign,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -56,6 +56,7 @@ function PanelLayout() {
     { title: 'Consulta Automática', icon: Bot, to: '/painel/consulta-automatica' },
     { title: 'Empresas Importadas', icon: Database, to: '/painel/empresas-importadas' },
     { title: 'Links Gerados', icon: LinkIcon, to: '/painel/links-gerados' },
+    { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
     { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
     { title: 'Modelo de Mensagem', icon: Palette, to: '/painel/modelo-mensagem' },
     { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
@@ -70,6 +71,7 @@ function PanelLayout() {
     if (path === '/painel/empresas-importadas') return 'Empresas Importadas';
     if (path.startsWith('/painel/empresas-importadas/')) return 'Detalhes da Empresa';
     if (path === '/painel/links-gerados') return 'Links Gerados';
+    if (path === '/painel/pagamentos') return 'Pagamentos';
     if (path === '/painel/importar-empresas') return 'Importar Empresas';
     if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
     if (path === '/painel/gerador-links') return 'Gerador de Links';
