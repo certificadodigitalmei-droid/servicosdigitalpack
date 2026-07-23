@@ -375,7 +375,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     </td></tr>
 
     ${D.showSignature ? `
-    <tr><td style="padding:0 ${px}px 36px ${px}px;color:${D.mutedColor};font-size:${Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
+    <tr><td style="padding:0 ${px}px 36px ${px}px;color:${D.mutedColor};font-size:${D.signatureSize || Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
       ${signature}
     </td></tr>` : ''}
 
