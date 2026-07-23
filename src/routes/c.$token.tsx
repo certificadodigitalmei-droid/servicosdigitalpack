@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, CalendarClock } from 'lucide-react';
-import { GovConsultaLoader } from '@/components/GovConsultaLoader';
+
 import { CertificatePopup } from '@/components/CertificatePopup';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { trackEvent } from '@/lib/track';
@@ -40,7 +40,6 @@ function TokenHomePage() {
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
   const aberturaFmt = row.abertura ? formatDateBR(row.abertura) : '—';
 
-  const [loading, setLoading] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
   const [paidAt, setPaidAt] = useState<string | null>(null);
@@ -74,23 +73,8 @@ function TokenHomePage() {
 
   useEffect(() => {
     trackEvent(token, 'view_link');
-    // Desktop: sem animação
-    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
-    if (isDesktop) return;
-    // Mobile: sempre mostra a animação antes de exibir o link
-    setLoading(true);
   }, [token]);
 
-
-  if (loading) {
-    return (
-      <GovConsultaLoader
-        cnpj={row.cnpj}
-        nome={nomeFmt !== '—' ? nomeFmt : undefined}
-        onFinish={() => setLoading(false)}
-      />
-    );
-  }
 
 
 
