@@ -559,6 +559,8 @@ const EE_CSS = `
 }
 .ee-tool-group button:hover { background: rgba(255,255,255,0.18); }
 .ee-tool-value { min-width: 34px; text-align: center; font-family: monospace; }
+.ee-tool-range { width: 90px; accent-color: #3b82f6; cursor: ew-resize; }
+
 .ee-tool-label { opacity: 0.7; font-size: 11px; }
 .ee-color-swatch {
   width: 22px; height: 22px; border-radius: 5px; border: 2px solid white; cursor: pointer;
