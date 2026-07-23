@@ -102,7 +102,7 @@ function DashboardPage() {
   const [preset, setPreset] = useState<Preset>('tudo');
   const [customFrom, setCustomFrom] = useState<string>('');
   const [customTo, setCustomTo] = useState<string>('');
-  const [previewPopup, setPreviewPopup] = useState<null | 'cert' | 'payment'>(null);
+  
 
   const range = useMemo(() => computeRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
 
