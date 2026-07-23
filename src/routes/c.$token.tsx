@@ -182,6 +182,24 @@ function TokenHomePage() {
             {/* Coluna lateral — checkout (sticky em desktop) */}
             <aside className="lg:sticky lg:top-6 space-y-4">
               <div className={`rounded-md border bg-card p-0 overflow-hidden shadow-sm lg:shadow-[0_20px_60px_-24px_rgba(0,72,132,0.35)] ${paidAt ? 'border-emerald-500' : 'border-border'}`}>
+                {!paidAt && (
+                  <div className="relative border-b border-border bg-[#f0f5ff]">
+                    <img
+                      src={certificadoA1Asset.url}
+                      alt="Certificado Digital A1 e-MEI"
+                      className="block w-full h-auto opacity-60 grayscale-[30%] select-none pointer-events-none"
+                      draggable={false}
+                    />
+                    <div className="absolute inset-0 bg-slate-900/10" />
+                    <div className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-[#ffc107] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[#856404] shadow-md">
+                      <span className="h-2 w-2 rounded-full bg-[#856404] animate-pulse" />
+                      Pendente
+                    </div>
+                    <div className="absolute bottom-3 left-3 rounded-md bg-white/95 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-wide text-[#8a6d3b] shadow">
+                      Certificado desativado — aguardando emissão
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-start gap-4 p-5 lg:flex-col lg:items-center lg:text-center lg:p-6">
                   <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md lg:h-16 lg:w-16 ${paidAt ? 'bg-emerald-50 text-emerald-600' : 'bg-[#f0f5ff] text-[#004884]'}`}>
                     {paidAt ? <CheckCircle2 className="h-6 w-6 lg:h-8 lg:w-8" /> : <User className="h-6 w-6 lg:h-8 lg:w-8" />}
