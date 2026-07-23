@@ -104,19 +104,66 @@ function EnvioMassa() {
   const importDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
   const sentEmails = useStore(envioStore, (s) => s.sentEmails);
 
-  const [emailStats, setEmailStats] = useState<EmailStatsResult | null>(null);
+  const [emailStatsRaw, setEmailStatsRaw] = useState<EmailStatsResult | null>(null);
+  const [statsBaseline, setStatsBaseline] = useState<{ lastHour: any; last24h: any } | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.localStorage.getItem('envio:statsBaseline');
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
   const [loadingStats, setLoadingStats] = useState(false);
+
+  const emailStats = useMemo<EmailStatsResult | null>(() => {
+    if (!emailStatsRaw || !emailStatsRaw.ok || !statsBaseline) return emailStatsRaw;
+    const sub = (cur: any, base: any) => {
+      const out: any = {};
+      for (const k of Object.keys(cur)) out[k] = Math.max(0, (cur[k] ?? 0) - (base?.[k] ?? 0));
+      return out;
+    };
+    return {
+      ...emailStatsRaw,
+      lastHour: sub(emailStatsRaw.lastHour, statsBaseline.lastHour),
+      last24h: sub(emailStatsRaw.last24h, statsBaseline.last24h),
+    };
+  }, [emailStatsRaw, statsBaseline]);
+
   const refreshStats = async () => {
     setLoadingStats(true);
     try {
       const res = await getEmailStats();
-      setEmailStats(res as EmailStatsResult);
+      setEmailStatsRaw(res as EmailStatsResult);
     } catch (e: any) {
       toast.error('Falha ao consultar limites: ' + e.message);
     } finally {
       setLoadingStats(false);
     }
   };
+
+  const zerarVisualizacao = async () => {
+    setLoadingStats(true);
+    try {
+      const res = (await getEmailStats()) as EmailStatsResult;
+      setEmailStatsRaw(res);
+      if (res.ok) {
+        const base = { lastHour: res.lastHour, last24h: res.last24h };
+        setStatsBaseline(base);
+        window.localStorage.setItem('envio:statsBaseline', JSON.stringify(base));
+        toast.success('Visualização zerada. Só contará envios daqui pra frente.');
+      }
+    } catch (e: any) {
+      toast.error('Falha ao zerar: ' + e.message);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const limparBaseline = () => {
+    setStatsBaseline(null);
+    window.localStorage.removeItem('envio:statsBaseline');
+    toast.success('Voltando a mostrar todos os envios registrados no servidor.');
+  };
+
 
   const [previewIdx, setPreviewIdx] = useState(0);
   const [designTick, setDesignTick] = useState(0);
