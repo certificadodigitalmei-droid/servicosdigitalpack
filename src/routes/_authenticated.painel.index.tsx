@@ -602,6 +602,8 @@ function PopupPreviewCard({ icon, title, description, badge, badgeColor, onOpen 
     </div>
   );
 }
+
+function deviceIcon(k: string) {
   const s = k.toLowerCase();
   if (s.includes('ipad') || s.includes('tablet')) return <Tablet className="h-4 w-4 text-slate-400" />;
   if (s.includes('ios') || s.includes('android') || s.includes('mobile')) return <Smartphone className="h-4 w-4 text-slate-400" />;
