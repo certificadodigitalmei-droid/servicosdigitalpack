@@ -50,6 +50,7 @@ import {
   setLimitMode,
   setDailyLimit,
   setHourlyLimit,
+  setHourlyRestMin,
   setStopAtDaily,
 
   resetDailyCounter,
