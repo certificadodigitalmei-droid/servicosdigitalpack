@@ -21,6 +21,7 @@ import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
 import { Route as ApiPublicWebhookUniaopayRouteImport } from './routes/api/public/webhook-uniaopay'
+import { Route as ApiPublicWebhookNexuspayRouteImport } from './routes/api/public/webhook-nexuspay'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
 import { Route as AuthenticatedPainelPagamentosRouteImport } from './routes/_authenticated.painel.pagamentos'
 import { Route as AuthenticatedPainelModeloMensagemRouteImport } from './routes/_authenticated.painel.modelo-mensagem'
@@ -32,6 +33,7 @@ import { Route as AuthenticatedPainelEnvioMassaRouteImport } from './routes/_aut
 import { Route as AuthenticatedPainelEnviadosRouteImport } from './routes/_authenticated.painel.enviados'
 import { Route as AuthenticatedPainelEmpresasImportadasRouteImport } from './routes/_authenticated.painel.empresas-importadas'
 import { Route as AuthenticatedPainelConsultaAutomaticaRouteImport } from './routes/_authenticated.painel.consulta-automatica'
+import { Route as AuthenticatedPainelConfiguracoesPagamentoRouteImport } from './routes/_authenticated.painel.configuracoes-pagamento'
 import { Route as AuthenticatedPainelCampanhasEmailRouteImport } from './routes/_authenticated.painel.campanhas-email'
 import { Route as AuthenticatedPainelEmpresasImportadasIndexRouteImport } from './routes/_authenticated.painel.empresas-importadas.index'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -100,6 +102,12 @@ const ApiPublicWebhookUniaopayRoute =
     path: '/api/public/webhook-uniaopay',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicWebhookNexuspayRoute =
+  ApiPublicWebhookNexuspayRouteImport.update({
+    id: '/api/public/webhook-nexuspay',
+    path: '/api/public/webhook-nexuspay',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiInternalCasaDosDadosWorkerRoute =
   ApiInternalCasaDosDadosWorkerRouteImport.update({
     id: '/api/internal/casa-dos-dados-worker',
@@ -166,6 +174,12 @@ const AuthenticatedPainelConsultaAutomaticaRoute =
     path: '/consulta-automatica',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelConfiguracoesPagamentoRoute =
+  AuthenticatedPainelConfiguracoesPagamentoRouteImport.update({
+    id: '/configuracoes-pagamento',
+    path: '/configuracoes-pagamento',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 const AuthenticatedPainelCampanhasEmailRoute =
   AuthenticatedPainelCampanhasEmailRouteImport.update({
     id: '/campanhas-email',
@@ -214,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
+  '/painel/configuracoes-pagamento': typeof AuthenticatedPainelConfiguracoesPagamentoRoute
   '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
   '/painel/enviados': typeof AuthenticatedPainelEnviadosRoute
@@ -225,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
+  '/api/public/webhook-nexuspay': typeof ApiPublicWebhookNexuspayRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
@@ -243,6 +259,7 @@ export interface FileRoutesByTo {
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
+  '/painel/configuracoes-pagamento': typeof AuthenticatedPainelConfiguracoesPagamentoRoute
   '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/painel/enviados': typeof AuthenticatedPainelEnviadosRoute
   '/painel/envio-massa': typeof AuthenticatedPainelEnvioMassaRoute
@@ -253,6 +270,7 @@ export interface FileRoutesByTo {
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
+  '/api/public/webhook-nexuspay': typeof ApiPublicWebhookNexuspayRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
@@ -274,6 +292,7 @@ export interface FileRoutesById {
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout_/$token': typeof CheckoutTokenRoute
   '/_authenticated/painel/campanhas-email': typeof AuthenticatedPainelCampanhasEmailRoute
+  '/_authenticated/painel/configuracoes-pagamento': typeof AuthenticatedPainelConfiguracoesPagamentoRoute
   '/_authenticated/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/_authenticated/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
   '/_authenticated/painel/enviados': typeof AuthenticatedPainelEnviadosRoute
@@ -285,6 +304,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/_authenticated/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
+  '/api/public/webhook-nexuspay': typeof ApiPublicWebhookNexuspayRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
   '/_authenticated/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
@@ -306,6 +326,7 @@ export interface FileRouteTypes {
     | '/certificado-mei/$token'
     | '/checkout/$token'
     | '/painel/campanhas-email'
+    | '/painel/configuracoes-pagamento'
     | '/painel/consulta-automatica'
     | '/painel/empresas-importadas'
     | '/painel/enviados'
@@ -317,6 +338,7 @@ export interface FileRouteTypes {
     | '/painel/modelo-mensagem'
     | '/painel/pagamentos'
     | '/api/internal/casa-dos-dados-worker'
+    | '/api/public/webhook-nexuspay'
     | '/api/public/webhook-uniaopay'
     | '/painel/'
     | '/painel/empresas-importadas/$companyId'
@@ -335,6 +357,7 @@ export interface FileRouteTypes {
     | '/certificado-mei/$token'
     | '/checkout/$token'
     | '/painel/campanhas-email'
+    | '/painel/configuracoes-pagamento'
     | '/painel/consulta-automatica'
     | '/painel/enviados'
     | '/painel/envio-massa'
@@ -345,6 +368,7 @@ export interface FileRouteTypes {
     | '/painel/modelo-mensagem'
     | '/painel/pagamentos'
     | '/api/internal/casa-dos-dados-worker'
+    | '/api/public/webhook-nexuspay'
     | '/api/public/webhook-uniaopay'
     | '/painel'
     | '/painel/empresas-importadas/$companyId'
@@ -365,6 +389,7 @@ export interface FileRouteTypes {
     | '/certificado-mei/$token'
     | '/checkout_/$token'
     | '/_authenticated/painel/campanhas-email'
+    | '/_authenticated/painel/configuracoes-pagamento'
     | '/_authenticated/painel/consulta-automatica'
     | '/_authenticated/painel/empresas-importadas'
     | '/_authenticated/painel/enviados'
@@ -376,6 +401,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/modelo-mensagem'
     | '/_authenticated/painel/pagamentos'
     | '/api/internal/casa-dos-dados-worker'
+    | '/api/public/webhook-nexuspay'
     | '/api/public/webhook-uniaopay'
     | '/_authenticated/painel/'
     | '/_authenticated/painel/empresas-importadas/$companyId'
@@ -396,6 +422,7 @@ export interface RootRouteChildren {
   CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
   CheckoutTokenRoute: typeof CheckoutTokenRoute
   ApiInternalCasaDosDadosWorkerRoute: typeof ApiInternalCasaDosDadosWorkerRoute
+  ApiPublicWebhookNexuspayRoute: typeof ApiPublicWebhookNexuspayRoute
   ApiPublicWebhookUniaopayRoute: typeof ApiPublicWebhookUniaopayRoute
   ApiPublicHooksAutoImportMeiRoute: typeof ApiPublicHooksAutoImportMeiRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -487,6 +514,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhookUniaopayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhook-nexuspay': {
+      id: '/api/public/webhook-nexuspay'
+      path: '/api/public/webhook-nexuspay'
+      fullPath: '/api/public/webhook-nexuspay'
+      preLoaderRoute: typeof ApiPublicWebhookNexuspayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/internal/casa-dos-dados-worker': {
       id: '/api/internal/casa-dos-dados-worker'
       path: '/api/internal/casa-dos-dados-worker'
@@ -562,6 +596,13 @@ declare module '@tanstack/react-router' {
       path: '/consulta-automatica'
       fullPath: '/painel/consulta-automatica'
       preLoaderRoute: typeof AuthenticatedPainelConsultaAutomaticaRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/_authenticated/painel/configuracoes-pagamento': {
+      id: '/_authenticated/painel/configuracoes-pagamento'
+      path: '/configuracoes-pagamento'
+      fullPath: '/painel/configuracoes-pagamento'
+      preLoaderRoute: typeof AuthenticatedPainelConfiguracoesPagamentoRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/campanhas-email': {
@@ -644,6 +685,7 @@ const AuthenticatedPainelGeradorLinksRouteWithChildren =
 
 interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelCampanhasEmailRoute: typeof AuthenticatedPainelCampanhasEmailRoute
+  AuthenticatedPainelConfiguracoesPagamentoRoute: typeof AuthenticatedPainelConfiguracoesPagamentoRoute
   AuthenticatedPainelConsultaAutomaticaRoute: typeof AuthenticatedPainelConsultaAutomaticaRoute
   AuthenticatedPainelEmpresasImportadasRoute: typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
   AuthenticatedPainelEnviadosRoute: typeof AuthenticatedPainelEnviadosRoute
@@ -660,6 +702,8 @@ interface AuthenticatedPainelRouteChildren {
 const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelCampanhasEmailRoute:
     AuthenticatedPainelCampanhasEmailRoute,
+  AuthenticatedPainelConfiguracoesPagamentoRoute:
+    AuthenticatedPainelConfiguracoesPagamentoRoute,
   AuthenticatedPainelConsultaAutomaticaRoute:
     AuthenticatedPainelConsultaAutomaticaRoute,
   AuthenticatedPainelEmpresasImportadasRoute:
@@ -704,6 +748,7 @@ const rootRouteChildren: RootRouteChildren = {
   CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
   CheckoutTokenRoute: CheckoutTokenRoute,
   ApiInternalCasaDosDadosWorkerRoute: ApiInternalCasaDosDadosWorkerRoute,
+  ApiPublicWebhookNexuspayRoute: ApiPublicWebhookNexuspayRoute,
   ApiPublicWebhookUniaopayRoute: ApiPublicWebhookUniaopayRoute,
   ApiPublicHooksAutoImportMeiRoute: ApiPublicHooksAutoImportMeiRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
