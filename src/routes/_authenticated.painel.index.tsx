@@ -43,6 +43,8 @@ type Stats = {
   viewCheckoutTotal: number;
   clickCertTotal: number;
   clickGuiaTotal: number;
+  paid: number;
+  paidAmount: number;
   byBrowser: Record<string, number>;
   byDevice: Record<string, number>;
   byOS: Record<string, number>;
@@ -59,11 +61,14 @@ const EMPTY: Stats = {
   viewCheckoutTotal: 0,
   clickCertTotal: 0,
   clickGuiaTotal: 0,
+  paid: 0,
+  paidAmount: 0,
   byBrowser: {},
   byDevice: {},
   byOS: {},
   conversion: 0,
 };
+
 
 
 type Preset = 'hoje' | 'ontem' | '7d' | '15d' | '30d' | 'tudo' | 'custom';
