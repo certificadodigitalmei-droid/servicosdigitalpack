@@ -373,12 +373,26 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
       if (e) sentSet.add('e:' + e);
     }
 
+    // IDs / chaves já presentes na fila atual para nunca duplicar.
+    const currentQueue = envioStore.get().queue;
+    const queuedCnpj = new Set<string>();
+    const queuedEmail = new Set<string>();
+    const queuedId = new Set<string>();
+    for (const q of currentQueue) {
+      const c = normCnpj(q.cnpj);
+      const e = normEmail(q.email || '');
+      if (c) queuedCnpj.add(c);
+      if (e) queuedEmail.add(e);
+      if (q.id) queuedId.add(q.id);
+    }
+
     // Deduplica por CNPJ e por e-mail; ordem já é mais-recente-primeiro.
     const seenCnpj = new Set<string>();
     const seenEmail = new Set<string>();
-    const items: QueueItem[] = [];
+    const newItems: QueueItem[] = [];
     let skippedSent = 0;
     for (const c of all) {
+      if (newItems.length >= limit) break; // só 1 (ou N) por sincronização
       const cnpjKey = normCnpj(c.cnpj);
       const emailKey = normEmail(c.email || '');
       if (cnpjKey && seenCnpj.has(cnpjKey)) continue;
@@ -391,8 +405,15 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
         (emailKey && sentSet.has('e:' + emailKey));
       if (alreadySent) { skippedSent++; continue; }
 
+      // Já está na fila (pendente, enviando, enviada, erro) → não reinsere.
+      if (queuedId.has(c.id)) continue;
+      if (cnpjKey && queuedCnpj.has(cnpjKey)) continue;
+      if (emailKey && queuedEmail.has(emailKey)) continue;
+
       const hasEmail = /.+@.+\..+/.test(c.email || '');
-      items.push({
+      if (!hasEmail) continue; // só sincroniza contatos com e-mail válido
+
+      newItems.push({
         id: c.id,
         email: c.email || '',
         cnpj: c.cnpj,
@@ -401,15 +422,18 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
         situacao: c.situacao_cadastral_desc || '',
         uf: c.uf || '',
         municipio: c.municipio_descricao || '',
-        status: hasEmail ? 'pending' : 'skipped',
-        message: hasEmail ? undefined : 'Sem e-mail',
+        status: 'pending',
+        message: undefined,
         publicToken: linksMap[c.id]?.token || null,
         publicUrl: linksMap[c.id]?.url || null,
       });
     }
-    envioStore.set({ queue: items });
-    const pendingCount = items.filter((i) => i.status === 'pending').length;
-    pushLog(`Fila sincronizada: ${items.length} únicos (${pendingCount} pendentes, ${skippedSent} já enviados excluídos).`);
+    if (newItems.length > 0) {
+      envioStore.set({ queue: [...currentQueue, ...newItems] });
+      pushLog(`Fila sincronizada: +${newItems.length} pendente(s)${skippedSent ? ` (${skippedSent} já enviados ignorados)` : ''}.`);
+    } else {
+      pushLog(`Fila sincronizada: nenhum novo pendente${skippedSent ? ` (${skippedSent} já enviados ignorados)` : ''}.`);
+    }
   } catch (e: any) {
     toast.error('Erro ao carregar destinatários: ' + e.message);
   } finally {
