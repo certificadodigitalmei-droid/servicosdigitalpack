@@ -195,8 +195,8 @@ function CheckoutTokenPage() {
                   </Card>
 
                   <Card title="Dados do Pagador">
-                    <div className="space-y-3 p-4 lg:p-5">
-                      <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="space-y-3 p-3 sm:p-4 lg:p-5">
+                      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
                         <Field label="NOME DO TITULAR" error={errors.nome} required>
                           <input
                             type="text"
@@ -216,7 +216,7 @@ function CheckoutTokenPage() {
                           />
                         </Field>
                       </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                         <Field label="E-MAIL" error={errors.email} required>
                           <input
                             type="email"
@@ -246,7 +246,7 @@ function CheckoutTokenPage() {
                       <PayOption selected icon={<QrCode className="h-5 w-5" />} title="PIX" subtitle="Confirmação após identificação do pagamento" />
                       <PayOption disabled icon={<CreditCard className="h-5 w-5" />} title="Cartão de Crédito" subtitle="Indisponível para este serviço" />
                       <PayOption disabled icon={<Barcode className="h-5 w-5" />} title="Boleto Bancário" subtitle="Indisponível para este serviço" />
-                      <div className="rounded-md border border-success/40 bg-success-soft px-3 py-2 text-[12.5px] text-foreground">
+                      <div className="rounded-md border border-success/40 bg-success-soft px-3 py-2 text-[12px] leading-snug text-foreground sm:text-[12.5px]">
                         ✓ Confirmação imediata da emissão via PIX. QR Code gerado na hora — pague pelo app do seu banco.
                       </div>
                     </div>
