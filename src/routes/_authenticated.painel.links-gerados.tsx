@@ -465,6 +465,7 @@ function LinksGeradosPage() {
                   const pub = r.public_url || (r.public_token ? `/c/${r.public_token}` : null);
                   const chk = r.checkout_url || (r.public_token ? `/checkout/${r.public_token}` : null);
                   const s = statsByToken[r.public_token] ?? emptyStats();
+                  const paid = paidByLinkId[r.id];
                   const topDevices = Object.entries(s.devices).sort((a, b) => b[1] - a[1]).slice(0, 3);
                   const isOpen = expanded[r.id];
                   return (
