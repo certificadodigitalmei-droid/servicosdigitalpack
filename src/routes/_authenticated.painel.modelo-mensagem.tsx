@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { toast } from 'sonner';
-import { Copy, Download, RotateCcw, Save, Smartphone, Monitor, Check, Sparkles } from 'lucide-react';
+import { Copy, Download, RotateCcw, Save, Smartphone, Monitor, Upload, Info } from 'lucide-react';
 import {
   DEFAULT_DESIGN,
   DEFAULT_SUBJECT,
@@ -21,8 +21,6 @@ import {
   substitute,
   type CampaignDesign,
 } from '@/lib/email-campaign/template';
-import { PRESETS } from '@/lib/email-campaign/presets';
-
 
 export const Route = createFileRoute('/_authenticated/painel/modelo-mensagem')({
   component: ModeloMensagem,
@@ -32,7 +30,6 @@ const STORAGE_KEY = 'campanha:design:v1';
 const SUBJECT_KEY = 'campanha:subject:v1';
 const PREHEADER_KEY = 'campanha:preheader:v1';
 
-// Dados fictícios para prévia
 const PREVIEW_VARS: Record<string, string> = {
   NOME_EMPRESARIAL: 'RAFAEL VALE DA SILVA',
   RAZAO_SOCIAL: 'RAFAEL VALE DA SILVA',
@@ -51,6 +48,25 @@ const PREVIEW_VARS: Record<string, string> = {
   NOME_REMETENTE: 'Central de Atendimento',
   EMPRESA_REMETENTE: 'Certificado Digital MEI',
 };
+
+const VARIABLES: { key: string; label: string; example: string }[] = [
+  { key: 'NOME_TITULAR', label: 'Nome do titular do CNPJ', example: 'RAFAEL VALE DA SILVA' },
+  { key: 'NOME_EMPRESARIAL', label: 'Nome empresarial (fantasia)', example: 'RAFAEL VALE DA SILVA' },
+  { key: 'RAZAO_SOCIAL', label: 'Razão social completa', example: 'RAFAEL VALE DA SILVA' },
+  { key: 'CNPJ', label: 'CNPJ formatado (00.000.000/0000-00)', example: '68.087.737/0001-27' },
+  { key: 'DATA_ABERTURA', label: 'Data de abertura da empresa', example: '15/03/2024' },
+  { key: 'DATA_SITUACAO', label: 'Data da situação cadastral', example: '15/03/2024' },
+  { key: 'SITUACAO', label: 'Situação cadastral atual', example: 'CNPJ sem certificado ativo' },
+  { key: 'MUNICIPIO', label: 'Município da empresa', example: 'SÃO PAULO' },
+  { key: 'UF', label: 'Estado (sigla)', example: 'SP' },
+  { key: 'EMAIL', label: 'E-mail cadastrado do destinatário', example: 'exemplo@email.com' },
+  { key: 'LINK_PUBLICO', label: 'Link personalizado do destinatário (botão)', example: 'https://.../c/token' },
+  { key: 'LINK_CHECKOUT', label: 'Link direto do checkout de pagamento', example: 'https://.../checkout' },
+  { key: 'TOKEN', label: 'Token único do link', example: 'abc123' },
+  { key: 'REFERENCIA', label: 'Número de referência da campanha', example: 'REF-000001' },
+  { key: 'NOME_REMETENTE', label: 'Nome do remetente (assinatura)', example: 'Central de Atendimento' },
+  { key: 'EMPRESA_REMETENTE', label: 'Empresa remetente (assinatura)', example: 'Certificado Digital MEI' },
+];
 
 function loadDesign(): CampaignDesign {
   if (typeof window === 'undefined') return DEFAULT_DESIGN;
@@ -75,28 +91,10 @@ function ModeloMensagem() {
   const [subject, setSubject] = useState<string>(() => loadString(SUBJECT_KEY, DEFAULT_SUBJECT));
   const [preheader, setPreheader] = useState<string>(() => loadString(PREHEADER_KEY, DEFAULT_PREHEADER));
   const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop');
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
-  const applyPreset = (id: string) => {
-    const p = PRESETS.find((x) => x.id === id);
-    if (!p) return;
-    setDesign({ ...DEFAULT_DESIGN, ...p.design });
-    setSubject(p.subject);
-    setPreheader(p.preheader);
-    setSelectedPreset(id);
-    toast.success(`Modelo "${p.name}" aplicado — clique em Salvar para usar nos envios`);
-  };
-
-
-  useEffect(() => {
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(design)); } catch {}
-  }, [design]);
-  useEffect(() => {
-    try { window.localStorage.setItem(SUBJECT_KEY, subject); } catch {}
-  }, [subject]);
-  useEffect(() => {
-    try { window.localStorage.setItem(PREHEADER_KEY, preheader); } catch {}
-  }, [preheader]);
+  useEffect(() => { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(design)); } catch {} }, [design]);
+  useEffect(() => { try { window.localStorage.setItem(SUBJECT_KEY, subject); } catch {} }, [subject]);
+  useEffect(() => { try { window.localStorage.setItem(PREHEADER_KEY, preheader); } catch {} }, [preheader]);
 
   const set = <K extends keyof CampaignDesign>(k: K, v: CampaignDesign[K]) =>
     setDesign((d) => ({ ...d, [k]: v }));
@@ -114,21 +112,24 @@ function ModeloMensagem() {
     toast.success('Modelo restaurado');
   };
 
-  const copyHtml = async () => {
-    await navigator.clipboard.writeText(html);
-    toast.success('HTML copiado');
-  };
-
+  const copyHtml = async () => { await navigator.clipboard.writeText(html); toast.success('HTML copiado'); };
   const downloadHtml = () => {
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = 'modelo-email.html';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = url; a.download = 'modelo-email.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const copyVar = async (key: string) => {
+    const tag = `{{${key}}}`;
+    try {
+      await navigator.clipboard.writeText(tag);
+      toast.success(`${tag} copiado — cole no campo desejado`);
+    } catch {
+      toast.error('Não foi possível copiar');
+    }
   };
 
   return (
@@ -137,8 +138,8 @@ function ModeloMensagem() {
         <div>
           <h1 className="text-3xl font-bold text-brand-navy">Modelo de Mensagem</h1>
           <p className="text-sm text-muted-foreground">
-            Editor completo do e-mail. Cada mudança é salva automaticamente no navegador
-            e aplicada em <strong>Campanhas de E-mail</strong> e <strong>Envio em Massa</strong>.
+            Edite todos os elementos do e-mail. As alterações são salvas automaticamente e
+            aplicadas em <strong>Campanhas de E-mail</strong> e <strong>Envio em Massa</strong>.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -156,74 +157,21 @@ function ModeloMensagem() {
         </div>
       </div>
 
-      {/* ===== Galeria de Modelos Prontos ===== */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-brand-navy" />
-            Galeria de modelos prontos
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Clique em um modelo para aplicar. Depois clique em <strong>Salvar modelo</strong> para usar nos envios.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {PRESETS.map((p) => {
-              const previewHtml = renderHtml(p.design, PREVIEW_VARS);
-              const active = selectedPreset === p.id;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => applyPreset(p.id)}
-                  className={`group text-left rounded-xl border-2 overflow-hidden transition-all hover:shadow-lg ${active ? 'border-brand-navy ring-2 ring-brand-navy/30' : 'border-slate-200 hover:border-slate-400'}`}
-                >
-                  <div className="relative bg-slate-100 h-[260px] overflow-hidden">
-                    <iframe
-                      title={p.name}
-                      srcDoc={previewHtml}
-                      className="border-none pointer-events-none absolute top-0 left-0"
-                      style={{ width: '900px', height: '1100px', transform: 'scale(0.42)', transformOrigin: 'top left' }}
-                    />
-                    {active && (
-                      <div className="absolute top-2 right-2 bg-brand-navy text-white rounded-full p-1.5 shadow-lg">
-                        <Check className="h-4 w-4" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-3 bg-white border-t">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ background: p.accent }} />
-                      <div className="font-semibold text-sm">{p.name}</div>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{p.description}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
         {/* ===== Editor ===== */}
         <div className="space-y-3">
-          <Accordion type="multiple" defaultValue={['assunto', 'header', 'hero', 'body']} className="space-y-2">
-
+          <Accordion type="multiple" defaultValue={['assunto', 'header', 'hero', 'body', 'button']} className="space-y-2">
 
             <SectionItem value="assunto" title="Assunto e preheader">
-              <Field label="Assunto (aparece no Gmail)">
+              <Field label="Assunto (aparece no Gmail)" hint="Use variáveis do painel à direita, ex: {{NOME_TITULAR}}">
                 <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
               </Field>
-              <Field label="Preheader (prévia)">
+              <Field label="Preheader (prévia curta na caixa de entrada)">
                 <Input value={preheader} onChange={(e) => setPreheader(e.target.value)} />
               </Field>
-              <p className="text-[11px] text-muted-foreground">
-                Use variáveis como <code>{'{{NOME_TITULAR}}'}</code>, <code>{'{{CNPJ}}'}</code>, <code>{'{{LINK_PUBLICO}}'}</code>.
-              </p>
             </SectionItem>
 
-            <SectionItem value="header" title="Cabeçalho (topo azul)">
+            <SectionItem value="header" title="Cabeçalho (topo)">
               <Field label="Logo / linha superior (texto)">
                 <Input value={design.logoText} onChange={(e) => set('logoText', e.target.value)} />
               </Field>
@@ -245,9 +193,11 @@ function ModeloMensagem() {
                 <ColorField label="Fundo cabeçalho" value={design.headerBg} onChange={(v) => set('headerBg', v)} />
                 <ColorField label="Texto cabeçalho" value={design.headerText} onChange={(v) => set('headerText', v)} />
               </div>
-              <Field label="URL da imagem hero (opcional, abaixo do cabeçalho)">
-                <Input value={design.heroImageUrl || ''} onChange={(e) => set('heroImageUrl', e.target.value)} placeholder="https://..." />
-              </Field>
+              <ImageField
+                label="Imagem hero (opcional, abaixo do cabeçalho)"
+                value={design.heroImageUrl || ''}
+                onChange={(v) => set('heroImageUrl', v)}
+              />
             </SectionItem>
 
             <SectionItem value="hero" title="Título grande (bloco central)">
@@ -288,7 +238,7 @@ function ModeloMensagem() {
               <ColorField label="Fundo do card" value={design.cardBg} onChange={(v) => set('cardBg', v)} />
             </SectionItem>
 
-            <SectionItem value="warning" title="Bloco de aviso (vermelho)">
+            <SectionItem value="warning" title="Bloco de aviso">
               <ToggleField label="Mostrar aviso" value={design.showWarning} onChange={(v) => set('showWarning', v)} />
               <Field label="Título do aviso">
                 <Input value={design.warningTitle} onChange={(e) => set('warningTitle', e.target.value)} />
@@ -335,15 +285,13 @@ function ModeloMensagem() {
               </Field>
             </SectionItem>
 
-            <SectionItem value="avatar" title="Foto de perfil (avatar circular no topo)">
+            <SectionItem value="avatar" title="Avatar circular (topo)">
               <ToggleField label="Mostrar avatar" value={!!design.showAvatar} onChange={(v) => set('showAvatar', v)} />
-              <Field label="URL da imagem (PNG/JPG quadrada)">
-                <Input value={design.avatarUrl || ''} onChange={(e) => set('avatarUrl', e.target.value)} placeholder="https://..." />
-              </Field>
+              <ImageField label="Imagem do avatar" value={design.avatarUrl || ''} onChange={(v) => set('avatarUrl', v)} />
               <SliderField label="Tamanho (px)" min={40} max={110} value={design.avatarSize || 64} onChange={(v) => set('avatarSize', v)} />
             </SectionItem>
 
-            <SectionItem value="govbar" title="Faixa gov.br (topo)">
+            <SectionItem value="govbar" title="Faixa superior (breadcrumb)">
               <ToggleField label="Mostrar faixa" value={!!design.showGovBar} onChange={(v) => set('showGovBar', v)} />
               <Field label="Texto">
                 <Input value={design.govBarText || ''} onChange={(e) => set('govBarText', e.target.value)} />
@@ -359,11 +307,9 @@ function ModeloMensagem() {
               <Field label="Texto (separe por · )">
                 <Input value={design.badgesText || ''} onChange={(e) => set('badgesText', e.target.value)} />
               </Field>
-              <p className="text-[11px] text-muted-foreground">Ex.: Portal gov.br · Site Seguro (SSL) · Receita Federal · LGPD</p>
             </SectionItem>
 
             <SectionItem value="layout" title="Layout geral">
-
               <div className="grid grid-cols-2 gap-3">
                 <SliderField label="Largura (px)" min={480} max={800} step={20} value={design.containerWidth} onChange={(v) => set('containerWidth', v)} />
                 <SliderField label="Padding lateral (px)" min={16} max={60} value={design.contentPaddingX} onChange={(v) => set('contentPaddingX', v)} />
@@ -378,69 +324,93 @@ function ModeloMensagem() {
           </div>
         </div>
 
-        {/* ===== Prévia ao vivo ===== */}
+        {/* ===== Painel de variáveis ===== */}
         <div className="space-y-3">
-          <Card>
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Prévia ao vivo</CardTitle>
-              <div className="flex gap-1">
-                <Button size="sm" variant={viewport === 'desktop' ? 'default' : 'outline'} onClick={() => setViewport('desktop')}>
-                  <Monitor className="h-4 w-4 mr-1" /> Desktop
-                </Button>
-                <Button size="sm" variant={viewport === 'mobile' ? 'default' : 'outline'} onClick={() => setViewport('mobile')}>
-                  <Smartphone className="h-4 w-4 mr-1" /> Mobile
-                </Button>
-              </div>
+          <Card className="lg:sticky lg:top-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Info className="h-4 w-4 text-brand-navy" />
+                Variáveis disponíveis
+              </CardTitle>
+              <p className="text-[11px] text-muted-foreground">
+                Clique em uma variável para copiar. Cole em qualquer campo de texto acima.
+                No envio, cada variável é substituída pelos dados reais do destinatário.
+              </p>
             </CardHeader>
-            <CardContent>
-              <div className="text-xs mb-2 space-y-0.5">
-                <div><strong>Assunto:</strong> {renderedSubject}</div>
-                <div className="text-muted-foreground italic"><strong>Preheader:</strong> {renderedPreheader}</div>
+            <CardContent className="p-3 pt-0">
+              <div className="max-h-[520px] overflow-auto space-y-1.5 pr-1">
+                {VARIABLES.map((v) => (
+                  <button
+                    key={v.key}
+                    type="button"
+                    onClick={() => copyVar(v.key)}
+                    className="w-full text-left rounded-md border border-slate-200 bg-white p-2 hover:border-brand-navy hover:bg-slate-50 transition-colors group"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <code className="text-[11px] font-mono font-bold text-brand-navy break-all">
+                        {`{{${v.key}}}`}
+                      </code>
+                      <Copy className="h-3 w-3 text-slate-400 group-hover:text-brand-navy shrink-0" />
+                    </div>
+                    <div className="text-[11px] text-slate-700 mt-0.5 leading-snug">{v.label}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 italic truncate">
+                      ex: {v.example}
+                    </div>
+                  </button>
+                ))}
               </div>
-              <Tabs defaultValue="preview">
-                <TabsList>
-                  <TabsTrigger value="preview">Prévia</TabsTrigger>
-                  <TabsTrigger value="html">HTML</TabsTrigger>
-                  <TabsTrigger value="text">Texto</TabsTrigger>
-                </TabsList>
-                <TabsContent value="preview">
-                  <div className="bg-slate-100 p-4 rounded border flex justify-center overflow-auto">
-                    {viewport === 'desktop' ? (
-                      <div
-                        className="relative bg-white shadow-sm"
-                        style={{
-                          width: design.containerWidth,
-                          height: 900,
-                          maxWidth: '100%',
-                        }}
-                      >
-                        <iframe
-                          title="prévia"
-                          srcDoc={html}
-                          className="border-none bg-white"
-                          style={{ width: design.containerWidth, height: 1400, transformOrigin: 'top left' }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="bg-white rounded-[32px] shadow-xl overflow-hidden border-[8px] border-slate-800 w-[380px] h-[720px] relative">
-                        <div className="h-6 w-32 bg-slate-800 absolute top-0 left-1/2 -translate-x-1/2 rounded-b-xl z-10" />
-                        <iframe title="prévia-mobile" srcDoc={html} className="w-full h-full border-none pt-6" />
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="html">
-                  <Textarea readOnly value={html} className="h-[600px] font-mono text-xs" />
-                </TabsContent>
-                <TabsContent value="text">
-                  <Textarea readOnly value={text} className="h-[600px] font-mono text-xs" />
-                </TabsContent>
-              </Tabs>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* ===== Prévia ao vivo (largura total, embaixo) ===== */}
+      <Card>
+        <CardHeader className="pb-2 flex flex-row items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-base">Prévia ao vivo</CardTitle>
+          <div className="flex gap-1">
+            <Button size="sm" variant={viewport === 'desktop' ? 'default' : 'outline'} onClick={() => setViewport('desktop')}>
+              <Monitor className="h-4 w-4 mr-1" /> Desktop
+            </Button>
+            <Button size="sm" variant={viewport === 'mobile' ? 'default' : 'outline'} onClick={() => setViewport('mobile')}>
+              <Smartphone className="h-4 w-4 mr-1" /> Mobile
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-xs mb-3 space-y-0.5 rounded border bg-slate-50 p-2">
+            <div><strong>Assunto:</strong> {renderedSubject}</div>
+            <div className="text-muted-foreground italic"><strong>Preheader:</strong> {renderedPreheader}</div>
+          </div>
+          <Tabs defaultValue="preview">
+            <TabsList>
+              <TabsTrigger value="preview">Prévia</TabsTrigger>
+              <TabsTrigger value="html">HTML</TabsTrigger>
+              <TabsTrigger value="text">Texto</TabsTrigger>
+            </TabsList>
+            <TabsContent value="preview">
+              <div className="bg-slate-100 p-4 rounded border flex justify-center overflow-auto">
+                {viewport === 'desktop' ? (
+                  <div className="relative bg-white shadow-sm" style={{ width: design.containerWidth, height: 1000, maxWidth: '100%' }}>
+                    <iframe title="prévia" srcDoc={html} className="border-none bg-white w-full h-full" />
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-[32px] shadow-xl overflow-hidden border-[8px] border-slate-800 w-[380px] h-[720px] relative">
+                    <div className="h-6 w-32 bg-slate-800 absolute top-0 left-1/2 -translate-x-1/2 rounded-b-xl z-10" />
+                    <iframe title="prévia-mobile" srcDoc={html} className="w-full h-full border-none pt-6" />
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            <TabsContent value="html">
+              <Textarea readOnly value={html} className="h-[600px] font-mono text-xs" />
+            </TabsContent>
+            <TabsContent value="text">
+              <Textarea readOnly value={text} className="h-[600px] font-mono text-xs" />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -454,11 +424,12 @@ function SectionItem({ value, title, children }: { value: string; title: string;
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
       {children}
+      {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -492,6 +463,63 @@ function SliderField({ label, min, max, step = 1, value, onChange }: { label: st
         <span className="text-xs font-mono text-muted-foreground">{value}</span>
       </div>
       <Slider min={min} max={max} step={step} value={[value]} onValueChange={(v) => onChange(v[0])} />
+    </div>
+  );
+}
+
+function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > 500 * 1024) {
+      toast.error('Imagem muito grande. Use até 500KB (para não pesar no e-mail).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      onChange(String(reader.result || ''));
+      toast.success('Imagem carregada');
+    };
+    reader.onerror = () => toast.error('Falha ao ler a imagem');
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">{label}</Label>
+      <div className="flex items-center gap-2">
+        {value ? (
+          <img src={value} alt="" className="h-12 w-12 rounded border object-cover bg-slate-50" />
+        ) : (
+          <div className="h-12 w-12 rounded border bg-slate-50 flex items-center justify-center text-[10px] text-muted-foreground">sem imagem</div>
+        )}
+        <div className="flex-1 flex flex-col gap-1">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFile(e.target.files?.[0])}
+          />
+          <div className="flex gap-1.5">
+            <Button size="sm" variant="outline" type="button" onClick={() => inputRef.current?.click()} className="h-8 text-xs">
+              <Upload className="h-3 w-3 mr-1" /> Enviar
+            </Button>
+            {value && (
+              <Button size="sm" variant="outline" type="button" onClick={() => onChange('')} className="h-8 text-xs text-red-600">
+                Remover
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="ou cole uma URL: https://..."
+        className="text-xs"
+      />
     </div>
   );
 }
