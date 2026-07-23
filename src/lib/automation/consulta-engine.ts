@@ -105,7 +105,7 @@ const initial: State = {
   autoImportTarget: 0,
   dateMode: 'today',
   selectedDate: todayBRString(),
-  filters: { only_mei: true, only_active: true, only_matriz: true, require_email: false },
+  filters: { only_mei: true, only_active: true, only_matriz: true, require_email: true },
   quantidade: 5,
   foundList: [],
   foundListKey: '',
@@ -151,6 +151,19 @@ export const consultaStore = createStore<State>(initial, {
     'countResult',
   ],
 });
+
+// Preferência do usuário: manter sempre os quatro filtros ativados por padrão.
+// Sobrescreve qualquer valor persistido em localStorage no boot do módulo.
+if (typeof window !== 'undefined') {
+  consultaStore.set({
+    filters: {
+      only_mei: true,
+      only_active: true,
+      only_matriz: true,
+      require_email: true,
+    },
+  });
+}
 
 /* --------------------------------- helpers -------------------------------- */
 
