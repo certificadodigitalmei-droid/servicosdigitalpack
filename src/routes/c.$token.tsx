@@ -180,44 +180,48 @@ function TokenHomePage() {
 
             {/* Coluna lateral — checkout (sticky em desktop) */}
             <aside className="lg:sticky lg:top-6 space-y-4">
-              <div className="rounded-md border border-border bg-card p-0 overflow-hidden shadow-sm lg:shadow-[0_20px_60px_-24px_rgba(0,72,132,0.35)]">
-                <div className="flex items-start gap-4 p-5 lg:flex-col lg:items-center lg:text-center lg:p-6">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#f0f5ff] text-[#004884] lg:h-16 lg:w-16">
-                    <User className="h-6 w-6 lg:h-8 lg:w-8" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[16px] font-bold text-[#004884] leading-snug lg:text-[18px]">
-                      Certificado Digital MEI — Emissão Obrigatória 2026
+              {paidAt ? (
+                <SuccessCard paidAt={paidAt} cnpjFmt={cnpjFmt} />
+              ) : (
+                <div className="rounded-md border border-border bg-card p-0 overflow-hidden shadow-sm lg:shadow-[0_20px_60px_-24px_rgba(0,72,132,0.35)]">
+                  <div className="flex items-start gap-4 p-5 lg:flex-col lg:items-center lg:text-center lg:p-6">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#f0f5ff] text-[#004884] lg:h-16 lg:w-16">
+                      <User className="h-6 w-6 lg:h-8 lg:w-8" />
                     </div>
-                    <p className="mt-1.5 text-[13px] text-foreground/90 leading-relaxed">
-                      Seu CNPJ foi localizado e está <span className="font-bold">aguardando a emissão do certificado</span>. Prossiga agora para regularizar e receber seu certificado digital.
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[16px] font-bold text-[#004884] leading-snug lg:text-[18px]">
+                        Certificado Digital MEI — Emissão Obrigatória 2026
+                      </div>
+                      <p className="mt-1.5 text-[13px] text-foreground/90 leading-relaxed">
+                        Seu CNPJ foi localizado e está <span className="font-bold">aguardando a emissão do certificado</span>. Prossiga agora para regularizar e receber seu certificado digital.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-[#f8f9fa] border-t border-border p-4 flex justify-center lg:p-5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        trackEvent(token, 'click_certificado');
+                        if (popupSettings && popupSettings.enabled === false) {
+                          navigate({ to: '/checkout/$token', params: { token } });
+                        } else {
+                          setPopupOpen(true);
+                        }
+                      }}
+                      className="inline-flex min-h-[44px] w-full max-w-[280px] items-center justify-center gap-2 rounded-md bg-[#1351b4] px-6 text-[13px] font-bold uppercase tracking-wide text-white transition-all hover:bg-[#004884] active:scale-[0.98] lg:max-w-none lg:min-h-[52px] lg:text-[14px]"
+                    >
+                      <Lock className="h-4 w-4" />
+                      Emitir Certificado Digital
+                    </button>
+                  </div>
+                  {/* Trust row — desktop only */}
+                  <div className="hidden lg:flex items-center justify-between border-t border-border/70 px-5 py-3 text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><Lock className="h-3 w-3 text-emerald-600" />Pagamento seguro</span>
+                    <span className="font-semibold text-[#004884]">gov.br</span>
+                    <span>ICP-Brasil</span>
                   </div>
                 </div>
-                <div className="bg-[#f8f9fa] border-t border-border p-4 flex justify-center lg:p-5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      trackEvent(token, 'click_certificado');
-                      if (popupSettings && popupSettings.enabled === false) {
-                        navigate({ to: '/checkout/$token', params: { token } });
-                      } else {
-                        setPopupOpen(true);
-                      }
-                    }}
-                    className="inline-flex min-h-[44px] w-full max-w-[280px] items-center justify-center gap-2 rounded-md bg-[#1351b4] px-6 text-[13px] font-bold uppercase tracking-wide text-white transition-all hover:bg-[#004884] active:scale-[0.98] lg:max-w-none lg:min-h-[52px] lg:text-[14px]"
-                  >
-                    <Lock className="h-4 w-4" />
-                    Emitir Certificado Digital
-                  </button>
-                </div>
-                {/* Trust row — desktop only */}
-                <div className="hidden lg:flex items-center justify-between border-t border-border/70 px-5 py-3 text-[11px] text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><Lock className="h-3 w-3 text-emerald-600" />Pagamento seguro</span>
-                  <span className="font-semibold text-[#004884]">gov.br</span>
-                  <span>ICP-Brasil</span>
-                </div>
-              </div>
+              )}
 
               <div className="lg:hidden flex gap-2.5 rounded-md border border-border bg-muted/40 p-4 text-left text-[12.5px] text-muted-foreground">
                 <Info className="h-4 w-4 shrink-0" />
