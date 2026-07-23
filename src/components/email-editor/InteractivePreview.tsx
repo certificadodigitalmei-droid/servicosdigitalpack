@@ -285,13 +285,14 @@ export function InteractivePreview({ design, set, vars, onSelect }: Props) {
                 padding: 14,
               }}
             >
-              <div style={{ fontWeight: 700, color: design.warningTitleColor, marginBottom: 6 }}>
+              <div style={{ fontWeight: 700, color: design.warningTitleColor, marginBottom: 6, fontSize: design.warningTitleSize || 15 }}>
                 <Editable id="warningTitle" field="warningTitle" />
               </div>
-              <div style={{ color: design.warningTextColor, fontSize: 13, lineHeight: 1.6 }}>
+              <div style={{ color: design.warningTextColor, fontSize: design.warningItemsSize || 13, lineHeight: 1.6 }}>
                 <Editable id="warningItems" field="warningItems" multi />
                 {!items.length && <div className="text-slate-400 italic">Adicione itens, um por linha.</div>}
               </div>
+
             </div>
           )}
 
