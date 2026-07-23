@@ -634,7 +634,27 @@ export async function startSending() {
       continue;
     }
     const item = cur.queue.find((x) => x.status === 'pending' || x.status === 'error');
-    if (!item) break;
+    if (!item) {
+      // Se a importação automática está ligada, o envio não para: aguarda
+      // novos CNPJs entrarem na fila (importa 1 → envia → importa próximo).
+      let autoImportOn = false;
+      try {
+        const mod = await import('./consulta-engine');
+        autoImportOn = !!mod.consultaStore.get().autoImport;
+      } catch { /* noop */ }
+      if (!autoImportOn) break;
+      pushLog('⏳ Fila vazia. Aguardando importação automática puxar próximo CNPJ...');
+      let waited = 0;
+      while (waited < 60_000 && !stopFlag) {
+        await new Promise((r) => setTimeout(r, 3_000));
+        waited += 3_000;
+        try { await loadRecipients(); } catch { /* noop */ }
+        const has = envioStore.get().queue.some((x) => x.status === 'pending' || x.status === 'error');
+        if (has) break;
+      }
+      if (stopFlag) break;
+      continue;
+    }
 
     while (paused && !stopFlag) {
       await new Promise((r) => setTimeout(r, 500));
