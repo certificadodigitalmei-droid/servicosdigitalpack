@@ -316,6 +316,7 @@ function SuccessCard({ paidAt, cnpjFmt }: { paidAt: string; cnpjFmt: string }) {
   );
 }
 
+function DataRow({ label, value, last }: { label: string; value: React.ReactNode; last?: boolean }) {
   return (
     <div className={last ? 'px-4 py-3' : 'border-b border-border px-4 py-3'}>
       <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
