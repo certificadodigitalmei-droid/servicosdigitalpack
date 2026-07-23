@@ -36,6 +36,9 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixM
   const [copied, setCopied] = useState(false);
   const [expiresAt] = useState<number>(() => Date.now() + EXPIRES_IN_MS);
   const [now, setNow] = useState<number>(() => Date.now());
+  const [paid, setPaid] = useState(false);
+  const checkStatus = useServerFn(checkOrderStatus);
+
 
   // Marca o momento de abertura
   useEffect(() => {
