@@ -3,8 +3,11 @@ import { Check, Clock, Copy, Loader2, ShieldCheck, X } from 'lucide-react';
 import pixLoader from '@/assets/pix-loader.png.asset.json';
 import { formatCPFOrCNPJ } from '@/lib/format';
 import { toast } from 'sonner';
+import { useServerFn } from '@tanstack/react-start';
+import { checkOrderStatus } from '@/lib/payments/status.functions';
 
 const brl = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`;
+
 
 const LOADING_STEPS = [
   'Conectando ao portal gov.br...',
@@ -33,6 +36,9 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixM
   const [copied, setCopied] = useState(false);
   const [expiresAt] = useState<number>(() => Date.now() + EXPIRES_IN_MS);
   const [now, setNow] = useState<number>(() => Date.now());
+  const [paid, setPaid] = useState(false);
+  const checkStatus = useServerFn(checkOrderStatus);
+
 
   // Marca o momento de abertura
   useEffect(() => {
@@ -71,6 +77,33 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixM
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, [open]);
+
+  // Polling de status do pedido (fallback caso o webhook não chegue)
+  useEffect(() => {
+    if (!open || !orderId || paid) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await checkStatus({ data: { orderId } });
+        if (!cancelled && res?.paid) {
+          setPaid(true);
+          toast.success('Pagamento confirmado!');
+        }
+      } catch {}
+    };
+    tick();
+    const t = setInterval(tick, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [open, orderId, paid, checkStatus]);
+
+  // Reset "paid" quando o modal fecha
+  useEffect(() => {
+    if (!open) setPaid(false);
+  }, [open]);
+
 
   const showPix = open && !!pixData && minElapsed;
 
@@ -150,7 +183,14 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixM
           <GovLoading stepIdx={stepIdx} />
         ) : (
           <div className="p-5 space-y-5">
+            {paid && (
+              <div className="rounded-md border border-emerald-300 bg-emerald-50 p-3 flex items-center gap-2 text-emerald-800 text-[13px] font-semibold animate-fade-in">
+                <Check className="h-4 w-4" />
+                Pagamento confirmado! Você pode fechar esta janela.
+              </div>
+            )}
             {/* Countdown */}
+
             <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
               <div className="flex items-center justify-between gap-3 text-[12.5px]">
                 <div className="flex items-center gap-2 text-amber-900">
