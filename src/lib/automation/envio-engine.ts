@@ -270,7 +270,8 @@ function ensureDailyWindow() {
 
 /* ----------------------------- queue actions ------------------------------ */
 
-export async function loadRecipients() {
+export async function loadRecipients(opts: { limit?: number } = {}) {
+  const limit = Math.max(1, opts.limit ?? 1);
   envioStore.set({ loading: true });
   try {
     // A fila de envio espelha EXATAMENTE a lista de "Empresas Importadas":
