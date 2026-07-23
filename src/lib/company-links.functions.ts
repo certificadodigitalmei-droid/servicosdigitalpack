@@ -13,7 +13,9 @@ export type ResolvedCompany = {
   municipio: string | null;
   situacao: string | null;
   natureza_juridica: string | null;
+  amount_cents: number | null;
 };
+
 
 export const resolveCompanyLink = createServerFn({ method: 'GET' })
   .inputValidator((data) => z.object({ token: z.string().min(1).max(200) }).parse(data))
