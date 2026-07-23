@@ -25,6 +25,7 @@ import {
   type CampaignDesign,
 } from '@/lib/email-campaign/template';
 import { InteractivePreview } from '@/components/email-editor/InteractivePreview';
+import { uploadEmailAsset } from '@/lib/email-campaign/upload-asset.functions';
 
 export const Route = createFileRoute('/_authenticated/painel/modelo-mensagem')({
   component: ModeloMensagem,
@@ -690,11 +691,24 @@ function AlignRow({ value, onChange }: { value: 'left' | 'center'; onChange: (v:
 }
 function ImageRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const handleFile = (file: File | undefined) => {
     if (!file) return;
-    if (file.size > 500 * 1024) { toast.error('Imagem muito grande (limite 500KB para e-mail)'); return; }
+    if (file.size > 800 * 1024) { toast.error('Imagem muito grande (limite 800KB)'); return; }
     const r = new FileReader();
-    r.onload = () => { onChange(String(r.result || '')); toast.success('Imagem carregada'); };
+    r.onload = async () => {
+      const dataUrl = String(r.result || '');
+      try {
+        setUploading(true);
+        const res = await uploadEmailAsset({ data: { dataUrl, filename: file.name } });
+        onChange(res.url);
+        toast.success('Imagem enviada');
+      } catch (err: any) {
+        toast.error(err?.message || 'Falha ao enviar imagem');
+      } finally {
+        setUploading(false);
+      }
+    };
     r.onerror = () => toast.error('Falha ao ler a imagem');
     r.readAsDataURL(file);
   };
@@ -716,9 +730,9 @@ function ImageRow({ label, value, onChange }: { label: string; value: string; on
         )}
         <div className="flex-1 min-w-0">
           <div className="text-xs font-medium text-slate-700">
-            {value ? 'Trocar imagem' : 'Clique ou arraste'}
+            {uploading ? 'Enviando...' : value ? 'Trocar imagem' : 'Clique ou arraste'}
           </div>
-          <div className="text-[10px] text-muted-foreground">PNG, JPG · até 500KB</div>
+          <div className="text-[10px] text-muted-foreground">PNG, JPG · até 800KB · hospedado em certificadodigitalccmei.online</div>
         </div>
         <Upload className="h-4 w-4 text-slate-400" />
       </div>
