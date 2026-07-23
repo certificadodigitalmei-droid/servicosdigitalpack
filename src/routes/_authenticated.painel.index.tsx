@@ -99,10 +99,12 @@ function computeRange(preset: Preset, customFrom?: string, customTo?: string): {
 function DashboardPage() {
   const [stats, setStats] = useState<Stats>(EMPTY);
   const [recent, setRecent] = useState<(EventRow & { cnpj?: string })[]>([]);
+  const [journey, setJourney] = useState<{ step: number; label: string; color: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [preset, setPreset] = useState<Preset>('tudo');
   const [customFrom, setCustomFrom] = useState<string>('');
   const [customTo, setCustomTo] = useState<string>('');
+  const [previewPopup, setPreviewPopup] = useState<null | 'cert' | 'payment'>(null);
 
   const range = useMemo(() => computeRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
 
