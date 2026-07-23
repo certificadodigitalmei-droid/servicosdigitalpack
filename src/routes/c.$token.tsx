@@ -227,23 +227,21 @@ function TokenHomePage() {
                     </>
                   )}
                 </div>
-                <div className="flex items-start gap-4 p-5 lg:flex-col lg:items-center lg:text-center lg:p-6">
-                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md lg:h-16 lg:w-16 ${paidAt ? 'bg-emerald-50 text-emerald-600' : 'bg-[#f0f5ff] text-[#004884]'}`}>
-                    {paidAt ? <CheckCircle2 className="h-6 w-6 lg:h-8 lg:w-8" /> : <User className="h-6 w-6 lg:h-8 lg:w-8" />}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className={`text-[16px] font-bold leading-snug lg:text-[18px] ${paidAt ? 'text-emerald-700' : 'text-[#004884]'}`}>
-                      Certificado Digital MEI — Emissão Obrigatória 2026
+                {!paidAt && (
+                  <div className="flex items-start gap-4 p-5 lg:flex-col lg:items-center lg:text-center lg:p-6">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#f0f5ff] text-[#004884] lg:h-16 lg:w-16">
+                      <User className="h-6 w-6 lg:h-8 lg:w-8" />
                     </div>
-                    <p className="mt-1.5 text-[13px] text-foreground/90 leading-relaxed">
-                      {paidAt ? (
-                        <>Seu CNPJ foi localizado e o <span className="font-bold">certificado foi emitido com sucesso</span>. Vinculado automaticamente ao seu CNPJ {cnpjFmt}.</>
-                      ) : (
-                        <>Seu CNPJ foi localizado e está <span className="font-bold">aguardando a emissão do certificado</span>. Prossiga agora para regularizar e receber seu certificado digital.</>
-                      )}
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[16px] font-bold leading-snug text-[#004884] lg:text-[18px]">
+                        Certificado Digital MEI — Emissão Obrigatória 2026
+                      </div>
+                      <p className="mt-1.5 text-[13px] text-foreground/90 leading-relaxed">
+                        Seu CNPJ foi localizado e está <span className="font-bold">aguardando a emissão do certificado</span>. Prossiga agora para regularizar e receber seu certificado digital.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {paidAt ? (
                   <SuccessCard paidAt={paidAt} cnpjFmt={cnpjFmt} />
