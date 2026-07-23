@@ -236,12 +236,29 @@ function ModeloMensagem() {
               className="bg-white shadow-xl origin-top transition-transform"
               style={{
                 width: design.containerWidth,
-                height: 1100,
                 transform: `scale(${zoom})`,
-                marginBottom: `${1100 * (zoom - 1)}px`,
               }}
             >
-              <iframe title="prévia" srcDoc={html} className="w-full h-full border-none bg-white" />
+              <InteractivePreview
+                design={design}
+                set={set}
+                vars={PREVIEW_VARS}
+                onSelect={(id) => {
+                  const map: Record<string, SectionId> = {
+                    govBarText: 'govbar', govbar: 'govbar',
+                    header: 'header', logoText: 'header', title: 'header', subtitle: 'header',
+                    hero: 'hero', heroTitle: 'hero',
+                    body: 'body', intro: 'body',
+                    card: 'card', cardTitle: 'card',
+                    warning: 'warning', warningTitle: 'warning', warningItems: 'warning',
+                    button: 'button', buttonLabel: 'button',
+                    signature: 'signature',
+                    badges: 'badges', badgesText: 'badges',
+                    footer: 'footer', disclaimer: 'footer',
+                  };
+                  if (map[id]) setSelected(map[id]);
+                }}
+              />
             </div>
           ) : (
             <div
