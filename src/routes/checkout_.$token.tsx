@@ -366,20 +366,20 @@ function TableRow({ label, value, last }: { label: string; value: React.ReactNod
     <div
       className={
         (last ? '' : 'border-b border-border ') +
-        'flex items-center justify-between gap-3 px-4 py-2.5 text-[13px]'
+        'flex flex-col gap-0.5 px-3 py-2.5 text-[13px] sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4'
       }
     >
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right text-foreground">{value}</span>
+      <span className="shrink-0 text-[11.5px] uppercase tracking-wide text-muted-foreground sm:text-[13px] sm:normal-case sm:tracking-normal">{label}</span>
+      <span className="min-w-0 break-words text-foreground sm:text-right">{value}</span>
     </div>
   );
 }
 
 function SummaryRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 text-[13px]">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-foreground">{value}</span>
+    <div className="flex items-center justify-between gap-3 px-3 py-2.5 text-[13px] sm:px-4">
+      <span className="min-w-0 truncate text-muted-foreground">{label}</span>
+      <span className="shrink-0 text-foreground">{value}</span>
     </div>
   );
 }
