@@ -57,7 +57,6 @@ import {
   setShowFloating,
   setHeroImageUrl,
   type QueueItem,
-  type QueueItem,
   mergedDesign,
   loadSavedSubject,
 } from '@/lib/automation/envio-engine';
