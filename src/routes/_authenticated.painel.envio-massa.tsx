@@ -186,6 +186,14 @@ function EnvioMassa() {
   useEffect(() => {
     syncFromMessageModel();
     void refreshStats();
+    // Limpeza única: remove pendências antigas herdadas do modo em lote.
+    try {
+      const done = window.localStorage.getItem('envio:pendingClearedV2');
+      if (!done) {
+        envioStore.set((s) => ({ queue: s.queue.filter((q) => q.status !== 'pending') }));
+        window.localStorage.setItem('envio:pendingClearedV2', '1');
+      }
+    } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
