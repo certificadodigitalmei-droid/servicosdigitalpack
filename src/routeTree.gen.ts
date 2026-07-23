@@ -21,6 +21,7 @@ import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
 import { Route as ApiPublicWebhookUniaopayRouteImport } from './routes/api/public/webhook-uniaopay'
+import { Route as ApiPublicSeedUserRouteImport } from './routes/api/public/_seed-user'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
 import { Route as AuthenticatedPainelModeloMensagemRouteImport } from './routes/_authenticated.painel.modelo-mensagem'
 import { Route as AuthenticatedPainelLinksGeradosRouteImport } from './routes/_authenticated.painel.links-gerados'
@@ -99,6 +100,11 @@ const ApiPublicWebhookUniaopayRoute =
     path: '/api/public/webhook-uniaopay',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicSeedUserRoute = ApiPublicSeedUserRouteImport.update({
+  id: '/api/public/_seed-user',
+  path: '/api/public',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiInternalCasaDosDadosWorkerRoute =
   ApiInternalCasaDosDadosWorkerRouteImport.update({
     id: '/api/internal/casa-dos-dados-worker',
@@ -217,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
+  '/api/public': typeof ApiPublicSeedUserRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
+  '/api/public': typeof ApiPublicSeedUserRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/_authenticated/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
+  '/api/public/_seed-user': typeof ApiPublicSeedUserRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
   '/_authenticated/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
     | '/painel/links-gerados'
     | '/painel/modelo-mensagem'
     | '/api/internal/casa-dos-dados-worker'
+    | '/api/public'
     | '/api/public/webhook-uniaopay'
     | '/painel/'
     | '/painel/empresas-importadas/$companyId'
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/painel/links-gerados'
     | '/painel/modelo-mensagem'
     | '/api/internal/casa-dos-dados-worker'
+    | '/api/public'
     | '/api/public/webhook-uniaopay'
     | '/painel'
     | '/painel/empresas-importadas/$companyId'
@@ -363,6 +374,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/links-gerados'
     | '/_authenticated/painel/modelo-mensagem'
     | '/api/internal/casa-dos-dados-worker'
+    | '/api/public/_seed-user'
     | '/api/public/webhook-uniaopay'
     | '/_authenticated/painel/'
     | '/_authenticated/painel/empresas-importadas/$companyId'
@@ -383,6 +395,7 @@ export interface RootRouteChildren {
   CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
   CheckoutTokenRoute: typeof CheckoutTokenRoute
   ApiInternalCasaDosDadosWorkerRoute: typeof ApiInternalCasaDosDadosWorkerRoute
+  ApiPublicSeedUserRoute: typeof ApiPublicSeedUserRoute
   ApiPublicWebhookUniaopayRoute: typeof ApiPublicWebhookUniaopayRoute
   ApiPublicHooksAutoImportMeiRoute: typeof ApiPublicHooksAutoImportMeiRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -472,6 +485,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/webhook-uniaopay'
       fullPath: '/api/public/webhook-uniaopay'
       preLoaderRoute: typeof ApiPublicWebhookUniaopayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/_seed-user': {
+      id: '/api/public/_seed-user'
+      path: '/api/public'
+      fullPath: '/api/public'
+      preLoaderRoute: typeof ApiPublicSeedUserRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/internal/casa-dos-dados-worker': {
@@ -682,6 +702,7 @@ const rootRouteChildren: RootRouteChildren = {
   CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
   CheckoutTokenRoute: CheckoutTokenRoute,
   ApiInternalCasaDosDadosWorkerRoute: ApiInternalCasaDosDadosWorkerRoute,
+  ApiPublicSeedUserRoute: ApiPublicSeedUserRoute,
   ApiPublicWebhookUniaopayRoute: ApiPublicWebhookUniaopayRoute,
   ApiPublicHooksAutoImportMeiRoute: ApiPublicHooksAutoImportMeiRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
@@ -689,3 +710,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
