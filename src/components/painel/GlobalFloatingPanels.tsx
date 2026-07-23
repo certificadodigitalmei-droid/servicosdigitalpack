@@ -19,6 +19,8 @@ export function GlobalFloatingPanels() {
   const hourlyLimit = useStore(envioStore, (s) => s.hourlyLimit);
   const limitMode = useStore(envioStore, (s) => s.limitMode);
   const delaySec = useStore(envioStore, (s) => s.delaySec);
+  const hourlyRestMin = useStore(envioStore, (s) => s.hourlyRestMin);
+  const stopAtDaily = useStore(envioStore, (s) => s.stopAtDaily);
   const lastSuccessAt = useStore(envioStore, (s) => s.lastSuccessAt);
   const lastErrorMsg = useStore(envioStore, (s) => s.lastErrorMsg);
 
@@ -38,6 +40,8 @@ export function GlobalFloatingPanels() {
     errors,
     dailyLimit,
     hourlyLimit,
+    hourlyRestMin,
+    stopAtDaily,
     limitMode,
     delaySec,
   };
