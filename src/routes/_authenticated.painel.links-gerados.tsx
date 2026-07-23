@@ -452,11 +452,11 @@ function LinksGeradosPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={13} className="py-8 text-center">
+                  <TableRow><TableCell colSpan={14} className="py-8 text-center">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
                   </TableCell></TableRow>
                 ) : rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={13} className="py-8 text-center text-sm text-slate-500">
+                  <TableRow><TableCell colSpan={14} className="py-8 text-center text-sm text-slate-500">
                     Nenhum link encontrado.
                   </TableCell></TableRow>
                 ) : rows.map((r) => {
