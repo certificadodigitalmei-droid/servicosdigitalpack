@@ -332,13 +332,14 @@ export function InteractivePreview({ design, set, vars, onSelect }: Props) {
               style={{
                 padding: `0 ${design.contentPaddingX}px 20px`,
                 color: design.textColor,
-                fontSize: 13,
+                fontSize: design.signatureSize || 13,
                 lineHeight: 1.6,
                 whiteSpace: 'pre-wrap',
               }}
             >
               <Editable id="signature" field="signature" multi />
             </div>
+
           )}
 
           {/* Badges */}
