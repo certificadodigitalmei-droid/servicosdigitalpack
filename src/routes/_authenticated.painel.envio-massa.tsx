@@ -30,7 +30,7 @@ import {
 // FloatingStatsPanel agora é montado globalmente em _authenticated.painel.tsx
 import { getEmailStats, type EmailStatsResult } from '@/lib/email-campaign/stats.functions';
 import { useStore } from '@/lib/automation/store';
-import { supabase } from '@/integrations/supabase/client';
+
 import { toast } from 'sonner';
 import {
   envioStore,
@@ -59,7 +59,6 @@ import {
   setFromAddress,
   setReplyTo,
   setShowFloating,
-  setHeroImageUrl,
   type QueueItem,
   mergedDesign,
   loadSavedSubject,
@@ -88,7 +87,6 @@ function EnvioMassa() {
   const loading = useStore(envioStore, (s) => s.loading);
   const logs = useStore(envioStore, (s) => s.logs);
   const showFloating = useStore(envioStore, (s) => s.showFloating);
-  const heroImageUrl = useStore(envioStore, (s) => s.heroImageUrl);
   const dailyLimit = useStore(envioStore, (s) => s.dailyLimit);
   const hourlyLimit = useStore(envioStore, (s) => s.hourlyLimit);
   const limitMode = useStore(envioStore, (s) => s.limitMode);
@@ -98,7 +96,6 @@ function EnvioMassa() {
   const sentThisHour = useStore(envioStore, (s) => s.sentThisHour);
   const importDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
   const sentEmails = useStore(envioStore, (s) => s.sentEmails);
-  const [uploadingImg, setUploadingImg] = useState(false);
 
   const [emailStats, setEmailStats] = useState<EmailStatsResult | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -137,9 +134,9 @@ function EnvioMassa() {
   const previewHtml = useMemo(() => {
     if (!previewItem) return '';
     const vars = buildVarsForPreview(previewItem);
-    const design = { ...DEFAULT_DESIGN, ...mergedDesign(heroImageUrl || undefined) };
+    const design = { ...DEFAULT_DESIGN, ...mergedDesign() };
     return renderHtml(design, vars);
-  }, [previewItem, fromName, fromAddress, heroImageUrl, subject]);
+  }, [previewItem, fromName, fromAddress, subject]);
 
 
   const progress =
@@ -399,67 +396,6 @@ function EnvioMassa() {
                 </Button>
               </div>
             )}
-
-            {/* Imagem de topo do e-mail */}
-            <div className="space-y-2 rounded-md border p-3">
-              <Label>Imagem no topo do e-mail (opcional)</Label>
-              <p className="text-xs text-slate-500">
-                Aparece como banner grande logo abaixo do cabeçalho. Recomendado: 1200×400px.
-              </p>
-              <Input
-                placeholder="Cole uma URL de imagem (https://...)"
-                value={heroImageUrl}
-                onChange={(e) => setHeroImageUrl(e.target.value)}
-              />
-              <div className="flex items-center gap-2">
-                <Input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                  disabled={uploadingImg}
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0];
-                    if (!f) return;
-                    if (f.size > 5 * 1024 * 1024) {
-                      toast.error('Imagem muito grande (máx. 5MB).');
-                      return;
-                    }
-                    setUploadingImg(true);
-                    try {
-                      const ext = f.name.split('.').pop() || 'png';
-                      const path = `email-hero/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-                      const { error: upErr } = await supabase.storage
-                        .from('site-assets')
-                        .upload(path, f, { contentType: f.type, upsert: false });
-                      if (upErr) throw upErr;
-                      const { data: signed, error: sErr } = await supabase.storage
-                        .from('site-assets')
-                        .createSignedUrl(path, 60 * 60 * 24 * 365 * 5); // 5 anos
-                      if (sErr) throw sErr;
-                      setHeroImageUrl(signed.signedUrl);
-                      toast.success('Imagem carregada.');
-                    } catch (err: any) {
-                      toast.error('Falha no upload: ' + err.message);
-                    } finally {
-                      setUploadingImg(false);
-                      (e.target as HTMLInputElement).value = '';
-                    }
-                  }}
-                />
-                {uploadingImg && <Loader2 className="h-4 w-4 animate-spin" />}
-                {heroImageUrl && (
-                  <Button size="sm" variant="ghost" onClick={() => setHeroImageUrl('')}>
-                    <Trash2 className="h-3.5 w-3.5" /> Remover
-                  </Button>
-                )}
-              </div>
-              {heroImageUrl && (
-                <img
-                  src={heroImageUrl}
-                  alt="preview banner"
-                  className="mt-2 max-h-32 w-full rounded border object-cover"
-                />
-              )}
-            </div>
 
             <div className="flex flex-wrap gap-2 pt-2">
               <Button variant="outline" onClick={loadRecipients} disabled={loading || running}>
