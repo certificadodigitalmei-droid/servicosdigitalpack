@@ -20,10 +20,12 @@ export type PixModalProps = {
   amount: number;
   orderId: string | null;
   pixData: { pix_code: string; qr_code_base64?: string; transaction_id: string } | null;
+  cnpj?: string | null;
   onClose: () => void;
 };
 
-export function PixModal({ open, amount, orderId, pixData, onClose }: PixModalProps) {
+export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixModalProps) {
+
   const [openedAt, setOpenedAt] = useState<number | null>(null);
   const [minElapsed, setMinElapsed] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
