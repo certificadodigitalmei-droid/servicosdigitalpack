@@ -364,8 +364,9 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     ${D.showWarning ? `
     <tr><td style="padding:0 ${px}px 32px ${px}px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.warningBg};border-left:4px solid ${D.warningBorder};padding:20px 22px;border-radius:4px;">
-        <tr><td style="color:${D.warningTitleColor};font-size:${D.bodySize}px;font-weight:700;padding-bottom:10px;">${warningTitle}</td></tr>
-        <tr><td style="color:${D.warningTextColor};font-size:${Math.max(13, D.bodySize - 2)}px;line-height:1.65;">${warningItems}</td></tr>
+        <tr><td style="color:${D.warningTitleColor};font-size:${D.warningTitleSize || D.bodySize}px;font-weight:700;padding-bottom:10px;">${warningTitle}</td></tr>
+        <tr><td style="color:${D.warningTextColor};font-size:${D.warningItemsSize || Math.max(13, D.bodySize - 2)}px;line-height:1.65;">${warningItems}</td></tr>
+
       </table>
     </td></tr>` : ''}
 
