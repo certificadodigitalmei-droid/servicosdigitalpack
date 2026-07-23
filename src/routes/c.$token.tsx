@@ -77,10 +77,8 @@ function TokenHomePage() {
     // Desktop: sem animação
     const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
     if (isDesktop) return;
-    // Mobile: só mostra se ainda não viu nessa sessão
-    if (sessionStorage.getItem(`gov-consulta-${token}`) !== '1') {
-      setLoading(true);
-    }
+    // Mobile: sempre mostra a animação antes de exibir o link
+    setLoading(true);
   }, [token]);
 
 
@@ -89,13 +87,11 @@ function TokenHomePage() {
       <GovConsultaLoader
         cnpj={row.cnpj}
         nome={nomeFmt !== '—' ? nomeFmt : undefined}
-        onFinish={() => {
-          try { sessionStorage.setItem(`gov-consulta-${token}`, '1'); } catch {}
-          setLoading(false);
-        }}
+        onFinish={() => setLoading(false)}
       />
     );
   }
+
 
 
   return (
