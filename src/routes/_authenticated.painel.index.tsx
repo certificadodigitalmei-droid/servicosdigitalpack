@@ -119,13 +119,23 @@ function DashboardPage() {
         linksCountQ = linksCountQ.lte('created_at', iso);
         evQ = evQ.lte('created_at', iso);
       }
-      const [{ count: linksTotal }, evRes, linksRes] = await Promise.all([
+      let ordersQ = supabase
+        .from('orders')
+        .select('amount, paid_at')
+        .not('paid_at', 'is', null);
+      if (range.from) ordersQ = ordersQ.gte('paid_at', range.from.toISOString());
+      if (range.to) ordersQ = ordersQ.lte('paid_at', range.to.toISOString());
+
+      const [{ count: linksTotal }, evRes, linksRes, ordersRes] = await Promise.all([
         linksCountQ,
         evQ,
         supabase.from('company_links').select('token, cnpj'),
+        ordersQ,
       ]);
       const events = (evRes.data ?? []) as EventRow[];
       const linkMap = new Map((linksRes.data ?? []).map((l: any) => [l.token, l.cnpj]));
+      const paidOrders = (ordersRes.data ?? []) as { amount: number | null }[];
+
 
       const ALL_BROWSERS = ['Chrome', 'Safari', 'Firefox', 'Edge', 'Opera', 'Samsung Internet', 'Outro'];
       const ALL_OS = ['Windows', 'Android', 'iOS', 'macOS', 'Linux', 'Outro'];
