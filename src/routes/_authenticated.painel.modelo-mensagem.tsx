@@ -535,6 +535,8 @@ function SectionEditor({
         <>
           <ToggleRow label="Mostrar card" value={design.showCard} onChange={(v) => set('showCard', v)} />
           <FieldText label="Título do card" value={design.cardTitle} onChange={(v) => set('cardTitle', v)} />
+          <SliderRow label="Tamanho do título" unit="px" min={10} max={28} value={design.cardTitleSize || 15} onChange={(v) => set('cardTitleSize', v)} />
+          <SliderRow label="Tamanho dos itens (Nome, CNPJ...)" unit="px" min={9} max={24} value={design.cardBodySize || 14} onChange={(v) => set('cardBodySize', v)} />
           <ColorRow label="Fundo do card" value={design.cardBg} onChange={(v) => set('cardBg', v)} />
         </>
       );
@@ -543,7 +545,9 @@ function SectionEditor({
         <>
           <ToggleRow label="Mostrar aviso" value={design.showWarning} onChange={(v) => set('showWarning', v)} />
           <FieldText label="Título" value={design.warningTitle} onChange={(v) => set('warningTitle', v)} />
+          <SliderRow label="Tamanho do título" unit="px" min={10} max={28} value={design.warningTitleSize || 15} onChange={(v) => set('warningTitleSize', v)} />
           <FieldTextarea label="Itens (um por linha)" rows={4} value={design.warningItems} onChange={(v) => set('warningItems', v)} />
+          <SliderRow label="Tamanho dos itens" unit="px" min={9} max={24} value={design.warningItemsSize || 13} onChange={(v) => set('warningItemsSize', v)} />
           <ColorRow label="Fundo" value={design.warningBg} onChange={(v) => set('warningBg', v)} />
           <ColorRow label="Borda" value={design.warningBorder} onChange={(v) => set('warningBorder', v)} />
           <ColorRow label="Cor do título" value={design.warningTitleColor} onChange={(v) => set('warningTitleColor', v)} />
@@ -568,8 +572,10 @@ function SectionEditor({
         <>
           <ToggleRow label="Mostrar assinatura" value={design.showSignature} onChange={(v) => set('showSignature', v)} />
           <FieldTextarea label="Texto (use ** para negrito)" rows={3} value={design.signature} onChange={(v) => set('signature', v)} />
+          <SliderRow label="Tamanho do texto" unit="px" min={9} max={22} value={design.signatureSize || 13} onChange={(v) => set('signatureSize', v)} />
         </>
       );
+
     case 'badges':
       return (
         <>
@@ -582,6 +588,8 @@ function SectionEditor({
         <>
           <ToggleRow label="Mostrar rodapé" value={design.showFooter} onChange={(v) => set('showFooter', v)} />
           <FieldTextarea label="Aviso do rodapé" rows={3} value={design.disclaimer} onChange={(v) => set('disclaimer', v)} />
+          <SliderRow label="Tamanho do texto" unit="px" min={8} max={20} value={design.disclaimerSize || 11} onChange={(v) => set('disclaimerSize', v)} />
+
         </>
       );
     case 'layout':
