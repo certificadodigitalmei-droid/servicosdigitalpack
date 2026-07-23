@@ -716,3 +716,31 @@ function MiniStat({ label, value, color }: { label: string; value: number | stri
     </div>
   );
 }
+
+
+function BigStat({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: number | string;
+  sub?: string;
+  accent: 'emerald' | 'blue' | 'amber' | 'red' | 'slate';
+}) {
+  const map = {
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    blue: 'border-blue-200 bg-blue-50 text-blue-800',
+    amber: 'border-amber-200 bg-amber-50 text-amber-800',
+    red: 'border-red-200 bg-red-50 text-red-800',
+    slate: 'border-slate-200 bg-white text-slate-800',
+  } as const;
+  return (
+    <div className={`rounded-lg border p-4 ${map[accent]}`}>
+      <div className="text-[11px] font-semibold uppercase tracking-wide opacity-70">{label}</div>
+      <div className="mt-1 text-3xl font-bold leading-none">{value}</div>
+      {sub && <div className="mt-2 text-[11px] opacity-80">{sub}</div>}
+    </div>
+  );
+}
