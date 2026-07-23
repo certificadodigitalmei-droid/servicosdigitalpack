@@ -105,7 +105,7 @@ const initial: State = {
   autoImportTarget: 0,
   dateMode: 'today',
   selectedDate: todayBRString(),
-  filters: { only_mei: true, only_active: true, only_matriz: true, require_email: false },
+  filters: { only_mei: true, only_active: true, only_matriz: true, require_email: true },
   quantidade: 5,
   foundList: [],
   foundListKey: '',
