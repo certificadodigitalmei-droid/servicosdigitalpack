@@ -48,6 +48,7 @@ import {
   runCountOnce,
   runImportOnce,
 } from '@/lib/automation/consulta-engine';
+import { envioStore } from '@/lib/automation/envio-engine';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
   head: () => ({ meta: [{ title: 'Consulta Casa dos Dados | Painel' }] }),
@@ -99,8 +100,32 @@ function ConsultaPage() {
   const autoImportRuns = useStore(consultaStore, (s) => s.autoImportRuns);
   const autoImportTotal = useStore(consultaStore, (s) => s.autoImportTotal);
   const foundList = useStore(consultaStore, (s) => s.foundList);
-  const importedRows = useStore(consultaStore, (s) => s.importedRows);
-  const failedRows = useStore(consultaStore, (s) => s.failedRows);
+  const importedRowsAll = useStore(consultaStore, (s) => s.importedRows);
+  const failedRowsAll = useStore(consultaStore, (s) => s.failedRows);
+  const sentEmails = useStore(envioStore, (s) => s.sentEmails);
+  const envioQueue = useStore(envioStore, (s) => s.queue);
+  const sentCnpjSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const e of sentEmails) {
+      const d = (e.cnpj ?? '').replace(/\D/g, '');
+      if (d) s.add(d);
+    }
+    for (const q of envioQueue) {
+      if (q.status === 'sent') {
+        const d = (q.cnpj ?? '').replace(/\D/g, '');
+        if (d) s.add(d);
+      }
+    }
+    return s;
+  }, [sentEmails, envioQueue]);
+  const importedRows = useMemo(
+    () => importedRowsAll.filter((r) => !sentCnpjSet.has((r.cnpj ?? '').replace(/\D/g, ''))),
+    [importedRowsAll, sentCnpjSet],
+  );
+  const failedRows = useMemo(
+    () => failedRowsAll.filter((r) => !sentCnpjSet.has((r.cnpj ?? '').replace(/\D/g, ''))),
+    [failedRowsAll, sentCnpjSet],
+  );
   const importedSetArr = useStore(consultaStore, (s) => s.importedSet);
   const countResult = useStore(consultaStore, (s) => s.countResult);
   const saldo = useStore(consultaStore, (s) => s.saldo);
