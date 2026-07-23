@@ -259,12 +259,12 @@ function CheckoutTokenPage() {
                     <div className="divide-y divide-border">
                       <SummaryRow label="Subtotal" value={brl(AMOUNT)} />
                       <SummaryRow label="Tarifa de processamento" value="R$ 0,00" />
-                      <div className="flex items-center justify-between px-4 py-3">
-                        <span className="text-[14px] font-bold text-foreground">Total a pagar</span>
+                      <div className="flex items-center justify-between gap-3 px-3 py-3 sm:px-4">
+                        <span className="text-[13px] font-bold text-foreground sm:text-[14px]">Total a pagar</span>
                         <span className="text-[18px] font-bold text-[#004884] lg:text-[22px]">{brl(AMOUNT)}</span>
                       </div>
                     </div>
-                    <div className="border-t border-border bg-[#f8f9fa] p-4 space-y-3">
+                    <div className="border-t border-border bg-[#f8f9fa] p-3 space-y-3 sm:p-4">
                       <button
                         type="submit"
                         disabled={submitting}
@@ -273,7 +273,7 @@ function CheckoutTokenPage() {
                         <QrCode className="h-4 w-4" />
                         {submitting ? 'Processando...' : 'Gerar Guia'}
                       </button>
-                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10.5px] text-muted-foreground sm:text-[11px]">
                         <span className="flex items-center gap-1"><Check className="h-3 w-3 text-emerald-600" />Pagamento seguro</span>
                         <span className="font-semibold text-[#004884]">gov.br</span>
                         <span>ICP-Brasil</span>
