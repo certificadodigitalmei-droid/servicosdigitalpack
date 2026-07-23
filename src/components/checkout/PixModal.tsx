@@ -212,9 +212,16 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, token, onClose 
         ) : (
           <div className="p-5 space-y-5">
             {paid && (
-              <div className="rounded-md border border-emerald-300 bg-emerald-50 p-3 flex items-center gap-2 text-emerald-800 text-[13px] font-semibold animate-fade-in">
-                <Check className="h-4 w-4" />
-                Pagamento confirmado! Você pode fechar esta janela.
+              <div className="rounded-md border border-emerald-300 bg-emerald-50 p-3 flex items-start gap-2 text-emerald-800 text-[13px] font-semibold animate-fade-in">
+                <Check className="h-4 w-4 mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <div>Pagamento confirmado! Certificado vinculado automaticamente.</div>
+                  {token && (
+                    <div className="mt-1 text-[12px] font-normal text-emerald-700">
+                      Redirecionando para sua página em {redirectIn}s...
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {/* Countdown */}
