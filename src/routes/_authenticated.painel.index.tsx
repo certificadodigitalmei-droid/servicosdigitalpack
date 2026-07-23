@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Link2, Link as LinkIcon, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet, Trash2, Calendar as CalendarIcon, CheckCircle2 } from 'lucide-react';
+import { Link2, Link as LinkIcon, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet, Trash2, Calendar as CalendarIcon, CheckCircle2, Eye, Bell, Info, ArrowRight } from 'lucide-react';
+import { CertificatePopup } from '@/components/CertificatePopup';
+import { PaymentInfoPopup } from '@/components/checkout/PaymentInfoPopup';
 import { Input } from '@/components/ui/input';
 import { formatCNPJ } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,10 +99,12 @@ function computeRange(preset: Preset, customFrom?: string, customTo?: string): {
 function DashboardPage() {
   const [stats, setStats] = useState<Stats>(EMPTY);
   const [recent, setRecent] = useState<(EventRow & { cnpj?: string })[]>([]);
+  const [journey, setJourney] = useState<{ step: number; label: string; color: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [preset, setPreset] = useState<Preset>('tudo');
   const [customFrom, setCustomFrom] = useState<string>('');
   const [customTo, setCustomTo] = useState<string>('');
+  const [previewPopup, setPreviewPopup] = useState<null | 'cert' | 'payment'>(null);
 
   const range = useMemo(() => computeRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
 
@@ -177,6 +181,38 @@ function DashboardPage() {
       s.paid = paidOrders.length;
       s.paidAmount = paidOrders.reduce((sum, o) => sum + Number(o.amount ?? 0), 0);
       setStats(s);
+
+      setStats(s);
+
+      // Jornada por visitante: qual foi a etapa mais avançada que cada visitante alcançou.
+      const STEP_ORDER: Record<string, number> = {
+        view_link: 1,
+        click_certificado: 2,
+        view_checkout: 3,
+        click_guia: 4,
+      };
+      const maxStepByVisitor = new Map<string, number>();
+      for (const e of events) {
+        const step = STEP_ORDER[e.event_type];
+        if (!step) continue;
+        const key = `${e.token}:${e.visitor_id}`;
+        const prev = maxStepByVisitor.get(key) ?? 0;
+        if (step > prev) maxStepByVisitor.set(key, step);
+      }
+      // Funil cumulativo: quantos visitantes atingiram pelo menos cada etapa
+      const cum = [0, 0, 0, 0];
+      for (const step of maxStepByVisitor.values()) {
+        for (let i = 0; i < step; i++) cum[i]++;
+      }
+      const paidStep = paidOrders.length;
+      const journeyRows = [
+        { step: 1, label: '1. Abriu a página do link', color: 'bg-blue-500', count: cum[0] },
+        { step: 2, label: '2. Clicou em "Emitir Certificado"', color: 'bg-amber-500', count: cum[1] },
+        { step: 3, label: '3. Entrou no checkout', color: 'bg-purple-500', count: cum[2] },
+        { step: 4, label: '4. Clicou em "Gerar Guia" (PIX)', color: 'bg-rose-500', count: cum[3] },
+        { step: 5, label: '5. Pagou o PIX ✅', color: 'bg-emerald-500', count: paidStep },
+      ];
+      setJourney(journeyRows);
 
       setRecent(events.slice(-10).reverse().map(e => ({ ...e, cnpj: linkMap.get(e.token) })));
     } finally {
@@ -360,6 +396,82 @@ function DashboardPage() {
         </Card>
       </div>
 
+      {/* Jornada dos clientes — até onde clicou/foi */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">
+            Jornada dos clientes — até onde clicou e foi
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {journey.map((row) => {
+            const base = journey[0]?.count ?? 0;
+            const pct = base > 0 ? Math.round((row.count / base) * 100) : 0;
+            return (
+              <div key={row.step}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-700 font-medium">{row.label}</span>
+                  <span className="font-semibold text-slate-900">
+                    {row.count.toLocaleString('pt-BR')}
+                    {row.step > 1 && (
+                      <span className="text-slate-400 font-normal ml-1">({pct}%)</span>
+                    )}
+                  </span>
+                </div>
+                <div className="mt-1 h-3 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div className={`h-full ${row.color} transition-all`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+          <p className="text-xs text-slate-400 pt-2 border-t border-slate-100">
+            Contagem de visitantes únicos (token + dispositivo) que atingiram cada etapa. Pagamento contabiliza pedidos com PIX confirmado no período.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Preview dos Pop-ups do site */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">
+            Pop-ups do site — pré-visualização
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <PopupPreviewCard
+              icon={<Bell className="h-5 w-5" />}
+              title="Pop-up 1 — Aviso do Certificado"
+              description='Aparece na primeira página quando o cliente clica em "Emitir Certificado".'
+              badge="1º passo"
+              badgeColor="bg-amber-100 text-amber-700"
+              onOpen={() => setPreviewPopup('cert')}
+            />
+            <PopupPreviewCard
+              icon={<Info className="h-5 w-5" />}
+              title="Pop-up 2 — Informações do Pagamento"
+              description='Aparece no checkout quando o cliente clica em "Gerar Guia".'
+              badge="2º passo"
+              badgeColor="bg-purple-100 text-purple-700"
+              onOpen={() => setPreviewPopup('payment')}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <CertificatePopup
+        open={previewPopup === 'cert'}
+        onClose={() => setPreviewPopup(null)}
+        onContinue={() => setPreviewPopup(null)}
+        cnpj="12345678000191"
+      />
+      <PaymentInfoPopup
+        open={previewPopup === 'payment'}
+        onClose={() => setPreviewPopup(null)}
+        onContinue={() => setPreviewPopup(null)}
+      />
+
+
       <Card>
         <CardHeader>
           <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">Últimos Acessos</CardTitle>
@@ -466,6 +578,27 @@ function Breakdown({ data, iconFor }: { data: Record<string, number>; iconFor?: 
           </div>
         );
       })}
+    </div>
+  );
+}
+
+
+function PopupPreviewCard({ icon, title, description, badge, badgeColor, onOpen }: { icon: React.ReactNode; title: string; description: string; badge: string; badgeColor: string; onOpen: () => void }) {
+  return (
+    <div className="group relative overflow-hidden rounded-xl border border-slate-200 bg-linear-to-br from-slate-50 to-white p-5 transition hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div className="grid h-11 w-11 place-items-center rounded-lg bg-[#0b1e3f]/5 text-[#0b1e3f]">
+          {icon}
+        </div>
+        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${badgeColor}`}>{badge}</span>
+      </div>
+      <div className="mt-4">
+        <div className="text-[15px] font-bold text-slate-900">{title}</div>
+        <p className="mt-1 text-[13px] text-slate-500 leading-relaxed">{description}</p>
+      </div>
+      <Button onClick={onOpen} className="mt-4 w-full" variant="outline">
+        <Eye className="mr-2 h-4 w-4" /> Ver pop-up completo
+      </Button>
     </div>
   );
 }
