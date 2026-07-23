@@ -368,13 +368,14 @@ export function InteractivePreview({ design, set, vars, onSelect }: Props) {
                 padding: `14px ${design.contentPaddingX}px 22px`,
                 background: '#f8fafc',
                 color: design.mutedColor,
-                fontSize: 11,
+                fontSize: design.disclaimerSize || 11,
                 lineHeight: 1.6,
                 textAlign: 'center',
                 whiteSpace: 'pre-wrap',
               }}
             >
               <Editable id="disclaimer" field="disclaimer" multi />
+
             </div>
           )}
         </div>
