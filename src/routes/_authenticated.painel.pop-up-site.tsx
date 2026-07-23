@@ -321,3 +321,77 @@ function Field({
     </div>
   );
 }
+
+function FormattingHelp() {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="rounded-lg border border-[#1351b4]/20 bg-[#1351b4]/5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+      >
+        <div className="flex items-center gap-2 text-sm font-bold text-[#0b1e3f]">
+          <span className="grid h-6 w-6 place-items-center rounded bg-[#1351b4] text-white">?</span>
+          Como formatar os textos (negrito, cor, itálico…)
+        </div>
+        <span className="text-xs text-slate-500">{open ? 'ocultar' : 'mostrar'}</span>
+      </button>
+      {open ? (
+        <div className="space-y-3 border-t border-[#1351b4]/15 px-4 py-4 text-sm text-slate-700">
+          <p className="text-slate-600">
+            Você pode escrever direto no campo usando os marcadores abaixo, ou selecionar o texto e
+            clicar nos botões da barrinha (<strong>B</strong>, <em>I</em>, <s>S</s>, paleta de cores).
+            Use o botão <em>Prévia</em> para ver como fica.
+          </p>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <HelpRow code="*texto em negrito*" preview={<strong>texto em negrito</strong>} />
+            <HelpRow code="_texto em itálico_" preview={<em>texto em itálico</em>} />
+            <HelpRow code="~texto riscado~" preview={<s>texto riscado</s>} />
+            <HelpRow
+              code="{c:#d93025}texto vermelho{/c}"
+              preview={<span style={{ color: '#d93025' }}>texto vermelho</span>}
+            />
+            <HelpRow
+              code="{c:#138835}verde{/c}"
+              preview={<span style={{ color: '#138835' }}>verde</span>}
+            />
+            <HelpRow
+              code="*{c:#d93025}urgente{/c}*"
+              preview={
+                <strong style={{ color: '#d93025' }}>urgente</strong>
+              }
+            />
+          </div>
+
+          <div className="rounded-md bg-white/70 p-3 text-[13px] text-slate-600 ring-1 ring-slate-200">
+            <div className="mb-1 font-semibold text-[#0b1e3f]">Exemplo real</div>
+            <div className="font-mono text-[12px] text-slate-500">
+              Seu CNPJ está *{'{c:#d93025}'}pendente{'{/c}'}* — regularize hoje.
+            </div>
+            <div className="mt-1">
+              Seu CNPJ está{' '}
+              <strong style={{ color: '#d93025' }}>pendente</strong> — regularize hoje.
+            </div>
+          </div>
+
+          <p className="text-[12px] text-slate-500">
+            Dica: você pode combinar marcadores (por exemplo, negrito + cor). As quebras de linha
+            também são preservadas.
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function HelpRow({ code, preview }: { code: string; preview: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-md bg-white/70 px-3 py-2 ring-1 ring-slate-200">
+      <code className="font-mono text-[12px] text-slate-600">{code}</code>
+      <span className="text-sm text-[#0b1e3f]">{preview}</span>
+    </div>
+  );
+}
+
