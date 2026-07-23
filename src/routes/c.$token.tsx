@@ -97,6 +97,7 @@ function TokenHomePage() {
             };
             return (
           <>
+          {!paidAt && (
           <div className="flex gap-3 rounded-md border border-[#ffeeba] border-l-4 border-l-[#ffc107] bg-[#fcf4d4] p-4 text-[13px] shadow-sm lg:text-[14px]">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#856404]" />
             <div className="leading-relaxed text-[#856404]">
@@ -112,6 +113,17 @@ function TokenHomePage() {
               </p>
             </div>
           </div>
+          )}
+          {paidAt && (
+          <div className="flex gap-3 rounded-md border border-emerald-200 border-l-4 border-l-emerald-500 bg-emerald-50 p-4 text-[13px] shadow-sm lg:text-[14px]">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+            <div className="leading-relaxed text-emerald-800">
+              <p>
+                <span className="font-bold">Certificado Digital 2026 emitido com sucesso.</span> Seu CNPJ está regularizado e apto a emitir notas fiscais e acessar crédito.
+              </p>
+            </div>
+          </div>
+          )}
 
           {/* DESKTOP: 2 colunas (dados + checkout sticky) | MOBILE: pilha */}
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
