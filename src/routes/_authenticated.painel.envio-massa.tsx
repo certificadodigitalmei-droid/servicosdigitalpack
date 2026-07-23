@@ -39,6 +39,7 @@ import {
   resetStatuses,
   clearQueue,
   clearLogs,
+  clearSentEmails,
   startSending,
   togglePause,
   stopSending,
@@ -66,6 +67,7 @@ import {
   loadSavedSubject,
   syncFromMessageModel,
 } from '@/lib/automation/envio-engine';
+
 
 import { consultaStore } from '@/lib/automation/consulta-engine';
 
