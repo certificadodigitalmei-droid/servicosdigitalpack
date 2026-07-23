@@ -39,6 +39,8 @@ function TokenHomePage() {
 
   const [loading, setLoading] = useState(() => {
     if (typeof window === 'undefined') return true;
+    // Desktop: pula animação e vai direto para o link
+    if (window.matchMedia('(min-width: 1024px)').matches) return false;
     return sessionStorage.getItem(`gov-consulta-${token}`) !== '1';
   });
 
