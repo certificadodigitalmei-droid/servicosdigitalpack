@@ -395,7 +395,11 @@ function FloatingToolbar({
   const sizeMap: Partial<Record<keyof CampaignDesign, keyof CampaignDesign>> = {
     title: 'titleSize', subtitle: 'subtitleSize', intro: 'bodySize',
     heroTitle: 'heroTitleSize', buttonLabel: 'buttonSize', logoText: 'logoSize',
+    cardTitle: 'cardTitleSize',
+    warningTitle: 'warningTitleSize', warningItems: 'warningItemsSize',
+    signature: 'signatureSize', disclaimer: 'disclaimerSize',
   };
+
   const colorMap: Partial<Record<keyof CampaignDesign, keyof CampaignDesign>> = {
     title: 'headerText', subtitle: 'headerText', intro: 'textColor',
     heroTitle: 'heroTitleColor', buttonLabel: 'buttonText', logoText: 'headerText',
