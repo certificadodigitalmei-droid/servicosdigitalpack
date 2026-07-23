@@ -209,7 +209,11 @@ function TokenHomePage() {
                   <img
                     src={certificadoA1Asset.url}
                     alt="Certificado Digital A1 e-MEI"
-                    className={`block w-full h-auto select-none pointer-events-none transition-all duration-500 ${paidAt ? 'opacity-100' : 'opacity-60 grayscale-[30%]'}`}
+                    width={1200}
+                    height={800}
+                    decoding="async"
+                    fetchPriority="high"
+                    className={`block w-full h-auto select-none pointer-events-none transition-opacity duration-300 ${paidAt ? 'opacity-100' : 'opacity-60 grayscale-[30%]'}`}
                     draggable={false}
                   />
                   {!paidAt && <div className="absolute inset-0 bg-slate-900/10" />}
