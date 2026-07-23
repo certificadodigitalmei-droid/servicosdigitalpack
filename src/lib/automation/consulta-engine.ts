@@ -152,6 +152,25 @@ export const consultaStore = createStore<State>(initial, {
   ],
 });
 
+// Preferência do usuário: manter sempre os quatro filtros ativados por padrão.
+// Sobrescreve qualquer valor persistido em localStorage no boot do módulo.
+if (typeof window !== 'undefined') {
+  const cur = consultaStore.get().filters;
+  consultaStore.set({
+    filters: {
+      only_mei: true,
+      only_active: true,
+      only_matriz: true,
+      require_email: true,
+      ...(cur || {}),
+      only_mei: true,
+      only_active: true,
+      only_matriz: true,
+      require_email: true,
+    } as any,
+  });
+}
+
 /* --------------------------------- helpers -------------------------------- */
 
 function effectiveDate(): string {
