@@ -55,12 +55,12 @@ export const saveCasaDosDadosSettings = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-    const patch: Record<string, unknown> = {
+    const patch: { api_base_url: string; updated_at: string; api_key?: string } = {
       api_base_url: data.api_base_url,
       updated_at: new Date().toISOString(),
     };
     if (data.api_key !== undefined) patch.api_key = data.api_key;
-    const { error } = await supabaseAdmin
+    const { error } = await (supabaseAdmin as any)
       .from('casa_dos_dados_settings')
       .update(patch)
       .eq('id', 1);
