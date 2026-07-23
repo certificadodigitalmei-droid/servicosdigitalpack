@@ -73,6 +73,7 @@ type State = {
   limitMode: 'daily' | 'hourly';
   dailyLimit: number; // 0 = ilimitado
   hourlyLimit: number; // 0 = ilimitado
+  hourlyRestMin: number; // minutos de descanso ao atingir o limite por hora (0 = aguarda a virada natural da hora)
   stopAtDaily: number; // 0 = desativado — quando sentToday >= stopAtDaily, para tudo (envio + importação)
   sentToday: number;
   sentThisHour: number;
