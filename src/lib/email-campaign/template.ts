@@ -290,9 +290,10 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
         isSituacao && String(v).toLowerCase().includes('sem certificado')
           ? 'color:#dc2626;font-weight:700;'
           : `color:${D.textColor};`;
-      return `<tr><td style="padding:8px 0;color:${D.textColor};font-size:${D.bodySize}px;line-height:1.5;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> <span style="${valueStyle}">${esc(String(v))}</span></td></tr>`;
+      return `<tr><td style="padding:8px 0;color:${D.textColor};font-size:${D.cardBodySize || D.bodySize}px;line-height:1.5;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> <span style="${valueStyle}">${esc(String(v))}</span></td></tr>`;
     })
     .join('');
+
 
   return `<!doctype html>
 <html lang="pt-BR" dir="ltr"><head>
