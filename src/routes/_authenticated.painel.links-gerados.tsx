@@ -540,7 +540,7 @@ function LinksGeradosPage() {
                       </TableRow>
                       {isOpen && (
                         <TableRow key={r.id + '-details'} className="bg-slate-50/60">
-                          <TableCell colSpan={13} className="py-4">
+                          <TableCell colSpan={14} className="py-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
                                 <div className="text-xs font-semibold uppercase text-slate-500 mb-2">Funil deste link</div>
