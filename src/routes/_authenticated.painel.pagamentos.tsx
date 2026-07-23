@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCPFOrCNPJ } from '@/lib/format';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
+import { useServerFn } from '@tanstack/react-start';
+import { reconcilePendingOrders } from '@/lib/payments/reconcile.functions';
 
 export const Route = createFileRoute('/_authenticated/painel/pagamentos')({
   head: () => ({
