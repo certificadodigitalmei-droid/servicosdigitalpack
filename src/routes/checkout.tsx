@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { useState, useEffect } from "react";
 import { Check, QrCode, CreditCard, Barcode, Clock } from "lucide-react";
