@@ -42,11 +42,34 @@ function TokenHomePage() {
   const [loading, setLoading] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
+  const [paidAt, setPaidAt] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     getSitePopup().then(setPopupSettings).catch(() => {});
   }, []);
+
+  // Poll payment status every 8s; stop once paid
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const tick = async () => {
+      try {
+        const res = await getLinkPaymentStatus({ data: { token } });
+        if (cancelled) return;
+        if (res.paid && res.paid_at) {
+          setPaidAt(res.paid_at);
+          return; // stop polling
+        }
+      } catch {}
+      if (!cancelled) timer = setTimeout(tick, 8000);
+    };
+    tick();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [token]);
 
   useEffect(() => {
     trackEvent(token, 'view_link');
