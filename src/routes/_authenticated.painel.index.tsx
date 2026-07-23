@@ -199,15 +199,17 @@ function DashboardPage() {
         const prev = maxStepByVisitor.get(key) ?? 0;
         if (step > prev) maxStepByVisitor.set(key, step);
       }
-      const stepCounts = [0, 0, 0, 0, 0];
-      for (const step of maxStepByVisitor.values()) stepCounts[step - 1]++;
-      // pagamento é a etapa 5 (baseado em pedidos pagos no período)
+      // Funil cumulativo: quantos visitantes atingiram pelo menos cada etapa
+      const cum = [0, 0, 0, 0];
+      for (const step of maxStepByVisitor.values()) {
+        for (let i = 0; i < step; i++) cum[i]++;
+      }
       const paidStep = paidOrders.length;
       const journeyRows = [
-        { step: 1, label: '1. Abriu a página do link', color: 'bg-blue-500', count: stepCounts[0] },
-        { step: 2, label: '2. Clicou em "Emitir Certificado"', color: 'bg-amber-500', count: stepCounts[1] },
-        { step: 3, label: '3. Entrou no checkout', color: 'bg-purple-500', count: stepCounts[2] },
-        { step: 4, label: '4. Clicou em "Gerar Guia" (PIX)', color: 'bg-rose-500', count: stepCounts[3] },
+        { step: 1, label: '1. Abriu a página do link', color: 'bg-blue-500', count: cum[0] },
+        { step: 2, label: '2. Clicou em "Emitir Certificado"', color: 'bg-amber-500', count: cum[1] },
+        { step: 3, label: '3. Entrou no checkout', color: 'bg-purple-500', count: cum[2] },
+        { step: 4, label: '4. Clicou em "Gerar Guia" (PIX)', color: 'bg-rose-500', count: cum[3] },
         { step: 5, label: '5. Pagou o PIX ✅', color: 'bg-emerald-500', count: paidStep },
       ];
       setJourney(journeyRows);
