@@ -315,10 +315,23 @@ function ModeloMensagem() {
               </div>
 
               <div className="p-3 space-y-3">
-                <SectionEditor selected={selected} design={design} set={set}
-                  subject={subject} setSubject={setSubject}
-                  preheader={preheader} setPreheader={setPreheader} />
+                <SectionEditor
+                  selected={selected}
+                  design={design}
+                  set={set}
+                  subject={subject}
+                  setSubject={setSubject}
+                  preheader={preheader}
+                  setPreheader={setPreheader}
+                  fromName={fromName}
+                  setFromName={setFromName}
+                  fromAddress={fromAddress}
+                  setFromAddress={setFromAddress}
+                  replyTo={replyTo}
+                  setReplyTo={setReplyTo}
+                />
               </div>
+
 
               {/* Variables palette */}
               <div className="border-t p-3">
