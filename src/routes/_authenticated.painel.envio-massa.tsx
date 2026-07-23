@@ -362,53 +362,7 @@ function EnvioMassa() {
               </div>
 
 
-              {/* Limite ativo (dia OU hora) */}
-              <div className="rounded-md border bg-white p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-semibold">
-                    {limitMode === 'daily' ? 'Máximo de envios por dia' : 'Máximo de envios por hora'}
-                  </Label>
-                  {limitMode === 'daily' ? (
-                    <Badge className={sentToday >= dailyLimit && dailyLimit > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}>
-                      {sentToday} / {dailyLimit > 0 ? dailyLimit : '∞'} hoje
-                    </Badge>
-                  ) : (
-                    <Badge className={sentThisHour >= hourlyLimit && hourlyLimit > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}>
-                      {sentThisHour} / {hourlyLimit > 0 ? hourlyLimit : '∞'} nesta hora
-                    </Badge>
-                  )}
-                </div>
-                <Input
-                  type="number"
-                  min={0}
-                  max={10000}
-                  value={limitMode === 'daily' ? dailyLimit : hourlyLimit}
-                  onChange={(e) => {
-                    const n = parseInt(e.target.value || '0', 10);
-                    if (limitMode === 'daily') setDailyLimit(n);
-                    else setHourlyLimit(n);
-                  }}
-                />
-                <p className="text-[11px] text-slate-500">
-                  Use <strong>0</strong> para desativar. Reseta automaticamente à{' '}
-                  {limitMode === 'daily' ? 'meia-noite' : 'virada da hora'}.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={resetDailyCounter}>
-                    <RotateCcw className="h-3.5 w-3.5" /> Zerar contadores
-                  </Button>
-                  <div className="self-center text-[11px] text-slate-500">
-                    Delay da importação automática: <strong>{importDelaySec}s</strong>{' '}
-                    <button
-                      type="button"
-                      className="text-blue-600 underline"
-                      onClick={() => setDelaySec(importDelaySec)}
-                    >
-                      igualar
-                    </button>
-                  </div>
-                </div>
-              </div>
+
 
               <div className="rounded border border-amber-200 bg-amber-50/70 p-2 text-[11px] text-amber-900 leading-relaxed">
                 <strong>Regra de ouro:</strong> não passe de <strong>~100 envios/hora</strong>, envie
