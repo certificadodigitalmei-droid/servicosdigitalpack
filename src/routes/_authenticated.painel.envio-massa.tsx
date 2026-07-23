@@ -267,7 +267,7 @@ function EnvioMassa() {
                 <div className="mb-2 text-xs font-semibold text-slate-700">
                   Perfis recomendados{' '}
                   <span className="font-normal text-slate-500">
-                    — clique para aplicar delay + limite + fila de uma vez
+                    — clique 1 vez: aplicamos delay, fila e limite automaticamente
                   </span>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
