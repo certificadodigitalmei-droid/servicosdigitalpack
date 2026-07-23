@@ -228,10 +228,13 @@ function EnvioMassa() {
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-4">
-            <MiniStat label="Enviados confirmados (histórico local)" value={sentEmails.length} color="text-emerald-700" />
-            <MiniStat label="Enviados hoje (contador)" value={sentToday} color="text-slate-900" />
-            <MiniStat label="Limite diário configurado" value={dailyLimit === 0 ? '∞' : dailyLimit} color="text-blue-700" />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <MiniStat label="Enviados confirmados (histórico total)" value={sentEmails.length} color="text-emerald-700" />
+            <MiniStat
+              label="Meta diária (parar ao atingir)"
+              value={stopAtDaily > 0 ? `${sentToday} / ${stopAtDaily}` : `${sentToday} / ∞`}
+              color={stopAtDaily > 0 && sentToday >= stopAtDaily ? 'text-red-700' : 'text-blue-700'}
+            />
             <MiniStat label="Fila atual" value={queue.length} color="text-slate-700" />
           </div>
 
