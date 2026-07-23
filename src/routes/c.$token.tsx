@@ -37,16 +37,19 @@ function TokenHomePage() {
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
   const aberturaFmt = row.abertura ? formatDateBR(row.abertura) : '—';
 
-  const [loading, setLoading] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    // Desktop: pula animação e vai direto para o link
-    if (window.matchMedia('(min-width: 1024px)').matches) return false;
-    return sessionStorage.getItem(`gov-consulta-${token}`) !== '1';
-  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     trackEvent(token, 'view_link');
+    // Desktop: sem animação
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    if (isDesktop) return;
+    // Mobile: só mostra se ainda não viu nessa sessão
+    if (sessionStorage.getItem(`gov-consulta-${token}`) !== '1') {
+      setLoading(true);
+    }
   }, [token]);
+
 
   if (loading) {
     return (
