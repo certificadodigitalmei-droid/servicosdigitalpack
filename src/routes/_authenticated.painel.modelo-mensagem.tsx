@@ -370,12 +370,16 @@ function ModeloMensagem() {
    ============================================================ */
 function SectionEditor({
   selected, design, set, subject, setSubject, preheader, setPreheader,
+  fromName, setFromName, fromAddress, setFromAddress, replyTo, setReplyTo,
 }: {
   selected: SectionId;
   design: CampaignDesign;
   set: <K extends keyof CampaignDesign>(k: K, v: CampaignDesign[K]) => void;
   subject: string; setSubject: (v: string) => void;
   preheader: string; setPreheader: (v: string) => void;
+  fromName: string; setFromName: (v: string) => void;
+  fromAddress: string; setFromAddress: (v: string) => void;
+  replyTo: string; setReplyTo: (v: string) => void;
 }) {
   switch (selected) {
     case 'assunto':
@@ -383,8 +387,15 @@ function SectionEditor({
         <>
           <FieldText label="Assunto" hint="Aparece na caixa de entrada" value={subject} onChange={setSubject} />
           <FieldText label="Preheader" hint="Prévia curta ao lado do assunto" value={preheader} onChange={setPreheader} />
+          <div className="rounded-md border border-slate-200 bg-slate-50/70 p-3 space-y-3">
+            <div className="text-[11px] font-semibold text-slate-700 uppercase tracking-wide">Remetente</div>
+            <FieldText label="Nome do remetente" value={fromName} onChange={setFromName} />
+            <FieldText label="E-mail remetente" value={fromAddress} onChange={setFromAddress} />
+            <FieldText label="Responder para (opcional)" value={replyTo} onChange={setReplyTo} />
+          </div>
         </>
       );
+
     case 'govbar':
       return (
         <>
