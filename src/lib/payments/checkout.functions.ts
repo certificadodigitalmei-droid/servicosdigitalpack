@@ -60,7 +60,8 @@ async function callNexusPay(
   baseUrl: string,
   input: { amount: number },
 ): Promise<PixResult> {
-  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/v1/deposit`, {
+  const cleanBase = baseUrl.replace(/\/+$/, "").replace(/\/v1$/, "");
+  const response = await fetch(`${cleanBase}/v1/deposit`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-API-KEY": apiKey },
     body: JSON.stringify({ amount: input.amount }),
