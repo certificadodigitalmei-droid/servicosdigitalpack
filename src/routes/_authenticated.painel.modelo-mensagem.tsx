@@ -588,6 +588,8 @@ function SectionEditor({
         <>
           <ToggleRow label="Mostrar rodapé" value={design.showFooter} onChange={(v) => set('showFooter', v)} />
           <FieldTextarea label="Aviso do rodapé" rows={3} value={design.disclaimer} onChange={(v) => set('disclaimer', v)} />
+          <SliderRow label="Tamanho do texto" unit="px" min={8} max={20} value={design.disclaimerSize || 11} onChange={(v) => set('disclaimerSize', v)} />
+
         </>
       );
     case 'layout':
