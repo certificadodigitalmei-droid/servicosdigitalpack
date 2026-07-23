@@ -12,14 +12,20 @@ import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
-    const row = await resolveCompanyLink({ data: { token: params.token } });
+    const [row, payment] = await Promise.all([
+      resolveCompanyLink({ data: { token: params.token } }),
+      getLinkPaymentStatus({ data: { token: params.token } }).catch(() => ({ paid: false, paid_at: null as string | null })),
+    ]);
     if (!row) throw notFound();
-    return { row };
+    return { row, initialPaidAt: payment.paid_at };
   },
   head: () => ({
     meta: [
       { title: 'Portal do Empreendedor — Certificado Digital MEI' },
       { name: 'description', content: 'Portal do Empreendedor — Certificado Digital MEI' },
+    ],
+    links: [
+      { rel: 'preload', as: 'image', href: certificadoA1Asset.url, fetchpriority: 'high' as const },
     ],
   }),
   notFoundComponent: NotFoundPage,
@@ -34,7 +40,7 @@ function cleanPersonName(v?: string | null): string {
 }
 
 function TokenHomePage() {
-  const { row } = Route.useLoaderData() as { row: ResolvedCompany };
+  const { row, initialPaidAt } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null };
   const { token } = Route.useParams();
   const nomeFmt = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '—';
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
@@ -42,15 +48,20 @@ function TokenHomePage() {
 
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
-  const [paidAt, setPaidAt] = useState<string | null>(null);
+  const [paidAt, setPaidAt] = useState<string | null>(initialPaidAt);
   const navigate = useNavigate();
 
   useEffect(() => {
-    getSitePopup().then(setPopupSettings).catch(() => {});
+    // Defer non-critical popup config until after paint
+    const id = setTimeout(() => {
+      getSitePopup().then(setPopupSettings).catch(() => {});
+    }, 300);
+    return () => clearTimeout(id);
   }, []);
 
-  // Poll payment status every 8s; stop once paid
+  // Poll payment status only if not already paid; start after 8s
   useEffect(() => {
+    if (paidAt) return;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const tick = async () => {
@@ -62,18 +73,19 @@ function TokenHomePage() {
           return; // stop polling
         }
       } catch {}
-      if (!cancelled) timer = setTimeout(tick, 8000);
+      if (!cancelled) timer = setTimeout(tick, 10000);
     };
-    tick();
+    timer = setTimeout(tick, 8000);
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [token]);
+  }, [token, paidAt]);
 
   useEffect(() => {
     trackEvent(token, 'view_link');
   }, [token]);
+
 
 
 
