@@ -54,9 +54,16 @@ function CheckoutPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [pixOpen, setPixOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [infoLoading, setInfoLoading] = useState(false);
+  const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [pixData, setPixData] = useState<{ pix_code: string; qr_code_base64?: string; transaction_id: string } | null>(null);
   const [loading, setLoading] = useState(!!token);
+
+  useEffect(() => {
+    getSitePopup().then(setPopupSettings).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const loadFromToken = async () => {
