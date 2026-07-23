@@ -18,7 +18,7 @@ import {
 } from '@/lib/email-campaign/template';
 
 /** Lê o design salvo pela aba "Modelo de Mensagem" para aplicar no envio real. */
-function loadSavedDesign(): Partial<CampaignDesign> {
+export function loadSavedDesign(): Partial<CampaignDesign> {
   if (typeof window === 'undefined') return {};
   try {
     const raw = window.localStorage.getItem('campanha:design:v1');
@@ -29,11 +29,11 @@ function loadSavedDesign(): Partial<CampaignDesign> {
     return {};
   }
 }
-function loadSavedSubject(): string | null {
+export function loadSavedSubject(): string | null {
   if (typeof window === 'undefined') return null;
   try { return window.localStorage.getItem('campanha:subject:v1'); } catch { return null; }
 }
-function mergedDesign(heroImageUrl?: string): Partial<CampaignDesign> {
+export function mergedDesign(heroImageUrl?: string): Partial<CampaignDesign> {
   const saved = loadSavedDesign();
   return heroImageUrl ? { ...saved, heroImageUrl } : saved;
 }

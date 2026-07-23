@@ -57,6 +57,8 @@ import {
   setShowFloating,
   setHeroImageUrl,
   type QueueItem,
+  mergedDesign,
+  loadSavedSubject,
 } from '@/lib/automation/envio-engine';
 import { consultaStore } from '@/lib/automation/consulta-engine';
 
@@ -122,11 +124,13 @@ function EnvioMassa() {
   }, [queue]);
 
   const previewItem = queue[previewIdx];
+  const effectiveSubject = loadSavedSubject() || subject;
   const previewHtml = useMemo(() => {
     if (!previewItem) return '';
     const vars = buildVarsForPreview(previewItem);
-    return renderHtml({ ...DEFAULT_DESIGN, heroImageUrl: heroImageUrl || undefined }, vars);
-  }, [previewItem, fromName, fromAddress, heroImageUrl]);
+    const design = { ...DEFAULT_DESIGN, ...mergedDesign(heroImageUrl || undefined) };
+    return renderHtml(design, vars);
+  }, [previewItem, fromName, fromAddress, heroImageUrl, subject]);
 
 
   const progress =
@@ -520,7 +524,7 @@ function EnvioMassa() {
                   Para: <strong>{previewItem.email}</strong> · CNPJ {formatCnpj(previewItem.cnpj)}
                 </div>
                 <div className="mb-2 text-xs text-slate-600">
-                  Assunto: <strong>{substitute(subject, buildVarsForPreview(previewItem))}</strong>
+                  Assunto: <strong>{substitute(effectiveSubject, buildVarsForPreview(previewItem))}</strong>
                 </div>
                 <iframe title="preview" srcDoc={previewHtml} className="h-[600px] w-full rounded-md border" />
               </>
