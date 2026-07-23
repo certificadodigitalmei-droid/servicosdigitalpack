@@ -434,42 +434,33 @@ function DashboardPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">
-            Pop-ups do site — pré-visualização
+            Pop-ups do site — cliques
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
-            <PopupPreviewCard
+            <PopupClicksCard
               icon={<Bell className="h-5 w-5" />}
               title="Pop-up 1 — Aviso do Certificado"
-              description='Aparece na primeira página quando o cliente clica em "Emitir Certificado".'
+              description='Abre quando o cliente clica em "Emitir Certificado" na primeira página.'
               badge="1º passo"
               badgeColor="bg-amber-100 text-amber-700"
-              onOpen={() => setPreviewPopup('cert')}
+              uniqueClicks={stats.clickCert}
+              totalClicks={stats.clickCertTotal}
             />
-            <PopupPreviewCard
+            <PopupClicksCard
               icon={<Info className="h-5 w-5" />}
               title="Pop-up 2 — Informações do Pagamento"
-              description='Aparece no checkout quando o cliente clica em "Gerar Guia".'
+              description='Abre quando o cliente clica em "Gerar Guia" no checkout.'
               badge="2º passo"
               badgeColor="bg-purple-100 text-purple-700"
-              onOpen={() => setPreviewPopup('payment')}
+              uniqueClicks={stats.clickGuia}
+              totalClicks={stats.clickGuiaTotal}
             />
           </div>
         </CardContent>
       </Card>
 
-      <CertificatePopup
-        open={previewPopup === 'cert'}
-        onClose={() => setPreviewPopup(null)}
-        onContinue={() => setPreviewPopup(null)}
-        cnpj="12345678000191"
-      />
-      <PaymentInfoPopup
-        open={previewPopup === 'payment'}
-        onClose={() => setPreviewPopup(null)}
-        onContinue={() => setPreviewPopup(null)}
-      />
 
 
       <Card>
