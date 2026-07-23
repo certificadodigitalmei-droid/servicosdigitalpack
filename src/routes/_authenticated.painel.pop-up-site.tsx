@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CertificatePopup } from '@/components/CertificatePopup';
 import { PaymentInfoPopup } from '@/components/checkout/PaymentInfoPopup';
 import { getSitePopup, saveSitePopup, POPUP_DEFAULTS, type SitePopupSettings } from '@/lib/site-popup.functions';
+import { RichField } from '@/components/admin/RichField';
 
 export const Route = createFileRoute('/_authenticated/painel/pop-up-site')({
   component: PopupSitePage,
@@ -99,8 +100,8 @@ function PopupSitePage() {
               <CardHeader><CardTitle className="text-base">Cabeçalho e título</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <Field label="Selo do topo" value={s.badge_text} onChange={(v) => set('badge_text', v)} />
-                <Field label="Título principal" value={s.title} onChange={(v) => set('title', v)} textarea />
-                <Field label="Destaque (pendência)" value={s.highlight_text} onChange={(v) => set('highlight_text', v)} />
+                <RichField label="Título principal" value={s.title} onChange={(v) => set('title', v)} rows={3} />
+                <RichField label="Destaque (pendência)" value={s.highlight_text} onChange={(v) => set('highlight_text', v)} rows={2} />
               </CardContent>
             </Card>
 
@@ -108,15 +109,15 @@ function PopupSitePage() {
               <CardHeader><CardTitle className="text-base">Blocos informativos</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <Field label="Título — Obrigatório por lei" value={s.law_title} onChange={(v) => set('law_title', v)} />
-                <Field label="Texto legal" value={s.law_text} onChange={(v) => set('law_text', v)} textarea />
-                <Field label="Texto do emissor/parceiros" value={s.provider_text} onChange={(v) => set('provider_text', v)} textarea />
+                <RichField label="Texto legal" value={s.law_text} onChange={(v) => set('law_text', v)} rows={3} />
+                <RichField label="Texto do emissor/parceiros" value={s.provider_text} onChange={(v) => set('provider_text', v)} rows={3} />
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader><CardTitle className="text-base">Riscos (bloco escuro)</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <Field label="Título dos riscos" value={s.risks_title} onChange={(v) => set('risks_title', v)} />
+                <RichField label="Título dos riscos" value={s.risks_title} onChange={(v) => set('risks_title', v)} singleLine />
                 <div className="space-y-2">
                   <Label className="text-sm">Itens</Label>
                   {s.risks.map((r, i) => (
@@ -244,7 +245,7 @@ function PopupSitePage() {
               <CardHeader><CardTitle className="text-base">Cabeçalho e título</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <Field label="Selo do topo" value={s.payment_badge_text} onChange={(v) => set('payment_badge_text', v)} />
-                <Field label="Título principal" value={s.payment_title} onChange={(v) => set('payment_title', v)} textarea />
+                <RichField label="Título principal" value={s.payment_title} onChange={(v) => set('payment_title', v)} rows={2} />
               </CardContent>
             </Card>
 
@@ -259,10 +260,10 @@ function PopupSitePage() {
             <Card className="lg:col-span-2">
               <CardHeader><CardTitle className="text-base">Blocos informativos</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <Field label="Empresas parceiras (bloco cinza)" value={s.payment_partner_text} onChange={(v) => set('payment_partner_text', v)} textarea />
-                <Field label="Alerta do banco (bloco amarelo)" value={s.payment_alert_text} onChange={(v) => set('payment_alert_text', v)} textarea />
-                <Field label="Confirmação/emissão (bloco verde)" value={s.payment_confirmation_text} onChange={(v) => set('payment_confirmation_text', v)} textarea />
-                <Field label="Validade do certificado" value={s.payment_validity_text} onChange={(v) => set('payment_validity_text', v)} />
+                <RichField label="Empresas parceiras (bloco cinza)" value={s.payment_partner_text} onChange={(v) => set('payment_partner_text', v)} rows={4} />
+                <RichField label="Alerta do banco (bloco amarelo)" value={s.payment_alert_text} onChange={(v) => set('payment_alert_text', v)} rows={4} />
+                <RichField label="Confirmação/emissão (bloco verde)" value={s.payment_confirmation_text} onChange={(v) => set('payment_confirmation_text', v)} rows={4} />
+                <RichField label="Validade do certificado" value={s.payment_validity_text} onChange={(v) => set('payment_validity_text', v)} singleLine />
               </CardContent>
             </Card>
 
