@@ -23,6 +23,7 @@ import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenti
 import { Route as ApiPublicWebhookUniaopayRouteImport } from './routes/api/public/webhook-uniaopay'
 import { Route as ApiPublicWebhookNexuspayRouteImport } from './routes/api/public/webhook-nexuspay'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
+import { Route as AuthenticatedPainelPopUpSiteRouteImport } from './routes/_authenticated.painel.pop-up-site'
 import { Route as AuthenticatedPainelPagamentosRouteImport } from './routes/_authenticated.painel.pagamentos'
 import { Route as AuthenticatedPainelModeloMensagemRouteImport } from './routes/_authenticated.painel.modelo-mensagem'
 import { Route as AuthenticatedPainelLinksGeradosRouteImport } from './routes/_authenticated.painel.links-gerados'
@@ -114,6 +115,12 @@ const ApiInternalCasaDosDadosWorkerRoute =
     id: '/api/internal/casa-dos-dados-worker',
     path: '/api/internal/casa-dos-dados-worker',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedPainelPopUpSiteRoute =
+  AuthenticatedPainelPopUpSiteRouteImport.update({
+    id: '/pop-up-site',
+    path: '/pop-up-site',
+    getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelPagamentosRoute =
   AuthenticatedPainelPagamentosRouteImport.update({
@@ -247,6 +254,7 @@ export interface FileRoutesByFullPath {
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
+  '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-nexuspay': typeof ApiPublicWebhookNexuspayRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
@@ -278,6 +286,7 @@ export interface FileRoutesByTo {
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
+  '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-nexuspay': typeof ApiPublicWebhookNexuspayRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
@@ -313,6 +322,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/_authenticated/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/_authenticated/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
+  '/_authenticated/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-nexuspay': typeof ApiPublicWebhookNexuspayRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
@@ -348,6 +358,7 @@ export interface FileRouteTypes {
     | '/painel/links-gerados'
     | '/painel/modelo-mensagem'
     | '/painel/pagamentos'
+    | '/painel/pop-up-site'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-nexuspay'
     | '/api/public/webhook-uniaopay'
@@ -379,6 +390,7 @@ export interface FileRouteTypes {
     | '/painel/links-gerados'
     | '/painel/modelo-mensagem'
     | '/painel/pagamentos'
+    | '/painel/pop-up-site'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-nexuspay'
     | '/api/public/webhook-uniaopay'
@@ -413,6 +425,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/links-gerados'
     | '/_authenticated/painel/modelo-mensagem'
     | '/_authenticated/painel/pagamentos'
+    | '/_authenticated/painel/pop-up-site'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-nexuspay'
     | '/api/public/webhook-uniaopay'
@@ -540,6 +553,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/internal/casa-dos-dados-worker'
       preLoaderRoute: typeof ApiInternalCasaDosDadosWorkerRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/painel/pop-up-site': {
+      id: '/_authenticated/painel/pop-up-site'
+      path: '/pop-up-site'
+      fullPath: '/painel/pop-up-site'
+      preLoaderRoute: typeof AuthenticatedPainelPopUpSiteRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/pagamentos': {
       id: '/_authenticated/painel/pagamentos'
@@ -717,6 +737,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelLinksGeradosRoute: typeof AuthenticatedPainelLinksGeradosRoute
   AuthenticatedPainelModeloMensagemRoute: typeof AuthenticatedPainelModeloMensagemRoute
   AuthenticatedPainelPagamentosRoute: typeof AuthenticatedPainelPagamentosRoute
+  AuthenticatedPainelPopUpSiteRoute: typeof AuthenticatedPainelPopUpSiteRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
 
@@ -742,6 +763,7 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelModeloMensagemRoute:
     AuthenticatedPainelModeloMensagemRoute,
   AuthenticatedPainelPagamentosRoute: AuthenticatedPainelPagamentosRoute,
+  AuthenticatedPainelPopUpSiteRoute: AuthenticatedPainelPopUpSiteRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
 }
 
@@ -779,13 +801,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

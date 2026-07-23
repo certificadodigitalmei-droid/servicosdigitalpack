@@ -1,11 +1,13 @@
-import { createFileRoute, Link, notFound } from '@tanstack/react-router';
+import { createFileRoute, Link, notFound, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { Info, FileCheck2, Lock, User } from 'lucide-react';
 import { GovConsultaLoader } from '@/components/GovConsultaLoader';
+import { CertificatePopup } from '@/components/CertificatePopup';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
 import { resolveCompanyLink, type ResolvedCompany } from '@/lib/company-links.functions';
+import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
@@ -38,6 +40,13 @@ function TokenHomePage() {
   const aberturaFmt = row.abertura ? formatDateBR(row.abertura) : '—';
 
   const [loading, setLoading] = useState(false);
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    getSitePopup().then(setPopupSettings).catch(() => {});
+  }, []);
 
   useEffect(() => {
     trackEvent(token, 'view_link');
@@ -163,15 +172,21 @@ function TokenHomePage() {
                   </div>
                 </div>
                 <div className="bg-[#f8f9fa] border-t border-border p-4 flex justify-center lg:p-5">
-                  <Link
-                    to="/checkout/$token"
-                    params={{ token }}
-                    onClick={() => trackEvent(token, 'click_certificado')}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      trackEvent(token, 'click_certificado');
+                      if (popupSettings && popupSettings.enabled === false) {
+                        navigate({ to: '/checkout/$token', params: { token } });
+                      } else {
+                        setPopupOpen(true);
+                      }
+                    }}
                     className="inline-flex min-h-[44px] w-full max-w-[280px] items-center justify-center gap-2 rounded-md bg-[#1351b4] px-6 text-[13px] font-bold uppercase tracking-wide text-white transition-all hover:bg-[#004884] active:scale-[0.98] lg:max-w-none lg:min-h-[52px] lg:text-[14px]"
                   >
                     <Lock className="h-4 w-4" />
                     Emitir Certificado Digital
-                  </Link>
+                  </button>
                 </div>
                 {/* Trust row — desktop only */}
                 <div className="hidden lg:flex items-center justify-between border-t border-border/70 px-5 py-3 text-[11px] text-muted-foreground">
@@ -197,6 +212,16 @@ function TokenHomePage() {
       </main>
 
       <SiteFooter />
+      <CertificatePopup
+        open={popupOpen}
+        onClose={() => setPopupOpen(false)}
+        onContinue={() => {
+          setPopupOpen(false);
+          navigate({ to: '/checkout/$token', params: { token } });
+        }}
+        cnpj={row.cnpj}
+        settings={popupSettings}
+      />
     </Page>
   );
 }

@@ -1306,6 +1306,81 @@ export type Database = {
         }
         Relationships: []
       }
+      site_popup_settings: {
+        Row: {
+          badge_text: string
+          cancel_button_text: string
+          continue_button_text: string
+          enabled: boolean
+          footer_items: Json
+          highlight_text: string
+          id: number
+          law_text: string
+          law_title: string
+          price_installment: string
+          price_installment_label: string
+          price_installment_note: string
+          price_main: string
+          price_main_label: string
+          price_main_note: string
+          provider_text: string
+          risks: Json
+          risks_title: string
+          title: string
+          updated_at: string
+          validity_subtitle: string
+          validity_title: string
+        }
+        Insert: {
+          badge_text?: string
+          cancel_button_text?: string
+          continue_button_text?: string
+          enabled?: boolean
+          footer_items?: Json
+          highlight_text?: string
+          id?: number
+          law_text?: string
+          law_title?: string
+          price_installment?: string
+          price_installment_label?: string
+          price_installment_note?: string
+          price_main?: string
+          price_main_label?: string
+          price_main_note?: string
+          provider_text?: string
+          risks?: Json
+          risks_title?: string
+          title?: string
+          updated_at?: string
+          validity_subtitle?: string
+          validity_title?: string
+        }
+        Update: {
+          badge_text?: string
+          cancel_button_text?: string
+          continue_button_text?: string
+          enabled?: boolean
+          footer_items?: Json
+          highlight_text?: string
+          id?: number
+          law_text?: string
+          law_title?: string
+          price_installment?: string
+          price_installment_label?: string
+          price_installment_note?: string
+          price_main?: string
+          price_main_label?: string
+          price_main_note?: string
+          provider_text?: string
+          risks?: Json
+          risks_title?: string
+          title?: string
+          updated_at?: string
+          validity_subtitle?: string
+          validity_title?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           company_name: string | null
