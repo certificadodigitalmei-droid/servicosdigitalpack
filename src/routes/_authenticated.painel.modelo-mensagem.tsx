@@ -168,6 +168,39 @@ function ModeloMensagem() {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+  const exportModel = () => {
+    const payload = {
+      version: 1,
+      kind: 'central-mei:modelo-mensagem',
+      exportedAt: new Date().toISOString(),
+      design, subject, preheader, fromName, fromAddress, replyTo,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `modelo-mensagem-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Modelo exportado');
+  };
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const importModel = async (file: File) => {
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!data || typeof data !== 'object') throw new Error('JSON inválido');
+      const src = data.design && typeof data.design === 'object' ? data.design : data;
+      setDesign({ ...DEFAULT_DESIGN, ...src });
+      if (typeof data.subject === 'string') setSubject(data.subject);
+      if (typeof data.preheader === 'string') setPreheader(data.preheader);
+      if (typeof data.fromName === 'string') setFromName(data.fromName);
+      if (typeof data.fromAddress === 'string') setFromAddress(data.fromAddress);
+      if (typeof data.replyTo === 'string') setReplyTo(data.replyTo);
+      toast.success('Modelo importado com sucesso');
+    } catch (e: any) {
+      toast.error('Falha ao importar: ' + (e?.message ?? 'arquivo inválido'));
+    }
+  };
   const copyVar = async (key: string) => {
     const tag = `{{${key}}}`;
     try { await navigator.clipboard.writeText(tag); toast.success(`${tag} copiado`); }
