@@ -212,6 +212,16 @@ function TokenHomePage() {
       </main>
 
       <SiteFooter />
+      <CertificatePopup
+        open={popupOpen}
+        onClose={() => setPopupOpen(false)}
+        onContinue={() => {
+          setPopupOpen(false);
+          navigate({ to: '/checkout/$token', params: { token } });
+        }}
+        cnpj={row.cnpj}
+        settings={popupSettings}
+      />
     </Page>
   );
 }
