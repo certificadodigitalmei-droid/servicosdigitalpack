@@ -183,6 +183,26 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixM
               </div>
             </div>
 
+            {/* QR Code */}
+            {pixData?.qr_code_base64 && (
+              <div className="flex flex-col items-center gap-2">
+                <div className="text-center text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Escaneie o QR Code
+                </div>
+                <div className="rounded-md border border-border bg-white p-3">
+                  <img
+                    src={
+                      pixData.qr_code_base64.startsWith('data:')
+                        ? pixData.qr_code_base64
+                        : `data:image/png;base64,${pixData.qr_code_base64}`
+                    }
+                    alt="QR Code Pix"
+                    className="h-48 w-48 object-contain"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Copia e cola */}
             <div className="space-y-3">
               <div className="text-center text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -213,10 +233,11 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixM
 
             {/* Detalhes */}
             <div className="grid gap-1.5 rounded-md border border-border bg-muted/10 p-3 text-[12.5px]">
-              <RowKV k="Beneficiário" v="Central MEI Digital" />
+              <RowKV k="Emissão Certificado — CNPJ" v={cnpj ? formatCPFOrCNPJ(cnpj) : '—'} />
               <RowKV k="Referência" v={orderId ? orderId.slice(0, 8).toUpperCase() : '—'} />
               <RowKV k="Valor" v={<span className="font-bold">{brl(amount)}</span>} />
             </div>
+
 
             <button
               type="button"
