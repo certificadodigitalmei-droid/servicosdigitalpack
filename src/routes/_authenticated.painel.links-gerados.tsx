@@ -94,13 +94,16 @@ function LinksGeradosPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [origin, setOrigin] = useState('all');
-  const [stage, setStage] = useState('all'); // all|no_view|visited|checkout|certificado|guia
+  const [stage, setStage] = useState('all'); // all|no_view|visited|checkout|certificado|guia|paid
   const [preset, setPreset] = useState<DatePreset>('all');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [autoLinkIds, setAutoLinkIds] = useState<Set<string>>(new Set());
   const [statsByToken, setStatsByToken] = useState<Record<string, Stats>>({});
   const [aggregate, setAggregate] = useState<Stats>(emptyStats());
+  const [paidByLinkId, setPaidByLinkId] = useState<Record<string, { count: number; amount: number; last_paid_at: string | null }>>({});
+  const [totalPaid, setTotalPaid] = useState(0);
+  const [totalPaidAmount, setTotalPaidAmount] = useState(0);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const range = useMemo(() => rangeFromPreset(preset, from, to), [preset, from, to]);
