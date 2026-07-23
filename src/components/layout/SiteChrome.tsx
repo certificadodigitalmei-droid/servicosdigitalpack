@@ -66,9 +66,10 @@ export function Breadcrumb({ items }: { items: { label: string; to?: string }[] 
   return (
     <div className="bg-[#f8f9fa] border-b border-border/50">
       <div className="mx-auto flex max-w-[1280px] items-center gap-1 px-4 py-2 text-[11px] text-[#005690]">
-        <Link to="/" className="hover:underline">
+        <span className="inline-flex items-center text-muted-foreground">
           <Home className="h-3 w-3" />
-        </Link>
+        </span>
+
         {items.map((it, i) => (
           <span key={i} className="flex items-center gap-1">
             <ChevronRight className="h-2.5 w-2.5 text-muted-foreground/60" />
