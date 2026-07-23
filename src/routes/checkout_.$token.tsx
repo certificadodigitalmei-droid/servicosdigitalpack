@@ -2,6 +2,7 @@ import { createFileRoute, notFound, redirect } from '@tanstack/react-router';
 import { resolveCompanyLink } from '@/lib/company-links.functions';
 import { createOrderAndPixCharge } from '@/lib/payments/checkout.functions';
 import { PixModal } from '@/components/checkout/PixModal';
+import { PaymentInfoPopup } from '@/components/checkout/PaymentInfoPopup';
 
 // Loads company data by token and forwards to the existing /checkout page.
 // The visible URL stays /checkout/$token — no GET parameters are exposed.
