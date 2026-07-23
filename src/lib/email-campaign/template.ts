@@ -247,18 +247,19 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   D.heroImageUrl = toAbsoluteUrl(D.heroImageUrl);
   D.avatarUrl = toAbsoluteUrl(D.avatarUrl);
   const S = (t: string) => substitute(t, vars);
-  const title = esc(S(D.title));
-  const subtitle = esc(S(D.subtitle));
+  const title = nl2br(S(D.title));
+  const subtitle = nl2br(S(D.subtitle));
   const intro = inlineFormat(S(D.intro));
-  const cardTitle = esc(S(D.cardTitle));
+  const cardTitle = nl2br(S(D.cardTitle));
   const buttonLabel = esc(S(D.buttonLabel));
   const buttonHref = esc(S(D.buttonHref));
   const disclaimer = inlineFormat(S(D.disclaimer));
   const signature = inlineFormat(S(D.signature));
-  const logo = esc(S(D.logoText));
+  const logo = nl2br(S(D.logoText));
   const heroTitle = inlineFormat(S(D.heroTitle));
-  const warningTitle = esc(S(D.warningTitle));
+  const warningTitle = nl2br(S(D.warningTitle));
   const warningItems = inlineFormat(S(D.warningItems));
+
   const align = D.align;
   const px = D.contentPaddingX;
 
