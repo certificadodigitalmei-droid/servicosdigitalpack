@@ -83,6 +83,58 @@ function PanelLayout() {
     navigate({ to: '/auth' });
   };
 
+  // Salvar tudo na nuvem (todas as configurações do painel).
+  const [saving, setSaving] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const doSave = useServerFn(saveCloudState);
+  const doLoad = useServerFn(getCloudState);
+
+  const saveAll = async () => {
+    setSaving(true);
+    try {
+      const snapshot = collectLocalSnapshot();
+      const r = await doSave({ data: { snapshot } });
+      setLastSavedAt(r.savedAt);
+      toast.success('Configurações do site salvas na nuvem.');
+    } catch (e: any) {
+      toast.error('Falha ao salvar: ' + (e?.message ?? 'erro'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const restoreAll = async () => {
+    if (!confirm('Restaurar todas as configurações salvas na nuvem? A página será recarregada.')) return;
+    setRestoring(true);
+    try {
+      const r = await doLoad();
+      if (!r.snapshot) {
+        toast.info('Nada salvo na nuvem ainda.');
+        setRestoring(false);
+        return;
+      }
+      applyLocalSnapshot(r.snapshot as Record<string, string>);
+      toast.success('Configurações restauradas. Recarregando…');
+      setTimeout(() => window.location.reload(), 600);
+    } catch (e: any) {
+      toast.error('Falha ao restaurar: ' + (e?.message ?? 'erro'));
+      setRestoring(false);
+    }
+  };
+
+  // Ao montar, busca updated_at para exibir "última nuvem" (sem restaurar automaticamente).
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await doLoad();
+        if (r.updatedAt) setLastSavedAt(r.updatedAt);
+      } catch { /* silencioso */ }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
   const menuGroups: { label: string; items: { title: string; icon: typeof LayoutDashboard; to: string }[] }[] = [
     {
       label: 'Principal',
