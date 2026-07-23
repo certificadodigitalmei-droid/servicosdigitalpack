@@ -869,3 +869,73 @@ function Stat({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function SaldoView({ raw }: { raw: string }) {
+  const parsed = (() => {
+    try {
+      const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (obj && typeof obj === 'object' && obj.saldos) return obj as {
+        saldos: Record<string, { valor: number; criado_em?: string; expira_em?: string }>;
+        saldo_total: number;
+      };
+    } catch {}
+    return null;
+  })();
+
+  if (!parsed) {
+    return (
+      <div className="rounded border border-slate-200 bg-slate-50 p-3 text-xs">
+        <strong>Saldo:</strong> <code className="break-all">{raw}</code>
+      </div>
+    );
+  }
+
+  const fmtDate = (s?: string) =>
+    s ? new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+  const fmtNum = (n: number) => new Intl.NumberFormat('pt-BR').format(n);
+  const now = Date.now();
+
+  const entries = Object.entries(parsed.saldos).sort((a, b) => b[1].valor - a[1].valor);
+
+  return (
+    <div className="rounded-lg border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4">
+      <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
+        <div>
+          <div className="text-[11px] uppercase tracking-wide text-emerald-700 font-semibold">Saldo total disponível</div>
+          <div className="text-2xl font-bold text-emerald-800">{fmtNum(parsed.saldo_total)} <span className="text-sm font-medium text-emerald-600">créditos</span></div>
+        </div>
+        <div className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white">
+          Casa dos Dados
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Planos / pacotes</div>
+        {entries.map(([key, info]) => {
+          const label = key.startsWith('subscription-') ? `Assinatura #${key.replace('subscription-', '')}` : key === 'avulso' ? 'Créditos avulsos' : key;
+          const expired = info.expira_em ? new Date(info.expira_em).getTime() < now : false;
+          const zero = info.valor === 0;
+          return (
+            <div
+              key={key}
+              className={`flex items-center justify-between rounded-md border px-3 py-2 text-sm ${
+                zero || expired ? 'border-slate-200 bg-slate-50 opacity-70' : 'border-emerald-200 bg-white'
+              }`}
+            >
+              <div className="min-w-0">
+                <div className="font-semibold text-slate-800 truncate">{label}</div>
+                <div className="text-[11px] text-slate-500">
+                  Criado em {fmtDate(info.criado_em)} · Expira em {fmtDate(info.expira_em)}
+                  {expired && <span className="ml-1 text-red-600 font-semibold">(expirado)</span>}
+                </div>
+              </div>
+              <div className={`ml-3 shrink-0 text-lg font-bold ${zero ? 'text-slate-400' : 'text-emerald-700'}`}>
+                {fmtNum(info.valor)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
