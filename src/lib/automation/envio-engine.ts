@@ -202,6 +202,8 @@ export const setBatchLimit = (n: number) => envioStore.set({ batchLimit: Math.ma
 export const setLimitMode = (m: 'daily' | 'hourly') => envioStore.set({ limitMode: m });
 export const setDailyLimit = (n: number) => envioStore.set({ dailyLimit: Math.max(0, n) });
 export const setHourlyLimit = (n: number) => envioStore.set({ hourlyLimit: Math.max(0, n) });
+export const setStopAtDaily = (n: number) => envioStore.set({ stopAtDaily: Math.max(0, n) });
+
 export const resetDailyCounter = () => {
   envioStore.set({ sentToday: 0, sentDay: todayStr(), sentThisHour: 0, sentHour: hourStr() });
   pushLog('↻ Contadores zerados.');
