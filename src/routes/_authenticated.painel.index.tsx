@@ -574,9 +574,9 @@ function Breakdown({ data, iconFor }: { data: Record<string, number>; iconFor?: 
 }
 
 
-function PopupPreviewCard({ icon, title, description, badge, badgeColor, onOpen }: { icon: React.ReactNode; title: string; description: string; badge: string; badgeColor: string; onOpen: () => void }) {
+function PopupClicksCard({ icon, title, description, badge, badgeColor, uniqueClicks, totalClicks }: { icon: React.ReactNode; title: string; description: string; badge: string; badgeColor: string; uniqueClicks: number; totalClicks: number }) {
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-slate-200 bg-linear-to-br from-slate-50 to-white p-5 transition hover:shadow-md">
+    <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-linear-to-br from-slate-50 to-white p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="grid h-11 w-11 place-items-center rounded-lg bg-[#0b1e3f]/5 text-[#0b1e3f]">
           {icon}
@@ -587,9 +587,18 @@ function PopupPreviewCard({ icon, title, description, badge, badgeColor, onOpen 
         <div className="text-[15px] font-bold text-slate-900">{title}</div>
         <p className="mt-1 text-[13px] text-slate-500 leading-relaxed">{description}</p>
       </div>
-      <Button onClick={onOpen} className="mt-4 w-full" variant="outline">
-        <Eye className="mr-2 h-4 w-4" /> Ver pop-up completo
-      </Button>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="rounded-lg bg-white border border-slate-200 p-3">
+          <div className="text-[11px] uppercase tracking-wide text-slate-500">Pessoas</div>
+          <div className="mt-1 text-2xl font-black text-slate-900">{uniqueClicks.toLocaleString('pt-BR')}</div>
+          <div className="text-[10px] text-slate-400">Únicos por dispositivo</div>
+        </div>
+        <div className="rounded-lg bg-white border border-slate-200 p-3">
+          <div className="text-[11px] uppercase tracking-wide text-slate-500">Cliques totais</div>
+          <div className="mt-1 text-2xl font-black text-slate-900">{totalClicks.toLocaleString('pt-BR')}</div>
+          <div className="text-[10px] text-slate-400">Incluindo repetidos</div>
+        </div>
+      </div>
     </div>
   );
 }
