@@ -267,8 +267,35 @@ function PanelLayout() {
                 </nav>
               </div>
 
-              <div className="flex shrink-0 items-center gap-3">
-                <div className="hidden text-right sm:block">
+              <div className="flex shrink-0 items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={saveAll}
+                  disabled={saving}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                  title="Salva TODAS as configurações do site (modelo, envio, filtros, pop-ups…) na nuvem."
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cloud className="h-4 w-4" />}
+                  <span className="hidden sm:inline">Salvar tudo na nuvem</span>
+                  <span className="sm:hidden">Salvar</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={restoreAll}
+                  disabled={restoring}
+                  className="gap-2"
+                  title="Restaura as configurações salvas na nuvem neste dispositivo."
+                >
+                  {restoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
+                  <span className="hidden md:inline">Restaurar</span>
+                </Button>
+                {lastSavedAt && (
+                  <span className="hidden lg:inline text-[10px] text-slate-400">
+                    Nuvem: {new Date(lastSavedAt).toLocaleString('pt-BR')}
+                  </span>
+                )}
+                <div className="hidden text-right sm:block ml-2">
                   <div className="text-xs font-semibold text-slate-700">Administrador</div>
                   <div className="text-[10px] text-slate-400">Sessão ativa</div>
                 </div>
