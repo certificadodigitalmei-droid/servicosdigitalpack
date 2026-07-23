@@ -1317,6 +1317,17 @@ export type Database = {
           id: number
           law_text: string
           law_title: string
+          payment_alert_text: string
+          payment_badge_text: string
+          payment_cancel_button_text: string
+          payment_confirmation_text: string
+          payment_continue_button_text: string
+          payment_enabled: boolean
+          payment_loading_subtitle: string
+          payment_loading_title: string
+          payment_partner_text: string
+          payment_title: string
+          payment_validity_text: string
           price_installment: string
           price_installment_label: string
           price_installment_note: string
@@ -1341,6 +1352,17 @@ export type Database = {
           id?: number
           law_text?: string
           law_title?: string
+          payment_alert_text?: string
+          payment_badge_text?: string
+          payment_cancel_button_text?: string
+          payment_confirmation_text?: string
+          payment_continue_button_text?: string
+          payment_enabled?: boolean
+          payment_loading_subtitle?: string
+          payment_loading_title?: string
+          payment_partner_text?: string
+          payment_title?: string
+          payment_validity_text?: string
           price_installment?: string
           price_installment_label?: string
           price_installment_note?: string
@@ -1365,6 +1387,17 @@ export type Database = {
           id?: number
           law_text?: string
           law_title?: string
+          payment_alert_text?: string
+          payment_badge_text?: string
+          payment_cancel_button_text?: string
+          payment_confirmation_text?: string
+          payment_continue_button_text?: string
+          payment_enabled?: boolean
+          payment_loading_subtitle?: string
+          payment_loading_title?: string
+          payment_partner_text?: string
+          payment_title?: string
+          payment_validity_text?: string
           price_installment?: string
           price_installment_label?: string
           price_installment_note?: string
