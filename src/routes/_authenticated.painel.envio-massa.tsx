@@ -180,23 +180,37 @@ function EnvioMassa() {
     }
   }, [autoLoadQueue]);
 
-  // Carrega destinatários uma vez se a fila estiver vazia.
   // Sincroniza assunto/remetente do Modelo de Mensagem automaticamente.
+  // Não carrega destinatários automaticamente — só quando o toggle
+  // "Auto-carregar fila" estiver ligado, ou via botão manual.
   useEffect(() => {
     syncFromMessageModel();
-    if (queue.length === 0) void loadRecipients();
     void refreshStats();
+    // Limpeza única: remove pendências antigas herdadas do modo em lote.
+    try {
+      const done = window.localStorage.getItem('envio:pendingClearedV2');
+      if (!done) {
+        envioStore.set((s) => ({ queue: s.queue.filter((q) => q.status !== 'pending') }));
+        window.localStorage.setItem('envio:pendingClearedV2', '1');
+      }
+    } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-carregar fila em intervalo curto quando o toggle está ligado.
+  // Auto-carregar fila em intervalo curto (1 empresa por vez) quando o toggle está ligado.
   useEffect(() => {
     if (!autoLoadQueue) return;
-    const id = window.setInterval(() => {
-      if (!loading) void loadRecipients();
-    }, 15000);
+    const tick = () => {
+      if (loading || running) return;
+      // Só sincroniza a próxima quando não houver nenhum pendente na fila.
+      const pending = envioStore.get().queue.filter((q) => q.status === 'pending').length;
+      if (pending > 0) return;
+      void loadRecipients({ limit: 1 });
+    };
+    tick();
+    const id = window.setInterval(tick, 8000);
     return () => clearInterval(id);
-  }, [autoLoadQueue, loading]);
+  }, [autoLoadQueue, loading, running]);
 
   // Recarrega design/assunto quando o Modelo de Mensagem é salvo (mesma ou outra aba)
   // ou quando esta aba recebe foco novamente.
@@ -603,7 +617,7 @@ function EnvioMassa() {
             )}
 
             <div className="flex flex-wrap gap-2 pt-2">
-              <Button variant="outline" onClick={loadRecipients} disabled={loading || running}>
+              <Button variant="outline" onClick={() => void loadRecipients()} disabled={loading || running}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 Carregar fila
               </Button>
