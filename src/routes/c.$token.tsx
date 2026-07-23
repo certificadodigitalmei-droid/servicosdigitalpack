@@ -12,12 +12,13 @@ import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
-    const [row, payment] = await Promise.all([
+    const [row, payment, popup] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
       getLinkPaymentStatus({ data: { token: params.token } }).catch(() => ({ paid: false, paid_at: null as string | null })),
+      getSitePopup().catch(() => null),
     ]);
     if (!row) throw notFound();
-    return { row, initialPaidAt: payment.paid_at };
+    return { row, initialPaidAt: payment.paid_at, popup };
   },
   head: () => ({
     meta: [
@@ -40,24 +41,17 @@ function cleanPersonName(v?: string | null): string {
 }
 
 function TokenHomePage() {
-  const { row, initialPaidAt } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null };
+  const { row, initialPaidAt, popup } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null };
   const { token } = Route.useParams();
   const nomeFmt = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '—';
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
   const aberturaFmt = row.abertura ? formatDateBR(row.abertura) : '—';
 
   const [popupOpen, setPopupOpen] = useState(false);
-  const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
+  const [popupSettings] = useState<SitePopupSettings | null>(popup);
   const [paidAt, setPaidAt] = useState<string | null>(initialPaidAt);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Defer non-critical popup config until after paint
-    const id = setTimeout(() => {
-      getSitePopup().then(setPopupSettings).catch(() => {});
-    }, 300);
-    return () => clearTimeout(id);
-  }, []);
 
   // Poll payment status only if not already paid; start after 8s
   useEffect(() => {

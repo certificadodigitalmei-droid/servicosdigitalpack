@@ -23,9 +23,12 @@ import type { ResolvedCompany } from '@/lib/company-links.functions';
 
 export const Route = createFileRoute('/checkout_/$token')({
   loader: async ({ params }) => {
-    const row = await resolveCompanyLink({ data: { token: params.token } });
+    const [row, popup] = await Promise.all([
+      resolveCompanyLink({ data: { token: params.token } }),
+      getSitePopup().catch(() => null),
+    ]);
     if (!row) throw notFound();
-    return { row };
+    return { row, popup };
   },
   head: () => ({
     meta: [{ title: 'Pagamento — Central MEI Digital' }],
@@ -61,7 +64,7 @@ function cleanPersonName(v?: string | null): string {
 }
 
 function CheckoutTokenPage() {
-  const { row } = Route.useLoaderData() as { row: ResolvedCompany };
+  const { row, popup } = Route.useLoaderData() as { row: ResolvedCompany; popup: SitePopupSettings | null };
   const { token } = Route.useParams();
   const navigate = useNavigate();
 
@@ -84,12 +87,12 @@ function CheckoutTokenPage() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [pixData, setPixData] = useState<{ pix_code: string; qr_code_base64?: string; transaction_id: string } | null>(null);
 
-  const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
+  const [popupSettings] = useState<SitePopupSettings | null>(popup);
 
   useEffect(() => {
     trackEvent(token, 'view_checkout');
-    getSitePopup().then(setPopupSettings).catch(() => {});
   }, [token]);
+
 
 
   function validate() {

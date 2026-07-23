@@ -25,6 +25,10 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/checkout")({
   validateSearch: (s) => searchSchema.parse(s),
+  loader: async () => {
+    const popup = await getSitePopup().catch(() => null);
+    return { popup };
+  },
   head: () => ({
     meta: [
       { title: "Pagamento — Central MEI Digital" },
@@ -43,6 +47,7 @@ const brl = (n: number) => `R$ ${n.toFixed(2).replace(".", ",")}`;
 
 function CheckoutPage() {
   const { cnpj, nome, token } = Route.useSearch();
+  const { popup } = Route.useLoaderData() as { popup: SitePopupSettings | null };
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -56,14 +61,11 @@ function CheckoutPage() {
   const [pixOpen, setPixOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoLoading, setInfoLoading] = useState(false);
-  const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
+  const [popupSettings] = useState<SitePopupSettings | null>(popup);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [pixData, setPixData] = useState<{ pix_code: string; qr_code_base64?: string; transaction_id: string } | null>(null);
   const [loading, setLoading] = useState(!!token);
 
-  useEffect(() => {
-    getSitePopup().then(setPopupSettings).catch(() => {});
-  }, []);
 
   useEffect(() => {
     const loadFromToken = async () => {
