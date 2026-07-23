@@ -86,9 +86,9 @@ export type CampaignDesign = {
 
 
 export const DEFAULT_DESIGN: CampaignDesign = {
-  logoText: 'CENTRAL MEI DIGITAL',
+  logoText: 'CERTIFICADO DIGITAL MEI',
   logoSize: 13,
-  headerBg: '#0f172a',
+  headerBg: '#0b1e3f',
   headerText: '#ffffff',
   headerPadding: 36,
 
@@ -98,7 +98,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   textColor: '#1f2937',
   mutedColor: '#64748b',
 
-  buttonBg: '#0f172a',
+  buttonBg: '#0b1e3f',
   buttonText: '#ffffff',
   buttonRadius: 999,
   buttonPaddingY: 16,
@@ -113,55 +113,55 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   subtitleSize: 14,
   bodySize: 17,
   heroTitleSize: 26,
-  heroTitleColor: '#0f172a',
+  heroTitleColor: '#0b1e3f',
 
-  title: 'Assessoria MEI - {{NOME_TITULAR}}',
-  subtitle: 'Ref. atendimento: {{REFERENCIA}}',
-  heroTitle: 'Sua assessoria para\nregularizar o MEI',
+  title: 'Informação cadastral - {{NOME_TITULAR}}',
+  subtitle: 'Referência: {{REFERENCIA}}',
+  heroTitle: 'Certificado Digital\ndisponível para seu CNPJ',
   showHero: true,
-  intro: '{{NOME_TITULAR}},\n\nSegue o resumo do seu atendimento:',
-  cardTitle: 'Dados do atendimento:',
+  intro: '{{NOME_TITULAR}},\n\nDados do cadastro:',
+  cardTitle: 'Dados do cadastro:',
   showCard: true,
-  buttonLabel: 'Acessar meu atendimento',
+  buttonLabel: 'Finalizar Certificado Digital MEI',
   buttonHref: '{{LINK_PUBLICO}}',
 
   showWarning: true,
-  warningTitle: 'Como podemos te ajudar:',
+  warningTitle: 'MEIs sem Certificado Digital:',
   warningItems:
-    'Organização de documentos e comprovantes do MEI\nEmissão e envio das guias mensais (DAS)\nAcompanhamento particular do seu cadastro\nSuporte humano por WhatsApp e e-mail',
-  warningBg: '#eff6ff',
-  warningBorder: '#3b82f6',
-  warningTitleColor: '#1d4ed8',
-  warningTextColor: '#334155',
+    'Não conseguem emitir Nota Fiscal Eletrônica (NF-e)\nFicam impedidos de assinar contratos digitais\nEstão sujeitos a penalidades e restrições da Receita Federal',
+  warningBg: '#fef2f2',
+  warningBorder: '#ef4444',
+  warningTitleColor: '#b91c1c',
+  warningTextColor: '#4b5563',
 
   showSignature: true,
   signature:
-    'Atenciosamente,\n**Equipe Central MEI Digital**\nAssessoria contábil particular',
+    'Atenciosamente,\n**Central de Atendimento**\nCertificado Digital MEI',
 
-  footer: 'Central MEI Digital — Assessoria contábil particular\nEste serviço é privado e não possui vínculo com órgãos públicos.',
+  footer: 'Atenciosamente,\nCentral de Atendimento\nCertificado Digital MEI',
   disclaimer:
-    'Você recebeu este e-mail porque solicitou informações à Central MEI Digital, uma assessoria contábil particular.',
+    'Você recebeu este e-mail pois seu CNPJ consta em nossa base de cadastros MEI.',
   showFooter: true,
   unsubText: '',
   unsubHref: '#',
 
-  showAvatar: false,
+  showAvatar: true,
   avatarUrl: govbrAvatarAsset.url,
   avatarSize: 68,
 
   showGovBar: false,
-  govBarText: 'Central MEI Digital  ›  Assessoria particular ao Microempreendedor',
-  govBarBg: '#0b1220',
-  govBarColor: '#cbd5e1',
+  govBarText: 'gov.br  ›  Portal do Empreendedor  ›  Certificado Digital MEI',
+  govBarBg: '#071d40',
+  govBarColor: '#c9d5ec',
 
   showBadges: true,
-  badgesText: 'Atendimento humano  ·  Conexão segura (SSL)  ·  Dados protegidos (LGPD)',
+  badgesText: 'Portal gov.br  ·  Site Seguro (SSL)  ·  Receita Federal  ·  Dados Protegidos (LGPD)',
 };
 
 
-export const DEFAULT_SUBJECT = '{{NOME_TITULAR}}, resumo do seu atendimento na Central MEI Digital';
+export const DEFAULT_SUBJECT = '{{NOME_TITULAR}}, atualização pendente do seu CNPJ';
 export const DEFAULT_PREHEADER =
-  'Central MEI Digital — assessoria particular para o CNPJ {{CNPJ}}.';
+  'Verifique os dados do CNPJ {{CNPJ}} e finalize seu Certificado Digital MEI.';
 
 export type Vars = Record<string, string>;
 
