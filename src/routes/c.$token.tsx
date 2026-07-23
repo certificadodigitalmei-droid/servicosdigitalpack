@@ -40,6 +40,13 @@ function TokenHomePage() {
   const aberturaFmt = row.abertura ? formatDateBR(row.abertura) : '—';
 
   const [loading, setLoading] = useState(false);
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    getSitePopup().then(setPopupSettings).catch(() => {});
+  }, []);
 
   useEffect(() => {
     trackEvent(token, 'view_link');
