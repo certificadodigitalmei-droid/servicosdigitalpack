@@ -83,6 +83,13 @@ export const upsertPaymentGateway = createServerFn({ method: 'POST' })
     if (data.api_key) patch.api_key = data.api_key;
 
     if (data.id) {
+      const patch: any = {
+        name: data.name,
+        provider_type: data.provider_type,
+        base_url: data.base_url && data.base_url.length > 0 ? data.base_url : null,
+        notes: data.notes ?? null,
+      };
+      if (data.api_key) patch.api_key = data.api_key;
       const { error } = await supabaseAdmin.from('payment_gateways').update(patch).eq('id', data.id);
       if (error) throw new Error(error.message);
       return { id: data.id };
@@ -91,12 +98,20 @@ export const upsertPaymentGateway = createServerFn({ method: 'POST' })
     if (!data.api_key) throw new Error('api_key é obrigatório ao cadastrar');
     const { data: inserted, error } = await supabaseAdmin
       .from('payment_gateways')
-      .insert({ ...patch, api_key: data.api_key, is_active: false })
+      .insert({
+        name: data.name,
+        provider_type: data.provider_type,
+        api_key: data.api_key,
+        base_url: data.base_url && data.base_url.length > 0 ? data.base_url : null,
+        notes: data.notes ?? null,
+        is_active: false,
+      })
       .select('id')
       .single();
     if (error) throw new Error(error.message);
     return { id: inserted!.id };
   });
+
 
 export const activatePaymentGateway = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
