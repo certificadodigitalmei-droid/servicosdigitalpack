@@ -24,6 +24,7 @@ import {
   substitute,
   type CampaignDesign,
 } from '@/lib/email-campaign/template';
+import { InteractivePreview } from '@/components/email-editor/InteractivePreview';
 
 export const Route = createFileRoute('/_authenticated/painel/modelo-mensagem')({
   component: ModeloMensagem,
