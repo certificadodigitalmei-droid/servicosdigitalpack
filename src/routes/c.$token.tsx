@@ -172,15 +172,21 @@ function TokenHomePage() {
                   </div>
                 </div>
                 <div className="bg-[#f8f9fa] border-t border-border p-4 flex justify-center lg:p-5">
-                  <Link
-                    to="/checkout/$token"
-                    params={{ token }}
-                    onClick={() => trackEvent(token, 'click_certificado')}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      trackEvent(token, 'click_certificado');
+                      if (popupSettings && popupSettings.enabled === false) {
+                        navigate({ to: '/checkout/$token', params: { token } });
+                      } else {
+                        setPopupOpen(true);
+                      }
+                    }}
                     className="inline-flex min-h-[44px] w-full max-w-[280px] items-center justify-center gap-2 rounded-md bg-[#1351b4] px-6 text-[13px] font-bold uppercase tracking-wide text-white transition-all hover:bg-[#004884] active:scale-[0.98] lg:max-w-none lg:min-h-[52px] lg:text-[14px]"
                   >
                     <Lock className="h-4 w-4" />
                     Emitir Certificado Digital
-                  </Link>
+                  </button>
                 </div>
                 {/* Trust row — desktop only */}
                 <div className="hidden lg:flex items-center justify-between border-t border-border/70 px-5 py-3 text-[11px] text-muted-foreground">
