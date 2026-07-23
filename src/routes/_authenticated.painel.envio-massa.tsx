@@ -607,6 +607,12 @@ function EnvioMassa() {
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 Carregar fila
               </Button>
+              <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3">
+                <Switch checked={autoLoadQueue} onCheckedChange={setAutoLoadQueue} />
+                <span className="text-xs text-slate-700">
+                  Auto-carregar fila {autoLoadQueue ? <b className="text-emerald-600">ligado</b> : <b className="text-slate-500">desligado</b>}
+                </span>
+              </div>
               <Button
                 variant="outline"
                 className="text-red-600 hover:bg-red-50"
@@ -643,17 +649,24 @@ function EnvioMassa() {
             <Progress value={progress} />
             <div className="flex flex-wrap gap-2">
               {!running ? (
-                <Button onClick={startSending} disabled={queue.length === 0}>
+                <Button
+                  onClick={startSending}
+                  disabled={queue.length === 0}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
                   <Play className="h-4 w-4" /> {testMode ? 'Iniciar teste' : 'Iniciar envio real'}
                 </Button>
               ) : (
                 <>
+                  <Button
+                    onClick={stopSending}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Square className="h-4 w-4" /> {testMode ? 'Parar teste' : 'Parar envio real'}
+                  </Button>
                   <Button variant="outline" onClick={togglePause}>
                     {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                     {paused ? 'Retomar' : 'Pausar'}
-                  </Button>
-                  <Button variant="destructive" onClick={stopSending}>
-                    <Square className="h-4 w-4" /> Parar
                   </Button>
                 </>
               )}
