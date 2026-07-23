@@ -3,6 +3,7 @@ import { resolveCompanyLink } from '@/lib/company-links.functions';
 import { createOrderAndPixCharge } from '@/lib/payments/checkout.functions';
 import { PixModal } from '@/components/checkout/PixModal';
 import { PaymentInfoPopup } from '@/components/checkout/PaymentInfoPopup';
+import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
 
 // Loads company data by token and forwards to the existing /checkout page.
 // The visible URL stays /checkout/$token — no GET parameters are exposed.
@@ -83,8 +84,11 @@ function CheckoutTokenPage() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [pixData, setPixData] = useState<{ pix_code: string; qr_code_base64?: string; transaction_id: string } | null>(null);
 
+  const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
+
   useEffect(() => {
     trackEvent(token, 'view_checkout');
+    getSitePopup().then(setPopupSettings).catch(() => {});
   }, [token]);
 
 
@@ -300,6 +304,7 @@ function CheckoutTokenPage() {
       <PaymentInfoPopup
         open={infoOpen}
         loading={infoLoading}
+        settings={popupSettings ?? undefined}
         onClose={() => { setInfoOpen(false); setInfoLoading(false); }}
         onContinue={() => {
           setInfoOpen(false);
