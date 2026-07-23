@@ -175,7 +175,8 @@ function ModeloMensagem() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] -m-4 md:-m-6 bg-slate-100">
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] -m-4 md:-m-6 bg-slate-100">
+
       {/* ===== Top bar ===== */}
       <div className="flex items-center gap-2 border-b bg-white px-4 py-2.5 shrink-0">
         <div className="flex-1 min-w-0">
