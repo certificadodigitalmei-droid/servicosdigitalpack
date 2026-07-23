@@ -53,19 +53,34 @@ function PanelLayout() {
     navigate({ to: '/auth' });
   };
 
-  const menuItems = [
-    { title: 'Dashboard', icon: LayoutDashboard, to: '/painel' },
-    { title: 'Consulta Automática', icon: Bot, to: '/painel/consulta-automatica' },
-    { title: 'Empresas Importadas', icon: Database, to: '/painel/empresas-importadas' },
-    { title: 'Links Gerados', icon: LinkIcon, to: '/painel/links-gerados' },
-    { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
-    { title: 'Configurações de Pagamento', icon: DollarSign, to: '/painel/configuracoes-pagamento' },
-    { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
-    { title: 'API Casa dos Dados', icon: KeyRound, to: '/painel/api-casa-dos-dados' },
-    { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
-    { title: 'Modelo de Mensagem', icon: Palette, to: '/painel/modelo-mensagem' },
-    { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
-    { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
+  const menuGroups: { label: string; items: { title: string; icon: typeof LayoutDashboard; to: string }[] }[] = [
+    {
+      label: 'Principal',
+      items: [
+        { title: 'Dashboard', icon: LayoutDashboard, to: '/painel' },
+      ],
+    },
+    {
+      label: 'Automações',
+      items: [
+        { title: 'Consulta Automática', icon: Bot, to: '/painel/consulta-automatica' },
+        { title: 'Empresas Importadas', icon: Database, to: '/painel/empresas-importadas' },
+        { title: 'Links Gerados', icon: LinkIcon, to: '/painel/links-gerados' },
+        { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
+        { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
+        { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
+        { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
+      ],
+    },
+    {
+      label: 'Configurações',
+      items: [
+        { title: 'Configurações de Pagamento', icon: DollarSign, to: '/painel/configuracoes-pagamento' },
+        { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
+        { title: 'API Casa dos Dados', icon: KeyRound, to: '/painel/api-casa-dos-dados' },
+        { title: 'Modelo de Mensagem', icon: Palette, to: '/painel/modelo-mensagem' },
+      ],
+    },
   ];
 
 
