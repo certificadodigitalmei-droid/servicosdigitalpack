@@ -121,6 +121,13 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   bodySize: 17,
   heroTitleSize: 26,
   heroTitleColor: '#0b1e3f',
+  cardTitleSize: 15,
+  cardBodySize: 14,
+  warningTitleSize: 15,
+  warningItemsSize: 13,
+  signatureSize: 13,
+  disclaimerSize: 11,
+
 
   title: 'Informação cadastral - {{NOME_TITULAR}}',
   subtitle: 'Referência: {{REFERENCIA}}',
