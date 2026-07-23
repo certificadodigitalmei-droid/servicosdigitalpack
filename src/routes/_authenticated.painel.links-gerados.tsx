@@ -492,6 +492,7 @@ function LinksGeradosPage() {
                             <span className="text-xs text-slate-300">—</span>
                           )}
                         </TableCell>
+                        <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {topDevices.length === 0 && <span className="text-xs text-slate-400">—</span>}
                             {topDevices.map(([name, count]) => (
