@@ -124,11 +124,13 @@ function EnvioMassa() {
   }, [queue]);
 
   const previewItem = queue[previewIdx];
+  const effectiveSubject = loadSavedSubject() || subject;
   const previewHtml = useMemo(() => {
     if (!previewItem) return '';
     const vars = buildVarsForPreview(previewItem);
-    return renderHtml({ ...DEFAULT_DESIGN, heroImageUrl: heroImageUrl || undefined }, vars);
-  }, [previewItem, fromName, fromAddress, heroImageUrl]);
+    const design = { ...DEFAULT_DESIGN, ...mergedDesign(heroImageUrl || undefined) };
+    return renderHtml(design, vars);
+  }, [previewItem, fromName, fromAddress, heroImageUrl, subject]);
 
 
   const progress =
