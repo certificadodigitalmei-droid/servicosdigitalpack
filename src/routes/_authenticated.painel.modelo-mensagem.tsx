@@ -26,6 +26,8 @@ import {
 } from '@/lib/email-campaign/template';
 import { InteractivePreview } from '@/components/email-editor/InteractivePreview';
 import { uploadEmailAsset } from '@/lib/email-campaign/upload-asset.functions';
+import { loadMessageTemplate, saveMessageTemplate } from '@/lib/email-campaign/template-store.functions';
+
 
 export const Route = createFileRoute('/_authenticated/painel/modelo-mensagem')({
   component: ModeloMensagem,
