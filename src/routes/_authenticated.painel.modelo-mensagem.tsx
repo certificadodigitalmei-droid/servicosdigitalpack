@@ -39,6 +39,13 @@ export const Route = createFileRoute('/_authenticated/painel/modelo-mensagem')({
 const STORAGE_KEY = 'campanha:design:v1';
 const SUBJECT_KEY = 'campanha:subject:v1';
 const PREHEADER_KEY = 'campanha:preheader:v1';
+const FROM_NAME_KEY = 'campanha:fromName:v1';
+const FROM_ADDRESS_KEY = 'campanha:fromAddress:v1';
+const REPLY_TO_KEY = 'campanha:replyTo:v1';
+
+const DEFAULT_FROM_NAME = 'Certificado Digital MEI';
+const DEFAULT_FROM_ADDRESS = 'certificado.mei.estadual@seu-certificado-mei-digital.online';
+
 
 const PREVIEW_VARS: Record<string, string> = {
   NOME_EMPRESARIAL: 'RAFAEL VALE DA SILVA',
