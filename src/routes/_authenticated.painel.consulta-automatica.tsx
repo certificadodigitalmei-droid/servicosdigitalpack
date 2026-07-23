@@ -48,6 +48,7 @@ import {
   runCountOnce,
   runImportOnce,
 } from '@/lib/automation/consulta-engine';
+import { envioStore } from '@/lib/automation/envio-engine';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
   head: () => ({ meta: [{ title: 'Consulta Casa dos Dados | Painel' }] }),
