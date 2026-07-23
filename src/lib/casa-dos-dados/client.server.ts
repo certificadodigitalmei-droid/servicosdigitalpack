@@ -140,7 +140,7 @@ function isValidISODate(s: string): boolean {
 
 
 export async function checkSaldo(opts: CasaRequestOptions = {}): Promise<{ status: number; body: unknown; ok: boolean }> {
-  const url = `${baseUrl()}/v5/saldo`;
+  const url = `${await baseUrl()}/v5/saldo`;
   const res = await fetchWithTimeout(url, { method: 'GET', headers: headers() }, opts);
   const text = await res.text();
   let body: unknown = text;
@@ -149,7 +149,7 @@ export async function checkSaldo(opts: CasaRequestOptions = {}): Promise<{ statu
 }
 
 export async function countOpeningsToday(opts: CasaRequestOptions = {}): Promise<{ status: number; body: unknown; ok: boolean }> {
-  const url = `${baseUrl()}/v4/dashboard/cnpj/empresas-abertas/hoje`;
+  const url = `${await baseUrl()}/v4/dashboard/cnpj/empresas-abertas/hoje`;
   const res = await fetchWithTimeout(url, { method: 'GET', headers: headers() }, opts);
   const text = await res.text();
   let body: unknown = text;
@@ -208,12 +208,12 @@ export async function searchOpeningsByDate(opts: {
   completo?: boolean;
 } & CasaRequestOptions): Promise<CasaSearchResult> {
   const body = buildSearchBody(opts);
-  const url = `${baseUrl()}/v5/cnpj/pesquisa${opts.completo ? '?tipo_resultado=completo' : ''}`;
+  const url = `${await baseUrl()}/v5/cnpj/pesquisa${opts.completo ? '?tipo_resultado=completo' : ''}`;
   const request: SanitizedRequestLog = { url, method: 'POST', body };
 
   const res = await fetchWithTimeout(url, {
     method: 'POST',
-    headers: headers(),
+    headers: await headers(),
     body: JSON.stringify(body),
   }, opts);
   const text = await res.text();
@@ -270,8 +270,8 @@ export async function fetchCompanyDetailsByCnpj(
   if (clean.length !== 14) throw new Error('CNPJ inválido para consulta detalhada');
   // A API oficial expõe consulta individual em /v4/cnpj/{cnpj}.
   // Não existe /v5/cnpj/{cnpj} — v5 tem apenas /v5/cnpj/pesquisa.
-  const url = `${baseUrl()}/v4/cnpj/${clean}`;
-  const request: SanitizedRequestLog = { url: `${baseUrl()}/v4/cnpj/{cnpj}`, method: 'GET', body: null };
+  const url = `${await baseUrl()}/v4/cnpj/${clean}`;
+  const request: SanitizedRequestLog = { url: `${await baseUrl()}/v4/cnpj/{cnpj}`, method: 'GET', body: null };
   const res = await fetchWithTimeout(url, { method: 'GET', headers: headers() }, opts);
   const text = await res.text();
   let raw: unknown = text;
