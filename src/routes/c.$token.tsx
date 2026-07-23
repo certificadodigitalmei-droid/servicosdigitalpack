@@ -74,23 +74,8 @@ function TokenHomePage() {
 
   useEffect(() => {
     trackEvent(token, 'view_link');
-    // Desktop: sem animação
-    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
-    if (isDesktop) return;
-    // Mobile: sempre mostra a animação antes de exibir o link
-    setLoading(true);
   }, [token]);
 
-
-  if (loading) {
-    return (
-      <GovConsultaLoader
-        cnpj={row.cnpj}
-        nome={nomeFmt !== '—' ? nomeFmt : undefined}
-        onFinish={() => setLoading(false)}
-      />
-    );
-  }
 
 
 
