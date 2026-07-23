@@ -57,6 +57,9 @@ import {
   setShowFloating,
   setHeroImageUrl,
   type QueueItem,
+  type QueueItem,
+  mergedDesign,
+  loadSavedSubject,
 } from '@/lib/automation/envio-engine';
 import { consultaStore } from '@/lib/automation/consulta-engine';
 
