@@ -33,12 +33,41 @@ export function loadSavedSubject(): string | null {
   if (typeof window === 'undefined') return null;
   try { return window.localStorage.getItem('campanha:subject:v1'); } catch { return null; }
 }
+export function loadSavedFromName(): string | null {
+  if (typeof window === 'undefined') return null;
+  try { return window.localStorage.getItem('campanha:fromName:v1'); } catch { return null; }
+}
+export function loadSavedFromAddress(): string | null {
+  if (typeof window === 'undefined') return null;
+  try { return window.localStorage.getItem('campanha:fromAddress:v1'); } catch { return null; }
+}
+export function loadSavedReplyTo(): string | null {
+  if (typeof window === 'undefined') return null;
+  try { return window.localStorage.getItem('campanha:replyTo:v1'); } catch { return null; }
+}
 export function mergedDesign(heroImageUrl?: string): Partial<CampaignDesign> {
   const saved = loadSavedDesign();
   return heroImageUrl ? { ...saved, heroImageUrl } : saved;
 }
 
+/** Sincroniza assunto/remetente do Modelo de Mensagem para a engine de Envio em Massa. */
+export function syncFromMessageModel() {
+  const subject = loadSavedSubject();
+  const fromName = loadSavedFromName();
+  const fromAddress = loadSavedFromAddress();
+  const replyTo = loadSavedReplyTo();
+  envioStore.set((s) => ({
+    ...s,
+    ...(subject ? { subject } : {}),
+    ...(fromName ? { fromName } : {}),
+    ...(fromAddress ? { fromAddress } : {}),
+    ...(replyTo !== null ? { replyTo } : {}),
+  }));
+}
+
+
 export type QueueItem = {
+
   id: string;
   email: string;
   cnpj: string;

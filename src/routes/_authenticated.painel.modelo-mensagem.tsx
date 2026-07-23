@@ -39,6 +39,13 @@ export const Route = createFileRoute('/_authenticated/painel/modelo-mensagem')({
 const STORAGE_KEY = 'campanha:design:v1';
 const SUBJECT_KEY = 'campanha:subject:v1';
 const PREHEADER_KEY = 'campanha:preheader:v1';
+const FROM_NAME_KEY = 'campanha:fromName:v1';
+const FROM_ADDRESS_KEY = 'campanha:fromAddress:v1';
+const REPLY_TO_KEY = 'campanha:replyTo:v1';
+
+const DEFAULT_FROM_NAME = 'Certificado Digital MEI';
+const DEFAULT_FROM_ADDRESS = 'certificado.mei.estadual@seu-certificado-mei-digital.online';
+
 
 const PREVIEW_VARS: Record<string, string> = {
   NOME_EMPRESARIAL: 'RAFAEL VALE DA SILVA',
@@ -122,6 +129,9 @@ function ModeloMensagem() {
   const [design, setDesign] = useState<CampaignDesign>(loadDesign);
   const [subject, setSubject] = useState(() => loadStr(SUBJECT_KEY, DEFAULT_SUBJECT));
   const [preheader, setPreheader] = useState(() => loadStr(PREHEADER_KEY, DEFAULT_PREHEADER));
+  const [fromName, setFromName] = useState(() => loadStr(FROM_NAME_KEY, DEFAULT_FROM_NAME));
+  const [fromAddress, setFromAddress] = useState(() => loadStr(FROM_ADDRESS_KEY, DEFAULT_FROM_ADDRESS));
+  const [replyTo, setReplyTo] = useState(() => loadStr(REPLY_TO_KEY, ''));
   const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop');
   const [selected, setSelected] = useState<SectionId>('header');
   const [zoom, setZoom] = useState(0.85);
@@ -131,6 +141,10 @@ function ModeloMensagem() {
   useEffect(() => { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(design)); } catch {} }, [design]);
   useEffect(() => { try { window.localStorage.setItem(SUBJECT_KEY, subject); } catch {} }, [subject]);
   useEffect(() => { try { window.localStorage.setItem(PREHEADER_KEY, preheader); } catch {} }, [preheader]);
+  useEffect(() => { try { window.localStorage.setItem(FROM_NAME_KEY, fromName); } catch {} }, [fromName]);
+  useEffect(() => { try { window.localStorage.setItem(FROM_ADDRESS_KEY, fromAddress); } catch {} }, [fromAddress]);
+  useEffect(() => { try { window.localStorage.setItem(REPLY_TO_KEY, replyTo); } catch {} }, [replyTo]);
+
 
   const set = <K extends keyof CampaignDesign>(k: K, v: CampaignDesign[K]) =>
     setDesign((d) => ({ ...d, [k]: v }));
@@ -301,10 +315,23 @@ function ModeloMensagem() {
               </div>
 
               <div className="p-3 space-y-3">
-                <SectionEditor selected={selected} design={design} set={set}
-                  subject={subject} setSubject={setSubject}
-                  preheader={preheader} setPreheader={setPreheader} />
+                <SectionEditor
+                  selected={selected}
+                  design={design}
+                  set={set}
+                  subject={subject}
+                  setSubject={setSubject}
+                  preheader={preheader}
+                  setPreheader={setPreheader}
+                  fromName={fromName}
+                  setFromName={setFromName}
+                  fromAddress={fromAddress}
+                  setFromAddress={setFromAddress}
+                  replyTo={replyTo}
+                  setReplyTo={setReplyTo}
+                />
               </div>
+
 
               {/* Variables palette */}
               <div className="border-t p-3">
@@ -343,12 +370,16 @@ function ModeloMensagem() {
    ============================================================ */
 function SectionEditor({
   selected, design, set, subject, setSubject, preheader, setPreheader,
+  fromName, setFromName, fromAddress, setFromAddress, replyTo, setReplyTo,
 }: {
   selected: SectionId;
   design: CampaignDesign;
   set: <K extends keyof CampaignDesign>(k: K, v: CampaignDesign[K]) => void;
   subject: string; setSubject: (v: string) => void;
   preheader: string; setPreheader: (v: string) => void;
+  fromName: string; setFromName: (v: string) => void;
+  fromAddress: string; setFromAddress: (v: string) => void;
+  replyTo: string; setReplyTo: (v: string) => void;
 }) {
   switch (selected) {
     case 'assunto':
@@ -356,8 +387,15 @@ function SectionEditor({
         <>
           <FieldText label="Assunto" hint="Aparece na caixa de entrada" value={subject} onChange={setSubject} />
           <FieldText label="Preheader" hint="Prévia curta ao lado do assunto" value={preheader} onChange={setPreheader} />
+          <div className="rounded-md border border-slate-200 bg-slate-50/70 p-3 space-y-3">
+            <div className="text-[11px] font-semibold text-slate-700 uppercase tracking-wide">Remetente</div>
+            <FieldText label="Nome do remetente" value={fromName} onChange={setFromName} />
+            <FieldText label="E-mail remetente" value={fromAddress} onChange={setFromAddress} />
+            <FieldText label="Responder para (opcional)" value={replyTo} onChange={setReplyTo} />
+          </div>
         </>
       );
+
     case 'govbar':
       return (
         <>
