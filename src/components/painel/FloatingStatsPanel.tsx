@@ -258,9 +258,31 @@ export function FloatingStatsPanel({
                 <span className="text-emerald-300 tabular-nums">{lastSuccessTxt}</span>
               </div>
               <div className="flex justify-between text-slate-400">
-                <span>Delay entre envios</span>
-                <span className="text-slate-200 tabular-nums">{stats.delaySec}s</span>
+                <span>Modo</span>
+                <span className="text-slate-200">
+                  {stats.limitMode === 'daily'
+                    ? `Diário (${stats.dailyLimit || '∞'}/dia)`
+                    : `Horário (${stats.hourlyLimit || '∞'}/h${stats.hourlyRestMin > 0 ? ` · descanso ${stats.hourlyRestMin}min` : ''})`}
+                </span>
               </div>
+              {stats.stopAtDaily > 0 && (
+                <div className="flex justify-between text-slate-400">
+                  <span>Parar ao atingir</span>
+                  <span className={`tabular-nums ${stopReached ? 'text-red-300' : 'text-slate-200'}`}>
+                    {stats.sent} / {stats.stopAtDaily}
+                  </span>
+                </div>
+              )}
+              {hourlyReached && !stopReached && (
+                <div className="mt-1 rounded bg-amber-900/40 border border-amber-700/50 px-1.5 py-1 text-amber-300">
+                  ⏸ Limite horário atingido — {stats.hourlyRestMin > 0 ? `descansando ${stats.hourlyRestMin}min` : 'aguardando virada da hora'}
+                </div>
+              )}
+              {stopReached && (
+                <div className="mt-1 rounded bg-red-900/40 border border-red-700/50 px-1.5 py-1 text-red-300">
+                  🛑 Meta diária atingida — envio, importação e consulta pararam
+                </div>
+              )}
               {lastErrorMsg && (
                 <div className="mt-1 rounded bg-red-900/40 border border-red-700/50 px-1.5 py-1 text-red-300">
                   <div className="text-[9px] uppercase tracking-wider text-red-400 mb-0.5">Último erro</div>
