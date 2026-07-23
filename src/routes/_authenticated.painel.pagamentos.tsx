@@ -114,10 +114,38 @@ function PagamentosPage() {
     }
   }
 
+  const reconcileFn = useServerFn(reconcilePendingOrders);
+  const [reconciling, setReconciling] = useState(false);
+
+  async function reconcile(silent = false) {
+    setReconciling(true);
+    try {
+      const res = await reconcileFn({ data: {} } as any);
+      if (res?.updated && res.updated > 0) {
+        toast.success(`${res.updated} pagamento(s) confirmado(s)`);
+        await load();
+      } else if (!silent) {
+        toast.info(`Nenhum pagamento novo (${res?.checked ?? 0} verificados)`);
+      }
+    } catch (e: any) {
+      if (!silent) toast.error(e?.message ?? 'Falha ao reconciliar');
+    } finally {
+      setReconciling(false);
+    }
+  }
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preset, customFrom, customTo]);
+
+  // Reconciliação automática ao abrir e a cada 30s
+  useEffect(() => {
+    reconcile(true);
+    const t = setInterval(() => reconcile(true), 30000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const stats = useMemo(() => {
     const paid = orders.filter(o => o.status === 'paid' || o.paid_at);
