@@ -96,8 +96,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Certificado Digital MEI — Emissão para o seu CNPJ" },
       { name: "twitter:description", content: "Certificado Digital para Microempreendedor Individual (MEI). Vinculado ao seu CNPJ, com validade jurídica, assinatura digital ICP-Brasil e acesso aos portais gov.br." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c2d78d65-07fb-42a1-aabf-236eb5e1a90c/id-preview-602efbf3--f8c1590e-ab92-4a89-a2cd-7514096b6ec7.lovable.app-1784448552730.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c2d78d65-07fb-42a1-aabf-236eb5e1a90c/id-preview-602efbf3--f8c1590e-ab92-4a89-a2cd-7514096b6ec7.lovable.app-1784448552730.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/9d8f15a6-0fd5-4a28-a245-4293bf94fe22" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/9d8f15a6-0fd5-4a28-a245-4293bf94fe22" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
