@@ -14,7 +14,7 @@ import {
   Send,
   Palette,
   CheckCircle2,
-
+  DollarSign,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
