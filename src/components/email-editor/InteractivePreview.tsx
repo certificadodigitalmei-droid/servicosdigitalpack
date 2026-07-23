@@ -184,9 +184,6 @@ export function InteractivePreview({ design, set, vars, onSelect }: Props) {
               <Editable id="subtitle" field="subtitle" />
             </div>
 
-            <div style={{ marginTop: 14 }}>
-              <ImageZone urlField="heroImageUrl" shape="banner" />
-            </div>
           </div>
 
           {/* Hero title */}
