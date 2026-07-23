@@ -159,15 +159,15 @@ function CheckoutTokenPage() {
         items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }, { label: 'Pagamento' }]}
       />
 
-      <main className="flex-1">
-        <div className="mx-auto w-full max-w-[700px] px-3 py-5 sm:px-4 sm:py-6 md:max-w-[860px] md:px-6 lg:max-w-[1180px] lg:px-8 lg:py-10">
-          <div className="rounded-md border border-border bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:p-5 md:p-6 lg:p-8 lg:shadow-[0_20px_60px_-30px_rgba(0,72,132,0.25)]">
+      <main className="flex-1 overflow-x-hidden">
+        <div className="mx-auto w-full max-w-[700px] px-2.5 py-4 sm:px-4 sm:py-6 md:max-w-[860px] md:px-6 lg:max-w-[1180px] lg:px-8 lg:py-10">
+          <div className="rounded-md border border-border bg-card p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:p-5 md:p-6 lg:p-8 lg:shadow-[0_20px_60px_-30px_rgba(0,72,132,0.25)]">
             {/* Stepper */}
-            <div className="mb-5 flex items-center justify-between gap-1.5 text-[11px] sm:gap-2 sm:text-[12px] md:mb-7 lg:mb-8 lg:text-[13px]">
+            <div className="mb-4 flex items-center justify-between gap-1 text-[11px] sm:mb-5 sm:gap-2 sm:text-[12px] md:mb-7 lg:mb-8 lg:text-[13px]">
               <Step done label="Identificação" n={1} />
-              <div className="mx-1 h-px flex-1 bg-border" />
+              <div className="mx-0.5 h-px flex-1 bg-border sm:mx-1" />
               <Step done label="Dados" n={2} />
-              <div className="mx-1 h-px flex-1 bg-border" />
+              <div className="mx-0.5 h-px flex-1 bg-border sm:mx-1" />
               <Step active label="Pagamento" n={3} />
             </div>
 
