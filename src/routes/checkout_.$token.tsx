@@ -64,6 +64,8 @@ function CheckoutTokenPage() {
   const navigate = useNavigate();
 
   const headerName = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '';
+  const AMOUNT = row.amount_cents != null ? row.amount_cents / 100 : DEFAULT_AMOUNT;
+
 
   const [form, setForm] = useState({
     nome: cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '',
