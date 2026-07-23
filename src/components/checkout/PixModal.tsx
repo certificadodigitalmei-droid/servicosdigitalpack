@@ -4,6 +4,7 @@ import pixLoader from '@/assets/pix-loader.png.asset.json';
 import { formatCPFOrCNPJ } from '@/lib/format';
 import { toast } from 'sonner';
 import { useServerFn } from '@tanstack/react-start';
+import { useNavigate } from '@tanstack/react-router';
 import { checkOrderStatus } from '@/lib/payments/status.functions';
 
 const brl = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`;
@@ -25,10 +26,11 @@ export type PixModalProps = {
   orderId: string | null;
   pixData: { pix_code: string; qr_code_base64?: string; transaction_id: string } | null;
   cnpj?: string | null;
+  token?: string | null;
   onClose: () => void;
 };
 
-export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixModalProps) {
+export function PixModal({ open, amount, orderId, pixData, cnpj, token, onClose }: PixModalProps) {
 
   const [openedAt, setOpenedAt] = useState<number | null>(null);
   const [minElapsed, setMinElapsed] = useState(false);
@@ -37,7 +39,9 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixM
   const [expiresAt] = useState<number>(() => Date.now() + EXPIRES_IN_MS);
   const [now, setNow] = useState<number>(() => Date.now());
   const [paid, setPaid] = useState(false);
+  const [redirectIn, setRedirectIn] = useState<number>(4);
   const checkStatus = useServerFn(checkOrderStatus);
+  const navigate = useNavigate();
 
 
   // Marca o momento de abertura
@@ -101,8 +105,32 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixM
 
   // Reset "paid" quando o modal fecha
   useEffect(() => {
-    if (!open) setPaid(false);
+    if (!open) {
+      setPaid(false);
+      setRedirectIn(4);
+    }
   }, [open]);
+
+  // Ao confirmar pagamento: countdown e redirect automático para /c/$token
+  useEffect(() => {
+    if (!paid) return;
+    setRedirectIn(4);
+    const t = setInterval(() => {
+      setRedirectIn((s) => {
+        if (s <= 1) {
+          clearInterval(t);
+          if (token) {
+            navigate({ to: '/c/$token', params: { token } });
+          } else {
+            onClose();
+          }
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [paid, token, navigate, onClose]);
 
 
   const showPix = open && !!pixData && minElapsed;
@@ -184,9 +212,16 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixM
         ) : (
           <div className="p-5 space-y-5">
             {paid && (
-              <div className="rounded-md border border-emerald-300 bg-emerald-50 p-3 flex items-center gap-2 text-emerald-800 text-[13px] font-semibold animate-fade-in">
-                <Check className="h-4 w-4" />
-                Pagamento confirmado! Você pode fechar esta janela.
+              <div className="rounded-md border border-emerald-300 bg-emerald-50 p-3 flex items-start gap-2 text-emerald-800 text-[13px] font-semibold animate-fade-in">
+                <Check className="h-4 w-4 mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <div>Pagamento confirmado! Certificado vinculado automaticamente.</div>
+                  {token && (
+                    <div className="mt-1 text-[12px] font-normal text-emerald-700">
+                      Redirecionando para sua página em {redirectIn}s...
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {/* Countdown */}

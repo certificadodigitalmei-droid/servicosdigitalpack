@@ -310,6 +310,7 @@ function CheckoutTokenPage() {
         orderId={orderId}
         pixData={pixData}
         cnpj={row.cnpj || form.doc}
+        token={token}
         onClose={() => setPixOpen(false)}
       />
 
