@@ -103,6 +103,8 @@ export function FloatingStatsPanel({
   const limitCur = stats.limitMode === 'daily' ? stats.sent : stats.sentHour;
   const limitMax = stats.limitMode === 'daily' ? stats.dailyLimit : stats.hourlyLimit;
   const limitPct = limitMax > 0 ? Math.min(100, (limitCur / limitMax) * 100) : 0;
+  const hourlyReached = stats.limitMode === 'hourly' && stats.hourlyLimit > 0 && stats.sentHour >= stats.hourlyLimit;
+  const stopReached = stats.stopAtDaily > 0 && stats.sent >= stats.stopAtDaily;
 
   const detach = () => {
     window.open(
