@@ -175,7 +175,8 @@ function ModeloMensagem() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] -m-4 md:-m-6 bg-slate-100">
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] -m-4 md:-m-6 bg-slate-100">
+
       {/* ===== Top bar ===== */}
       <div className="flex items-center gap-2 border-b bg-white px-4 py-2.5 shrink-0">
         <div className="flex-1 min-w-0">
@@ -206,7 +207,8 @@ function ModeloMensagem() {
       </div>
 
       {/* ===== 3-column workspace ===== */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex h-[calc(100vh-8rem)] overflow-hidden">
+
         {/* Left rail — sections */}
         <div className={`shrink-0 border-r bg-white transition-all ${showLeft ? 'w-56' : 'w-10'}`}>
           <button
@@ -359,8 +361,55 @@ function ModeloMensagem() {
               </div>
             </div>
           )}
+      </div>
+
+      {/* ===== Bottom: prévia com dados reais (empresa fictícia) ===== */}
+      <div className="border-t bg-white">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-brand-navy">Prévia com dados reais</h2>
+              <p className="text-xs text-muted-foreground">
+                Assim que o destinatário vai ver o e-mail — usando dados de uma empresa fictícia para você conferir o resultado final.
+              </p>
+            </div>
+            <div className="text-[11px] text-muted-foreground italic">
+              As alterações aparecem aqui automaticamente.
+            </div>
+          </div>
+
+          {/* Cartão de dados da empresa fictícia */}
+          <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-4">
+            <div className="text-[10px] uppercase tracking-wide font-semibold text-slate-500 mb-2">
+              Empresa fictícia usada nesta prévia
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div><div className="text-slate-500">Nome</div><div className="font-semibold text-slate-800">{PREVIEW_VARS.NOME_TITULAR}</div></div>
+              <div><div className="text-slate-500">CNPJ</div><div className="font-mono font-semibold text-slate-800">68.087.737/0001-27</div></div>
+              <div><div className="text-slate-500">Município / UF</div><div className="font-semibold text-slate-800">{PREVIEW_VARS.MUNICIPIO} / {PREVIEW_VARS.UF}</div></div>
+              <div><div className="text-slate-500">E-mail</div><div className="font-semibold text-slate-800 truncate">{PREVIEW_VARS.EMAIL}</div></div>
+            </div>
+          </div>
+
+          {/* Cabeçalho de e-mail simulado */}
+          <div className="rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+            <div className="bg-slate-50 border-b px-4 py-3 text-xs space-y-1">
+              <div><span className="text-slate-500 w-20 inline-block">De:</span> <strong>{fromName}</strong> &lt;{fromAddress}&gt;</div>
+              <div><span className="text-slate-500 w-20 inline-block">Para:</span> {PREVIEW_VARS.EMAIL}</div>
+              <div><span className="text-slate-500 w-20 inline-block">Assunto:</span> <strong>{renderedSubject}</strong></div>
+              <div className="text-slate-500 italic truncate">{renderedPreheader}</div>
+            </div>
+            <iframe
+              title="prévia-email-completa"
+              srcDoc={html}
+              className="w-full border-0 bg-white"
+              style={{ height: 900 }}
+            />
+          </div>
         </div>
       </div>
+    </div>
+
     </div>
   );
 }
