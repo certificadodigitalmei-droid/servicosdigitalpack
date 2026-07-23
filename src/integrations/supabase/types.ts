@@ -646,6 +646,7 @@ export type Database = {
         Row: {
           access_count: number | null
           active: boolean | null
+          amount_cents: number | null
           checkout_url: string | null
           company_data: Json
           company_id: string | null
@@ -666,6 +667,7 @@ export type Database = {
         Insert: {
           access_count?: number | null
           active?: boolean | null
+          amount_cents?: number | null
           checkout_url?: string | null
           company_data?: Json
           company_id?: string | null
@@ -686,6 +688,7 @@ export type Database = {
         Update: {
           access_count?: number | null
           active?: boolean | null
+          amount_cents?: number | null
           checkout_url?: string | null
           company_data?: Json
           company_id?: string | null
@@ -1515,6 +1518,7 @@ export type Database = {
         Args: { _token: string }
         Returns: {
           abertura: string
+          amount_cents: number
           cnpj: string
           email: string
           municipio: string
