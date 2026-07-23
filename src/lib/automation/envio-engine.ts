@@ -70,9 +70,13 @@ type State = {
   subject: string;
   delaySec: number;
   batchLimit: number;
+  limitMode: 'daily' | 'hourly';
   dailyLimit: number; // 0 = ilimitado
+  hourlyLimit: number; // 0 = ilimitado
   sentToday: number;
+  sentThisHour: number;
   sentDay: string; // YYYY-MM-DD (reset diário)
+  sentHour: string; // YYYY-MM-DDTHH (reset horário)
   testMode: boolean;
   testRecipient: string;
   fromName: string;
@@ -80,6 +84,8 @@ type State = {
   replyTo: string;
   showFloating: boolean;
   heroImageUrl: string;
+  lastSuccessAt: string | null;
+  lastErrorMsg: string | null;
 
   // Estado
   queue: QueueItem[];
@@ -96,14 +102,23 @@ function todayStr() {
     year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(new Date());
 }
+function hourStr() {
+  const d = new Date();
+  // chave YYYY-MM-DDTHH em horário de São Paulo (aproximação: usa offset local)
+  return todayStr() + 'T' + String(d.getHours()).padStart(2, '0');
+}
 
 const initial: State = {
   subject: DEFAULT_SUBJECT,
   delaySec: 60,
   batchLimit: 200,
+  limitMode: 'daily',
   dailyLimit: 50,
+  hourlyLimit: 30,
   sentToday: 0,
+  sentThisHour: 0,
   sentDay: todayStr(),
+  sentHour: hourStr(),
   testMode: true,
   testRecipient: '',
   fromName: 'Certificado Digital MEI',
@@ -111,6 +126,8 @@ const initial: State = {
   replyTo: '',
   showFloating: true,
   heroImageUrl: '',
+  lastSuccessAt: null,
+  lastErrorMsg: null,
   queue: [],
   sentEmails: [],
   running: false,
@@ -126,9 +143,13 @@ export const envioStore = createStore<State>(initial, {
     'subject',
     'delaySec',
     'batchLimit',
+    'limitMode',
     'dailyLimit',
+    'hourlyLimit',
     'sentToday',
+    'sentThisHour',
     'sentDay',
+    'sentHour',
     'testMode',
     'testRecipient',
     'fromName',
@@ -136,6 +157,8 @@ export const envioStore = createStore<State>(initial, {
     'replyTo',
     'showFloating',
     'heroImageUrl',
+    'lastSuccessAt',
+    'lastErrorMsg',
     'queue',
     'sentEmails',
     'logs',
@@ -170,10 +193,12 @@ const normEmail = (v: string | null | undefined) => (v || '').trim().toLowerCase
 export const setSubject = (v: string) => envioStore.set({ subject: v });
 export const setDelaySec = (n: number) => envioStore.set({ delaySec: Math.max(1, n) });
 export const setBatchLimit = (n: number) => envioStore.set({ batchLimit: Math.max(1, n) });
+export const setLimitMode = (m: 'daily' | 'hourly') => envioStore.set({ limitMode: m });
 export const setDailyLimit = (n: number) => envioStore.set({ dailyLimit: Math.max(0, n) });
+export const setHourlyLimit = (n: number) => envioStore.set({ hourlyLimit: Math.max(0, n) });
 export const resetDailyCounter = () => {
-  envioStore.set({ sentToday: 0, sentDay: todayStr() });
-  pushLog('↻ Contador diário zerado.');
+  envioStore.set({ sentToday: 0, sentDay: todayStr(), sentThisHour: 0, sentHour: hourStr() });
+  pushLog('↻ Contadores zerados.');
 };
 export const setTestMode = (v: boolean) => envioStore.set({ testMode: v });
 export const setTestRecipient = (v: string) => envioStore.set({ testRecipient: v });
@@ -186,10 +211,18 @@ export const setHeroImageUrl = (v: string) => envioStore.set({ heroImageUrl: v }
 function ensureDailyWindow() {
   const s = envioStore.get();
   const today = todayStr();
+  const hour = hourStr();
+  const patch: Partial<State> = {};
   if (s.sentDay !== today) {
-    envioStore.set({ sentDay: today, sentToday: 0 });
+    patch.sentDay = today;
+    patch.sentToday = 0;
     pushLog(`📆 Novo dia (${today}) — contador diário resetado.`);
   }
+  if (s.sentHour !== hour) {
+    patch.sentHour = hour;
+    patch.sentThisHour = 0;
+  }
+  if (Object.keys(patch).length) envioStore.set(patch);
 }
 
 
@@ -437,8 +470,11 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
         queue: s.queue.filter((q) => q.id !== item.id),
         sentEmails: [entry, ...s.sentEmails].slice(0, 5000),
         sentToday: s.sentToday + 1,
+        sentThisHour: s.sentThisHour + 1,
+        lastSuccessAt: nowIso,
+        lastErrorMsg: null,
       }));
-      pushLog(`✓ Enviado para ${res.recipient} (${envioStore.get().sentToday} hoje)`);
+      pushLog(`✓ Enviado para ${res.recipient} (${envioStore.get().sentToday} hoje · ${envioStore.get().sentThisHour} nesta hora)`);
       return { ok: true };
     }
 
@@ -464,6 +500,7 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
       queue: s.queue.map((q) =>
         q.id === item.id ? { ...q, status: 'error', message: res.message } : q,
       ),
+      lastErrorMsg: res.message || 'erro desconhecido',
     }));
     pushLog(`✗ Erro ${item.email}: ${res.message}`);
     return { ok: true };
@@ -472,6 +509,7 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
       queue: s.queue.map((q) =>
         q.id === item.id ? { ...q, status: 'error', message: e.message } : q,
       ),
+      lastErrorMsg: e.message || 'falha de rede',
     }));
     pushLog(`✗ Falha ${item.email}: ${e.message}`);
     return { ok: true };
@@ -499,10 +537,16 @@ export async function startSending() {
   while (!stopFlag) {
     ensureDailyWindow();
     const cur = envioStore.get();
-    if (cur.dailyLimit > 0 && cur.sentToday >= cur.dailyLimit) {
+    if (cur.limitMode === 'daily' && cur.dailyLimit > 0 && cur.sentToday >= cur.dailyLimit) {
       pushLog(`🛑 Limite diário atingido (${cur.sentToday}/${cur.dailyLimit}). Envio parado.`);
       toast.info(`Limite diário atingido (${cur.dailyLimit}).`);
       break;
+    }
+    if (cur.limitMode === 'hourly' && cur.hourlyLimit > 0 && cur.sentThisHour >= cur.hourlyLimit) {
+      pushLog(`⏸ Limite por hora atingido (${cur.sentThisHour}/${cur.hourlyLimit}). Aguardando próxima hora...`);
+      // aguarda 60s e reavalia — ensureDailyWindow reseta ao virar a hora
+      await new Promise((r) => setTimeout(r, 60_000));
+      continue;
     }
     const item = cur.queue.find((x) => x.status === 'pending' || x.status === 'error');
     if (!item) break;
