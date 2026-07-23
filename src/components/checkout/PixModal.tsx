@@ -26,10 +26,11 @@ export type PixModalProps = {
   orderId: string | null;
   pixData: { pix_code: string; qr_code_base64?: string; transaction_id: string } | null;
   cnpj?: string | null;
+  token?: string | null;
   onClose: () => void;
 };
 
-export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixModalProps) {
+export function PixModal({ open, amount, orderId, pixData, cnpj, token, onClose }: PixModalProps) {
 
   const [openedAt, setOpenedAt] = useState<number | null>(null);
   const [minElapsed, setMinElapsed] = useState(false);
@@ -38,7 +39,9 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixM
   const [expiresAt] = useState<number>(() => Date.now() + EXPIRES_IN_MS);
   const [now, setNow] = useState<number>(() => Date.now());
   const [paid, setPaid] = useState(false);
+  const [redirectIn, setRedirectIn] = useState<number>(4);
   const checkStatus = useServerFn(checkOrderStatus);
+  const navigate = useNavigate();
 
 
   // Marca o momento de abertura
