@@ -26,6 +26,8 @@ import {
 } from '@/lib/email-campaign/template';
 import { InteractivePreview } from '@/components/email-editor/InteractivePreview';
 import { uploadEmailAsset } from '@/lib/email-campaign/upload-asset.functions';
+import { loadMessageTemplate, saveMessageTemplate } from '@/lib/email-campaign/template-store.functions';
+
 
 export const Route = createFileRoute('/_authenticated/painel/modelo-mensagem')({
   component: ModeloMensagem,
@@ -139,12 +141,59 @@ function ModeloMensagem() {
   const [showLeft, setShowLeft] = useState(true);
   const [showRight, setShowRight] = useState(true);
 
+  const [hydrated, setHydrated] = useState(false);
+  const [savingCloud, setSavingCloud] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+
+  // Hidrata do banco na montagem — banco é a fonte da verdade;
+  // localStorage é só cache. Se houver dado no banco, sobrescreve o estado local.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const cloud = await loadMessageTemplate();
+        if (cancelled || !cloud) return;
+        if (cloud.design && typeof cloud.design === 'object') {
+          setDesign({ ...DEFAULT_DESIGN, ...(cloud.design as any) });
+        }
+        if (typeof cloud.subject === 'string') setSubject(cloud.subject);
+        if (typeof cloud.preheader === 'string') setPreheader(cloud.preheader);
+        if (typeof cloud.fromName === 'string' && cloud.fromName) setFromName(cloud.fromName);
+        if (typeof cloud.fromAddress === 'string' && cloud.fromAddress) setFromAddress(cloud.fromAddress);
+        if (typeof cloud.replyTo === 'string') setReplyTo(cloud.replyTo);
+        if (cloud.updatedAt) setLastSavedAt(cloud.updatedAt);
+      } catch (e) {
+        console.warn('Falha ao carregar modelo da nuvem:', e);
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Cache local (mantido para leitura instantânea no envio-massa).
   useEffect(() => { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(design)); } catch {} }, [design]);
   useEffect(() => { try { window.localStorage.setItem(SUBJECT_KEY, subject); } catch {} }, [subject]);
   useEffect(() => { try { window.localStorage.setItem(PREHEADER_KEY, preheader); } catch {} }, [preheader]);
   useEffect(() => { try { window.localStorage.setItem(FROM_NAME_KEY, fromName); } catch {} }, [fromName]);
   useEffect(() => { try { window.localStorage.setItem(FROM_ADDRESS_KEY, fromAddress); } catch {} }, [fromAddress]);
   useEffect(() => { try { window.localStorage.setItem(REPLY_TO_KEY, replyTo); } catch {} }, [replyTo]);
+
+  // Autosave na nuvem (debounce 800ms) — só depois da hidratação, para não
+  // sobrescrever o que veio do banco com defaults locais.
+  useEffect(() => {
+    if (!hydrated) return;
+    const handle = setTimeout(() => {
+      setSavingCloud(true);
+      saveMessageTemplate({ data: { design, subject, preheader, fromName, fromAddress, replyTo } })
+        .then((res) => setLastSavedAt(res.updatedAt))
+        .catch((e) => console.warn('Falha ao salvar modelo na nuvem:', e))
+        .finally(() => setSavingCloud(false));
+    }, 800);
+    return () => clearTimeout(handle);
+  }, [hydrated, design, subject, preheader, fromName, fromAddress, replyTo]);
+
+
 
 
   const set = <K extends keyof CampaignDesign>(k: K, v: CampaignDesign[K]) =>
@@ -248,10 +297,21 @@ function ModeloMensagem() {
           }}
         />
         <Button size="sm" variant="outline" onClick={resetAll} className="text-red-600"><RotateCcw className="mr-1.5 h-3.5 w-3.5" />Restaurar</Button>
-        <Button size="sm" onClick={() => toast.success('Modelo salvo — pronto para envio')}>
-          <Save className="mr-1.5 h-3.5 w-3.5" />Salvar
-        </Button>
+        <div className="ml-1 flex items-center gap-1.5 text-xs">
+          {!hydrated ? (
+            <span className="text-slate-400">Carregando…</span>
+          ) : savingCloud ? (
+            <span className="text-blue-600">Salvando na nuvem…</span>
+          ) : lastSavedAt ? (
+            <span className="text-emerald-600" title={new Date(lastSavedAt).toLocaleString('pt-BR')}>
+              ● Salvo na nuvem
+            </span>
+          ) : (
+            <span className="text-slate-400">Rascunho local</span>
+          )}
+        </div>
       </div>
+
 
       {/* ===== 3-column workspace ===== */}
       <div className="flex h-[calc(100vh-8rem)] overflow-hidden">
