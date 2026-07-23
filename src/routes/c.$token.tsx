@@ -102,12 +102,29 @@ function TokenHomePage() {
 
       <main className="flex-1">
         <div className="mx-auto w-full max-w-[720px] px-3.5 py-6 space-y-4 sm:px-4 lg:max-w-[1180px] lg:px-8 lg:py-10">
-          {/* Alerta topo — full width */}
+          {(() => {
+            const handleEmitir = () => {
+              trackEvent(token, 'click_certificado');
+              if (popupSettings && popupSettings.enabled === false) {
+                navigate({ to: '/checkout/$token', params: { token } });
+              } else {
+                setPopupOpen(true);
+              }
+            };
+            return (
+          <>
           <div className="flex gap-3 rounded-md border border-[#ffeeba] border-l-4 border-l-[#ffc107] bg-[#fcf4d4] p-4 text-[13px] shadow-sm lg:text-[14px]">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#856404]" />
             <div className="leading-relaxed text-[#856404]">
               <p>
-                Seu MEI possui o <span className="font-bold">Certificado Digital 2026 pendente</span>. Sem a emissão, seu CNPJ pode ser bloqueado para emissão de notas fiscais e acesso a crédito. <span className="font-bold underline cursor-pointer">Regularize agora.</span>
+                Seu MEI possui o <span className="font-bold">Certificado Digital 2026 pendente</span>. Sem a emissão, seu CNPJ pode ser bloqueado para emissão de notas fiscais e acesso a crédito.{' '}
+                <button
+                  type="button"
+                  onClick={handleEmitir}
+                  className="font-bold underline cursor-pointer text-[#856404] hover:text-[#5a4402] bg-transparent border-0 p-0"
+                >
+                  Regularize agora.
+                </button>
               </p>
             </div>
           </div>
@@ -220,14 +237,7 @@ function TokenHomePage() {
                   <div className="bg-[#f8f9fa] border-t border-border p-4 flex justify-center lg:p-5">
                     <button
                       type="button"
-                      onClick={() => {
-                        trackEvent(token, 'click_certificado');
-                        if (popupSettings && popupSettings.enabled === false) {
-                          navigate({ to: '/checkout/$token', params: { token } });
-                        } else {
-                          setPopupOpen(true);
-                        }
-                      }}
+                      onClick={handleEmitir}
                       className="inline-flex min-h-[44px] w-full max-w-[280px] items-center justify-center gap-2 rounded-md bg-[#1351b4] px-6 text-[13px] font-bold uppercase tracking-wide text-white transition-all hover:bg-[#004884] active:scale-[0.98] lg:max-w-none lg:min-h-[52px] lg:text-[14px]"
                     >
                       <Lock className="h-4 w-4" />
@@ -235,6 +245,7 @@ function TokenHomePage() {
                     </button>
                   </div>
                 )}
+
 
                 {/* Trust row — desktop only */}
                 <div className="hidden lg:flex items-center justify-between border-t border-border/70 px-5 py-3 text-[11px] text-muted-foreground">
