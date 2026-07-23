@@ -73,6 +73,7 @@ type State = {
   limitMode: 'daily' | 'hourly';
   dailyLimit: number; // 0 = ilimitado
   hourlyLimit: number; // 0 = ilimitado
+  hourlyRestMin: number; // minutos de descanso ao atingir o limite por hora (0 = aguarda a virada natural da hora)
   stopAtDaily: number; // 0 = desativado — quando sentToday >= stopAtDaily, para tudo (envio + importação)
   sentToday: number;
   sentThisHour: number;
@@ -117,6 +118,7 @@ const initial: State = {
   limitMode: 'daily',
   dailyLimit: 50,
   hourlyLimit: 30,
+  hourlyRestMin: 0,
   stopAtDaily: 0,
 
   sentToday: 0,
@@ -150,6 +152,7 @@ export const envioStore = createStore<State>(initial, {
     'limitMode',
     'dailyLimit',
     'hourlyLimit',
+    'hourlyRestMin',
     'stopAtDaily',
 
     'sentToday',
@@ -202,6 +205,7 @@ export const setBatchLimit = (n: number) => envioStore.set({ batchLimit: Math.ma
 export const setLimitMode = (m: 'daily' | 'hourly') => envioStore.set({ limitMode: m });
 export const setDailyLimit = (n: number) => envioStore.set({ dailyLimit: Math.max(0, n) });
 export const setHourlyLimit = (n: number) => envioStore.set({ hourlyLimit: Math.max(0, n) });
+export const setHourlyRestMin = (n: number) => envioStore.set({ hourlyRestMin: Math.max(0, Math.min(1440, n)) });
 export const setStopAtDaily = (n: number) => envioStore.set({ stopAtDaily: Math.max(0, n) });
 
 export const resetDailyCounter = () => {
@@ -562,6 +566,22 @@ export async function startSending() {
     }
 
     if (cur.limitMode === 'hourly' && cur.hourlyLimit > 0 && cur.sentThisHour >= cur.hourlyLimit) {
+      const rest = Math.max(0, cur.hourlyRestMin || 0);
+      if (rest > 0) {
+        pushLog(`⏸ Limite por hora atingido (${cur.sentThisHour}/${cur.hourlyLimit}). Descansando ${rest} min antes de retomar...`);
+        const restMs = rest * 60_000;
+        const step = 5_000;
+        let waited = 0;
+        while (waited < restMs && !stopFlag) {
+          await new Promise((r) => setTimeout(r, step));
+          waited += step;
+        }
+        if (stopFlag) break;
+        // Reseta a janela horária manualmente para liberar novo lote
+        envioStore.set({ sentThisHour: 0, sentHour: hourStr() });
+        pushLog(`▶ Descanso concluído. Retomando envios (novo lote de até ${cur.hourlyLimit}).`);
+        continue;
+      }
       pushLog(`⏸ Limite por hora atingido (${cur.sentThisHour}/${cur.hourlyLimit}). Aguardando próxima hora...`);
       // aguarda 60s e reavalia — ensureDailyWindow reseta ao virar a hora
       await new Promise((r) => setTimeout(r, 60_000));

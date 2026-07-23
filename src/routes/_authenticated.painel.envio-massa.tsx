@@ -50,6 +50,7 @@ import {
   setLimitMode,
   setDailyLimit,
   setHourlyLimit,
+  setHourlyRestMin,
   setStopAtDaily,
 
   resetDailyCounter,
@@ -89,6 +90,7 @@ function EnvioMassa() {
   const showFloating = useStore(envioStore, (s) => s.showFloating);
   const dailyLimit = useStore(envioStore, (s) => s.dailyLimit);
   const hourlyLimit = useStore(envioStore, (s) => s.hourlyLimit);
+  const hourlyRestMin = useStore(envioStore, (s) => s.hourlyRestMin);
   const limitMode = useStore(envioStore, (s) => s.limitMode);
   const sentToday = useStore(envioStore, (s) => s.sentToday);
   const stopAtDaily = useStore(envioStore, (s) => s.stopAtDaily);
@@ -324,7 +326,30 @@ function EnvioMassa() {
                       </button>
                     );
                   })}
+              </div>
+
+              {/* Descanso após atingir limite por hora */}
+              {limitMode === 'hourly' && (
+                <div className="rounded-md border-2 border-indigo-200 bg-indigo-50/60 p-3 space-y-2">
+                  <Label className="text-sm font-semibold text-indigo-900">
+                    Descanso ao atingir o limite por hora (minutos)
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={1440}
+                    placeholder="Ex: 30"
+                    value={hourlyRestMin}
+                    onChange={(e) => setHourlyRestMin(parseInt(e.target.value || '0', 10))}
+                  />
+                  <p className="text-[11px] text-indigo-900/80 leading-relaxed">
+                    Quando bater <strong>{hourlyLimit || '—'} envios</strong> na hora, o sistema fica{' '}
+                    <strong>{hourlyRestMin > 0 ? `${hourlyRestMin} min` : 'até a virada natural da hora'}</strong>{' '}
+                    parado e depois envia o próximo lote. Use <strong>0</strong> para aguardar a próxima hora automaticamente.
+                  </p>
                 </div>
+              )}
+
               </div>
 
               {/* Parar tudo ao atingir meta diária */}
