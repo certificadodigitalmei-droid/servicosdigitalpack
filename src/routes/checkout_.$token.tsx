@@ -13,7 +13,7 @@ import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions
 import { useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 import { useState, useEffect } from 'react';
-import { Check, QrCode, CreditCard, Barcode, ArrowLeft } from 'lucide-react';
+import { Check, QrCode, CreditCard, Barcode } from 'lucide-react';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { formatCPFOrCNPJ, maskCPFCNPJ, maskPhone, isValidEmail } from '@/lib/format';
 import { trackEvent } from '@/lib/track';
@@ -285,15 +285,6 @@ function CheckoutTokenPage() {
                     Após o pagamento via PIX, seu Certificado Digital MEI é emitido automaticamente e enviado ao seu e-mail em minutos.
                   </div>
 
-                  <div className="text-center">
-                    <button
-                      type="button"
-                      onClick={() => navigate({ to: '/c/$token', params: { token } })}
-                      className="inline-flex items-center gap-1 text-[13px] text-brand-blue hover:underline"
-                    >
-                      <ArrowLeft className="h-3.5 w-3.5" /> Voltar
-                    </button>
-                  </div>
                 </aside>
               </div>
             </form>
