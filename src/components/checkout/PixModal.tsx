@@ -183,7 +183,14 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixM
           <GovLoading stepIdx={stepIdx} />
         ) : (
           <div className="p-5 space-y-5">
+            {paid && (
+              <div className="rounded-md border border-emerald-300 bg-emerald-50 p-3 flex items-center gap-2 text-emerald-800 text-[13px] font-semibold animate-fade-in">
+                <Check className="h-4 w-4" />
+                Pagamento confirmado! Você pode fechar esta janela.
+              </div>
+            )}
             {/* Countdown */}
+
             <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
               <div className="flex items-center justify-between gap-3 text-[12.5px]">
                 <div className="flex items-center gap-2 text-amber-900">
