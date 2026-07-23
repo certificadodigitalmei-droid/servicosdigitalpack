@@ -63,7 +63,9 @@ import {
   type QueueItem,
   mergedDesign,
   loadSavedSubject,
+  syncFromMessageModel,
 } from '@/lib/automation/envio-engine';
+
 import { consultaStore } from '@/lib/automation/consulta-engine';
 
 
