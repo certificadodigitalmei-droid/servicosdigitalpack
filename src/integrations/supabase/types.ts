@@ -1176,6 +1176,24 @@ export type Database = {
         }
         Relationships: []
       }
+      message_templates: {
+        Row: {
+          payload: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          payload?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          payload?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           amount: number
