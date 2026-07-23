@@ -11,8 +11,8 @@ export const getCloudState = createServerFn({ method: 'GET' })
       .maybeSingle();
     if (error) throw new Error(error.message);
     return {
-      snapshot: (data?.snapshot as Record<string, unknown> | null) ?? null,
-      updatedAt: data?.updated_at ?? null,
+      snapshot: (data?.snapshot ?? null) as any,
+      updatedAt: (data?.updated_at ?? null) as string | null,
     };
   });
 
@@ -28,9 +28,10 @@ export const saveCloudState = createServerFn({ method: 'POST' })
     const { error } = await context.supabase
       .from('user_cloud_state')
       .upsert(
-        { user_id: context.userId, snapshot: data.snapshot, updated_at: new Date().toISOString() },
+        { user_id: context.userId, snapshot: data.snapshot as any, updated_at: new Date().toISOString() },
         { onConflict: 'user_id' },
       );
     if (error) throw new Error(error.message);
     return { ok: true, savedAt: new Date().toISOString() };
   });
+
