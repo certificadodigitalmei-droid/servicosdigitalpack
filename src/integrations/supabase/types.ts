@@ -1246,6 +1246,42 @@ export type Database = {
           },
         ]
       }
+      payment_gateways: {
+        Row: {
+          api_key: string
+          base_url: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          provider_type: string
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          base_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          provider_type: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          base_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          provider_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           company_name: string | null

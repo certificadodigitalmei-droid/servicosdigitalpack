@@ -1,7 +1,84 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const UNIAOPAY_API_BASE = "https://uniao7pay.shop/api/v1/uniaopay";
+const UNIAOPAY_DEFAULT_BASE = "https://uniao7pay.shop/api/v1/uniaopay";
+const NEXUSPAY_DEFAULT_BASE = "https://nexuspay.squareweb.app/api";
+
+type ProviderType = "uniaopay" | "nexuspay";
+
+type PixResult = {
+  pix_code: string;
+  qr_code_base64: string;
+  transaction_id: string;
+  expiration: Date | null;
+};
+
+async function callUniaoPay(
+  apiKey: string,
+  baseUrl: string,
+  input: { amount: number; productName: string; name: string; orderId: string; webhookUrl: string },
+): Promise<PixResult> {
+  const payload = {
+    amount: input.amount,
+    description: `${input.productName} - ${input.name}`,
+    external_id: input.orderId,
+    webhook_url: input.webhookUrl,
+  };
+  const attempts: Record<string, string>[] = [
+    { "Content-Type": "application/json", "x-api-key": apiKey },
+    { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    { "Content-Type": "application/json", "api-key": apiKey },
+  ];
+  let lastStatus = 0;
+  let lastBody = "";
+  for (const headers of attempts) {
+    const response = await fetch(`${baseUrl}/pix/create`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+    const text = await response.text();
+    lastStatus = response.status;
+    lastBody = text;
+    if (response.ok) {
+      const parsed = JSON.parse(text) as any;
+      const tx = parsed.transaction ?? parsed;
+      const pix_code = tx.pix_code || "";
+      const qr = tx.qr_code_base64 || parsed.qrcode || "";
+      const transaction_id = tx.id || parsed.transaction_id || "";
+      const expiration = tx.expiration ? new Date(tx.expiration) : null;
+      if (!pix_code && !qr) throw new Error(`Resposta sem dados de PIX: ${text.slice(0, 300)}`);
+      return { pix_code, qr_code_base64: qr, transaction_id, expiration };
+    }
+    if (response.status !== 401 && response.status !== 403) break;
+  }
+  throw new Error(`UniaoPay ${lastStatus}: ${lastBody.slice(0, 500) || "sem resposta"}`);
+}
+
+async function callNexusPay(
+  apiKey: string,
+  baseUrl: string,
+  input: { amount: number },
+): Promise<PixResult> {
+  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/v1/deposit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-API-KEY": apiKey },
+    body: JSON.stringify({ amount: input.amount }),
+  });
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`NexusPay ${response.status}: ${text.slice(0, 500) || "sem resposta"}`);
+  }
+  const parsed = JSON.parse(text) as any;
+  const pix_code = parsed.pix_code || parsed.pixCode || "";
+  const rawQr = parsed.qr_code || parsed.qrcode || parsed.qr_code_base64 || "";
+  const qr_code_base64 = rawQr && !rawQr.startsWith("data:") && !rawQr.startsWith("http")
+    ? rawQr
+    : rawQr;
+  const transaction_id = parsed.transaction_id || parsed.id || "";
+  if (!pix_code && !qr_code_base64) throw new Error(`Resposta sem dados de PIX: ${text.slice(0, 300)}`);
+  return { pix_code, qr_code_base64, transaction_id, expiration: null };
+}
 
 export const createOrderAndPixCharge = createServerFn({ method: "POST" })
   .inputValidator((data) =>
@@ -21,12 +98,28 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const apiKey = process.env.UNIAOPAY_API_KEY;
-    if (!apiKey) {
-      throw new Error("UNIAOPAY_API_KEY não está configurada no servidor");
-    }
 
-    // Resolve link → company (se houver token)
+    // Resolve gateway ativo
+    const { data: gateway } = await supabaseAdmin
+      .from("payment_gateways")
+      .select("*")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    // Fallback legado: UniãoPay via secret quando nenhum gateway ativo cadastrado
+    const provider: ProviderType = (gateway?.provider_type as ProviderType) || "uniaopay";
+    let apiKey = gateway?.api_key ?? "";
+    if (!gateway || apiKey === "USE_ENV_UNIAOPAY_API_KEY") {
+      apiKey = process.env.UNIAOPAY_API_KEY || "";
+    }
+    if (!apiKey) {
+      throw new Error("Nenhum gateway de pagamento ativo/configurado. Cadastre em Configurações de Pagamento.");
+    }
+    const baseUrl =
+      gateway?.base_url ||
+      (provider === "nexuspay" ? NEXUSPAY_DEFAULT_BASE : UNIAOPAY_DEFAULT_BASE);
+
+    // Resolve link → company
     let companyId: string | null = null;
     let publicLinkId: string | null = null;
     if (data.token) {
@@ -44,7 +137,7 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       }
     }
 
-    // 1. Cria cliente
+    // Cria cliente
     const { data: customer, error: custErr } = await supabaseAdmin
       .from("customers")
       .insert({
@@ -55,11 +148,10 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-
     if (custErr) throw custErr;
     if (!customer) throw new Error("Falha ao criar cliente");
 
-    // 2. Cria pedido (status pending para satisfazer a política de INSERT pública)
+    // Cria pedido
     const { data: order, error: orderErr } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -78,11 +170,9 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-
     if (orderErr) throw orderErr;
     if (!order) throw new Error("Falha ao criar pedido");
 
-    // 3. Registra consentimento
     await supabaseAdmin.from("consent_logs").insert({
       order_id: order.id,
       privacy_accepted: true,
@@ -91,105 +181,42 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       user_agent: data.userAgent?.slice(0, 500) || null,
     });
 
-    // 4. Chama UniaoPay
-    const payload = {
-      amount: data.amount,
-      description: `${data.productName} - ${data.name}`,
-      external_id: order.id,
-      webhook_url: data.webhookUrl,
-    };
-
-    const attempts: Record<string, string>[] = [
-      { "Content-Type": "application/json", "x-api-key": apiKey },
-      { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      { "Content-Type": "application/json", "api-key": apiKey },
-    ];
-
-    let lastStatus = 0;
-    let lastBody = "";
-    for (const headers of attempts) {
-      const response = await fetch(`${UNIAOPAY_API_BASE}/pix/create`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-      });
-      const text = await response.text();
-      lastStatus = response.status;
-      lastBody = text;
-
-      if (response.ok) {
-        try {
-          const parsed = JSON.parse(text) as {
-            success?: boolean;
-            transaction?: {
-              id?: string;
-              pix_code?: string;
-              qr_code_base64?: string;
-              expiration?: string;
-            };
-            id?: string;
-            pix_code?: string;
-            qr_code_base64?: string;
-            qrcode?: string;
-            transaction_id?: string;
-            expiration?: string;
-          };
-
-          const tx = parsed.transaction ?? parsed;
-          const pixCode = tx.pix_code || "";
-          const qrImage = tx.qr_code_base64 || parsed.qrcode || "";
-          const transactionId = tx.id || parsed.transaction_id || "";
-          const expiration = tx.expiration ? new Date(tx.expiration) : null;
-
-          if (!pixCode && !qrImage) {
-            throw new Error(`Resposta sem dados de PIX: ${text.slice(0, 300)}`);
-          }
-
-          await supabaseAdmin
-            .from("orders")
-            .update({
-              status: "awaiting_payment",
-              payment_provider: "uniaopay",
-              external_transaction_id: transactionId,
-              pix_code: pixCode || null,
-              pix_qr_code: qrImage || null,
-              pix_expiration: expiration?.toISOString() || null,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", order.id);
-
-          return {
-            orderId: order.id,
-            pix_code: pixCode,
-            qr_code_base64: qrImage,
-            transaction_id: transactionId,
-          };
-        } catch (e) {
-          if (e instanceof Error && e.message.startsWith("Resposta sem")) throw e;
-          throw new Error(`Resposta inválida do UniaoPay: ${text.slice(0, 300)}`);
-        }
-      }
-
-      if (response.status !== 401 && response.status !== 403) {
-        break;
-      }
-    }
-
-    console.error("[UniaoPay] Falha ao criar cobrança PIX", {
-      status: lastStatus,
-      body: lastBody,
-    });
-
-    let errorMessage = lastBody.slice(0, 500) || "sem resposta";
+    let pix: PixResult;
     try {
-      const parsed = JSON.parse(lastBody) as Record<string, unknown>;
-      errorMessage =
-        (typeof parsed.message === "string" && parsed.message) ||
-        (typeof parsed.error === "string" && parsed.error) ||
-        JSON.stringify(parsed);
-    } catch {
-      // mantém o texto bruto
+      if (provider === "nexuspay") {
+        pix = await callNexusPay(apiKey, baseUrl, { amount: data.amount });
+      } else {
+        pix = await callUniaoPay(apiKey, baseUrl, {
+          amount: data.amount,
+          productName: data.productName,
+          name: data.name,
+          orderId: order.id,
+          webhookUrl: data.webhookUrl,
+        });
+      }
+    } catch (e: any) {
+      console.error("[Payments] Falha ao gerar PIX", { provider, error: e?.message });
+      throw e;
     }
 
-    throw new Error(`UniaoPay ${lastStatus}: ${errorMessage}`);
+    await supabaseAdmin
+      .from("orders")
+      .update({
+        status: "awaiting_payment",
+        payment_provider: provider,
+        external_transaction_id: pix.transaction_id || null,
+        pix_code: pix.pix_code || null,
+        pix_qr_code: pix.qr_code_base64 || null,
+        pix_expiration: pix.expiration?.toISOString() || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", order.id);
+
+    return {
+      orderId: order.id,
+      pix_code: pix.pix_code,
+      qr_code_base64: pix.qr_code_base64,
+      transaction_id: pix.transaction_id,
+      provider,
+    };
   });
