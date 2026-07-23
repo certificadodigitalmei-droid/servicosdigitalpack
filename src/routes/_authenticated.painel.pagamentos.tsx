@@ -169,10 +169,34 @@ function PagamentosPage() {
           <h1 className="text-3xl font-bold text-slate-900">Pagamentos</h1>
           <p className="text-slate-500">Acompanhe todos os pedidos gerados e pagamentos recebidos.</p>
         </div>
-        <Button variant="outline" onClick={load} disabled={loading}>
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-          Atualizar
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <WipeAllButton
+            size="sm"
+            label={preset === 'tudo' ? 'Apagar tudo' : 'Apagar do período'}
+            title={preset === 'tudo' ? 'Apagar todos os pedidos?' : 'Apagar pedidos do período?'}
+            description={
+              preset === 'tudo'
+                ? 'Esta ação remove permanentemente TODOS os pedidos registrados. Não pode ser desfeita.'
+                : `Serão removidos ${filtered.length} pedidos do período selecionado. Ação irreversível.`
+            }
+            steps={[
+              {
+                label: 'Apagar pedidos',
+                run: async () => {
+                  let del = supabase.from('orders').delete().neq('id', EMPTY_UUID);
+                  if (range.from) del = del.gte('created_at', range.from.toISOString());
+                  if (range.to) del = del.lte('created_at', range.to.toISOString());
+                  return del;
+                },
+              },
+            ]}
+            onDone={load}
+          />
+          <Button variant="outline" onClick={load} disabled={loading}>
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Filtro de período */}
