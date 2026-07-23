@@ -378,6 +378,7 @@ function LinksGeradosPage() {
                 <SelectItem value="checkout">Foi ao checkout</SelectItem>
                 <SelectItem value="certificado">Clicou em emitir</SelectItem>
                 <SelectItem value="guia">Gerou guia (PIX)</SelectItem>
+                <SelectItem value="paid">Pagos</SelectItem>
               </SelectContent>
             </Select>
           </div>
