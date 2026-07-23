@@ -195,9 +195,20 @@ function nl2br(s: string): string {
   return esc(s).replace(/\n/g, '<br/>');
 }
 
-/** Suporta **negrito** dentro de textos livres. */
+/** Suporta formatação estilo WhatsApp: *negrito*, _itálico_, ~riscado~ e {color:#hex}cor{/color}. */
 function inlineFormat(s: string): string {
-  return nl2br(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  let out = nl2br(s);
+  // cor {color:#hex}texto{/color}
+  out = out.replace(/\{color:(#[0-9a-fA-F]{3,8})\}([\s\S]+?)\{\/color\}/g,
+    (_, c, t) => `<span style="color:${c}">${t}</span>`);
+  // **negrito** (legado) e *negrito*
+  out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(/(^|[\s>(])\*(?!\s)([^*\n]+?)\*(?=[\s<).,!?;:]|$)/g, '$1<strong>$2</strong>');
+  // _itálico_
+  out = out.replace(/(^|[\s>(])_(?!\s)([^_\n]+?)_(?=[\s<).,!?;:]|$)/g, '$1<em>$2</em>');
+  // ~riscado~
+  out = out.replace(/(^|[\s>(])~(?!\s)([^~\n]+?)~(?=[\s<).,!?;:]|$)/g, '$1<s>$2</s>');
+  return out;
 }
 
 function cleanPersonName(v: string): string {

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Upload, X, ImagePlus, Trash2, Bold, Minus, Plus } from 'lucide-react';
+import { Upload, X, ImagePlus, Trash2, Bold, Italic, Strikethrough, Minus, Plus, Palette } from 'lucide-react';
 import type { CampaignDesign } from '@/lib/email-campaign/template';
 import { substitute } from '@/lib/email-campaign/template';
 
@@ -184,9 +184,6 @@ export function InteractivePreview({ design, set, vars, onSelect }: Props) {
               <Editable id="subtitle" field="subtitle" />
             </div>
 
-            <div style={{ marginTop: 14 }}>
-              <ImageZone urlField="heroImageUrl" shape="banner" />
-            </div>
           </div>
 
           {/* Hero title */}
@@ -384,14 +381,19 @@ function FloatingToolbar({
   const size = sizeField ? (design[sizeField] as number) : null;
   const color = colorField ? (design[colorField] as string) : null;
 
-  const wrapSelection = (marker: string) => {
+  const wrapSelection = (open: string, close: string = open) => {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     const range = sel.getRangeAt(0);
     if (range.collapsed) return;
     const text = range.toString();
     range.deleteContents();
-    range.insertNode(document.createTextNode(`${marker}${text}${marker}`));
+    range.insertNode(document.createTextNode(`${open}${text}${close}`));
+    sel.removeAllRanges();
+  };
+
+  const colorSelection = (hex: string) => {
+    wrapSelection(`{color:${hex}}`, '{/color}');
   };
 
   return (
@@ -409,19 +411,38 @@ function FloatingToolbar({
       )}
       {color !== null && colorField && (
         <div className="ee-tool-group">
-          <label className="ee-color-swatch" style={{ background: color as string }}>
+          <label className="ee-color-swatch" style={{ background: color as string }} title="Cor do bloco">
             <input
               type="color" value={color as string}
               onChange={(e) => set(colorField, e.target.value as any)}
             />
           </label>
-          <span className="ee-tool-label">Cor</span>
+          <span className="ee-tool-label">Bloco</span>
         </div>
       )}
       <div className="ee-tool-group">
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); wrapSelection('**'); }} title="Negrito na seleção">
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); wrapSelection('*'); }} title="Negrito (*texto*)">
           <Bold className="h-3.5 w-3.5" />
         </button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); wrapSelection('_'); }} title="Itálico (_texto_)">
+          <Italic className="h-3.5 w-3.5" />
+        </button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); wrapSelection('~'); }} title="Riscado (~texto~)">
+          <Strikethrough className="h-3.5 w-3.5" />
+        </button>
+        <label className="ee-color-swatch" title="Cor da seleção" style={{ background: 'linear-gradient(135deg,#ef4444,#3b82f6)' }}>
+          <Palette className="h-3 w-3 absolute inset-0 m-auto text-white pointer-events-none" style={{ mixBlendMode: 'screen' }} />
+          <input
+            type="color"
+            onMouseDown={(e) => { (e.currentTarget as any)._sel = window.getSelection()?.getRangeAt(0)?.cloneRange(); }}
+            onChange={(e) => {
+              const r = (e.currentTarget as any)._sel as Range | undefined;
+              if (r) { const s = window.getSelection(); s?.removeAllRanges(); s?.addRange(r); }
+              colorSelection(e.target.value);
+            }}
+          />
+        </label>
+        <span className="ee-tool-label">Cor</span>
       </div>
       <div className="ee-tool-hint">
         <X className="h-3 w-3" /> Clique fora para salvar
@@ -436,14 +457,25 @@ function substituteEditable(s: string, vars: Record<string, string>) {
   return s || '';
 }
 function markdownToHtml(s: string) {
-  const escaped = (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br />');
+  let out = (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // color spans first
+  out = out.replace(/\{color:(#[0-9a-fA-F]{3,8})\}([\s\S]+?)\{\/color\}/g,
+    (_, c, t) => `<span style="color:${c}">${t}</span>`);
+  out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(/(^|[\s>(])\*(?!\s)([^*\n]+?)\*(?=[\s<).,!?;:]|$)/g, '$1<strong>$2</strong>');
+  out = out.replace(/(^|[\s>(])_(?!\s)([^_\n]+?)_(?=[\s<).,!?;:]|$)/g, '$1<em>$2</em>');
+  out = out.replace(/(^|[\s>(])~(?!\s)([^~\n]+?)~(?=[\s<).,!?;:]|$)/g, '$1<s>$2</s>');
+  return out.replace(/\n/g, '<br />');
 }
 function htmlToMarkdown(el: HTMLElement) {
   let html = el.innerHTML;
   html = html.replace(/<br\s*\/?>/gi, '\n');
   html = html.replace(/<div>/gi, '\n').replace(/<\/div>/gi, '');
-  html = html.replace(/<(strong|b)>(.*?)<\/\1>/gi, '**$2**');
+  html = html.replace(/<span[^>]*style="[^"]*color:\s*(#[0-9a-fA-F]{3,8})[^"]*"[^>]*>([\s\S]*?)<\/span>/gi,
+    (_, c, t) => `{color:${c}}${t}{/color}`);
+  html = html.replace(/<(strong|b)>([\s\S]*?)<\/\1>/gi, '*$2*');
+  html = html.replace(/<(em|i)>([\s\S]*?)<\/\1>/gi, '_$2_');
+  html = html.replace(/<(s|strike|del)>([\s\S]*?)<\/\1>/gi, '~$2~');
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
   return (tmp.textContent || '').replace(/\u00a0/g, ' ');
