@@ -118,11 +118,14 @@ function EnvioMassa() {
   const [previewIdx, setPreviewIdx] = useState(0);
 
   // Carrega destinatários uma vez se a fila estiver vazia.
+  // Sincroniza assunto/remetente do Modelo de Mensagem automaticamente.
   useEffect(() => {
+    syncFromMessageModel();
     if (queue.length === 0) void loadRecipients();
     void refreshStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   const stats = useMemo(() => {
     const total = queue.length;
