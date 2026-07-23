@@ -30,7 +30,7 @@ import {
 // FloatingStatsPanel agora é montado globalmente em _authenticated.painel.tsx
 import { getEmailStats, type EmailStatsResult } from '@/lib/email-campaign/stats.functions';
 import { useStore } from '@/lib/automation/store';
-import { supabase } from '@/integrations/supabase/client';
+
 import { toast } from 'sonner';
 import {
   envioStore,
