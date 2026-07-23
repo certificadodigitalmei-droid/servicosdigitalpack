@@ -2,6 +2,7 @@ import { createFileRoute, notFound, redirect } from '@tanstack/react-router';
 import { resolveCompanyLink } from '@/lib/company-links.functions';
 import { createOrderAndPixCharge } from '@/lib/payments/checkout.functions';
 import { PixModal } from '@/components/checkout/PixModal';
+import { PaymentInfoPopup } from '@/components/checkout/PaymentInfoPopup';
 
 // Loads company data by token and forwards to the existing /checkout page.
 // The visible URL stays /checkout/$token — no GET parameters are exposed.
@@ -77,6 +78,8 @@ function CheckoutTokenPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [pixOpen, setPixOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [infoLoading, setInfoLoading] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [pixData, setPixData] = useState<{ pix_code: string; qr_code_base64?: string; transaction_id: string } | null>(null);
 
@@ -104,32 +107,40 @@ function CheckoutTokenPage() {
       return;
     }
     setSubmitting(true);
+    setInfoOpen(true);
+    setInfoLoading(true);
     try {
-      const result = await createOrderAndPixCharge({
-        data: {
-          name: form.nome,
-          document: form.doc.replace(/\D/g, ''),
-          email: form.email,
-          phone: form.phone.replace(/\D/g, ''),
-          productName: 'Certificado Digital MEI',
-          amount: AMOUNT,
-          webhookUrl: `${window.location.origin}/api/public/webhook-uniaopay`,
-          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-          token,
-        }
-      });
+      const [result] = await Promise.all([
+        createOrderAndPixCharge({
+          data: {
+            name: form.nome,
+            document: form.doc.replace(/\D/g, ''),
+            email: form.email,
+            phone: form.phone.replace(/\D/g, ''),
+            productName: 'Certificado Digital MEI',
+            amount: AMOUNT,
+            webhookUrl: `${window.location.origin}/api/public/webhook-uniaopay`,
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+            token,
+          }
+        }),
+        new Promise((resolve) => setTimeout(resolve, 1800)),
+      ]);
 
       if (result.orderId) setOrderId(result.orderId);
       if (result.pix_code || result.qr_code_base64) {
         setPixData({ pix_code: result.pix_code, qr_code_base64: result.qr_code_base64, transaction_id: result.transaction_id });
-        setPixOpen(true);
-        if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+        setInfoLoading(false);
       } else {
+        setInfoOpen(false);
+        setInfoLoading(false);
         toast.error('A cobrança foi criada mas o PIX não foi retornado. Tente novamente em instantes.');
       }
     } catch (err) {
       console.error('[Checkout] Erro ao gerar cobrança PIX:', err);
       const msg = extractErrorMessage(err);
+      setInfoOpen(false);
+      setInfoLoading(false);
       toast.error(`Erro ao gerar cobrança: ${msg}`, { duration: 12000 });
     } finally {
       setSubmitting(false);
@@ -285,6 +296,17 @@ function CheckoutTokenPage() {
           </div>
         </div>
       </main>
+
+      <PaymentInfoPopup
+        open={infoOpen}
+        loading={infoLoading}
+        onClose={() => { setInfoOpen(false); setInfoLoading(false); }}
+        onContinue={() => {
+          setInfoOpen(false);
+          setPixOpen(true);
+          if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
 
       <PixModal
         open={pixOpen}
