@@ -575,7 +575,7 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
 }
 
 export async function startSending() {
-  if (running) return;
+  if (running || envioStore.get().running) return;
   const cfg = envioStore.get();
   if (cfg.testMode && !cfg.testRecipient) {
     toast.error('Modo teste ativo: informe um e-mail de teste.');
