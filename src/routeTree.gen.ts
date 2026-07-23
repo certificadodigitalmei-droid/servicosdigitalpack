@@ -40,6 +40,8 @@ import { Route as AuthenticatedPainelCampanhasEmailRouteImport } from './routes/
 import { Route as AuthenticatedPainelApiCasaDosDadosRouteImport } from './routes/_authenticated.painel.api-casa-dos-dados'
 import { Route as AuthenticatedPainelEmpresasImportadasIndexRouteImport } from './routes/_authenticated.painel.empresas-importadas.index'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
+import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
+import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicHooksAutoImportMeiRouteImport } from './routes/api/public/hooks/auto-import-mei'
 import { Route as AuthenticatedPainelGeradorLinksHistoricoRouteImport } from './routes/_authenticated.painel.gerador-links.historico'
 import { Route as AuthenticatedPainelEmpresasImportadasCompanyIdRouteImport } from './routes/_authenticated.painel.empresas-importadas.$companyId'
@@ -219,6 +221,16 @@ const LovableEmailTransactionalPreviewRoute =
     path: '/lovable/email/transactional/preview',
     getParentRoute: () => rootRouteImport,
   } as any)
+const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
+  id: '/lovable/email/auth/webhook',
+  path: '/lovable/email/auth/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
+  id: '/lovable/email/auth/preview',
+  path: '/lovable/email/auth/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksAutoImportMeiRoute =
   ApiPublicHooksAutoImportMeiRouteImport.update({
     id: '/api/public/hooks/auto-import-mei',
@@ -270,6 +282,8 @@ export interface FileRoutesByFullPath {
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
   '/api/public/hooks/auto-import-mei': typeof ApiPublicHooksAutoImportMeiRoute
+  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
+  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/painel/empresas-importadas/': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
@@ -303,6 +317,8 @@ export interface FileRoutesByTo {
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
   '/api/public/hooks/auto-import-mei': typeof ApiPublicHooksAutoImportMeiRoute
+  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
+  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
@@ -340,6 +356,8 @@ export interface FileRoutesById {
   '/_authenticated/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/_authenticated/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
   '/api/public/hooks/auto-import-mei': typeof ApiPublicHooksAutoImportMeiRoute
+  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
+  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/_authenticated/painel/empresas-importadas/': typeof AuthenticatedPainelEmpresasImportadasIndexRoute
 }
@@ -377,6 +395,8 @@ export interface FileRouteTypes {
     | '/painel/empresas-importadas/$companyId'
     | '/painel/gerador-links/historico'
     | '/api/public/hooks/auto-import-mei'
+    | '/lovable/email/auth/preview'
+    | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
     | '/painel/empresas-importadas/'
   fileRoutesByTo: FileRoutesByTo
@@ -410,6 +430,8 @@ export interface FileRouteTypes {
     | '/painel/empresas-importadas/$companyId'
     | '/painel/gerador-links/historico'
     | '/api/public/hooks/auto-import-mei'
+    | '/lovable/email/auth/preview'
+    | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
     | '/painel/empresas-importadas'
   id:
@@ -446,6 +468,8 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/empresas-importadas/$companyId'
     | '/_authenticated/painel/gerador-links/historico'
     | '/api/public/hooks/auto-import-mei'
+    | '/lovable/email/auth/preview'
+    | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
     | '/_authenticated/painel/empresas-importadas/'
   fileRoutesById: FileRoutesById
@@ -464,6 +488,8 @@ export interface RootRouteChildren {
   ApiPublicWebhookNexuspayRoute: typeof ApiPublicWebhookNexuspayRoute
   ApiPublicWebhookUniaopayRoute: typeof ApiPublicWebhookUniaopayRoute
   ApiPublicHooksAutoImportMeiRoute: typeof ApiPublicHooksAutoImportMeiRoute
+  LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
+  LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
@@ -686,6 +712,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lovable/email/auth/webhook': {
+      id: '/lovable/email/auth/webhook'
+      path: '/lovable/email/auth/webhook'
+      fullPath: '/lovable/email/auth/webhook'
+      preLoaderRoute: typeof LovableEmailAuthWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/auth/preview': {
+      id: '/lovable/email/auth/preview'
+      path: '/lovable/email/auth/preview'
+      fullPath: '/lovable/email/auth/preview'
+      preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/auto-import-mei': {
       id: '/api/public/hooks/auto-import-mei'
       path: '/api/public/hooks/auto-import-mei'
@@ -818,6 +858,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicWebhookNexuspayRoute: ApiPublicWebhookNexuspayRoute,
   ApiPublicWebhookUniaopayRoute: ApiPublicWebhookUniaopayRoute,
   ApiPublicHooksAutoImportMeiRoute: ApiPublicHooksAutoImportMeiRoute,
+  LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
+  LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
