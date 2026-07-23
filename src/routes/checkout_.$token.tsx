@@ -353,7 +353,7 @@ function Step({ n, label, done, active }: { n: number; label: string; done?: boo
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="overflow-hidden rounded-md border border-border bg-card shadow-sm">
-      <div className="bg-[#f8f9fa] border-b border-border px-4 py-2.5 text-[13px] font-bold text-[#004884] uppercase tracking-tight">
+      <div className="bg-[#f8f9fa] border-b border-border px-3 py-2.5 text-[12px] font-bold uppercase tracking-tight text-[#004884] sm:px-4 sm:text-[13px]">
         {title}
       </div>
       {children}
