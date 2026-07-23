@@ -207,6 +207,18 @@ function CheckoutPage() {
         </div>
       </main>
 
+      <PaymentInfoPopup
+        open={infoOpen}
+        loading={infoLoading}
+        settings={popupSettings ?? undefined}
+        onClose={() => { setInfoOpen(false); setInfoLoading(false); }}
+        onContinue={() => {
+          setInfoOpen(false);
+          setPixOpen(true);
+          if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+      />
+
       <PixModal
         open={pixOpen}
         amount={AMOUNT}
@@ -215,6 +227,7 @@ function CheckoutPage() {
         cnpj={form.doc || cnpj}
         onClose={() => setPixOpen(false)}
       />
+
 
       <SiteFooter />
     </Page>
