@@ -168,6 +168,18 @@ function EnvioMassa() {
   const [previewIdx, setPreviewIdx] = useState(0);
   const [designTick, setDesignTick] = useState(0);
 
+  // Carregar fila automaticamente (persistido)
+  const [autoLoadQueue, setAutoLoadQueue] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const v = window.localStorage.getItem('envio:autoLoadQueue');
+    return v == null ? true : v === '1';
+  });
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('envio:autoLoadQueue', autoLoadQueue ? '1' : '0');
+    }
+  }, [autoLoadQueue]);
+
   // Carrega destinatários uma vez se a fila estiver vazia.
   // Sincroniza assunto/remetente do Modelo de Mensagem automaticamente.
   useEffect(() => {
@@ -176,6 +188,15 @@ function EnvioMassa() {
     void refreshStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-carregar fila em intervalo curto quando o toggle está ligado.
+  useEffect(() => {
+    if (!autoLoadQueue) return;
+    const id = window.setInterval(() => {
+      if (!loading) void loadRecipients();
+    }, 15000);
+    return () => clearInterval(id);
+  }, [autoLoadQueue, loading]);
 
   // Recarrega design/assunto quando o Modelo de Mensagem é salvo (mesma ou outra aba)
   // ou quando esta aba recebe foco novamente.
