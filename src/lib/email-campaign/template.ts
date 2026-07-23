@@ -133,7 +133,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   subtitle: 'Referência: {{REFERENCIA}}',
   heroTitle: 'Certificado Digital\ndisponível para seu CNPJ',
   showHero: true,
-  intro: '{{NOME_TITULAR}},\n\nDados do cadastro:',
+  intro: '{{NOME_TITULAR}}\n\nDados do cadastro:',
   cardTitle: 'Dados do cadastro:',
   showCard: true,
   buttonLabel: 'Finalizar Certificado Digital MEI',
