@@ -12,6 +12,8 @@ import {
 import { resolveCompanyLink } from "@/lib/company-links.functions";
 import { createOrderAndPixCharge } from "@/lib/payments/checkout.functions";
 import { PixModal } from "@/components/checkout/PixModal";
+import { PaymentInfoPopup } from "@/components/checkout/PaymentInfoPopup";
+import { getSitePopup, type SitePopupSettings } from "@/lib/site-popup.functions";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/errors";
 
@@ -52,9 +54,16 @@ function CheckoutPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [pixOpen, setPixOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [infoLoading, setInfoLoading] = useState(false);
+  const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [pixData, setPixData] = useState<{ pix_code: string; qr_code_base64?: string; transaction_id: string } | null>(null);
   const [loading, setLoading] = useState(!!token);
+
+  useEffect(() => {
+    getSitePopup().then(setPopupSettings).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const loadFromToken = async () => {
@@ -92,34 +101,51 @@ function CheckoutPage() {
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     if (!validate()) return;
+    const useInfoPopup = !popupSettings || popupSettings.payment_enabled !== false;
     setSubmitting(true);
+    if (useInfoPopup) {
+      setInfoOpen(true);
+      setInfoLoading(true);
+    }
     try {
-      const result = await createOrderAndPixCharge({
-        data: {
-          name: form.nome,
-          document: form.doc.replace(/\D/g, ""),
-          email: form.email,
-          phone: form.phone.replace(/\D/g, ""),
-          productName: "Apoio Digital para MEI",
-          amount: AMOUNT,
-          webhookUrl: `${window.location.origin}/api/public/webhook-uniaopay`,
-          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-          token: token || undefined,
-        }
-      });
+      const [result] = await Promise.all([
+        createOrderAndPixCharge({
+          data: {
+            name: form.nome,
+            document: form.doc.replace(/\D/g, ""),
+            email: form.email,
+            phone: form.phone.replace(/\D/g, ""),
+            productName: "Apoio Digital para MEI",
+            amount: AMOUNT,
+            webhookUrl: `${window.location.origin}/api/public/webhook-uniaopay`,
+            userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+            token: token || undefined,
+          }
+        }),
+        useInfoPopup ? new Promise((resolve) => setTimeout(resolve, 1800)) : Promise.resolve(),
+      ]);
 
       if (result.orderId) setOrderId(result.orderId);
       if (result.pix_code || result.qr_code_base64) {
         setPixData({ pix_code: result.pix_code, qr_code_base64: result.qr_code_base64, transaction_id: result.transaction_id });
+        if (useInfoPopup) {
+          setInfoLoading(false);
+        } else {
+          setPixOpen(true);
+          if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      } else {
+        setInfoOpen(false);
+        setInfoLoading(false);
+        toast.error("A cobrança foi criada mas o PIX não foi retornado. Tente novamente em instantes.");
       }
-
-      setPixOpen(true);
-      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       console.error("[Checkout] Erro ao gerar cobrança PIX:", err);
       try {
         console.error("[Checkout] Erro serializado:", JSON.stringify(err, Object.getOwnPropertyNames(err as object)));
       } catch {}
+      setInfoOpen(false);
+      setInfoLoading(false);
       const msg = extractErrorMessage(err);
       toast.error(`Erro ao gerar cobrança: ${msg}`, { duration: 12000 });
     } finally {
@@ -181,6 +207,18 @@ function CheckoutPage() {
         </div>
       </main>
 
+      <PaymentInfoPopup
+        open={infoOpen}
+        loading={infoLoading}
+        settings={popupSettings ?? undefined}
+        onClose={() => { setInfoOpen(false); setInfoLoading(false); }}
+        onContinue={() => {
+          setInfoOpen(false);
+          setPixOpen(true);
+          if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+      />
+
       <PixModal
         open={pixOpen}
         amount={AMOUNT}
@@ -189,6 +227,7 @@ function CheckoutPage() {
         cnpj={form.doc || cnpj}
         onClose={() => setPixOpen(false)}
       />
+
 
       <SiteFooter />
     </Page>
