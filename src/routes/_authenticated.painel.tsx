@@ -1,4 +1,6 @@
 import { createFileRoute, Outlet, Link, useLocation, useNavigate } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { useServerFn } from '@tanstack/react-start';
 import {
   LayoutDashboard,
   LogOut,
@@ -17,6 +19,9 @@ import {
   DollarSign,
   KeyRound,
   MessageSquare,
+  Cloud,
+  CloudDownload,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,6 +43,31 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { GlobalFloatingPanels } from '@/components/painel/GlobalFloatingPanels';
+import { getCloudState, saveCloudState } from '@/lib/cloud-state.functions';
+
+// Chaves de localStorage que compõem o "estado do painel" salvo na nuvem.
+const CLOUD_PREFIXES = ['automation:', 'campanha:', 'envio:', 'consulta:', 'monitor:', 'painel:'];
+
+function collectLocalSnapshot(): Record<string, string> {
+  const snap: Record<string, string> = {};
+  if (typeof window === 'undefined') return snap;
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (!key) continue;
+    if (CLOUD_PREFIXES.some((p) => key.startsWith(p))) {
+      const val = window.localStorage.getItem(key);
+      if (val != null) snap[key] = val;
+    }
+  }
+  return snap;
+}
+
+function applyLocalSnapshot(snap: Record<string, string> | null) {
+  if (!snap || typeof window === 'undefined') return;
+  for (const [k, v] of Object.entries(snap)) {
+    try { window.localStorage.setItem(k, v); } catch { /* quota */ }
+  }
+}
 
 export const Route = createFileRoute('/_authenticated/painel')({
   component: PanelLayout,
