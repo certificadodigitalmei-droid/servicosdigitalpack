@@ -42,7 +42,7 @@ export type SitePopupSettings = {
 const DEFAULTS: SitePopupSettings = {
   enabled: true,
   badge_text: 'COMUNICADO',
-  title: 'Seu CNPJ foi Aberto ou Atualizado Recentemente no Nosso Banco de Dados',
+  title: 'Seu CNPJ foi Aberto ou Atualizado Recentemente:',
   highlight_text: 'Porém encontra-se pendente Certificado Digital',
   law_title: 'QUE É OBRIGATÓRIO POR LEI',
   law_text: 'Conforme determinação da Receita Federal, todas as empresas devem possuir um Certificado Digital ativo.',

@@ -1,0 +1,1 @@
+UPDATE public.site_popup_settings SET title = 'Seu CNPJ foi Aberto ou Atualizado Recentemente:', updated_at = now() WHERE id = 1;
