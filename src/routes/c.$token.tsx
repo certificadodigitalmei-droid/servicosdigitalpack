@@ -41,7 +41,6 @@ function TokenHomePage() {
   const aberturaFmt = row.abertura ? formatDateBR(row.abertura) : '—';
 
   const [popupOpen, setPopupOpen] = useState(false);
-  const [popupOpen, setPopupOpen] = useState(false);
   const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
   const [paidAt, setPaidAt] = useState<string | null>(null);
   const navigate = useNavigate();
