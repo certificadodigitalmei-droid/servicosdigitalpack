@@ -582,7 +582,26 @@ function Breakdown({ data, iconFor }: { data: Record<string, number>; iconFor?: 
   );
 }
 
-function deviceIcon(k: string) {
+
+function PopupPreviewCard({ icon, title, description, badge, badgeColor, onOpen }: { icon: React.ReactNode; title: string; description: string; badge: string; badgeColor: string; onOpen: () => void }) {
+  return (
+    <div className="group relative overflow-hidden rounded-xl border border-slate-200 bg-linear-to-br from-slate-50 to-white p-5 transition hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div className="grid h-11 w-11 place-items-center rounded-lg bg-[#0b1e3f]/5 text-[#0b1e3f]">
+          {icon}
+        </div>
+        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${badgeColor}`}>{badge}</span>
+      </div>
+      <div className="mt-4">
+        <div className="text-[15px] font-bold text-slate-900">{title}</div>
+        <p className="mt-1 text-[13px] text-slate-500 leading-relaxed">{description}</p>
+      </div>
+      <Button onClick={onOpen} className="mt-4 w-full" variant="outline">
+        <Eye className="mr-2 h-4 w-4" /> Ver pop-up completo
+      </Button>
+    </div>
+  );
+}
   const s = k.toLowerCase();
   if (s.includes('ipad') || s.includes('tablet')) return <Tablet className="h-4 w-4 text-slate-400" />;
   if (s.includes('ios') || s.includes('android') || s.includes('mobile')) return <Smartphone className="h-4 w-4 text-slate-400" />;
