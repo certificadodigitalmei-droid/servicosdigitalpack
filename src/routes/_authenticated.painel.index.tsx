@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Link2, Link as LinkIcon, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet, Trash2, Calendar as CalendarIcon } from 'lucide-react';
+import { Link2, Link as LinkIcon, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet, Trash2, Calendar as CalendarIcon, CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatCNPJ } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,6 +43,8 @@ type Stats = {
   viewCheckoutTotal: number;
   clickCertTotal: number;
   clickGuiaTotal: number;
+  paid: number;
+  paidAmount: number;
   byBrowser: Record<string, number>;
   byDevice: Record<string, number>;
   byOS: Record<string, number>;
@@ -59,11 +61,14 @@ const EMPTY: Stats = {
   viewCheckoutTotal: 0,
   clickCertTotal: 0,
   clickGuiaTotal: 0,
+  paid: 0,
+  paidAmount: 0,
   byBrowser: {},
   byDevice: {},
   byOS: {},
   conversion: 0,
 };
+
 
 
 type Preset = 'hoje' | 'ontem' | '7d' | '15d' | '30d' | 'tudo' | 'custom';
@@ -114,13 +119,23 @@ function DashboardPage() {
         linksCountQ = linksCountQ.lte('created_at', iso);
         evQ = evQ.lte('created_at', iso);
       }
-      const [{ count: linksTotal }, evRes, linksRes] = await Promise.all([
+      let ordersQ = supabase
+        .from('orders')
+        .select('amount, paid_at')
+        .not('paid_at', 'is', null);
+      if (range.from) ordersQ = ordersQ.gte('paid_at', range.from.toISOString());
+      if (range.to) ordersQ = ordersQ.lte('paid_at', range.to.toISOString());
+
+      const [{ count: linksTotal }, evRes, linksRes, ordersRes] = await Promise.all([
         linksCountQ,
         evQ,
         supabase.from('company_links').select('token, cnpj'),
+        ordersQ,
       ]);
       const events = (evRes.data ?? []) as EventRow[];
       const linkMap = new Map((linksRes.data ?? []).map((l: any) => [l.token, l.cnpj]));
+      const paidOrders = (ordersRes.data ?? []) as { amount: number | null }[];
+
 
       const ALL_BROWSERS = ['Chrome', 'Safari', 'Firefox', 'Edge', 'Opera', 'Samsung Internet', 'Outro'];
       const ALL_OS = ['Windows', 'Android', 'iOS', 'macOS', 'Linux', 'Outro'];
@@ -159,7 +174,10 @@ function DashboardPage() {
       }
 
       s.conversion = s.viewLink > 0 ? Math.round((s.viewCheckout / s.viewLink) * 100) : 0;
+      s.paid = paidOrders.length;
+      s.paidAmount = paidOrders.reduce((sum, o) => sum + Number(o.amount ?? 0), 0);
       setStats(s);
+
       setRecent(events.slice(-10).reverse().map(e => ({ ...e, cnpj: linkMap.get(e.token) })));
     } finally {
       setLoading(false);
@@ -279,13 +297,23 @@ function DashboardPage() {
 
 
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <MetricCard icon={<LinkIcon className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-slate-100 text-slate-700" hint="Total de links criados" />
         <MetricCard icon={<Link2 className="h-5 w-5" />} label="Acessos na primeira página" value={stats.viewLink} total={stats.viewLinkTotal} color="bg-blue-50 text-brand-blue" hint="Únicos por navegador/dispositivo" />
-        <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Acessos no checkout" value={stats.viewCheckout} total={stats.viewCheckoutTotal} color="bg-purple-50 text-purple-600" hint="Únicos por navegador/dispositivo" />
         <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label='Cliques "Emitir Certificado"' value={stats.clickCert} total={stats.clickCertTotal} color="bg-amber-50 text-amber-600" hint="Únicos por navegador/dispositivo" />
-        <MetricCard icon={<FileSignature className="h-5 w-5" />} label='Cliques "Gerar Guia"' value={stats.clickGuia} total={stats.clickGuiaTotal} color="bg-rose-50 text-rose-600" hint="Únicos por navegador/dispositivo" />
       </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Acessos no checkout" value={stats.viewCheckout} total={stats.viewCheckoutTotal} color="bg-purple-50 text-purple-600" hint="Únicos por navegador/dispositivo" />
+        <MetricCard icon={<FileSignature className="h-5 w-5" />} label='Cliques "Gerar Guia"' value={stats.clickGuia} total={stats.clickGuiaTotal} color="bg-rose-50 text-rose-600" hint="Únicos por navegador/dispositivo" />
+        <MetricCard
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          label="Pagamentos confirmados"
+          value={stats.paid}
+          color="bg-emerald-50 text-emerald-600"
+          hint={stats.paidAmount > 0 ? `Total: R$ ${stats.paidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Pedidos com PIX pago'}
+        />
+      </div>
+
 
 
       <div className="grid gap-4 md:grid-cols-2">
