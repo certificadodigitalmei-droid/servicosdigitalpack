@@ -51,7 +51,29 @@ export function InteractivePreview({ design, set, vars, onSelect }: Props) {
           commit(field, e);
         }}
         onKeyDown={(e: React.KeyboardEvent) => {
-          if (!multi && e.key === 'Enter') { e.preventDefault(); (e.target as HTMLElement).blur(); }
+          if (e.key === 'Enter') {
+            if (!multi) { e.preventDefault(); (e.target as HTMLElement).blur(); return; }
+            // multi-line: force a real <br> so the caret jumps to the next line
+            // instead of the browser inserting an empty <div> (which only shows after blur)
+            e.preventDefault();
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0) return;
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            const br = document.createElement('br');
+            range.insertNode(br);
+            // ensure a trailing <br> so the caret is visible on the new line
+            const trailing = document.createElement('br');
+            range.setStartAfter(br);
+            const parent = br.parentNode;
+            const needsTrailing = !br.nextSibling || (br.nextSibling as HTMLElement).nodeName !== 'BR';
+            if (parent && needsTrailing) parent.insertBefore(trailing, br.nextSibling);
+            const newRange = document.createRange();
+            newRange.setStartAfter(br);
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+          }
         }}
         data-placeholder={placeholder}
         className={`ee-editable ${className || ''}`}
