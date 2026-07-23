@@ -49,8 +49,9 @@ export const Route = createFileRoute('/checkout_/$token')({
   component: CheckoutTokenPage,
 });
 
-const AMOUNT = 97.0;
+const DEFAULT_AMOUNT = 97.0;
 const brl = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`;
+
 
 function cleanPersonName(v?: string | null): string {
   if (!v) return '';
@@ -63,6 +64,8 @@ function CheckoutTokenPage() {
   const navigate = useNavigate();
 
   const headerName = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '';
+  const AMOUNT = row.amount_cents != null ? row.amount_cents / 100 : DEFAULT_AMOUNT;
+
 
   const [form, setForm] = useState({
     nome: cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '',
