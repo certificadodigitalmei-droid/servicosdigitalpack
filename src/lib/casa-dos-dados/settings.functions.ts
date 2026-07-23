@@ -78,8 +78,9 @@ export const testCasaDosDadosConnection = createServerFn({ method: 'POST' })
       const { checkSaldo, invalidateCasaCredsCache } = await import('./client.server');
       invalidateCasaCredsCache();
       const r = await checkSaldo({ timeoutMs: 10_000 });
-      return { ok: r.ok, status: r.status, body: r.body };
+      const body = typeof r.body === 'string' ? r.body : JSON.stringify(r.body);
+      return { ok: r.ok, status: r.status, body };
     } catch (err: any) {
-      return { ok: false, status: 0, body: err?.message ?? String(err) };
+      return { ok: false, status: 0, body: String(err?.message ?? err) };
     }
   });
