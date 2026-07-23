@@ -129,6 +129,9 @@ function ModeloMensagem() {
   const [design, setDesign] = useState<CampaignDesign>(loadDesign);
   const [subject, setSubject] = useState(() => loadStr(SUBJECT_KEY, DEFAULT_SUBJECT));
   const [preheader, setPreheader] = useState(() => loadStr(PREHEADER_KEY, DEFAULT_PREHEADER));
+  const [fromName, setFromName] = useState(() => loadStr(FROM_NAME_KEY, DEFAULT_FROM_NAME));
+  const [fromAddress, setFromAddress] = useState(() => loadStr(FROM_ADDRESS_KEY, DEFAULT_FROM_ADDRESS));
+  const [replyTo, setReplyTo] = useState(() => loadStr(REPLY_TO_KEY, ''));
   const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop');
   const [selected, setSelected] = useState<SectionId>('header');
   const [zoom, setZoom] = useState(0.85);
@@ -138,6 +141,10 @@ function ModeloMensagem() {
   useEffect(() => { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(design)); } catch {} }, [design]);
   useEffect(() => { try { window.localStorage.setItem(SUBJECT_KEY, subject); } catch {} }, [subject]);
   useEffect(() => { try { window.localStorage.setItem(PREHEADER_KEY, preheader); } catch {} }, [preheader]);
+  useEffect(() => { try { window.localStorage.setItem(FROM_NAME_KEY, fromName); } catch {} }, [fromName]);
+  useEffect(() => { try { window.localStorage.setItem(FROM_ADDRESS_KEY, fromAddress); } catch {} }, [fromAddress]);
+  useEffect(() => { try { window.localStorage.setItem(REPLY_TO_KEY, replyTo); } catch {} }, [replyTo]);
+
 
   const set = <K extends keyof CampaignDesign>(k: K, v: CampaignDesign[K]) =>
     setDesign((d) => ({ ...d, [k]: v }));
