@@ -207,7 +207,8 @@ function ModeloMensagem() {
       </div>
 
       {/* ===== 3-column workspace ===== */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex h-[calc(100vh-8rem)] overflow-hidden">
+
         {/* Left rail — sections */}
         <div className={`shrink-0 border-r bg-white transition-all ${showLeft ? 'w-56' : 'w-10'}`}>
           <button
