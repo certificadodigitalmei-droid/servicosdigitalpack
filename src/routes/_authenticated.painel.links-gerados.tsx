@@ -483,7 +483,15 @@ function LinksGeradosPage() {
                         <TableCell className="text-center">{s.view_checkout}</TableCell>
                         <TableCell className="text-center">{s.click_certificado}</TableCell>
                         <TableCell className="text-center">{s.click_guia}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-center">
+                          {paid && paid.count > 0 ? (
+                            <Badge className="bg-green-600 gap-1" title={paid.last_paid_at ? `Último pagamento: ${new Date(paid.last_paid_at).toLocaleString('pt-BR')}` : 'Pago'}>
+                              <CheckCircle2 className="h-3 w-3" /> Pago{paid.count > 1 ? ` ×${paid.count}` : ''}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-slate-300">—</span>
+                          )}
+                        </TableCell>
                           <div className="flex flex-wrap gap-1">
                             {topDevices.length === 0 && <span className="text-xs text-slate-400">—</span>}
                             {topDevices.map(([name, count]) => (
