@@ -698,7 +698,11 @@ function EnvioMassa() {
                 <Trash2 className="h-4 w-4" /> Limpar tudo
               </Button>
 
-              <Button variant={showFloating ? 'default' : 'outline'} onClick={() => setShowFloating(!showFloating)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowFloating(!showFloating)}
+                className={showFloating ? 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800' : ''}
+              >
                 <Activity className="h-4 w-4" /> {showFloating ? 'Ocultar painel' : 'Painel flutuante'}
               </Button>
               {testMode && <Badge className="bg-amber-100 text-amber-800">MODO TESTE ATIVO</Badge>}
