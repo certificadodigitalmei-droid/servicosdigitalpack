@@ -430,19 +430,40 @@ function restartImportLoop() {
   }
   const s = consultaStore.get();
   if (!s.autoImport) return;
+
+  // Regra: a Importação Automática é ESCRAVA do Envio em Massa.
+  // Só importa 1 empresa por vez, e só quando:
+  //   - O Envio em Massa está rodando em modo REAL (não teste, não pausado);
+  //   - A fila de envio não tem nenhum item pendente/enviando
+  //     (i.e. o último importado já foi enviado e confirmado).
+  // Assim, para cada nova empresa importada existe um envio confirmado antes
+  // que a próxima seja buscada — sempre priorizando a mais recente.
   const tick = async () => {
     if (consultaStore.get().isImporting) return;
+
     const cur0 = consultaStore.get();
     const target = cur0.autoImportTarget || 0;
     if (target > 0 && cur0.autoImportTotal >= target) {
-      // Meta atingida — desliga o modo automático.
       setAutoImport(false);
       toast.success(`Meta de ${target} importações atingida. Automático desligado.`);
       return;
     }
-    // Se houver meta, não estoure — limita a próxima chamada ao restante.
-    const remaining = target > 0 ? Math.max(1, target - cur0.autoImportTotal) : cur0.quantidade;
-    const r = await runImportOnce({ silent: true, overrideLimit: remaining });
+
+    // Gate 1: envio em massa precisa estar rodando em modo REAL.
+    const env = envioStore.get();
+    const envioAtivo = isEnvioRunning() && env.running && !env.paused && !env.testMode;
+    if (!envioAtivo) return;
+
+    // Gate 2: fila de envio precisa estar "limpa" (sem pendências ativas).
+    // Se ainda há algo para enviar, esperamos o envio confirmar antes de
+    // importar a próxima empresa.
+    const hasPending = env.queue.some(
+      (q) => q.status === 'pending' || q.status === 'sending',
+    );
+    if (hasPending) return;
+
+    // Importa exatamente 1 empresa (a mais recente disponível na API).
+    const r = await runImportOnce({ silent: true, overrideLimit: 1 });
     if (r.imported > 0) {
       consultaStore.set((c) => ({ autoImportTotal: c.autoImportTotal + r.imported }));
       pushFlash(r.imported);
@@ -450,11 +471,11 @@ function restartImportLoop() {
     consultaStore.set((c) => ({ autoImportRuns: c.autoImportRuns + 1 }));
   };
   void tick();
-  importIntervalId = window.setInterval(
-    tick,
-    Math.max(5, s.autoImportDelaySec) * 1000,
-  );
+  // Polling curto (3s) — reage rápido assim que o envio confirma.
+  // O `autoImportDelaySec` deixa de ser usado neste modo escravo.
+  importIntervalId = window.setInterval(tick, 3000);
 }
+
 
 /* ---------------------------- setters/toggles ----------------------------- */
 
