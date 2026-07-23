@@ -223,7 +223,7 @@ function pushLog(msg: string) {
 
 // Base URL de PRODUÇÃO usada nos links dos e-mails (o preview do editor
 // abre o Lovable — usar sempre o domínio publicado).
-const PUBLIC_BASE_URL = 'https://seu-certificado-mei-digital.online';
+import { PUBLIC_BASE_URL } from '@/lib/public-base-url';
 
 const normCnpj = (v: string | null | undefined) => (v || '').replace(/\D+/g, '');
 const normEmail = (v: string | null | undefined) => (v || '').trim().toLowerCase();
