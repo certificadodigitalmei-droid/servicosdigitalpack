@@ -141,7 +141,7 @@ function isValidISODate(s: string): boolean {
 
 export async function checkSaldo(opts: CasaRequestOptions = {}): Promise<{ status: number; body: unknown; ok: boolean }> {
   const url = `${await baseUrl()}/v5/saldo`;
-  const res = await fetchWithTimeout(url, { method: 'GET', headers: headers() }, opts);
+  const res = await fetchWithTimeout(url, { method: 'GET', headers: await headers() }, opts);
   const text = await res.text();
   let body: unknown = text;
   try { body = JSON.parse(text); } catch { /* keep text */ }
@@ -150,7 +150,7 @@ export async function checkSaldo(opts: CasaRequestOptions = {}): Promise<{ statu
 
 export async function countOpeningsToday(opts: CasaRequestOptions = {}): Promise<{ status: number; body: unknown; ok: boolean }> {
   const url = `${await baseUrl()}/v4/dashboard/cnpj/empresas-abertas/hoje`;
-  const res = await fetchWithTimeout(url, { method: 'GET', headers: headers() }, opts);
+  const res = await fetchWithTimeout(url, { method: 'GET', headers: await headers() }, opts);
   const text = await res.text();
   let body: unknown = text;
   try { body = JSON.parse(text); } catch { /* keep text */ }
@@ -272,7 +272,7 @@ export async function fetchCompanyDetailsByCnpj(
   // Não existe /v5/cnpj/{cnpj} — v5 tem apenas /v5/cnpj/pesquisa.
   const url = `${await baseUrl()}/v4/cnpj/${clean}`;
   const request: SanitizedRequestLog = { url: `${await baseUrl()}/v4/cnpj/{cnpj}`, method: 'GET', body: null };
-  const res = await fetchWithTimeout(url, { method: 'GET', headers: headers() }, opts);
+  const res = await fetchWithTimeout(url, { method: 'GET', headers: await headers() }, opts);
   const text = await res.text();
   let raw: unknown = text;
   try { raw = JSON.parse(text); } catch { /* keep text */ }
