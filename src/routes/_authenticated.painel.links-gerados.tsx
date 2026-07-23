@@ -186,6 +186,33 @@ function LinksGeradosPage() {
         agg.unique_visitors = visitorsGlobal.size;
       }
 
+      // Load paid orders for the visible links
+      const linkIds = list.map((r) => r.id).filter(Boolean);
+      const paidMap: Record<string, { count: number; amount: number; last_paid_at: string | null }> = {};
+      let paidCount = 0;
+      let paidAmount = 0;
+      if (linkIds.length) {
+        let oq = supabase
+          .from('orders')
+          .select('public_link_id,amount,paid_at,status')
+          .in('public_link_id', linkIds)
+          .eq('status', 'paid');
+        if (range.gte) oq = oq.gte('paid_at', range.gte);
+        if (range.lte) oq = oq.lte('paid_at', range.lte);
+        const { data: paidRows } = await oq;
+        for (const o of (paidRows ?? []) as any[]) {
+          const id = o.public_link_id as string;
+          if (!paidMap[id]) paidMap[id] = { count: 0, amount: 0, last_paid_at: null };
+          paidMap[id].count += 1;
+          paidMap[id].amount += Number(o.amount ?? 0);
+          if (!paidMap[id].last_paid_at || (o.paid_at && o.paid_at > paidMap[id].last_paid_at!)) {
+            paidMap[id].last_paid_at = o.paid_at;
+          }
+          paidCount += 1;
+          paidAmount += Number(o.amount ?? 0);
+        }
+      }
+
       // Filter by funnel stage reached (deepest event wins)
       if (stage !== 'all') {
         list = list.filter((r) => {
@@ -196,6 +223,7 @@ function LinksGeradosPage() {
             case 'checkout': return s.view_checkout > 0;
             case 'certificado': return s.click_certificado > 0;
             case 'guia': return s.click_guia > 0;
+            case 'paid': return (paidMap[r.id]?.count ?? 0) > 0;
             default: return true;
           }
         });
@@ -205,6 +233,9 @@ function LinksGeradosPage() {
       setTotal(count ?? list.length);
       setStatsByToken(per);
       setAggregate(agg);
+      setPaidByLinkId(paidMap);
+      setTotalPaid(paidCount);
+      setTotalPaidAmount(paidAmount);
 
     } catch (e: any) {
       toast.error('Erro ao carregar links: ' + (e?.message ?? 'desconhecido'));
