@@ -52,11 +52,19 @@ export function FloatingStatsPanel({
   onClose,
 }: Props) {
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    const defaultPos = { x: typeof window !== 'undefined' ? Math.max(20, window.innerWidth - 360) : 20, y: 90 };
     try {
       const saved = JSON.parse(localStorage.getItem(POS_KEY) || 'null');
-      if (saved && typeof saved.x === 'number') return saved;
+      if (saved && typeof saved.x === 'number' && typeof saved.y === 'number' && typeof window !== 'undefined') {
+        // Garante que a posição salva ainda está dentro da viewport atual.
+        const width = 340;
+        const height = 440;
+        const x = Math.max(0, Math.min(window.innerWidth - width, saved.x));
+        const y = Math.max(0, Math.min(window.innerHeight - height, saved.y));
+        return { x, y };
+      }
     } catch {}
-    return { x: typeof window !== 'undefined' ? window.innerWidth - 360 : 20, y: 90 };
+    return defaultPos;
   });
   const [minimized, setMinimized] = useState(false);
   const [pulse, setPulse] = useState(false);
