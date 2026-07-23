@@ -8,7 +8,7 @@ import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
 import { resolveCompanyLink, getLinkPaymentStatus, type ResolvedCompany } from '@/lib/company-links.functions';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
-import certificadoA1Asset from '@/assets/certificado-a1-emei.jpg.asset.json';
+import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {

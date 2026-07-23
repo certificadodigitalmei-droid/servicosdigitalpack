@@ -3,7 +3,7 @@ import { z } from "zod";
 import { Info, FileCheck2, Lock, User } from "lucide-react";
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from "@/components/layout/SiteChrome";
 import { formatCNPJ, formatDateBR } from "@/lib/format";
-import certificadoA1Asset from "@/assets/certificado-a1-emei.jpg.asset.json";
+import certificadoA1Asset from "@/assets/certificado-a1-emei.png.asset.json";
 
 const searchSchema = z.object({
   nome: z.string().optional(),
