@@ -63,6 +63,9 @@ function PopupSitePage() {
         </Button>
       </div>
 
+      <FormattingHelp />
+
+
       <Tabs defaultValue="certificado" className="space-y-4">
         <TabsList className="w-full justify-start bg-slate-100 p-1">
           <TabsTrigger value="certificado" className="gap-2 data-[state=active]:bg-white">
