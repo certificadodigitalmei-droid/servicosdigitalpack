@@ -261,7 +261,8 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   D.heroImageUrl = toAbsoluteUrl(D.heroImageUrl);
   D.avatarUrl = toAbsoluteUrl(D.avatarUrl);
   const S = (t: string) => substitute(t, vars);
-  const title = nl2br(S(D.title));
+  const rawTitle = S(D.title);
+  const title = nl2br(rawTitle);
   const subtitle = nl2br(S(D.subtitle));
   const intro = inlineFormat(S(D.intro));
   const cardTitle = nl2br(S(D.cardTitle));
@@ -276,6 +277,17 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
   const align = D.align;
   const px = D.contentPaddingX;
+
+  // Auto-shrink do título para caber em UMA linha (nome do titular nunca quebra).
+  // Considera a maior linha do título já com variáveis substituídas.
+  const longestTitleLine = String(rawTitle || '')
+    .split(/\r?\n/)
+    .reduce((m, l) => (l.length > m.length ? l : m), '');
+  const availableTitleWidth = Math.max(120, D.containerWidth - 2 * px);
+  // Arial bold: ~0.58em por caractere. Deixa uma folga de 4px.
+  const fitTitleSize = Math.floor((availableTitleWidth - 4) / Math.max(1, longestTitleLine.length * 0.58));
+  const effectiveTitleSize = Math.max(12, Math.min(D.titleSize, fitTitleSize));
+
 
   const rowsHtml = [
     ['Nome', vars.NOME_TITULAR || vars.NOME_EMPRESARIAL],
