@@ -180,23 +180,29 @@ function EnvioMassa() {
     }
   }, [autoLoadQueue]);
 
-  // Carrega destinatários uma vez se a fila estiver vazia.
   // Sincroniza assunto/remetente do Modelo de Mensagem automaticamente.
+  // Não carrega destinatários automaticamente — só quando o toggle
+  // "Auto-carregar fila" estiver ligado, ou via botão manual.
   useEffect(() => {
     syncFromMessageModel();
-    if (queue.length === 0) void loadRecipients();
     void refreshStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-carregar fila em intervalo curto quando o toggle está ligado.
+  // Auto-carregar fila em intervalo curto (1 empresa por vez) quando o toggle está ligado.
   useEffect(() => {
     if (!autoLoadQueue) return;
-    const id = window.setInterval(() => {
-      if (!loading) void loadRecipients();
-    }, 15000);
+    const tick = () => {
+      if (loading || running) return;
+      // Só sincroniza a próxima quando não houver nenhum pendente na fila.
+      const pending = envioStore.get().queue.filter((q) => q.status === 'pending').length;
+      if (pending > 0) return;
+      void loadRecipients({ limit: 1 });
+    };
+    tick();
+    const id = window.setInterval(tick, 8000);
     return () => clearInterval(id);
-  }, [autoLoadQueue, loading]);
+  }, [autoLoadQueue, loading, running]);
 
   // Recarrega design/assunto quando o Modelo de Mensagem é salvo (mesma ou outra aba)
   // ou quando esta aba recebe foco novamente.
