@@ -24,6 +24,8 @@ type Stats = {
   errors: number;     // erros ainda na fila
   dailyLimit: number;
   hourlyLimit: number;
+  hourlyRestMin: number;
+  stopAtDaily: number;
   limitMode: 'daily' | 'hourly';
   delaySec: number;
 };
