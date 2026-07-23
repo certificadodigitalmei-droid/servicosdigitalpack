@@ -73,10 +73,12 @@ type State = {
   limitMode: 'daily' | 'hourly';
   dailyLimit: number; // 0 = ilimitado
   hourlyLimit: number; // 0 = ilimitado
+  stopAtDaily: number; // 0 = desativado — quando sentToday >= stopAtDaily, para tudo (envio + importação)
   sentToday: number;
   sentThisHour: number;
   sentDay: string; // YYYY-MM-DD (reset diário)
   sentHour: string; // YYYY-MM-DDTHH (reset horário)
+
   testMode: boolean;
   testRecipient: string;
   fromName: string;
@@ -115,6 +117,8 @@ const initial: State = {
   limitMode: 'daily',
   dailyLimit: 50,
   hourlyLimit: 30,
+  stopAtDaily: 0,
+
   sentToday: 0,
   sentThisHour: 0,
   sentDay: todayStr(),
@@ -146,6 +150,8 @@ export const envioStore = createStore<State>(initial, {
     'limitMode',
     'dailyLimit',
     'hourlyLimit',
+    'stopAtDaily',
+
     'sentToday',
     'sentThisHour',
     'sentDay',
@@ -196,6 +202,8 @@ export const setBatchLimit = (n: number) => envioStore.set({ batchLimit: Math.ma
 export const setLimitMode = (m: 'daily' | 'hourly') => envioStore.set({ limitMode: m });
 export const setDailyLimit = (n: number) => envioStore.set({ dailyLimit: Math.max(0, n) });
 export const setHourlyLimit = (n: number) => envioStore.set({ hourlyLimit: Math.max(0, n) });
+export const setStopAtDaily = (n: number) => envioStore.set({ stopAtDaily: Math.max(0, n) });
+
 export const resetDailyCounter = () => {
   envioStore.set({ sentToday: 0, sentDay: todayStr(), sentThisHour: 0, sentHour: hourStr() });
   pushLog('↻ Contadores zerados.');
@@ -537,11 +545,22 @@ export async function startSending() {
   while (!stopFlag) {
     ensureDailyWindow();
     const cur = envioStore.get();
+    // "Parar tudo" (meta diária): interrompe envio, importação e consultas.
+    if (cur.stopAtDaily > 0 && cur.sentToday >= cur.stopAtDaily) {
+      pushLog(`🛑 Meta diária atingida (${cur.sentToday}/${cur.stopAtDaily}). Parando envio + importação automática.`);
+      toast.info(`Meta diária atingida (${cur.stopAtDaily}). Tudo pausado até amanhã.`);
+      try {
+        const mod = await import('./consulta-engine');
+        mod.setAutoImport(false);
+      } catch { /* opcional */ }
+      break;
+    }
     if (cur.limitMode === 'daily' && cur.dailyLimit > 0 && cur.sentToday >= cur.dailyLimit) {
       pushLog(`🛑 Limite diário atingido (${cur.sentToday}/${cur.dailyLimit}). Envio parado.`);
       toast.info(`Limite diário atingido (${cur.dailyLimit}).`);
       break;
     }
+
     if (cur.limitMode === 'hourly' && cur.hourlyLimit > 0 && cur.sentThisHour >= cur.hourlyLimit) {
       pushLog(`⏸ Limite por hora atingido (${cur.sentThisHour}/${cur.hourlyLimit}). Aguardando próxima hora...`);
       // aguarda 60s e reavalia — ensureDailyWindow reseta ao virar a hora

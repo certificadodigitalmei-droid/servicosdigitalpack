@@ -50,6 +50,8 @@ import {
   setLimitMode,
   setDailyLimit,
   setHourlyLimit,
+  setStopAtDaily,
+
   resetDailyCounter,
   setTestMode,
   setTestRecipient,
@@ -91,6 +93,8 @@ function EnvioMassa() {
   const hourlyLimit = useStore(envioStore, (s) => s.hourlyLimit);
   const limitMode = useStore(envioStore, (s) => s.limitMode);
   const sentToday = useStore(envioStore, (s) => s.sentToday);
+  const stopAtDaily = useStore(envioStore, (s) => s.stopAtDaily);
+
   const sentThisHour = useStore(envioStore, (s) => s.sentThisHour);
   const importDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
   const sentEmails = useStore(envioStore, (s) => s.sentEmails);
@@ -326,29 +330,37 @@ function EnvioMassa() {
                 </div>
               </div>
 
-              {/* Campos manuais */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Delay entre envios (s)</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={600}
-                    value={delaySec}
-                    onChange={(e) => setDelaySec(parseInt(e.target.value || '1', 10))}
-                  />
+              {/* Parar tudo ao atingir meta diária */}
+              <div className="rounded-md border-2 border-red-200 bg-red-50/60 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold text-red-900 flex items-center gap-1.5">
+                    <Square className="h-3.5 w-3.5" /> Parar tudo ao atingir (meta diária)
+                  </Label>
+                  <Badge
+                    className={
+                      stopAtDaily > 0 && sentToday >= stopAtDaily
+                        ? 'bg-red-600 text-white'
+                        : 'bg-slate-100 text-slate-700'
+                    }
+                  >
+                    {sentToday} / {stopAtDaily > 0 ? stopAtDaily : '∞'}
+                  </Badge>
                 </div>
-                <div>
-                  <Label className="text-xs">Limite da fila (batch)</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={5000}
-                    value={batchLimit}
-                    onChange={(e) => setBatchLimit(parseInt(e.target.value || '1', 10))}
-                  />
-                </div>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100000}
+                  placeholder="Ex: 500"
+                  value={stopAtDaily}
+                  onChange={(e) => setStopAtDaily(parseInt(e.target.value || '0', 10))}
+                />
+                <p className="text-[11px] text-red-900/80 leading-relaxed">
+                  Ao atingir este número de envios no dia, o sistema <strong>para tudo automaticamente</strong>:
+                  envio em massa, consulta e importação automática. Use <strong>0</strong> para desativar.
+                  Reseta à meia-noite.
+                </p>
               </div>
+
 
               {/* Limite ativo (dia OU hora) */}
               <div className="rounded-md border bg-white p-3 space-y-2">
