@@ -563,7 +563,7 @@ function EnvioMassa() {
             </div>
             <div>
               <Label className="text-xs">Log</Label>
-              <div className="mt-1 h-48 overflow-auto rounded-md border bg-slate-950 p-3 font-mono text-xs text-slate-100">
+              <div className="mt-1 h-40 overflow-auto rounded-md border bg-slate-950 p-3 font-mono text-xs text-slate-100">
                 {logs.length === 0 ? (
                   <div className="text-slate-500">Sem eventos ainda.</div>
                 ) : (
@@ -571,12 +571,58 @@ function EnvioMassa() {
                 )}
               </div>
             </div>
+
+            {/* Fila logo abaixo do log, sem espaço em branco */}
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <Label className="text-xs flex items-center gap-1">
+                  <Send className="h-3.5 w-3.5" /> Fila ({queue.length})
+                </Label>
+              </div>
+              <div className="max-h-[360px] overflow-auto rounded-md border">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="border-b text-left text-xs text-slate-500">
+                      <th className="py-2 pl-2">#</th>
+                      <th>E-mail</th>
+                      <th>Empresa</th>
+                      <th>Status</th>
+                      <th className="text-right pr-2">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {queue.length === 0 ? (
+                      <tr><td colSpan={5} className="p-3 text-center text-xs text-slate-500">Sem destinatários na fila.</td></tr>
+                    ) : queue.map((q, i) => (
+                      <tr key={q.id} className="border-b last:border-0 hover:bg-slate-50">
+                        <td className="py-2 pl-2 text-slate-500">{i + 1}</td>
+                        <td className="truncate">{q.email}</td>
+                        <td className="max-w-[180px] truncate">{q.company_name}</td>
+                        <td><StatusBadge status={q.status} message={q.message} /></td>
+                        <td className="text-right pr-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2"
+                            disabled={running || q.status === 'sending'}
+                            onClick={() => sendSingle(q)}
+                            title="Enviar apenas este"
+                          >
+                            <Zap className="h-3.5 w-3.5" /> Enviar
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Preview + Queue */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* Prévia em linha própria, largura total */}
+      <div className="grid gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -610,51 +656,6 @@ function EnvioMassa() {
             ) : (
               <p className="text-sm text-slate-500">Sem destinatários.</p>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Send className="h-4 w-4" /> Fila
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="max-h-[640px] overflow-auto">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-white">
-                  <tr className="border-b text-left text-xs text-slate-500">
-                    <th className="py-2">#</th>
-                    <th>E-mail</th>
-                    <th>Empresa</th>
-                    <th>Status</th>
-                    <th className="text-right">Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {queue.map((q, i) => (
-                    <tr key={q.id} className="border-b last:border-0 hover:bg-slate-50">
-                      <td className="py-2 text-slate-500">{i + 1}</td>
-                      <td className="truncate">{q.email}</td>
-                      <td className="max-w-[180px] truncate">{q.company_name}</td>
-                      <td><StatusBadge status={q.status} message={q.message} /></td>
-                      <td className="text-right">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 px-2"
-                          disabled={running || q.status === 'sending'}
-                          onClick={() => sendSingle(q)}
-                          title="Enviar apenas este"
-                        >
-                          <Zap className="h-3.5 w-3.5" /> Enviar
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </CardContent>
         </Card>
       </div>
