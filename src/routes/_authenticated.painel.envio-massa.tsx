@@ -168,6 +168,18 @@ function EnvioMassa() {
   const [previewIdx, setPreviewIdx] = useState(0);
   const [designTick, setDesignTick] = useState(0);
 
+  // Carregar fila automaticamente (persistido)
+  const [autoLoadQueue, setAutoLoadQueue] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const v = window.localStorage.getItem('envio:autoLoadQueue');
+    return v == null ? true : v === '1';
+  });
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('envio:autoLoadQueue', autoLoadQueue ? '1' : '0');
+    }
+  }, [autoLoadQueue]);
+
   // Carrega destinatários uma vez se a fila estiver vazia.
   // Sincroniza assunto/remetente do Modelo de Mensagem automaticamente.
   useEffect(() => {
@@ -176,6 +188,15 @@ function EnvioMassa() {
     void refreshStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-carregar fila em intervalo curto quando o toggle está ligado.
+  useEffect(() => {
+    if (!autoLoadQueue) return;
+    const id = window.setInterval(() => {
+      if (!loading) void loadRecipients();
+    }, 15000);
+    return () => clearInterval(id);
+  }, [autoLoadQueue, loading]);
 
   // Recarrega design/assunto quando o Modelo de Mensagem é salvo (mesma ou outra aba)
   // ou quando esta aba recebe foco novamente.
@@ -586,6 +607,12 @@ function EnvioMassa() {
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 Carregar fila
               </Button>
+              <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3">
+                <Switch checked={autoLoadQueue} onCheckedChange={setAutoLoadQueue} />
+                <span className="text-xs text-slate-700">
+                  Auto-carregar fila {autoLoadQueue ? <b className="text-emerald-600">ligado</b> : <b className="text-slate-500">desligado</b>}
+                </span>
+              </div>
               <Button
                 variant="outline"
                 className="text-red-600 hover:bg-red-50"
@@ -622,17 +649,24 @@ function EnvioMassa() {
             <Progress value={progress} />
             <div className="flex flex-wrap gap-2">
               {!running ? (
-                <Button onClick={startSending} disabled={queue.length === 0}>
+                <Button
+                  onClick={startSending}
+                  disabled={queue.length === 0}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
                   <Play className="h-4 w-4" /> {testMode ? 'Iniciar teste' : 'Iniciar envio real'}
                 </Button>
               ) : (
                 <>
+                  <Button
+                    onClick={stopSending}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Square className="h-4 w-4" /> {testMode ? 'Parar teste' : 'Parar envio real'}
+                  </Button>
                   <Button variant="outline" onClick={togglePause}>
                     {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                     {paused ? 'Retomar' : 'Pausar'}
-                  </Button>
-                  <Button variant="destructive" onClick={stopSending}>
-                    <Square className="h-4 w-4" /> Parar
                   </Button>
                 </>
               )}
