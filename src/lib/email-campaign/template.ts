@@ -261,7 +261,8 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   D.heroImageUrl = toAbsoluteUrl(D.heroImageUrl);
   D.avatarUrl = toAbsoluteUrl(D.avatarUrl);
   const S = (t: string) => substitute(t, vars);
-  const title = nl2br(S(D.title));
+  const rawTitle = S(D.title);
+  const title = nl2br(rawTitle);
   const subtitle = nl2br(S(D.subtitle));
   const intro = inlineFormat(S(D.intro));
   const cardTitle = nl2br(S(D.cardTitle));
@@ -276,6 +277,17 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
   const align = D.align;
   const px = D.contentPaddingX;
+
+  // Auto-shrink do título para caber em UMA linha (nome do titular nunca quebra).
+  // Considera a maior linha do título já com variáveis substituídas.
+  const longestTitleLine = String(rawTitle || '')
+    .split(/\r?\n/)
+    .reduce((m, l) => (l.length > m.length ? l : m), '');
+  const availableTitleWidth = Math.max(120, D.containerWidth - 2 * px);
+  // Arial bold: ~0.58em por caractere. Deixa uma folga de 4px.
+  const fitTitleSize = Math.floor((availableTitleWidth - 4) / Math.max(1, longestTitleLine.length * 0.58));
+  const effectiveTitleSize = Math.max(12, Math.min(D.titleSize, fitTitleSize));
+
 
   const rowsHtml = [
     ['Nome', vars.NOME_TITULAR || vars.NOME_EMPRESARIAL],
@@ -338,7 +350,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     <tr><td style="background:${D.headerBg};color:${D.headerText};padding:${D.headerPadding}px ${px}px;text-align:left;">
       ${D.showAvatar && D.avatarUrl ? `<div style="margin-bottom:16px;"><img src="${esc(D.avatarUrl)}" alt="" width="${D.avatarSize}" height="${D.avatarSize}" style="width:${D.avatarSize}px;height:${D.avatarSize}px;border-radius:50%;border:3px solid rgba(255,255,255,0.9);display:block;" /></div>` : ''}
       <div style="font-size:${D.logoSize}px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;margin-bottom:14px;">${logo}</div>
-      <div style="font-size:${D.titleSize}px;font-weight:800;line-height:1.2;margin:0;">${title}</div>
+      <div style="font-size:${effectiveTitleSize}px;font-weight:800;line-height:1.2;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</div>
       <div style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:12px;">${subtitle}</div>
     </td></tr>
     ${D.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(D.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:${D.containerWidth}px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
