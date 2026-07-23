@@ -730,9 +730,9 @@ function ImageRow({ label, value, onChange }: { label: string; value: string; on
         )}
         <div className="flex-1 min-w-0">
           <div className="text-xs font-medium text-slate-700">
-            {value ? 'Trocar imagem' : 'Clique ou arraste'}
+            {uploading ? 'Enviando...' : value ? 'Trocar imagem' : 'Clique ou arraste'}
           </div>
-          <div className="text-[10px] text-muted-foreground">PNG, JPG · até 500KB</div>
+          <div className="text-[10px] text-muted-foreground">PNG, JPG · até 800KB · hospedado em certificadodigitalccmei.online</div>
         </div>
         <Upload className="h-4 w-4 text-slate-400" />
       </div>
