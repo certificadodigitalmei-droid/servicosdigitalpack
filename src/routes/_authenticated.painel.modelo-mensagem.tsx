@@ -364,51 +364,41 @@ function ModeloMensagem() {
       </div>
 
       {/* ===== Bottom: prévia com dados reais (empresa fictícia) ===== */}
-      <div className="border-t bg-white">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-bold text-brand-navy">Prévia com dados reais</h2>
-              <p className="text-xs text-muted-foreground">
-                Assim que o destinatário vai ver o e-mail — usando dados de uma empresa fictícia para você conferir o resultado final.
-              </p>
-            </div>
-            <div className="text-[11px] text-muted-foreground italic">
-              As alterações aparecem aqui automaticamente.
-            </div>
+      <div className="border-t bg-slate-100">
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-3">
+          <div>
+            <h2 className="text-base font-bold text-brand-navy">Prévia com dados reais</h2>
+            <p className="text-[11px] text-muted-foreground">
+              Como o destinatário vai ver — dados de empresa fictícia.
+            </p>
           </div>
 
-          {/* Cartão de dados da empresa fictícia */}
-          <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-4">
-            <div className="text-[10px] uppercase tracking-wide font-semibold text-slate-500 mb-2">
-              Empresa fictícia usada nesta prévia
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-              <div><div className="text-slate-500">Nome</div><div className="font-semibold text-slate-800">{PREVIEW_VARS.NOME_TITULAR}</div></div>
-              <div><div className="text-slate-500">CNPJ</div><div className="font-mono font-semibold text-slate-800">68.087.737/0001-27</div></div>
-              <div><div className="text-slate-500">Município / UF</div><div className="font-semibold text-slate-800">{PREVIEW_VARS.MUNICIPIO} / {PREVIEW_VARS.UF}</div></div>
-              <div><div className="text-slate-500">E-mail</div><div className="font-semibold text-slate-800 truncate">{PREVIEW_VARS.EMAIL}</div></div>
-            </div>
+          {/* Cartão de dados da empresa fictícia — compacto */}
+          <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-[11px] flex flex-wrap gap-x-4 gap-y-1">
+            <span><span className="text-slate-500">Nome:</span> <strong>{PREVIEW_VARS.NOME_TITULAR}</strong></span>
+            <span><span className="text-slate-500">CNPJ:</span> <strong className="font-mono">68.087.737/0001-27</strong></span>
+            <span><span className="text-slate-500">Cidade:</span> <strong>{PREVIEW_VARS.MUNICIPIO}/{PREVIEW_VARS.UF}</strong></span>
+            <span className="truncate max-w-full"><span className="text-slate-500">E-mail:</span> <strong>{PREVIEW_VARS.EMAIL}</strong></span>
           </div>
 
-          {/* Cabeçalho de e-mail simulado */}
-          <div className="rounded-lg border border-slate-200 overflow-hidden shadow-sm">
-            <div className="bg-slate-50 border-b px-4 py-3 text-xs space-y-1">
-              <div><span className="text-slate-500 w-20 inline-block">De:</span> <strong>{fromName}</strong> &lt;{fromAddress}&gt;</div>
-              <div><span className="text-slate-500 w-20 inline-block">Para:</span> {PREVIEW_VARS.EMAIL}</div>
-              <div><span className="text-slate-500 w-20 inline-block">Assunto:</span> <strong>{renderedSubject}</strong></div>
-              <div className="text-slate-500 italic truncate">{renderedPreheader}</div>
+          {/* E-mail simulado */}
+          <div className="rounded-lg border border-slate-300 overflow-hidden shadow-sm bg-white">
+            <div className="bg-slate-50 border-b px-3 py-2 text-[11px] space-y-0.5">
+              <div className="truncate"><span className="text-slate-500">De:</span> <strong>{fromName}</strong> &lt;{fromAddress}&gt;</div>
+              <div className="truncate"><span className="text-slate-500">Para:</span> {PREVIEW_VARS.EMAIL}</div>
+              <div className="truncate"><span className="text-slate-500">Assunto:</span> <strong>{renderedSubject}</strong></div>
             </div>
             <iframe
               title="prévia-email-completa"
               srcDoc={html}
-              className="w-full border-0 bg-white"
-              style={{ height: 900 }}
+              className="w-full border-0 bg-white block"
+              style={{ height: 520 }}
             />
           </div>
         </div>
       </div>
     </div>
+
 
     </div>
   );
