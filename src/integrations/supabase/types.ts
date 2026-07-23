@@ -471,6 +471,27 @@ export type Database = {
           },
         ]
       }
+      casa_dos_dados_settings: {
+        Row: {
+          api_base_url: string | null
+          api_key: string | null
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          api_base_url?: string | null
+          api_key?: string | null
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          api_base_url?: string | null
+          api_key?: string | null
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           bairro: string | null

@@ -40,21 +40,53 @@ export type CasaDetailResult = {
   request: SanitizedRequestLog;
 };
 
-function baseUrl(): string {
-  const raw = process.env.CASA_DOS_DADOS_API_BASE_URL;
-  if (!raw) throw new Error('CASA_DOS_DADOS_API_BASE_URL não configurado');
-  return raw.replace(/\/+$/, '');
+type CasaCreds = { baseUrl: string; apiKey: string };
+let credsCache: { at: number; data: CasaCreds } | null = null;
+
+async function loadCreds(): Promise<CasaCreds> {
+  const now = Date.now();
+  if (credsCache && now - credsCache.at < 30_000) return credsCache.data;
+
+  let dbBase: string | null = null;
+  let dbKey: string | null = null;
+  try {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { data } = await supabaseAdmin
+      .from('casa_dos_dados_settings')
+      .select('api_base_url, api_key')
+      .eq('id', 1)
+      .maybeSingle();
+    dbBase = ((data as any)?.api_base_url ?? null) as string | null;
+    dbKey = ((data as any)?.api_key ?? null) as string | null;
+  } catch {
+    // ignore — fall back to env
+  }
+
+  const rawBase = (dbBase && dbBase.trim()) || process.env.CASA_DOS_DADOS_API_BASE_URL || '';
+  const rawKey = (dbKey && dbKey.trim()) || process.env.CASA_DOS_DADOS_API_KEY || '';
+  if (!rawBase) throw new Error('CASA_DOS_DADOS_API_BASE_URL não configurado');
+  if (!rawKey) throw new Error('CASA_DOS_DADOS_API_KEY não configurado');
+
+  const data = { baseUrl: rawBase.replace(/\/+$/, ''), apiKey: rawKey };
+  credsCache = { at: now, data };
+  return data;
 }
 
-function apiKey(): string {
-  const key = process.env.CASA_DOS_DADOS_API_KEY;
-  if (!key) throw new Error('CASA_DOS_DADOS_API_KEY não configurado');
-  return key;
+export function invalidateCasaCredsCache() {
+  credsCache = null;
 }
 
-function headers(): Record<string, string> {
+async function baseUrl(): Promise<string> {
+  return (await loadCreds()).baseUrl;
+}
+
+async function apiKey(): Promise<string> {
+  return (await loadCreds()).apiKey;
+}
+
+async function headers(): Promise<Record<string, string>> {
   return {
-    'api-key': apiKey(),
+    'api-key': await apiKey(),
     'content-type': 'application/json',
     accept: 'application/json',
   };
@@ -108,8 +140,8 @@ function isValidISODate(s: string): boolean {
 
 
 export async function checkSaldo(opts: CasaRequestOptions = {}): Promise<{ status: number; body: unknown; ok: boolean }> {
-  const url = `${baseUrl()}/v5/saldo`;
-  const res = await fetchWithTimeout(url, { method: 'GET', headers: headers() }, opts);
+  const url = `${await baseUrl()}/v5/saldo`;
+  const res = await fetchWithTimeout(url, { method: 'GET', headers: await headers() }, opts);
   const text = await res.text();
   let body: unknown = text;
   try { body = JSON.parse(text); } catch { /* keep text */ }
@@ -117,8 +149,8 @@ export async function checkSaldo(opts: CasaRequestOptions = {}): Promise<{ statu
 }
 
 export async function countOpeningsToday(opts: CasaRequestOptions = {}): Promise<{ status: number; body: unknown; ok: boolean }> {
-  const url = `${baseUrl()}/v4/dashboard/cnpj/empresas-abertas/hoje`;
-  const res = await fetchWithTimeout(url, { method: 'GET', headers: headers() }, opts);
+  const url = `${await baseUrl()}/v4/dashboard/cnpj/empresas-abertas/hoje`;
+  const res = await fetchWithTimeout(url, { method: 'GET', headers: await headers() }, opts);
   const text = await res.text();
   let body: unknown = text;
   try { body = JSON.parse(text); } catch { /* keep text */ }
@@ -176,12 +208,12 @@ export async function searchOpeningsByDate(opts: {
   completo?: boolean;
 } & CasaRequestOptions): Promise<CasaSearchResult> {
   const body = buildSearchBody(opts);
-  const url = `${baseUrl()}/v5/cnpj/pesquisa${opts.completo ? '?tipo_resultado=completo' : ''}`;
+  const url = `${await baseUrl()}/v5/cnpj/pesquisa${opts.completo ? '?tipo_resultado=completo' : ''}`;
   const request: SanitizedRequestLog = { url, method: 'POST', body };
 
   const res = await fetchWithTimeout(url, {
     method: 'POST',
-    headers: headers(),
+    headers: await headers(),
     body: JSON.stringify(body),
   }, opts);
   const text = await res.text();
@@ -238,9 +270,9 @@ export async function fetchCompanyDetailsByCnpj(
   if (clean.length !== 14) throw new Error('CNPJ inválido para consulta detalhada');
   // A API oficial expõe consulta individual em /v4/cnpj/{cnpj}.
   // Não existe /v5/cnpj/{cnpj} — v5 tem apenas /v5/cnpj/pesquisa.
-  const url = `${baseUrl()}/v4/cnpj/${clean}`;
-  const request: SanitizedRequestLog = { url: `${baseUrl()}/v4/cnpj/{cnpj}`, method: 'GET', body: null };
-  const res = await fetchWithTimeout(url, { method: 'GET', headers: headers() }, opts);
+  const url = `${await baseUrl()}/v4/cnpj/${clean}`;
+  const request: SanitizedRequestLog = { url: `${await baseUrl()}/v4/cnpj/{cnpj}`, method: 'GET', body: null };
+  const res = await fetchWithTimeout(url, { method: 'GET', headers: await headers() }, opts);
   const text = await res.text();
   let raw: unknown = text;
   try { raw = JSON.parse(text); } catch { /* keep text */ }
