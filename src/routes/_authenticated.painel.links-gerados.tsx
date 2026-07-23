@@ -308,7 +308,7 @@ function LinksGeradosPage() {
       </Card>
 
       {/* Aggregate KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
 
         <KPI icon={<ExternalLink className="h-4 w-4" />} label="Links no filtro" value={total} tone="slate" />
         <KPI icon={<Eye className="h-4 w-4" />} label="Cliques totais" value={aggregate.total} tone="blue" />
@@ -316,6 +316,7 @@ function LinksGeradosPage() {
         <KPI icon={<ShoppingCart className="h-4 w-4" />} label="Foi ao checkout" value={aggregate.view_checkout} tone="violet" />
         <KPI icon={<FileCheck2 className="h-4 w-4" />} label="Emitir certificado" value={aggregate.click_certificado} tone="emerald" />
         <KPI icon={<Receipt className="h-4 w-4" />} label="Gerar guia" value={aggregate.click_guia} tone="amber" />
+        <KPI icon={<CheckCircle2 className="h-4 w-4" />} label={`Pagos • R$ ${totalPaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} value={totalPaid} tone="green" />
       </div>
 
       {/* Funnel bar */}
