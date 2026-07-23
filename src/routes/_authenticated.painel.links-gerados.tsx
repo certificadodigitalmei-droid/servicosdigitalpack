@@ -237,8 +237,45 @@ function LinksGeradosPage() {
         />
       </div>
 
+
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-600 mr-2">
+              <CalendarIcon className="h-4 w-4" /> Período:
+            </div>
+            {([
+              ['today', 'Hoje'],
+              ['yesterday', 'Ontem'],
+              ['7d', '7 dias'],
+              ['15d', '15 dias'],
+              ['30d', '30 dias'],
+              ['all', 'Tudo'],
+              ['custom', 'Personalizado'],
+            ] as [DatePreset, string][]).map(([key, label]) => (
+              <Button
+                key={key}
+                size="sm"
+                variant={preset === key ? 'default' : 'outline'}
+                onClick={() => setPreset(key)}
+              >
+                {label}
+              </Button>
+            ))}
+            {preset === 'custom' && (
+              <div className="flex flex-wrap items-center gap-2 ml-2">
+                <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-auto" />
+                <span className="text-slate-400 text-sm">até</span>
+                <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-auto" />
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Aggregate KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+
         <KPI icon={<ExternalLink className="h-4 w-4" />} label="Links no filtro" value={total} tone="slate" />
         <KPI icon={<Eye className="h-4 w-4" />} label="Cliques totais" value={aggregate.total} tone="blue" />
         <KPI icon={<Eye className="h-4 w-4" />} label="Abriu página" value={aggregate.view_link} tone="indigo" />
