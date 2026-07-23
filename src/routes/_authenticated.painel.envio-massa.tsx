@@ -166,12 +166,13 @@ function EnvioMassa() {
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
               <Activity className="h-4 w-4 text-blue-600" />
-              Limites do Lovable Emails
+              Lovable Emails — status e limites
             </CardTitle>
             <p className="mt-1 text-xs text-slate-600">
-              Os limites reais são enforçados pelo Lovable no servidor. Estes números vêm do log oficial de entregas.
-              Ao atingir o limite, os envios recebem <code className="rounded bg-slate-100 px-1">HTTP 429</code> e a fila
-              aguarda automaticamente antes de continuar.
+              Envios saem pelo domínio profissional configurado no Lovable. Os números abaixo vêm do log oficial
+              de entregas (última hora e últimas 24h). Os limites são aplicados no servidor: quando você bate a cota,
+              o Lovable responde <code className="rounded bg-slate-100 px-1">HTTP 429</code> e a fila pausa e retoma
+              automaticamente — você não precisa fazer nada.
             </p>
           </div>
           <Button size="sm" variant="outline" onClick={refreshStats} disabled={loadingStats}>
@@ -179,7 +180,39 @@ function EnvioMassa() {
             Atualizar
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Painel destaque: você pode enviar agora? */}
+          {emailStats?.ok && (
+            <div className="grid gap-3 sm:grid-cols-3">
+              <BigStat
+                label="Enviados na última hora"
+                value={emailStats.lastHour.sent}
+                sub={
+                  emailStats.lastHour.rateLimited > 0
+                    ? `⚠ ${emailStats.lastHour.rateLimited} rate-limit(s) recebido(s)`
+                    : 'Sem rate-limit — pode enviar normalmente'
+                }
+                accent={emailStats.lastHour.rateLimited > 0 ? 'amber' : 'emerald'}
+              />
+              <BigStat
+                label="Enviados nas últimas 24h"
+                value={emailStats.last24h.sent}
+                sub={`${emailStats.last24h.bounced} bounces · ${emailStats.last24h.complaint} reclamações`}
+                accent="blue"
+              />
+              <BigStat
+                label="Enviados hoje (contador local)"
+                value={sentToday}
+                sub={
+                  dailyLimit === 0
+                    ? 'Sem limite diário configurado'
+                    : `Meta: ${dailyLimit} / dia · restam ${Math.max(0, dailyLimit - sentToday)}`
+                }
+                accent={dailyLimit > 0 && sentToday >= dailyLimit ? 'red' : 'slate'}
+              />
+            </div>
+          )}
+
           {!emailStats ? (
             <div className="py-6 text-center text-sm text-slate-500">
               {loadingStats ? 'Consultando limites...' : 'Sem dados. Clique em "Atualizar".'}
@@ -190,17 +223,34 @@ function EnvioMassa() {
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
-              <LimitBlock title="Última hora (janela de rate limit)" bucket={emailStats.lastHour} accent="blue" />
-              <LimitBlock title="Últimas 24 horas" bucket={emailStats.last24h} accent="emerald" />
+              <LimitBlock title="Detalhes — última hora" bucket={emailStats.lastHour} accent="blue" />
+              <LimitBlock title="Detalhes — últimas 24h" bucket={emailStats.last24h} accent="emerald" />
             </div>
           )}
-          <div className="mt-4 grid gap-3 sm:grid-cols-4">
+
+          <div className="grid gap-3 sm:grid-cols-4">
             <MiniStat label="Enviados confirmados (histórico local)" value={sentEmails.length} color="text-emerald-700" />
             <MiniStat label="Enviados hoje (contador)" value={sentToday} color="text-slate-900" />
             <MiniStat label="Limite diário configurado" value={dailyLimit === 0 ? '∞' : dailyLimit} color="text-blue-700" />
             <MiniStat label="Fila atual" value={queue.length} color="text-slate-700" />
           </div>
-          <p className="mt-3 text-[11px] text-slate-500">
+
+          {/* Como funciona / regras */}
+          <div className="rounded-lg border border-slate-200 bg-white p-4 text-xs text-slate-600">
+            <div className="mb-2 text-sm font-semibold text-slate-800">Como funciona o envio no Lovable Emails</div>
+            <ul className="grid gap-1.5 sm:grid-cols-2">
+              <li>✅ <strong>Quota separada</strong>: e-mails de app (envio em massa) e de auth têm cotas independentes — um pico não bloqueia o outro.</li>
+              <li>✅ <strong>Escala com o plano</strong>: quanto maior o plano do workspace, maior a cota horária e diária.</li>
+              <li>✅ <strong>Retry automático</strong>: ao receber 429, a fila espera o tempo indicado pelo servidor e retoma sozinha.</li>
+              <li>✅ <strong>Supressão automática</strong>: destinatários que deram bounce, reclamação ou descadastro são bloqueados no servidor — o envio retorna como "Suprimido" (não conta contra você).</li>
+              <li>⚠ <strong>Sem tracking de aberturas</strong>: o Lovable Emails registra envio, rejeição, bounce, reclamação e descadastro. "Entregue" e "Aberto" não são rastreados.</li>
+              <li>⚠ <strong>Anexos não suportados</strong>: envie links (Storage/URL) no corpo do e-mail em vez de arquivos anexos.</li>
+              <li>💡 <strong>Sua proteção extra</strong>: use os perfis (Suave / Moderado / Turbo) e o campo "Parar tudo ao atingir X" para não estourar meta diária.</li>
+              <li>💡 <strong>Modo horário + descanso</strong>: em Moderado (100/h), configure "descanso ao atingir o limite" para intervalar lotes automaticamente.</li>
+            </ul>
+          </div>
+
+          <p className="text-[11px] text-slate-500">
             Após cada envio confirmado, o destinatário sai da fila e vai para a aba{' '}
             <strong>E-mails Enviados</strong> automaticamente.
           </p>
