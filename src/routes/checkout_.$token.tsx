@@ -291,6 +291,7 @@ function CheckoutTokenPage() {
         amount={AMOUNT}
         orderId={orderId}
         pixData={pixData}
+        cnpj={row.cnpj || form.doc}
         onClose={() => setPixOpen(false)}
       />
 
