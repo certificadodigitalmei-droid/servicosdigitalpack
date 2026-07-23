@@ -47,7 +47,9 @@ import {
   setSubject,
   setDelaySec,
   setBatchLimit,
+  setLimitMode,
   setDailyLimit,
+  setHourlyLimit,
   resetDailyCounter,
   setTestMode,
   setTestRecipient,
@@ -86,7 +88,10 @@ function EnvioMassa() {
   const showFloating = useStore(envioStore, (s) => s.showFloating);
   const heroImageUrl = useStore(envioStore, (s) => s.heroImageUrl);
   const dailyLimit = useStore(envioStore, (s) => s.dailyLimit);
+  const hourlyLimit = useStore(envioStore, (s) => s.hourlyLimit);
+  const limitMode = useStore(envioStore, (s) => s.limitMode);
   const sentToday = useStore(envioStore, (s) => s.sentToday);
+  const sentThisHour = useStore(envioStore, (s) => s.sentThisHour);
   const importDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
   const sentEmails = useStore(envioStore, (s) => s.sentEmails);
   const [uploadingImg, setUploadingImg] = useState(false);
@@ -224,108 +229,175 @@ function EnvioMassa() {
                 onChange={(e) => setReplyTo(e.target.value)}
               />
             </div>
-            {/* Presets de envio recomendado */}
-            <div className="rounded-md border border-blue-200 bg-blue-50/60 p-3 space-y-3">
-              <div>
-                <div className="text-sm font-semibold text-blue-900">Perfis recomendados de envio</div>
-                <p className="text-[11px] text-blue-900/70">
-                  Clique para aplicar delay, limite diário e limite da fila de uma vez. Baseado em boas práticas anti-spam.
-                </p>
+            {/* Ritmo & Limites */}
+            <div className="rounded-lg border-2 border-blue-200 bg-gradient-to-br from-blue-50/80 to-white p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-blue-600" />
+                <div className="text-sm font-bold text-blue-900">Ritmo & Limites de envio</div>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                {([
-                  { key: 'warmup1', title: 'Warm-up inicial', sub: 'Dias 1-3', daily: 40, delay: 90, batch: 40, hint: '~40/dia · 1 a cada 90s' },
-                  { key: 'warmup2', title: 'Warm-up médio', sub: 'Dias 4-7', daily: 150, delay: 60, batch: 150, hint: '~150/dia · 1 a cada 60s' },
-                  { key: 'warmup3', title: 'Warm-up avançado', sub: 'Dias 8-14', daily: 400, delay: 45, batch: 200, hint: '~400/dia · 1 a cada 45s' },
-                  { key: 'cruise', title: 'Ritmo saudável', sub: 'Após 15 dias', daily: 800, delay: 30, batch: 300, hint: '~800/dia · 1 a cada 30s' },
-                ] as const).map((p) => {
-                  const active = delaySec === p.delay && dailyLimit === p.daily && batchLimit === p.batch;
-                  return (
+
+              {/* Toggle modo de limite */}
+              <div className="flex gap-1 rounded-lg bg-white p-1 border border-blue-200">
+                <button
+                  type="button"
+                  onClick={() => setLimitMode('daily')}
+                  className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    limitMode === 'daily'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Limite por dia
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLimitMode('hourly')}
+                  className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    limitMode === 'hourly'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Limite por hora
+                </button>
+              </div>
+
+              {/* Perfis recomendados */}
+              <div>
+                <div className="mb-2 text-xs font-semibold text-slate-700">
+                  Perfis recomendados{' '}
+                  <span className="font-normal text-slate-500">
+                    — clique para aplicar delay + limite + fila de uma vez
+                  </span>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {(limitMode === 'daily'
+                    ? [
+                        { key: 'warmup1', title: 'Warm-up inicial', sub: 'Dias 1-3', v: 40, delay: 90, batch: 40, hint: '~40/dia · 1 a cada 90s' },
+                        { key: 'warmup2', title: 'Warm-up médio', sub: 'Dias 4-7', v: 150, delay: 60, batch: 150, hint: '~150/dia · 1 a cada 60s' },
+                        { key: 'warmup3', title: 'Warm-up avançado', sub: 'Dias 8-14', v: 400, delay: 45, batch: 200, hint: '~400/dia · 1 a cada 45s' },
+                        { key: 'cruise', title: 'Ritmo saudável', sub: 'Após 15 dias', v: 800, delay: 30, batch: 300, hint: '~800/dia · 1 a cada 30s' },
+                        { key: 'aggr', title: 'Volume alto', sub: 'Domínio quente', v: 1500, delay: 20, batch: 500, hint: '~1500/dia · 1 a cada 20s' },
+                        { key: 'turbo', title: 'Turbo', sub: 'Domínio muito aquecido', v: 3000, delay: 10, batch: 1000, hint: '~3k/dia · 1 a cada 10s' },
+                      ]
+                    : [
+                        { key: 'h_soft', title: 'Bem devagar', sub: 'Inicial / IP frio', v: 15, delay: 240, batch: 40, hint: '15/h · 1 a cada 4min' },
+                        { key: 'h_low', title: 'Conservador', sub: 'Warm-up', v: 30, delay: 120, batch: 60, hint: '30/h · 1 a cada 2min' },
+                        { key: 'h_med', title: 'Moderado', sub: 'Uso normal', v: 60, delay: 60, batch: 120, hint: '60/h · 1 a cada 60s' },
+                        { key: 'h_high', title: 'Ativo', sub: 'Bom rep.', v: 100, delay: 36, batch: 200, hint: '100/h · 1 a cada 36s' },
+                        { key: 'h_max', title: 'Máximo saudável', sub: 'Após aquecimento', v: 150, delay: 24, batch: 300, hint: '150/h · 1 a cada 24s' },
+                        { key: 'h_turbo', title: 'Turbo', sub: 'Domínio maduro', v: 250, delay: 14, batch: 500, hint: '250/h · 1 a cada 14s' },
+                      ]
+                  ).map((p) => {
+                    const active =
+                      delaySec === p.delay &&
+                      batchLimit === p.batch &&
+                      (limitMode === 'daily' ? dailyLimit === p.v : hourlyLimit === p.v);
+                    return (
+                      <button
+                        key={p.key}
+                        type="button"
+                        onClick={() => {
+                          setDelaySec(p.delay);
+                          setBatchLimit(p.batch);
+                          if (limitMode === 'daily') setDailyLimit(p.v);
+                          else setHourlyLimit(p.v);
+                          toast.success(`Perfil "${p.title}" aplicado`);
+                        }}
+                        className={`text-left rounded-md border p-2.5 transition-all ${
+                          active
+                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-400'
+                            : 'border-slate-200 bg-white hover:border-blue-400 hover:shadow-sm'
+                        }`}
+                      >
+                        <div className="text-[12.5px] font-bold text-slate-900">{p.title}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500">{p.sub}</div>
+                        <div className="mt-1 text-[11px] text-slate-700">{p.hint}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Campos manuais */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Delay entre envios (s)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={600}
+                    value={delaySec}
+                    onChange={(e) => setDelaySec(parseInt(e.target.value || '1', 10))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Limite da fila (batch)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={5000}
+                    value={batchLimit}
+                    onChange={(e) => setBatchLimit(parseInt(e.target.value || '1', 10))}
+                  />
+                </div>
+              </div>
+
+              {/* Limite ativo (dia OU hora) */}
+              <div className="rounded-md border bg-white p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold">
+                    {limitMode === 'daily' ? 'Máximo de envios por dia' : 'Máximo de envios por hora'}
+                  </Label>
+                  {limitMode === 'daily' ? (
+                    <Badge className={sentToday >= dailyLimit && dailyLimit > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}>
+                      {sentToday} / {dailyLimit > 0 ? dailyLimit : '∞'} hoje
+                    </Badge>
+                  ) : (
+                    <Badge className={sentThisHour >= hourlyLimit && hourlyLimit > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}>
+                      {sentThisHour} / {hourlyLimit > 0 ? hourlyLimit : '∞'} nesta hora
+                    </Badge>
+                  )}
+                </div>
+                <Input
+                  type="number"
+                  min={0}
+                  max={10000}
+                  value={limitMode === 'daily' ? dailyLimit : hourlyLimit}
+                  onChange={(e) => {
+                    const n = parseInt(e.target.value || '0', 10);
+                    if (limitMode === 'daily') setDailyLimit(n);
+                    else setHourlyLimit(n);
+                  }}
+                />
+                <p className="text-[11px] text-slate-500">
+                  Use <strong>0</strong> para desativar. Reseta automaticamente à{' '}
+                  {limitMode === 'daily' ? 'meia-noite' : 'virada da hora'}.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={resetDailyCounter}>
+                    <RotateCcw className="h-3.5 w-3.5" /> Zerar contadores
+                  </Button>
+                  <div className="self-center text-[11px] text-slate-500">
+                    Delay da importação automática: <strong>{importDelaySec}s</strong>{' '}
                     <button
-                      key={p.key}
                       type="button"
-                      onClick={() => {
-                        setDelaySec(p.delay);
-                        setDailyLimit(p.daily);
-                        setBatchLimit(p.batch);
-                        toast.success(`Perfil "${p.title}" aplicado`);
-                      }}
-                      className={`text-left rounded-md border p-2.5 transition-colors ${
-                        active
-                          ? 'border-blue-500 bg-white ring-2 ring-blue-400'
-                          : 'border-blue-200 bg-white hover:border-blue-400'
-                      }`}
+                      className="text-blue-600 underline"
+                      onClick={() => setDelaySec(importDelaySec)}
                     >
-                      <div className="text-[12.5px] font-bold text-slate-900">{p.title}</div>
-                      <div className="text-[10.5px] uppercase tracking-wider text-slate-500">{p.sub}</div>
-                      <div className="mt-1 text-[11px] text-slate-700">{p.hint}</div>
+                      igualar
                     </button>
-                  );
-                })}
+                  </div>
+                </div>
               </div>
-              <div className="rounded border border-blue-200 bg-white p-2 text-[11px] text-slate-700 leading-relaxed">
-                <strong className="text-blue-900">Regra de ouro:</strong> não passe de <strong>~100 envios/hora</strong> e faça pausas
-                (ex.: envie por 2-3h, descanse 1h). Envios ideais entre <strong>09h-11h</strong> e <strong>14h-17h</strong>, dias úteis.
-                Se bounces &gt; 5% ou reclamações &gt; 0,1%, reduza volume imediatamente.
+
+              <div className="rounded border border-amber-200 bg-amber-50/70 p-2 text-[11px] text-amber-900 leading-relaxed">
+                <strong>Regra de ouro:</strong> não passe de <strong>~100 envios/hora</strong>, envie
+                entre <strong>09h-11h</strong> e <strong>14h-17h</strong> em dias úteis. Se bounces &gt; 5%
+                ou reclamações &gt; 0,1%, reduza volume imediatamente.
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-
-              <div>
-                <Label>Delay entre envios (segundos)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={600}
-                  value={delaySec}
-                  onChange={(e) => setDelaySec(parseInt(e.target.value || '1', 10))}
-                />
-                <p className="mt-1 text-[11px] text-slate-500">
-                  Delay da importação automática: <strong>{importDelaySec}s</strong>.{' '}
-                  <button
-                    type="button"
-                    className="text-blue-600 underline"
-                    onClick={() => setDelaySec(importDelaySec)}
-                  >
-                    Igualar
-                  </button>
-                </p>
-              </div>
-              <div>
-                <Label>Limite da fila</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={5000}
-                  value={batchLimit}
-                  onChange={(e) => setBatchLimit(parseInt(e.target.value || '1', 10))}
-                />
-              </div>
-            </div>
-
-            {/* Limite diário */}
-            <div className="rounded-md border p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-semibold">Limite de envios por dia</Label>
-                <Badge className={sentToday >= dailyLimit && dailyLimit > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}>
-                  {sentToday} / {dailyLimit > 0 ? dailyLimit : '∞'} hoje
-                </Badge>
-              </div>
-              <Input
-                type="number"
-                min={0}
-                max={10000}
-                value={dailyLimit}
-                onChange={(e) => setDailyLimit(parseInt(e.target.value || '0', 10))}
-              />
-              <p className="text-[11px] text-slate-500">
-                Ex.: 50 ou 100. Use <strong>0</strong> para desativar o limite. O contador reseta automaticamente à meia-noite.
-              </p>
-              <Button size="sm" variant="outline" onClick={resetDailyCounter}>
-                <RotateCcw className="h-3.5 w-3.5" /> Zerar contador de hoje
-              </Button>
-            </div>
 
             <div className="flex items-center justify-between rounded-md border p-3">
               <div>

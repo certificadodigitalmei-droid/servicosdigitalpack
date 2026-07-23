@@ -41,6 +41,22 @@ export function createStore<T extends object>(initial: T, opts?: { storageKey?: 
     }
   };
 
+  // Sincroniza mudanças entre abas/janelas via storage event.
+  if (typeof window !== 'undefined' && opts?.storageKey) {
+    window.addEventListener('storage', (e) => {
+      if (e.key !== opts.storageKey || !e.newValue) return;
+      try {
+        const saved = JSON.parse(e.newValue);
+        if (saved && typeof saved === 'object') {
+          state = { ...state, ...saved };
+          for (const l of listeners) l();
+        }
+      } catch {
+        /* ignore */
+      }
+    });
+  }
+
   return {
     get: () => state,
     set: (updater) => {

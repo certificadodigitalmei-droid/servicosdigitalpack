@@ -13,13 +13,33 @@ export function GlobalFloatingPanels() {
   const running = useStore(envioStore, (s) => s.running);
   const paused = useStore(envioStore, (s) => s.paused);
   const logs = useStore(envioStore, (s) => s.logs);
+  const sentToday = useStore(envioStore, (s) => s.sentToday);
+  const sentThisHour = useStore(envioStore, (s) => s.sentThisHour);
+  const dailyLimit = useStore(envioStore, (s) => s.dailyLimit);
+  const hourlyLimit = useStore(envioStore, (s) => s.hourlyLimit);
+  const limitMode = useStore(envioStore, (s) => s.limitMode);
+  const delaySec = useStore(envioStore, (s) => s.delaySec);
+  const lastSuccessAt = useStore(envioStore, (s) => s.lastSuccessAt);
+  const lastErrorMsg = useStore(envioStore, (s) => s.lastErrorMsg);
 
+  const pending = queue.filter((q) => q.status === 'pending').length;
+  const sending = queue.filter((q) => q.status === 'sending').length;
+  const suppressed = queue.filter((q) => q.status === 'suppressed').length;
+  const errors = queue.filter((q) => q.status === 'error').length;
+
+  // total = tudo que precisa passar hoje (fila atual + já enviados hoje)
   const stats = {
-    total: queue.length,
-    sent: queue.filter((q) => q.status === 'sent').length,
-    errors: queue.filter((q) => q.status === 'error').length,
-    suppressed: queue.filter((q) => q.status === 'suppressed').length,
-    pending: queue.filter((q) => q.status === 'pending' || q.status === 'sending').length,
+    total: queue.length + sentToday,
+    pending,
+    sending,
+    sent: sentToday,
+    sentHour: sentThisHour,
+    suppressed,
+    errors,
+    dailyLimit,
+    hourlyLimit,
+    limitMode,
+    delaySec,
   };
 
   return (
@@ -31,6 +51,8 @@ export function GlobalFloatingPanels() {
           running={running}
           paused={paused}
           lastEvent={logs[0]}
+          lastSuccessAt={lastSuccessAt}
+          lastErrorMsg={lastErrorMsg}
           onClose={() => setShowFloating(false)}
         />
       )}

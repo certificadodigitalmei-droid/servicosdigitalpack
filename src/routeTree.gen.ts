@@ -19,6 +19,7 @@ import { Route as CheckoutTokenRouteImport } from './routes/checkout_.$token'
 import { Route as CertificadoMeiTokenRouteImport } from './routes/certificado-mei.$token'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
+import { Route as AuthenticatedMonitorEnvioRouteImport } from './routes/_authenticated.monitor-envio'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
 import { Route as ApiPublicWebhookUniaopayRouteImport } from './routes/api/public/webhook-uniaopay'
 import { Route as ApiPublicWebhookNexuspayRouteImport } from './routes/api/public/webhook-nexuspay'
@@ -92,6 +93,12 @@ const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedMonitorEnvioRoute =
+  AuthenticatedMonitorEnvioRouteImport.update({
+    id: '/monitor-envio',
+    path: '/monitor-envio',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedPainelIndexRoute =
   AuthenticatedPainelIndexRouteImport.update({
     id: '/',
@@ -237,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/modelo': typeof ModeloRoute
+  '/monitor-envio': typeof AuthenticatedMonitorEnvioRoute
   '/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
@@ -271,6 +279,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/modelo': typeof ModeloRoute
+  '/monitor-envio': typeof AuthenticatedMonitorEnvioRoute
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -305,6 +314,7 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/modelo': typeof ModeloRoute
+  '/_authenticated/monitor-envio': typeof AuthenticatedMonitorEnvioRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/login'
     | '/modelo'
+    | '/monitor-envio'
     | '/painel'
     | '/c/$token'
     | '/certificado-mei/$token'
@@ -375,6 +386,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/login'
     | '/modelo'
+    | '/monitor-envio'
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout/$token'
@@ -408,6 +420,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/login'
     | '/modelo'
+    | '/_authenticated/monitor-envio'
     | '/_authenticated/painel'
     | '/c/$token'
     | '/certificado-mei/$token'
@@ -524,6 +537,13 @@ declare module '@tanstack/react-router' {
       path: '/painel'
       fullPath: '/painel'
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/monitor-envio': {
+      id: '/_authenticated/monitor-envio'
+      path: '/monitor-envio'
+      fullPath: '/monitor-envio'
+      preLoaderRoute: typeof AuthenticatedMonitorEnvioRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/painel/': {
@@ -771,10 +791,12 @@ const AuthenticatedPainelRouteWithChildren =
   AuthenticatedPainelRoute._addFileChildren(AuthenticatedPainelRouteChildren)
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedMonitorEnvioRoute: typeof AuthenticatedMonitorEnvioRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedMonitorEnvioRoute: AuthenticatedMonitorEnvioRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRouteWithChildren,
 }
 
