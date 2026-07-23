@@ -433,12 +433,22 @@ function FloatingToolbar({
           <button type="button" onClick={() => set(sizeField, Math.max(8, (size as number) - 1) as any)}>
             <Minus className="h-3.5 w-3.5" />
           </button>
+          <input
+            type="range"
+            min={8}
+            max={60}
+            value={size as number}
+            onChange={(e) => set(sizeField, Number(e.target.value) as any)}
+            className="ee-tool-range"
+            title="Arraste para redimensionar"
+          />
           <span className="ee-tool-value">{size}px</span>
           <button type="button" onClick={() => set(sizeField, Math.min(60, (size as number) + 1) as any)}>
             <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
+
       {color !== null && colorField && (
         <div className="ee-tool-group">
           <label className="ee-color-swatch" style={{ background: color as string }} title="Cor do bloco">
