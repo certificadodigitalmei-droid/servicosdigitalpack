@@ -603,7 +603,7 @@ function EnvioMassa() {
             )}
 
             <div className="flex flex-wrap gap-2 pt-2">
-              <Button variant="outline" onClick={loadRecipients} disabled={loading || running}>
+              <Button variant="outline" onClick={() => void loadRecipients()} disabled={loading || running}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 Carregar fila
               </Button>
