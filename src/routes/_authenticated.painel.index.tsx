@@ -172,12 +172,31 @@ function DashboardPage() {
   }, [preset, customFrom, customTo]);
 
   const [clearing, setClearing] = useState(false);
+  const periodLabel = useMemo(() => {
+    const map: Record<Preset, string> = {
+      hoje: 'de hoje',
+      ontem: 'de ontem',
+      '7d': 'dos últimos 7 dias',
+      '15d': 'dos últimos 15 dias',
+      '30d': 'dos últimos 30 dias',
+      tudo: 'de todo o período',
+      custom:
+        customFrom || customTo
+          ? `do período ${customFrom || '...'} até ${customTo || '...'}`
+          : 'do período personalizado',
+    };
+    return map[preset];
+  }, [preset, customFrom, customTo]);
+
   async function clearAll() {
     setClearing(true);
     try {
-      const { error } = await supabase.from('link_events').delete().not('id', 'is', null);
+      let q = supabase.from('link_events').delete().not('id', 'is', null);
+      if (range.from) q = q.gte('created_at', range.from.toISOString());
+      if (range.to) q = q.lte('created_at', range.to.toISOString());
+      const { error } = await q;
       if (error) throw error;
-      toast.success('Dados do Dashboard apagados');
+      toast.success(`Dados ${periodLabel} apagados`);
       await load();
     } catch (e: any) {
       toast.error(e?.message ?? 'Falha ao limpar dados');
@@ -198,22 +217,23 @@ function DashboardPage() {
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="text-red-600 hover:text-red-700" disabled={clearing || loading}>
                 {clearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                Limpar dados
+                Limpar dados {preset !== 'tudo' && <span className="ml-1 text-xs opacity-75">({periodLabel})</span>}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Limpar dados do Dashboard?</AlertDialogTitle>
+                <AlertDialogTitle>Limpar dados {periodLabel}?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Isso apaga todos os eventos de visitas e cliques registrados. Os links e empresas não serão afetados. Esta ação não pode ser desfeita.
+                  Isso apaga os eventos de visitas e cliques registrados {periodLabel}. Os links e empresas não serão afetados. Esta ação não pode ser desfeita.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={clearAll} className="bg-red-600 hover:bg-red-700">Apagar tudo</AlertDialogAction>
+                <AlertDialogAction onClick={clearAll} className="bg-red-600 hover:bg-red-700">Apagar</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
           <Button variant="outline" onClick={load} disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Atualizar
