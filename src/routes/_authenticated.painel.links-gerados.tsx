@@ -442,6 +442,7 @@ function LinksGeradosPage() {
                   <TableHead className="text-center" title="Foi ao checkout"><ShoppingCart className="mx-auto h-3.5 w-3.5 text-violet-600" /></TableHead>
                   <TableHead className="text-center" title="Clicou em emitir certificado"><FileCheck2 className="mx-auto h-3.5 w-3.5 text-emerald-600" /></TableHead>
                   <TableHead className="text-center" title="Clicou em gerar guia (PIX)"><Receipt className="mx-auto h-3.5 w-3.5 text-amber-600" /></TableHead>
+                  <TableHead className="text-center" title="Pagamentos confirmados"><CheckCircle2 className="mx-auto h-3.5 w-3.5 text-green-600" /></TableHead>
                   <TableHead>Dispositivos</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Origem</TableHead>
