@@ -388,7 +388,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
     ${D.showFooter ? `
     <tr><td style="padding:24px 32px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
-      <div style="color:${D.mutedColor};font-size:11px;line-height:1.6;">
+      <div style="color:${D.mutedColor};font-size:${D.disclaimerSize || 11}px;line-height:1.6;">
         ${disclaimer}
       </div>
     </td></tr>` : ''}
