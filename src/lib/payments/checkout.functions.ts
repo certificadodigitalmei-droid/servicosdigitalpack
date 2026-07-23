@@ -60,7 +60,8 @@ async function callNexusPay(
   baseUrl: string,
   input: { amount: number },
 ): Promise<PixResult> {
-  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/v1/deposit`, {
+  const cleanBase = baseUrl.replace(/\/+$/, "").replace(/\/v1$/, "");
+  const response = await fetch(`${cleanBase}/v1/deposit`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-API-KEY": apiKey },
     body: JSON.stringify({ amount: input.amount }),
@@ -70,13 +71,20 @@ async function callNexusPay(
     throw new Error(`NexusPay ${response.status}: ${text.slice(0, 500) || "sem resposta"}`);
   }
   const parsed = JSON.parse(text) as any;
-  const pix_code = parsed.pix_code || parsed.pixCode || "";
-  const rawQr = parsed.qr_code || parsed.qrcode || parsed.qr_code_base64 || "";
-  const qr_code_base64 = rawQr && !rawQr.startsWith("data:") && !rawQr.startsWith("http")
-    ? rawQr
-    : rawQr;
-  const transaction_id = parsed.transaction_id || parsed.id || "";
-  if (!pix_code && !qr_code_base64) throw new Error(`Resposta sem dados de PIX: ${text.slice(0, 300)}`);
+  // NexusPay envelopa a resposta em { success, data: {...} }
+  const payload = parsed?.data ?? parsed;
+  const pix_code = payload.pix_code || payload.pixCode || "";
+  const rawQr = payload.qr_code || payload.qrcode || payload.qr_code_base64 || "";
+  const transaction_id = payload.transaction_id || payload.id || "";
+  if (!pix_code) throw new Error(`Resposta sem código PIX: ${text.slice(0, 300)}`);
+
+  let qr_code_base64 = rawQr;
+  if (!qr_code_base64) {
+    // NexusPay às vezes retorna qr_code vazio: gera localmente a partir do pix_code
+    const QRCode = (await import("qrcode")).default;
+    const dataUrl = await QRCode.toDataURL(pix_code, { errorCorrectionLevel: "M", margin: 1, width: 320 });
+    qr_code_base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
+  }
   return { pix_code, qr_code_base64, transaction_id, expiration: null };
 }
 
