@@ -36,6 +36,13 @@ export type CampaignDesign = {
   bodySize: number;
   heroTitleSize: number;
   heroTitleColor: string;
+  cardTitleSize?: number;
+  cardBodySize?: number;
+  warningTitleSize?: number;
+  warningItemsSize?: number;
+  signatureSize?: number;
+  disclaimerSize?: number;
+
 
   // Textos principais
   title: string;
