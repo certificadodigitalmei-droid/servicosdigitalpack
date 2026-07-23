@@ -211,6 +211,7 @@ function LinksGeradosPage() {
   };
 
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [page]);
+  useEffect(() => { setPage(0); void load(); /* eslint-disable-next-line */ }, [preset, from, to]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
