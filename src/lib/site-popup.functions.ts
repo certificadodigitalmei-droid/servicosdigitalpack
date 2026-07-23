@@ -25,6 +25,18 @@ export type SitePopupSettings = {
   footer_items: PopupFooterItem[];
   continue_button_text: string;
   cancel_button_text: string;
+  // Payment info popup
+  payment_enabled: boolean;
+  payment_badge_text: string;
+  payment_title: string;
+  payment_partner_text: string;
+  payment_alert_text: string;
+  payment_confirmation_text: string;
+  payment_validity_text: string;
+  payment_loading_title: string;
+  payment_loading_subtitle: string;
+  payment_continue_button_text: string;
+  payment_cancel_button_text: string;
 };
 
 const DEFAULTS: SitePopupSettings = {
@@ -58,6 +70,20 @@ const DEFAULTS: SitePopupSettings = {
   ],
   continue_button_text: 'Continuar para emissão',
   cancel_button_text: 'Voltar',
+  payment_enabled: true,
+  payment_badge_text: 'Informações sobre o pagamento',
+  payment_title: 'Antes de continuar, leia com atenção',
+  payment_partner_text:
+    'O pagamento poderá ser processado por uma das empresas parceiras responsáveis pela prestação e processamento do serviço. Por esse motivo, o nome empresarial ou CNPJ apresentado pelo seu banco poderá ser diferente do nome deste portal.',
+  payment_alert_text:
+    'Em razão do volume de transações e da utilização de diferentes empresas parceiras para o processamento dos pagamentos, algumas instituições financeiras podem apresentar alertas automáticos de segurança ou prevenção a fraudes.',
+  payment_confirmation_text:
+    'Após a confirmação do pagamento, o certificado contratado será emitido e vinculado ao CNPJ informado durante a solicitação, conforme as condições do serviço.',
+  payment_validity_text: 'Validade do certificado: 12 meses a partir da data de emissão.',
+  payment_loading_title: 'Gerando guia de pagamento',
+  payment_loading_subtitle: 'Aguarde enquanto processamos sua solicitação com segurança...',
+  payment_continue_button_text: 'Continuar para o PIX',
+  payment_cancel_button_text: 'Cancelar',
 };
 
 export const POPUP_DEFAULTS = DEFAULTS;
@@ -114,6 +140,17 @@ const payloadSchema = z.object({
     .max(6),
   continue_button_text: z.string().max(60),
   cancel_button_text: z.string().max(60),
+  payment_enabled: z.boolean(),
+  payment_badge_text: z.string().max(120),
+  payment_title: z.string().max(200),
+  payment_partner_text: z.string().max(800),
+  payment_alert_text: z.string().max(800),
+  payment_confirmation_text: z.string().max(800),
+  payment_validity_text: z.string().max(300),
+  payment_loading_title: z.string().max(120),
+  payment_loading_subtitle: z.string().max(300),
+  payment_continue_button_text: z.string().max(60),
+  payment_cancel_button_text: z.string().max(60),
 });
 
 export const saveSitePopup = createServerFn({ method: 'POST' })
