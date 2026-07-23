@@ -245,7 +245,7 @@ function PopupSitePage() {
               <CardHeader><CardTitle className="text-base">Cabeçalho e título</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <Field label="Selo do topo" value={s.payment_badge_text} onChange={(v) => set('payment_badge_text', v)} />
-                <Field label="Título principal" value={s.payment_title} onChange={(v) => set('payment_title', v)} textarea />
+                <RichField label="Título principal" value={s.payment_title} onChange={(v) => set('payment_title', v)} rows={2} />
               </CardContent>
             </Card>
 
@@ -260,10 +260,10 @@ function PopupSitePage() {
             <Card className="lg:col-span-2">
               <CardHeader><CardTitle className="text-base">Blocos informativos</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <Field label="Empresas parceiras (bloco cinza)" value={s.payment_partner_text} onChange={(v) => set('payment_partner_text', v)} textarea />
-                <Field label="Alerta do banco (bloco amarelo)" value={s.payment_alert_text} onChange={(v) => set('payment_alert_text', v)} textarea />
-                <Field label="Confirmação/emissão (bloco verde)" value={s.payment_confirmation_text} onChange={(v) => set('payment_confirmation_text', v)} textarea />
-                <Field label="Validade do certificado" value={s.payment_validity_text} onChange={(v) => set('payment_validity_text', v)} />
+                <RichField label="Empresas parceiras (bloco cinza)" value={s.payment_partner_text} onChange={(v) => set('payment_partner_text', v)} rows={4} />
+                <RichField label="Alerta do banco (bloco amarelo)" value={s.payment_alert_text} onChange={(v) => set('payment_alert_text', v)} rows={4} />
+                <RichField label="Confirmação/emissão (bloco verde)" value={s.payment_confirmation_text} onChange={(v) => set('payment_confirmation_text', v)} rows={4} />
+                <RichField label="Validade do certificado" value={s.payment_validity_text} onChange={(v) => set('payment_validity_text', v)} singleLine />
               </CardContent>
             </Card>
 
