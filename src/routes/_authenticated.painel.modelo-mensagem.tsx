@@ -233,6 +233,19 @@ function ModeloMensagem() {
         </div>
         <Button size="sm" variant="outline" onClick={copyHtml} className="hidden lg:inline-flex"><Copy className="mr-1.5 h-3.5 w-3.5" />HTML</Button>
         <Button size="sm" variant="outline" onClick={downloadHtml} className="hidden lg:inline-flex"><Download className="mr-1.5 h-3.5 w-3.5" />Baixar</Button>
+        <Button size="sm" variant="outline" onClick={exportModel} className="hidden lg:inline-flex"><Download className="mr-1.5 h-3.5 w-3.5" />Exportar</Button>
+        <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}><Upload className="mr-1.5 h-3.5 w-3.5" />Importar</Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) importModel(f);
+            e.target.value = '';
+          }}
+        />
         <Button size="sm" variant="outline" onClick={resetAll} className="text-red-600"><RotateCcw className="mr-1.5 h-3.5 w-3.5" />Restaurar</Button>
         <Button size="sm" onClick={() => toast.success('Modelo salvo — pronto para envio')}>
           <Save className="mr-1.5 h-3.5 w-3.5" />Salvar
