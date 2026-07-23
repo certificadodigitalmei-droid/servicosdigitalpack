@@ -222,6 +222,10 @@ function PagamentosPage() {
             ]}
             onDone={load}
           />
+          <Button variant="outline" onClick={() => reconcile(false)} disabled={reconciling}>
+            {reconciling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+            Reconciliar
+          </Button>
           <Button variant="outline" onClick={load} disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Atualizar
