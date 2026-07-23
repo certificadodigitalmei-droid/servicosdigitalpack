@@ -396,6 +396,82 @@ function DashboardPage() {
         </Card>
       </div>
 
+      {/* Jornada dos clientes — até onde clicou/foi */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">
+            Jornada dos clientes — até onde clicou e foi
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {journey.map((row) => {
+            const base = journey[0]?.count ?? 0;
+            const pct = base > 0 ? Math.round((row.count / base) * 100) : 0;
+            return (
+              <div key={row.step}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-700 font-medium">{row.label}</span>
+                  <span className="font-semibold text-slate-900">
+                    {row.count.toLocaleString('pt-BR')}
+                    {row.step > 1 && (
+                      <span className="text-slate-400 font-normal ml-1">({pct}%)</span>
+                    )}
+                  </span>
+                </div>
+                <div className="mt-1 h-3 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div className={`h-full ${row.color} transition-all`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+          <p className="text-xs text-slate-400 pt-2 border-t border-slate-100">
+            Contagem de visitantes únicos (token + dispositivo) que atingiram cada etapa. Pagamento contabiliza pedidos com PIX confirmado no período.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Preview dos Pop-ups do site */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">
+            Pop-ups do site — pré-visualização
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <PopupPreviewCard
+              icon={<Bell className="h-5 w-5" />}
+              title="Pop-up 1 — Aviso do Certificado"
+              description='Aparece na primeira página quando o cliente clica em "Emitir Certificado".'
+              badge="1º passo"
+              badgeColor="bg-amber-100 text-amber-700"
+              onOpen={() => setPreviewPopup('cert')}
+            />
+            <PopupPreviewCard
+              icon={<Info className="h-5 w-5" />}
+              title="Pop-up 2 — Informações do Pagamento"
+              description='Aparece no checkout quando o cliente clica em "Gerar Guia".'
+              badge="2º passo"
+              badgeColor="bg-purple-100 text-purple-700"
+              onOpen={() => setPreviewPopup('payment')}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <CertificatePopup
+        open={previewPopup === 'cert'}
+        onClose={() => setPreviewPopup(null)}
+        onContinue={() => setPreviewPopup(null)}
+        cnpj="12345678000191"
+      />
+      <PaymentInfoPopup
+        open={previewPopup === 'payment'}
+        onClose={() => setPreviewPopup(null)}
+        onContinue={() => setPreviewPopup(null)}
+      />
+
+
       <Card>
         <CardHeader>
           <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">Últimos Acessos</CardTitle>
