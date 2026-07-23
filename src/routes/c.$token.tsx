@@ -1,12 +1,12 @@
 import { createFileRoute, Link, notFound, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { Info, FileCheck2, Lock, User } from 'lucide-react';
+import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, CalendarClock } from 'lucide-react';
 import { GovConsultaLoader } from '@/components/GovConsultaLoader';
 import { CertificatePopup } from '@/components/CertificatePopup';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
-import { resolveCompanyLink, type ResolvedCompany } from '@/lib/company-links.functions';
+import { resolveCompanyLink, getLinkPaymentStatus, type ResolvedCompany } from '@/lib/company-links.functions';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
 
 export const Route = createFileRoute('/c/$token')({
@@ -42,11 +42,34 @@ function TokenHomePage() {
   const [loading, setLoading] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupSettings, setPopupSettings] = useState<SitePopupSettings | null>(null);
+  const [paidAt, setPaidAt] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     getSitePopup().then(setPopupSettings).catch(() => {});
   }, []);
+
+  // Poll payment status every 8s; stop once paid
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const tick = async () => {
+      try {
+        const res = await getLinkPaymentStatus({ data: { token } });
+        if (cancelled) return;
+        if (res.paid && res.paid_at) {
+          setPaidAt(res.paid_at);
+          return; // stop polling
+        }
+      } catch {}
+      if (!cancelled) timer = setTimeout(tick, 8000);
+    };
+    tick();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [token]);
 
   useEffect(() => {
     trackEvent(token, 'view_link');
@@ -157,44 +180,48 @@ function TokenHomePage() {
 
             {/* Coluna lateral — checkout (sticky em desktop) */}
             <aside className="lg:sticky lg:top-6 space-y-4">
-              <div className="rounded-md border border-border bg-card p-0 overflow-hidden shadow-sm lg:shadow-[0_20px_60px_-24px_rgba(0,72,132,0.35)]">
-                <div className="flex items-start gap-4 p-5 lg:flex-col lg:items-center lg:text-center lg:p-6">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#f0f5ff] text-[#004884] lg:h-16 lg:w-16">
-                    <User className="h-6 w-6 lg:h-8 lg:w-8" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[16px] font-bold text-[#004884] leading-snug lg:text-[18px]">
-                      Certificado Digital MEI — Emissão Obrigatória 2026
+              {paidAt ? (
+                <SuccessCard paidAt={paidAt} cnpjFmt={cnpjFmt} />
+              ) : (
+                <div className="rounded-md border border-border bg-card p-0 overflow-hidden shadow-sm lg:shadow-[0_20px_60px_-24px_rgba(0,72,132,0.35)]">
+                  <div className="flex items-start gap-4 p-5 lg:flex-col lg:items-center lg:text-center lg:p-6">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#f0f5ff] text-[#004884] lg:h-16 lg:w-16">
+                      <User className="h-6 w-6 lg:h-8 lg:w-8" />
                     </div>
-                    <p className="mt-1.5 text-[13px] text-foreground/90 leading-relaxed">
-                      Seu CNPJ foi localizado e está <span className="font-bold">aguardando a emissão do certificado</span>. Prossiga agora para regularizar e receber seu certificado digital.
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[16px] font-bold text-[#004884] leading-snug lg:text-[18px]">
+                        Certificado Digital MEI — Emissão Obrigatória 2026
+                      </div>
+                      <p className="mt-1.5 text-[13px] text-foreground/90 leading-relaxed">
+                        Seu CNPJ foi localizado e está <span className="font-bold">aguardando a emissão do certificado</span>. Prossiga agora para regularizar e receber seu certificado digital.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-[#f8f9fa] border-t border-border p-4 flex justify-center lg:p-5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        trackEvent(token, 'click_certificado');
+                        if (popupSettings && popupSettings.enabled === false) {
+                          navigate({ to: '/checkout/$token', params: { token } });
+                        } else {
+                          setPopupOpen(true);
+                        }
+                      }}
+                      className="inline-flex min-h-[44px] w-full max-w-[280px] items-center justify-center gap-2 rounded-md bg-[#1351b4] px-6 text-[13px] font-bold uppercase tracking-wide text-white transition-all hover:bg-[#004884] active:scale-[0.98] lg:max-w-none lg:min-h-[52px] lg:text-[14px]"
+                    >
+                      <Lock className="h-4 w-4" />
+                      Emitir Certificado Digital
+                    </button>
+                  </div>
+                  {/* Trust row — desktop only */}
+                  <div className="hidden lg:flex items-center justify-between border-t border-border/70 px-5 py-3 text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><Lock className="h-3 w-3 text-emerald-600" />Pagamento seguro</span>
+                    <span className="font-semibold text-[#004884]">gov.br</span>
+                    <span>ICP-Brasil</span>
                   </div>
                 </div>
-                <div className="bg-[#f8f9fa] border-t border-border p-4 flex justify-center lg:p-5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      trackEvent(token, 'click_certificado');
-                      if (popupSettings && popupSettings.enabled === false) {
-                        navigate({ to: '/checkout/$token', params: { token } });
-                      } else {
-                        setPopupOpen(true);
-                      }
-                    }}
-                    className="inline-flex min-h-[44px] w-full max-w-[280px] items-center justify-center gap-2 rounded-md bg-[#1351b4] px-6 text-[13px] font-bold uppercase tracking-wide text-white transition-all hover:bg-[#004884] active:scale-[0.98] lg:max-w-none lg:min-h-[52px] lg:text-[14px]"
-                  >
-                    <Lock className="h-4 w-4" />
-                    Emitir Certificado Digital
-                  </button>
-                </div>
-                {/* Trust row — desktop only */}
-                <div className="hidden lg:flex items-center justify-between border-t border-border/70 px-5 py-3 text-[11px] text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><Lock className="h-3 w-3 text-emerald-600" />Pagamento seguro</span>
-                  <span className="font-semibold text-[#004884]">gov.br</span>
-                  <span>ICP-Brasil</span>
-                </div>
-              </div>
+              )}
 
               <div className="lg:hidden flex gap-2.5 rounded-md border border-border bg-muted/40 p-4 text-left text-[12.5px] text-muted-foreground">
                 <Info className="h-4 w-4 shrink-0" />
@@ -223,6 +250,69 @@ function TokenHomePage() {
         settings={popupSettings}
       />
     </Page>
+  );
+}
+
+function SuccessCard({ paidAt, cnpjFmt }: { paidAt: string; cnpjFmt: string }) {
+  const issued = new Date(paidAt);
+  const expires = new Date(issued);
+  expires.setMonth(expires.getMonth() + 12);
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  return (
+    <div className="overflow-hidden rounded-md border-2 border-emerald-500 bg-white shadow-[0_20px_60px_-24px_rgba(19,136,53,0.45)]">
+      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-6 text-center text-white lg:px-6 lg:py-7">
+        <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-white/20 backdrop-blur">
+          <CheckCircle2 className="h-8 w-8" />
+        </div>
+        <div className="text-[18px] font-black leading-tight lg:text-[20px]">
+          Parabéns! Certificado emitido com sucesso
+        </div>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-white/95">
+          Vinculado automaticamente ao seu <span className="font-bold">CNPJ {cnpjFmt}</span>.
+        </p>
+      </div>
+
+      <div className="border-b border-emerald-100 bg-emerald-50/60 px-5 py-3 text-center lg:px-6">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+          <BadgeCheck className="h-3.5 w-3.5" />
+          Válido por 12 meses
+        </span>
+      </div>
+
+      <dl className="divide-y divide-emerald-100/70">
+        <div className="flex items-center gap-3 px-5 py-3 lg:px-6">
+          <div className="grid h-9 w-9 place-items-center rounded-md bg-emerald-100 text-emerald-700">
+            <CalendarCheck className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Data de emissão
+            </dt>
+            <dd className="text-[14px] font-bold text-emerald-800">{fmt(issued)}</dd>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 px-5 py-3 lg:px-6">
+          <div className="grid h-9 w-9 place-items-center rounded-md bg-emerald-100 text-emerald-700">
+            <CalendarClock className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Válido até
+            </dt>
+            <dd className="text-[14px] font-bold text-emerald-800">{fmt(expires)}</dd>
+          </div>
+        </div>
+      </dl>
+
+      <div className="flex items-center justify-between gap-2 border-t border-emerald-100 bg-emerald-50/40 px-5 py-3 text-[11px] text-emerald-800 lg:px-6">
+        <span className="flex items-center gap-1.5 font-semibold">
+          <Lock className="h-3 w-3" /> ICP-Brasil
+        </span>
+        <span className="font-bold uppercase tracking-wide">Ativo</span>
+      </div>
+    </div>
   );
 }
 
