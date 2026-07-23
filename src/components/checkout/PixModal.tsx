@@ -78,6 +78,33 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, onClose }: PixM
     return () => clearInterval(t);
   }, [open]);
 
+  // Polling de status do pedido (fallback caso o webhook não chegue)
+  useEffect(() => {
+    if (!open || !orderId || paid) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await checkStatus({ data: { orderId } });
+        if (!cancelled && res?.paid) {
+          setPaid(true);
+          toast.success('Pagamento confirmado!');
+        }
+      } catch {}
+    };
+    tick();
+    const t = setInterval(tick, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [open, orderId, paid, checkStatus]);
+
+  // Reset "paid" quando o modal fecha
+  useEffect(() => {
+    if (!open) setPaid(false);
+  }, [open]);
+
+
   const showPix = open && !!pixData && minElapsed;
 
   const remaining = useMemo(() => {
