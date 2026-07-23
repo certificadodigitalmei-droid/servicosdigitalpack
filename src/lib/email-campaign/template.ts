@@ -317,7 +317,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
     ${D.showGovBar ? `
     <tr><td style="background:${D.govBarBg};color:${D.govBarColor};padding:10px ${px}px;font-size:12px;letter-spacing:0.5px;font-family:Arial,sans-serif;">
-      ${esc(S(D.govBarText || ''))}
+      ${nl2br(S(D.govBarText || ''))}
     </td></tr>` : ''}
     <!-- Header -->
     <tr><td style="background:${D.headerBg};color:${D.headerText};padding:${D.headerPadding}px ${px}px;text-align:left;">
