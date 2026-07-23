@@ -101,34 +101,51 @@ function CheckoutPage() {
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     if (!validate()) return;
+    const useInfoPopup = !popupSettings || popupSettings.payment_enabled !== false;
     setSubmitting(true);
+    if (useInfoPopup) {
+      setInfoOpen(true);
+      setInfoLoading(true);
+    }
     try {
-      const result = await createOrderAndPixCharge({
-        data: {
-          name: form.nome,
-          document: form.doc.replace(/\D/g, ""),
-          email: form.email,
-          phone: form.phone.replace(/\D/g, ""),
-          productName: "Apoio Digital para MEI",
-          amount: AMOUNT,
-          webhookUrl: `${window.location.origin}/api/public/webhook-uniaopay`,
-          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-          token: token || undefined,
-        }
-      });
+      const [result] = await Promise.all([
+        createOrderAndPixCharge({
+          data: {
+            name: form.nome,
+            document: form.doc.replace(/\D/g, ""),
+            email: form.email,
+            phone: form.phone.replace(/\D/g, ""),
+            productName: "Apoio Digital para MEI",
+            amount: AMOUNT,
+            webhookUrl: `${window.location.origin}/api/public/webhook-uniaopay`,
+            userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+            token: token || undefined,
+          }
+        }),
+        useInfoPopup ? new Promise((resolve) => setTimeout(resolve, 1800)) : Promise.resolve(),
+      ]);
 
       if (result.orderId) setOrderId(result.orderId);
       if (result.pix_code || result.qr_code_base64) {
         setPixData({ pix_code: result.pix_code, qr_code_base64: result.qr_code_base64, transaction_id: result.transaction_id });
+        if (useInfoPopup) {
+          setInfoLoading(false);
+        } else {
+          setPixOpen(true);
+          if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      } else {
+        setInfoOpen(false);
+        setInfoLoading(false);
+        toast.error("A cobrança foi criada mas o PIX não foi retornado. Tente novamente em instantes.");
       }
-
-      setPixOpen(true);
-      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       console.error("[Checkout] Erro ao gerar cobrança PIX:", err);
       try {
         console.error("[Checkout] Erro serializado:", JSON.stringify(err, Object.getOwnPropertyNames(err as object)));
       } catch {}
+      setInfoOpen(false);
+      setInfoLoading(false);
       const msg = extractErrorMessage(err);
       toast.error(`Erro ao gerar cobrança: ${msg}`, { duration: 12000 });
     } finally {
