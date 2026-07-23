@@ -297,6 +297,17 @@ function CheckoutTokenPage() {
         </div>
       </main>
 
+      <PaymentInfoPopup
+        open={infoOpen}
+        loading={infoLoading}
+        onClose={() => { setInfoOpen(false); setInfoLoading(false); }}
+        onContinue={() => {
+          setInfoOpen(false);
+          setPixOpen(true);
+          if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
+
       <PixModal
         open={pixOpen}
         amount={AMOUNT}
