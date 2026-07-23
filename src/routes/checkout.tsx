@@ -12,6 +12,8 @@ import {
 import { resolveCompanyLink } from "@/lib/company-links.functions";
 import { createOrderAndPixCharge } from "@/lib/payments/checkout.functions";
 import { PixModal } from "@/components/checkout/PixModal";
+import { PaymentInfoPopup } from "@/components/checkout/PaymentInfoPopup";
+import { getSitePopup, type SitePopupSettings } from "@/lib/site-popup.functions";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/lib/errors";
 
