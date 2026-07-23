@@ -152,6 +152,7 @@ export const envioStore = createStore<State>(initial, {
     'limitMode',
     'dailyLimit',
     'hourlyLimit',
+    'hourlyRestMin',
     'stopAtDaily',
 
     'sentToday',
