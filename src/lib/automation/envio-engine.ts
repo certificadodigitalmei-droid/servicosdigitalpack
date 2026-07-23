@@ -73,10 +73,12 @@ type State = {
   limitMode: 'daily' | 'hourly';
   dailyLimit: number; // 0 = ilimitado
   hourlyLimit: number; // 0 = ilimitado
+  stopAtDaily: number; // 0 = desativado — quando sentToday >= stopAtDaily, para tudo (envio + importação)
   sentToday: number;
   sentThisHour: number;
   sentDay: string; // YYYY-MM-DD (reset diário)
   sentHour: string; // YYYY-MM-DDTHH (reset horário)
+
   testMode: boolean;
   testRecipient: string;
   fromName: string;
