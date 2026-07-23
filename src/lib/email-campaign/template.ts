@@ -168,7 +168,9 @@ export type Vars = Record<string, string>;
 export function substitute(tpl: string, vars: Vars): string {
   return String(tpl || '').replace(/\{\{\s*([A-Z_]+)\s*\}\}/g, (_, k) => {
     const v = vars[k];
-    return v == null || v === '' ? '' : String(v);
+    if (v == null || v === '') return '';
+    if (k === 'CNPJ') return formatCnpj(String(v));
+    return String(v);
   });
 }
 
