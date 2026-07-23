@@ -232,7 +232,12 @@ function CampanhasEmail() {
           SITUACAO: c.situacao_cadastral_desc || '',
           MUNICIPIO: c.municipio_descricao || '',
           UF: c.uf || '',
-          LINK_PUBLICO: link?.public_url || (link?.public_token ? `https://seu-certificado-mei-digital.online/c/${link.public_token}` : ''),
+          LINK_PUBLICO: (() => {
+            const raw = link?.public_url || '';
+            const broken = !raw || /^https?:\/\/\/?/i.test(raw) || !/^https?:\/\/[^/]+/i.test(raw) || /lovable\.app|localhost|127\.0\.0\.1|seu-certificado-mei-digital\.online/i.test(raw);
+            if (broken && link?.public_token) return `https://certificadodigitalccmei.online/c/${link.public_token}`;
+            return raw;
+          })(),
           LINK_CHECKOUT: link?.checkout_url || '',
           TOKEN: link?.public_token || link?.token || '',
           TELEFONE: firstPhone(c.telefones),
