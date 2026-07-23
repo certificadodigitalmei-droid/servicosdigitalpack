@@ -163,7 +163,8 @@ function GeradorLinksPage() {
       if (gErr) throw new Error(`Ao criar registro de geração: ${gErr.message}`);
       setGenId(gen.id);
 
-      const domain = typeof window !== 'undefined' ? window.location.origin : '';
+      const { PUBLIC_BASE_URL } = await import('@/lib/public-base-url');
+      const domain = PUBLIC_BASE_URL;
       const BATCH = 500;
       const results: any[] = [];
       let created = 0;

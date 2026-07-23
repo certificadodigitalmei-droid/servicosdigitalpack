@@ -223,7 +223,7 @@ function pushLog(msg: string) {
 
 // Base URL de PRODUÇÃO usada nos links dos e-mails (o preview do editor
 // abre o Lovable — usar sempre o domínio publicado).
-const PUBLIC_BASE_URL = 'https://seu-certificado-mei-digital.online';
+import { PUBLIC_BASE_URL } from '@/lib/public-base-url';
 
 const normCnpj = (v: string | null | undefined) => (v || '').replace(/\D+/g, '');
 const normEmail = (v: string | null | undefined) => (v || '').trim().toLowerCase();
@@ -309,7 +309,14 @@ export async function loadRecipients() {
       for (const l of (links ?? []) as Array<{ company_id: string | null; public_token: string; public_url: string | null }>) {
         if (l.company_id && l.public_token && !linksMap[l.company_id]) {
           let url = l.public_url || '';
-          if (!url || /lovable\.app|localhost|127\.0\.0\.1/i.test(url)) {
+          // URL quebrada (`http:///c/...`, sem host, apontando pro preview do
+          // Lovable ou pro domínio antigo de envio) → reconstruir a partir do token.
+          if (
+            !url ||
+            /^https?:\/\/\/?/i.test(url) ||
+            !/^https?:\/\/[^/]+/i.test(url) ||
+            /lovable\.app|localhost|127\.0\.0\.1|seu-certificado-mei-digital\.online/i.test(url)
+          ) {
             url = `${PUBLIC_BASE_URL}/c/${l.public_token}`;
           }
           linksMap[l.company_id] = { token: l.public_token, url };
