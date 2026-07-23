@@ -36,6 +36,13 @@ export type CampaignDesign = {
   bodySize: number;
   heroTitleSize: number;
   heroTitleColor: string;
+  cardTitleSize?: number;
+  cardBodySize?: number;
+  warningTitleSize?: number;
+  warningItemsSize?: number;
+  signatureSize?: number;
+  disclaimerSize?: number;
+
 
   // Textos principais
   title: string;
@@ -114,6 +121,13 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   bodySize: 17,
   heroTitleSize: 26,
   heroTitleColor: '#0b1e3f',
+  cardTitleSize: 15,
+  cardBodySize: 14,
+  warningTitleSize: 15,
+  warningItemsSize: 13,
+  signatureSize: 13,
+  disclaimerSize: 11,
+
 
   title: 'Informação cadastral - {{NOME_TITULAR}}',
   subtitle: 'Referência: {{REFERENCIA}}',
@@ -276,9 +290,10 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
         isSituacao && String(v).toLowerCase().includes('sem certificado')
           ? 'color:#dc2626;font-weight:700;'
           : `color:${D.textColor};`;
-      return `<tr><td style="padding:8px 0;color:${D.textColor};font-size:${D.bodySize}px;line-height:1.5;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> <span style="${valueStyle}">${esc(String(v))}</span></td></tr>`;
+      return `<tr><td style="padding:8px 0;color:${D.textColor};font-size:${D.cardBodySize || D.bodySize}px;line-height:1.5;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> <span style="${valueStyle}">${esc(String(v))}</span></td></tr>`;
     })
     .join('');
+
 
   return `<!doctype html>
 <html lang="pt-BR" dir="ltr"><head>
@@ -349,8 +364,9 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     ${D.showWarning ? `
     <tr><td style="padding:0 ${px}px 32px ${px}px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.warningBg};border-left:4px solid ${D.warningBorder};padding:20px 22px;border-radius:4px;">
-        <tr><td style="color:${D.warningTitleColor};font-size:${D.bodySize}px;font-weight:700;padding-bottom:10px;">${warningTitle}</td></tr>
-        <tr><td style="color:${D.warningTextColor};font-size:${Math.max(13, D.bodySize - 2)}px;line-height:1.65;">${warningItems}</td></tr>
+        <tr><td style="color:${D.warningTitleColor};font-size:${D.warningTitleSize || D.bodySize}px;font-weight:700;padding-bottom:10px;">${warningTitle}</td></tr>
+        <tr><td style="color:${D.warningTextColor};font-size:${D.warningItemsSize || Math.max(13, D.bodySize - 2)}px;line-height:1.65;">${warningItems}</td></tr>
+
       </table>
     </td></tr>` : ''}
 
@@ -359,7 +375,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     </td></tr>
 
     ${D.showSignature ? `
-    <tr><td style="padding:0 ${px}px 36px ${px}px;color:${D.mutedColor};font-size:${Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
+    <tr><td style="padding:0 ${px}px 36px ${px}px;color:${D.mutedColor};font-size:${D.signatureSize || Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
       ${signature}
     </td></tr>` : ''}
 
@@ -372,7 +388,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
     ${D.showFooter ? `
     <tr><td style="padding:24px 32px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
-      <div style="color:${D.mutedColor};font-size:11px;line-height:1.6;">
+      <div style="color:${D.mutedColor};font-size:${D.disclaimerSize || 11}px;line-height:1.6;">
         ${disclaimer}
       </div>
     </td></tr>` : ''}

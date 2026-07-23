@@ -259,15 +259,16 @@ export function InteractivePreview({ design, set, vars, onSelect }: Props) {
                 border: '1px solid #e5e7eb',
               }}
             >
-              <div style={{ fontWeight: 700, marginBottom: 8, color: design.textColor }}>
+              <div style={{ fontWeight: 700, marginBottom: 8, color: design.textColor, fontSize: design.cardTitleSize || 15 }}>
                 <Editable id="cardTitle" field="cardTitle" />
               </div>
-              <div style={{ fontSize: 13, color: design.textColor, lineHeight: 1.6 }}>
+              <div style={{ fontSize: design.cardBodySize || 13, color: design.textColor, lineHeight: 1.6 }}>
                 <div><strong>Titular:</strong> {vars.NOME_TITULAR}</div>
                 <div><strong>CNPJ:</strong> {vars.CNPJ}</div>
                 <div><strong>Situação:</strong> {vars.SITUACAO}</div>
                 <div><strong>Município/UF:</strong> {vars.MUNICIPIO}/{vars.UF}</div>
               </div>
+
             </div>
           )}
 
@@ -284,13 +285,14 @@ export function InteractivePreview({ design, set, vars, onSelect }: Props) {
                 padding: 14,
               }}
             >
-              <div style={{ fontWeight: 700, color: design.warningTitleColor, marginBottom: 6 }}>
+              <div style={{ fontWeight: 700, color: design.warningTitleColor, marginBottom: 6, fontSize: design.warningTitleSize || 15 }}>
                 <Editable id="warningTitle" field="warningTitle" />
               </div>
-              <div style={{ color: design.warningTextColor, fontSize: 13, lineHeight: 1.6 }}>
+              <div style={{ color: design.warningTextColor, fontSize: design.warningItemsSize || 13, lineHeight: 1.6 }}>
                 <Editable id="warningItems" field="warningItems" multi />
                 {!items.length && <div className="text-slate-400 italic">Adicione itens, um por linha.</div>}
               </div>
+
             </div>
           )}
 
@@ -330,13 +332,14 @@ export function InteractivePreview({ design, set, vars, onSelect }: Props) {
               style={{
                 padding: `0 ${design.contentPaddingX}px 20px`,
                 color: design.textColor,
-                fontSize: 13,
+                fontSize: design.signatureSize || 13,
                 lineHeight: 1.6,
                 whiteSpace: 'pre-wrap',
               }}
             >
               <Editable id="signature" field="signature" multi />
             </div>
+
           )}
 
           {/* Badges */}
@@ -365,13 +368,14 @@ export function InteractivePreview({ design, set, vars, onSelect }: Props) {
                 padding: `14px ${design.contentPaddingX}px 22px`,
                 background: '#f8fafc',
                 color: design.mutedColor,
-                fontSize: 11,
+                fontSize: design.disclaimerSize || 11,
                 lineHeight: 1.6,
                 textAlign: 'center',
                 whiteSpace: 'pre-wrap',
               }}
             >
               <Editable id="disclaimer" field="disclaimer" multi />
+
             </div>
           )}
         </div>
@@ -391,7 +395,11 @@ function FloatingToolbar({
   const sizeMap: Partial<Record<keyof CampaignDesign, keyof CampaignDesign>> = {
     title: 'titleSize', subtitle: 'subtitleSize', intro: 'bodySize',
     heroTitle: 'heroTitleSize', buttonLabel: 'buttonSize', logoText: 'logoSize',
+    cardTitle: 'cardTitleSize',
+    warningTitle: 'warningTitleSize', warningItems: 'warningItemsSize',
+    signature: 'signatureSize', disclaimer: 'disclaimerSize',
   };
+
   const colorMap: Partial<Record<keyof CampaignDesign, keyof CampaignDesign>> = {
     title: 'headerText', subtitle: 'headerText', intro: 'textColor',
     heroTitle: 'heroTitleColor', buttonLabel: 'buttonText', logoText: 'headerText',
@@ -425,12 +433,22 @@ function FloatingToolbar({
           <button type="button" onClick={() => set(sizeField, Math.max(8, (size as number) - 1) as any)}>
             <Minus className="h-3.5 w-3.5" />
           </button>
+          <input
+            type="range"
+            min={8}
+            max={60}
+            value={size as number}
+            onChange={(e) => set(sizeField, Number(e.target.value) as any)}
+            className="ee-tool-range"
+            title="Arraste para redimensionar"
+          />
           <span className="ee-tool-value">{size}px</span>
           <button type="button" onClick={() => set(sizeField, Math.min(60, (size as number) + 1) as any)}>
             <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
+
       {color !== null && colorField && (
         <div className="ee-tool-group">
           <label className="ee-color-swatch" style={{ background: color as string }} title="Cor do bloco">
@@ -541,6 +559,8 @@ const EE_CSS = `
 }
 .ee-tool-group button:hover { background: rgba(255,255,255,0.18); }
 .ee-tool-value { min-width: 34px; text-align: center; font-family: monospace; }
+.ee-tool-range { width: 90px; accent-color: #3b82f6; cursor: ew-resize; }
+
 .ee-tool-label { opacity: 0.7; font-size: 11px; }
 .ee-color-swatch {
   width: 22px; height: 22px; border-radius: 5px; border: 2px solid white; cursor: pointer;
