@@ -3,7 +3,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   Search, Copy, ExternalLink, Loader2, RefreshCw, Building2,
   Eye, ShoppingCart, FileCheck2, Receipt, Smartphone, Monitor, Tablet, ChevronDown, ChevronRight,
-  Calendar as CalendarIcon,
+  Calendar as CalendarIcon, CheckCircle2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -94,13 +94,16 @@ function LinksGeradosPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [origin, setOrigin] = useState('all');
-  const [stage, setStage] = useState('all'); // all|no_view|visited|checkout|certificado|guia
+  const [stage, setStage] = useState('all'); // all|no_view|visited|checkout|certificado|guia|paid
   const [preset, setPreset] = useState<DatePreset>('all');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [autoLinkIds, setAutoLinkIds] = useState<Set<string>>(new Set());
   const [statsByToken, setStatsByToken] = useState<Record<string, Stats>>({});
   const [aggregate, setAggregate] = useState<Stats>(emptyStats());
+  const [paidByLinkId, setPaidByLinkId] = useState<Record<string, { count: number; amount: number; last_paid_at: string | null }>>({});
+  const [totalPaid, setTotalPaid] = useState(0);
+  const [totalPaidAmount, setTotalPaidAmount] = useState(0);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const range = useMemo(() => rangeFromPreset(preset, from, to), [preset, from, to]);
@@ -183,6 +186,33 @@ function LinksGeradosPage() {
         agg.unique_visitors = visitorsGlobal.size;
       }
 
+      // Load paid orders for the visible links
+      const linkIds = list.map((r) => r.id).filter(Boolean);
+      const paidMap: Record<string, { count: number; amount: number; last_paid_at: string | null }> = {};
+      let paidCount = 0;
+      let paidAmount = 0;
+      if (linkIds.length) {
+        let oq = supabase
+          .from('orders')
+          .select('public_link_id,amount,paid_at,status')
+          .in('public_link_id', linkIds)
+          .eq('status', 'paid');
+        if (range.gte) oq = oq.gte('paid_at', range.gte);
+        if (range.lte) oq = oq.lte('paid_at', range.lte);
+        const { data: paidRows } = await oq;
+        for (const o of (paidRows ?? []) as any[]) {
+          const id = o.public_link_id as string;
+          if (!paidMap[id]) paidMap[id] = { count: 0, amount: 0, last_paid_at: null };
+          paidMap[id].count += 1;
+          paidMap[id].amount += Number(o.amount ?? 0);
+          if (!paidMap[id].last_paid_at || (o.paid_at && o.paid_at > paidMap[id].last_paid_at!)) {
+            paidMap[id].last_paid_at = o.paid_at;
+          }
+          paidCount += 1;
+          paidAmount += Number(o.amount ?? 0);
+        }
+      }
+
       // Filter by funnel stage reached (deepest event wins)
       if (stage !== 'all') {
         list = list.filter((r) => {
@@ -193,6 +223,7 @@ function LinksGeradosPage() {
             case 'checkout': return s.view_checkout > 0;
             case 'certificado': return s.click_certificado > 0;
             case 'guia': return s.click_guia > 0;
+            case 'paid': return (paidMap[r.id]?.count ?? 0) > 0;
             default: return true;
           }
         });
@@ -202,6 +233,9 @@ function LinksGeradosPage() {
       setTotal(count ?? list.length);
       setStatsByToken(per);
       setAggregate(agg);
+      setPaidByLinkId(paidMap);
+      setTotalPaid(paidCount);
+      setTotalPaidAmount(paidAmount);
 
     } catch (e: any) {
       toast.error('Erro ao carregar links: ' + (e?.message ?? 'desconhecido'));
@@ -274,7 +308,7 @@ function LinksGeradosPage() {
       </Card>
 
       {/* Aggregate KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
 
         <KPI icon={<ExternalLink className="h-4 w-4" />} label="Links no filtro" value={total} tone="slate" />
         <KPI icon={<Eye className="h-4 w-4" />} label="Cliques totais" value={aggregate.total} tone="blue" />
@@ -282,6 +316,7 @@ function LinksGeradosPage() {
         <KPI icon={<ShoppingCart className="h-4 w-4" />} label="Foi ao checkout" value={aggregate.view_checkout} tone="violet" />
         <KPI icon={<FileCheck2 className="h-4 w-4" />} label="Emitir certificado" value={aggregate.click_certificado} tone="emerald" />
         <KPI icon={<Receipt className="h-4 w-4" />} label="Gerar guia" value={aggregate.click_guia} tone="amber" />
+        <KPI icon={<CheckCircle2 className="h-4 w-4" />} label={`Pagos • R$ ${totalPaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} value={totalPaid} tone="green" />
       </div>
 
       {/* Funnel bar */}
@@ -343,6 +378,7 @@ function LinksGeradosPage() {
                 <SelectItem value="checkout">Foi ao checkout</SelectItem>
                 <SelectItem value="certificado">Clicou em emitir</SelectItem>
                 <SelectItem value="guia">Gerou guia (PIX)</SelectItem>
+                <SelectItem value="paid">Pagos</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -406,6 +442,7 @@ function LinksGeradosPage() {
                   <TableHead className="text-center" title="Foi ao checkout"><ShoppingCart className="mx-auto h-3.5 w-3.5 text-violet-600" /></TableHead>
                   <TableHead className="text-center" title="Clicou em emitir certificado"><FileCheck2 className="mx-auto h-3.5 w-3.5 text-emerald-600" /></TableHead>
                   <TableHead className="text-center" title="Clicou em gerar guia (PIX)"><Receipt className="mx-auto h-3.5 w-3.5 text-amber-600" /></TableHead>
+                  <TableHead className="text-center" title="Pagamentos confirmados"><CheckCircle2 className="mx-auto h-3.5 w-3.5 text-green-600" /></TableHead>
                   <TableHead>Dispositivos</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Origem</TableHead>
@@ -415,11 +452,11 @@ function LinksGeradosPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={13} className="py-8 text-center">
+                  <TableRow><TableCell colSpan={14} className="py-8 text-center">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
                   </TableCell></TableRow>
                 ) : rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={13} className="py-8 text-center text-sm text-slate-500">
+                  <TableRow><TableCell colSpan={14} className="py-8 text-center text-sm text-slate-500">
                     Nenhum link encontrado.
                   </TableCell></TableRow>
                 ) : rows.map((r) => {
@@ -428,6 +465,7 @@ function LinksGeradosPage() {
                   const pub = r.public_url || (r.public_token ? `/c/${r.public_token}` : null);
                   const chk = r.checkout_url || (r.public_token ? `/checkout/${r.public_token}` : null);
                   const s = statsByToken[r.public_token] ?? emptyStats();
+                  const paid = paidByLinkId[r.id];
                   const topDevices = Object.entries(s.devices).sort((a, b) => b[1] - a[1]).slice(0, 3);
                   const isOpen = expanded[r.id];
                   return (
@@ -445,6 +483,15 @@ function LinksGeradosPage() {
                         <TableCell className="text-center">{s.view_checkout}</TableCell>
                         <TableCell className="text-center">{s.click_certificado}</TableCell>
                         <TableCell className="text-center">{s.click_guia}</TableCell>
+                        <TableCell className="text-center">
+                          {paid && paid.count > 0 ? (
+                            <Badge className="bg-green-600 gap-1" title={paid.last_paid_at ? `Último pagamento: ${new Date(paid.last_paid_at).toLocaleString('pt-BR')}` : 'Pago'}>
+                              <CheckCircle2 className="h-3 w-3" /> Pago{paid.count > 1 ? ` ×${paid.count}` : ''}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-slate-300">—</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {topDevices.length === 0 && <span className="text-xs text-slate-400">—</span>}
@@ -493,7 +540,7 @@ function LinksGeradosPage() {
                       </TableRow>
                       {isOpen && (
                         <TableRow key={r.id + '-details'} className="bg-slate-50/60">
-                          <TableCell colSpan={13} className="py-4">
+                          <TableCell colSpan={14} className="py-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
                                 <div className="text-xs font-semibold uppercase text-slate-500 mb-2">Funil deste link</div>
