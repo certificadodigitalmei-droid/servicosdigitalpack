@@ -3,7 +3,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   Search, Copy, ExternalLink, Loader2, RefreshCw, Building2,
   Eye, ShoppingCart, FileCheck2, Receipt, Smartphone, Monitor, Tablet, ChevronDown, ChevronRight,
-  Calendar as CalendarIcon,
+  Calendar as CalendarIcon, CheckCircle2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
