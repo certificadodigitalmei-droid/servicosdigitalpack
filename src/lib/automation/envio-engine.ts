@@ -50,8 +50,24 @@ export function mergedDesign(heroImageUrl?: string): Partial<CampaignDesign> {
   return heroImageUrl ? { ...saved, heroImageUrl } : saved;
 }
 
+/** Sincroniza assunto/remetente do Modelo de Mensagem para a engine de Envio em Massa. */
+export function syncFromMessageModel() {
+  const subject = loadSavedSubject();
+  const fromName = loadSavedFromName();
+  const fromAddress = loadSavedFromAddress();
+  const replyTo = loadSavedReplyTo();
+  envioStore.set((s) => ({
+    ...s,
+    ...(subject ? { subject } : {}),
+    ...(fromName ? { fromName } : {}),
+    ...(fromAddress ? { fromAddress } : {}),
+    ...(replyTo !== null ? { replyTo } : {}),
+  }));
+}
+
 
 export type QueueItem = {
+
   id: string;
   email: string;
   cnpj: string;
