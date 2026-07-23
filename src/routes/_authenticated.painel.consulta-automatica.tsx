@@ -410,14 +410,10 @@ function ConsultaPage() {
             </div>
           )}
 
-          {saldo && (
-            <div className="rounded border border-slate-200 bg-slate-50 p-3 text-xs">
-              <strong>Saldo:</strong>{' '}
-              <code className="break-all">{saldo}</code>
-            </div>
-          )}
+          {saldo && <SaldoView raw={saldo} />}
         </CardContent>
       </Card>
+
 
       {/* 2. Importar */}
       <Card>
