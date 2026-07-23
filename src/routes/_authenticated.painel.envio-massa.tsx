@@ -93,6 +93,8 @@ function EnvioMassa() {
   const hourlyLimit = useStore(envioStore, (s) => s.hourlyLimit);
   const limitMode = useStore(envioStore, (s) => s.limitMode);
   const sentToday = useStore(envioStore, (s) => s.sentToday);
+  const stopAtDaily = useStore(envioStore, (s) => s.stopAtDaily);
+
   const sentThisHour = useStore(envioStore, (s) => s.sentThisHour);
   const importDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
   const sentEmails = useStore(envioStore, (s) => s.sentEmails);
