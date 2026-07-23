@@ -49,8 +49,9 @@ export const Route = createFileRoute('/checkout_/$token')({
   component: CheckoutTokenPage,
 });
 
-const AMOUNT = 97.0;
+const DEFAULT_AMOUNT = 97.0;
 const brl = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`;
+
 
 function cleanPersonName(v?: string | null): string {
   if (!v) return '';
