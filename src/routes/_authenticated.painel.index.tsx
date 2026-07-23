@@ -174,7 +174,10 @@ function DashboardPage() {
       }
 
       s.conversion = s.viewLink > 0 ? Math.round((s.viewCheckout / s.viewLink) * 100) : 0;
+      s.paid = paidOrders.length;
+      s.paidAmount = paidOrders.reduce((sum, o) => sum + Number(o.amount ?? 0), 0);
       setStats(s);
+
       setRecent(events.slice(-10).reverse().map(e => ({ ...e, cnpj: linkMap.get(e.token) })));
     } finally {
       setLoading(false);
