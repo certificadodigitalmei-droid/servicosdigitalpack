@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { useState, useEffect } from "react";
-import { Check, QrCode, CreditCard, Barcode, ArrowLeft, Clock } from "lucide-react";
+import { Check, QrCode, CreditCard, Barcode, Clock } from "lucide-react";
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from "@/components/layout/SiteChrome";
 import {
   formatCPFOrCNPJ,
@@ -376,15 +376,6 @@ function CheckoutForm({
       >
         {submitting ? "Processando..." : "Gerar Guia"}
       </button>
-      <div className="text-center">
-        <Link
-          to="/"
-          search={backSearch}
-          className="inline-flex items-center gap-1 text-[13px] text-brand-blue hover:underline"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> Voltar
-        </Link>
-      </div>
     </form>
   );
 }
