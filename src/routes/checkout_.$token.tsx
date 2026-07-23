@@ -159,15 +159,15 @@ function CheckoutTokenPage() {
         items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }, { label: 'Pagamento' }]}
       />
 
-      <main className="flex-1">
-        <div className="mx-auto w-full max-w-[700px] px-3 py-5 sm:px-4 sm:py-6 md:max-w-[860px] md:px-6 lg:max-w-[1180px] lg:px-8 lg:py-10">
-          <div className="rounded-md border border-border bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:p-5 md:p-6 lg:p-8 lg:shadow-[0_20px_60px_-30px_rgba(0,72,132,0.25)]">
+      <main className="flex-1 overflow-x-hidden">
+        <div className="mx-auto w-full max-w-[700px] px-2.5 py-4 sm:px-4 sm:py-6 md:max-w-[860px] md:px-6 lg:max-w-[1180px] lg:px-8 lg:py-10">
+          <div className="rounded-md border border-border bg-card p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:p-5 md:p-6 lg:p-8 lg:shadow-[0_20px_60px_-30px_rgba(0,72,132,0.25)]">
             {/* Stepper */}
-            <div className="mb-5 flex items-center justify-between gap-1.5 text-[11px] sm:gap-2 sm:text-[12px] md:mb-7 lg:mb-8 lg:text-[13px]">
+            <div className="mb-4 flex items-center justify-between gap-1 text-[11px] sm:mb-5 sm:gap-2 sm:text-[12px] md:mb-7 lg:mb-8 lg:text-[13px]">
               <Step done label="Identificação" n={1} />
-              <div className="mx-1 h-px flex-1 bg-border" />
+              <div className="mx-0.5 h-px flex-1 bg-border sm:mx-1" />
               <Step done label="Dados" n={2} />
-              <div className="mx-1 h-px flex-1 bg-border" />
+              <div className="mx-0.5 h-px flex-1 bg-border sm:mx-1" />
               <Step active label="Pagamento" n={3} />
             </div>
 
@@ -195,8 +195,8 @@ function CheckoutTokenPage() {
                   </Card>
 
                   <Card title="Dados do Pagador">
-                    <div className="space-y-3 p-4 lg:p-5">
-                      <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="space-y-3 p-3 sm:p-4 lg:p-5">
+                      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
                         <Field label="NOME DO TITULAR" error={errors.nome} required>
                           <input
                             type="text"
@@ -216,7 +216,7 @@ function CheckoutTokenPage() {
                           />
                         </Field>
                       </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                         <Field label="E-MAIL" error={errors.email} required>
                           <input
                             type="email"
@@ -246,7 +246,7 @@ function CheckoutTokenPage() {
                       <PayOption selected icon={<QrCode className="h-5 w-5" />} title="PIX" subtitle="Confirmação após identificação do pagamento" />
                       <PayOption disabled icon={<CreditCard className="h-5 w-5" />} title="Cartão de Crédito" subtitle="Indisponível para este serviço" />
                       <PayOption disabled icon={<Barcode className="h-5 w-5" />} title="Boleto Bancário" subtitle="Indisponível para este serviço" />
-                      <div className="rounded-md border border-success/40 bg-success-soft px-3 py-2 text-[12.5px] text-foreground">
+                      <div className="rounded-md border border-success/40 bg-success-soft px-3 py-2 text-[12px] leading-snug text-foreground sm:text-[12.5px]">
                         ✓ Confirmação imediata da emissão via PIX. QR Code gerado na hora — pague pelo app do seu banco.
                       </div>
                     </div>
@@ -259,12 +259,12 @@ function CheckoutTokenPage() {
                     <div className="divide-y divide-border">
                       <SummaryRow label="Subtotal" value={brl(AMOUNT)} />
                       <SummaryRow label="Tarifa de processamento" value="R$ 0,00" />
-                      <div className="flex items-center justify-between px-4 py-3">
-                        <span className="text-[14px] font-bold text-foreground">Total a pagar</span>
+                      <div className="flex items-center justify-between gap-3 px-3 py-3 sm:px-4">
+                        <span className="text-[13px] font-bold text-foreground sm:text-[14px]">Total a pagar</span>
                         <span className="text-[18px] font-bold text-[#004884] lg:text-[22px]">{brl(AMOUNT)}</span>
                       </div>
                     </div>
-                    <div className="border-t border-border bg-[#f8f9fa] p-4 space-y-3">
+                    <div className="border-t border-border bg-[#f8f9fa] p-3 space-y-3 sm:p-4">
                       <button
                         type="submit"
                         disabled={submitting}
@@ -273,7 +273,7 @@ function CheckoutTokenPage() {
                         <QrCode className="h-4 w-4" />
                         {submitting ? 'Processando...' : 'Gerar Guia'}
                       </button>
-                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10.5px] text-muted-foreground sm:text-[11px]">
                         <span className="flex items-center gap-1"><Check className="h-3 w-3 text-emerald-600" />Pagamento seguro</span>
                         <span className="font-semibold text-[#004884]">gov.br</span>
                         <span>ICP-Brasil</span>
@@ -353,7 +353,7 @@ function Step({ n, label, done, active }: { n: number; label: string; done?: boo
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="overflow-hidden rounded-md border border-border bg-card shadow-sm">
-      <div className="bg-[#f8f9fa] border-b border-border px-4 py-2.5 text-[13px] font-bold text-[#004884] uppercase tracking-tight">
+      <div className="bg-[#f8f9fa] border-b border-border px-3 py-2.5 text-[12px] font-bold uppercase tracking-tight text-[#004884] sm:px-4 sm:text-[13px]">
         {title}
       </div>
       {children}
@@ -366,20 +366,20 @@ function TableRow({ label, value, last }: { label: string; value: React.ReactNod
     <div
       className={
         (last ? '' : 'border-b border-border ') +
-        'flex items-center justify-between gap-3 px-4 py-2.5 text-[13px]'
+        'flex flex-col gap-0.5 px-3 py-2.5 text-[13px] sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4'
       }
     >
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right text-foreground">{value}</span>
+      <span className="shrink-0 text-[11.5px] uppercase tracking-wide text-muted-foreground sm:text-[13px] sm:normal-case sm:tracking-normal">{label}</span>
+      <span className="min-w-0 break-words text-foreground sm:text-right">{value}</span>
     </div>
   );
 }
 
 function SummaryRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 text-[13px]">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-foreground">{value}</span>
+    <div className="flex items-center justify-between gap-3 px-3 py-2.5 text-[13px] sm:px-4">
+      <span className="min-w-0 truncate text-muted-foreground">{label}</span>
+      <span className="shrink-0 text-foreground">{value}</span>
     </div>
   );
 }

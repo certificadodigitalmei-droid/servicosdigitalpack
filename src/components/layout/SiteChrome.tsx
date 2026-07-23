@@ -64,8 +64,8 @@ export function SiteHeader({ userName, userDoc }: HeaderProps) {
 
 export function Breadcrumb({ items }: { items: { label: string; to?: string }[] }) {
   return (
-    <div className="bg-[#f8f9fa] border-b border-border/50">
-      <div className="mx-auto flex max-w-[1280px] items-center gap-1 px-4 py-2 text-[11px] text-[#005690]">
+    <div className="bg-[#f8f9fa] border-b border-border/50 overflow-x-hidden">
+      <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-1 gap-y-0.5 px-3 py-2 text-[11px] text-[#005690] sm:px-4">
         <span className="inline-flex items-center text-muted-foreground">
           <Home className="h-3 w-3" />
         </span>
@@ -92,5 +92,5 @@ export function SiteFooter() {
 }
 
 export function Page({ children }: { children: ReactNode }) {
-  return <div className="min-h-screen bg-page flex flex-col">{children}</div>;
+  return <div className="min-h-screen bg-page flex flex-col overflow-x-hidden">{children}</div>;
 }
