@@ -117,6 +117,7 @@ function EnvioMassa() {
   };
 
   const [previewIdx, setPreviewIdx] = useState(0);
+  const [designTick, setDesignTick] = useState(0);
 
   // Carrega destinatários uma vez se a fila estiver vazia.
   // Sincroniza assunto/remetente do Modelo de Mensagem automaticamente.
@@ -125,6 +126,27 @@ function EnvioMassa() {
     if (queue.length === 0) void loadRecipients();
     void refreshStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Recarrega design/assunto quando o Modelo de Mensagem é salvo (mesma ou outra aba)
+  // ou quando esta aba recebe foco novamente.
+  useEffect(() => {
+    const bump = () => {
+      syncFromMessageModel();
+      setDesignTick((t) => t + 1);
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key) return;
+      if (e.key.startsWith('campanha:')) bump();
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('focus', bump);
+    document.addEventListener('visibilitychange', bump);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('focus', bump);
+      document.removeEventListener('visibilitychange', bump);
+    };
   }, []);
 
 
@@ -144,7 +166,7 @@ function EnvioMassa() {
     const vars = buildVarsForPreview(previewItem);
     const design = { ...DEFAULT_DESIGN, ...mergedDesign() };
     return renderHtml(design, vars);
-  }, [previewItem, fromName, fromAddress, subject]);
+  }, [previewItem, fromName, fromAddress, subject, designTick]);
 
 
   const progress =
