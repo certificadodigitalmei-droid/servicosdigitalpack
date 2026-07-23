@@ -496,6 +496,15 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
     if (res.sent) {
       ensureDailyWindow();
       const nowIso = new Date().toISOString();
+      if (cfg.testMode) {
+        // Envios de TESTE não contam nos KPIs, painel flutuante nem rate limit.
+        // Apenas removem o item da fila e registram no log.
+        envioStore.set((s) => ({
+          queue: s.queue.filter((q) => q.id !== item.id),
+        }));
+        pushLog(`✓ (TESTE) Enviado para ${res.recipient} — não contabilizado`);
+        return { ok: true };
+      }
       const entry: SentEmail = {
         id: item.id + '-' + Date.now(),
         email: res.recipient || item.email,
@@ -503,7 +512,7 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
         company_name: item.company_name,
         subject: subj,
         sentAt: nowIso,
-        testMode: !!cfg.testMode,
+        testMode: false,
         publicUrl: item.publicUrl || null,
       };
       envioStore.set((s) => ({
@@ -518,6 +527,7 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
       pushLog(`✓ Enviado para ${res.recipient} (${envioStore.get().sentToday} hoje · ${envioStore.get().sentThisHour} nesta hora)`);
       return { ok: true };
     }
+
 
     if (res.reason === 'recipient_suppressed') {
       envioStore.set((s) => ({
