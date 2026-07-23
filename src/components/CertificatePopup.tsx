@@ -78,7 +78,7 @@ export function CertificatePopup({ open, onClose, onContinue, cnpj, settings: in
           {/* Left column */}
           <div className="space-y-5">
             <h2 className="text-2xl font-black leading-tight text-[#0b1e3f] sm:text-[26px]">
-              {s.title}
+              {renderRich(s.title)}
             </h2>
 
             {cnpjFmt ? (
@@ -95,7 +95,7 @@ export function CertificatePopup({ open, onClose, onContinue, cnpj, settings: in
                 </div>
                 <div className="min-w-0 text-sm">
                   <div className="text-slate-500">Porém encontra-se</div>
-                  <div className="font-bold text-[#0b1e3f]">{s.highlight_text}</div>
+                  <div className="font-bold text-[#0b1e3f]">{renderRich(s.highlight_text)}</div>
                 </div>
               </div>
             </div>
@@ -106,9 +106,9 @@ export function CertificatePopup({ open, onClose, onContinue, cnpj, settings: in
               </div>
               <div className="text-sm">
                 <div className="text-[13px] font-bold uppercase tracking-wide text-[#0b1e3f]">
-                  {s.law_title}
+                  {renderRich(s.law_title)}
                 </div>
-                <p className="mt-1 leading-relaxed text-slate-600">{s.law_text}</p>
+                <p className="mt-1 leading-relaxed text-slate-600">{renderRich(s.law_text)}</p>
               </div>
             </div>
 
@@ -118,7 +118,7 @@ export function CertificatePopup({ open, onClose, onContinue, cnpj, settings: in
               </div>
               <div className="text-sm">
                 <div className="font-bold text-[#0b1e3f]">Emita direto conosco</div>
-                <p className="mt-1 leading-relaxed text-slate-600">{s.provider_text}</p>
+                <p className="mt-1 leading-relaxed text-slate-600">{renderRich(s.provider_text)}</p>
               </div>
             </div>
           </div>
@@ -129,7 +129,7 @@ export function CertificatePopup({ open, onClose, onContinue, cnpj, settings: in
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/10">
                 <ShieldAlert className="h-5 w-5" />
               </div>
-              <div className="text-[15px] font-bold leading-tight">{s.risks_title}</div>
+              <div className="text-[15px] font-bold leading-tight">{renderRich(s.risks_title)}</div>
             </div>
             <ul className="divide-y divide-slate-100">
               {s.risks.map((r, i) => (
@@ -137,7 +137,7 @@ export function CertificatePopup({ open, onClose, onContinue, cnpj, settings: in
                   <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-red-50 text-red-600">
                     <X className="h-3.5 w-3.5" strokeWidth={3} />
                   </span>
-                  <span className="text-[13.5px] leading-snug text-slate-700">{r}</span>
+                  <span className="text-[13.5px] leading-snug text-slate-700">{renderRich(r)}</span>
                 </li>
               ))}
             </ul>

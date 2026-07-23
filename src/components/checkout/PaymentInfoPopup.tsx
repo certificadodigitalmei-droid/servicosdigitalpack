@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { X, Info, ShieldCheck, ArrowRight, Loader2, FileCheck2, Building2, CalendarClock } from 'lucide-react';
 import type { SitePopupSettings } from '@/lib/site-popup.functions';
 import { POPUP_DEFAULTS } from '@/lib/site-popup.functions';
+import { renderRich } from '@/lib/rich-text';
 
 type Props = {
   open: boolean;
@@ -84,28 +85,28 @@ export function PaymentInfoPopup({ open, loading, onClose, onContinue, settings 
 
             <div className="space-y-4 px-5 py-6 sm:px-8 sm:py-7">
               <h2 className="text-[22px] font-black leading-tight text-[#0b1e3f] sm:text-[24px]">
-                {s.payment_title}
+                {renderRich(s.payment_title)}
               </h2>
 
               <div className="space-y-3 text-[13.5px] leading-relaxed text-slate-700">
                 <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
                   <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-[#1351b4]" />
-                  <p>{s.payment_partner_text}</p>
+                  <p>{renderRich(s.payment_partner_text)}</p>
                 </div>
 
                 <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
                   <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-                  <p>{s.payment_alert_text}</p>
+                  <p>{renderRich(s.payment_alert_text)}</p>
                 </div>
 
                 <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
                   <FileCheck2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-                  <p>{s.payment_confirmation_text}</p>
+                  <p>{renderRich(s.payment_confirmation_text)}</p>
                 </div>
 
                 <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
                   <CalendarClock className="h-5 w-5 shrink-0 text-[#1351b4]" />
-                  <p className="font-semibold text-[#0b1e3f]">{s.payment_validity_text}</p>
+                  <p className="font-semibold text-[#0b1e3f]">{renderRich(s.payment_validity_text)}</p>
                 </div>
               </div>
             </div>
