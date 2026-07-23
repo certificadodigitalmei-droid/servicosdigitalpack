@@ -74,13 +74,7 @@ export const upsertPaymentGateway = createServerFn({ method: 'POST' })
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
-    const patch: Record<string, unknown> = {
-      name: data.name,
-      provider_type: data.provider_type,
-      base_url: data.base_url && data.base_url.length > 0 ? data.base_url : null,
-      notes: data.notes ?? null,
-    };
-    if (data.api_key) patch.api_key = data.api_key;
+
 
     if (data.id) {
       const patch: any = {
