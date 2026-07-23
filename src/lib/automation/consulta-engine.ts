@@ -9,11 +9,13 @@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { createStore } from './store';
+import { envioStore, isEngineRunning as isEnvioRunning } from './envio-engine';
 import {
   countByDate,
   importBatch,
   listByDate,
 } from '@/lib/casa-dos-dados/simple-flow.functions';
+
 
 export type FoundRow = {
   cnpj: string;
