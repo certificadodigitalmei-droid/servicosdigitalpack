@@ -168,15 +168,17 @@ function TokenHomePage() {
               <div className="rounded-md border border-border bg-card p-4 lg:p-5">
                 <div className="flex items-center justify-between text-[13px]">
                   <span className="text-muted-foreground">Progresso da contratação</span>
-                  <span className="font-semibold text-[#004884]">Etapa 2 de 3 — quase lá</span>
+                  <span className={`font-semibold ${paidAt ? 'text-[#138835]' : 'text-[#004884]'}`}>
+                    {paidAt ? 'Concluído — 3 de 3' : 'Etapa 2 de 3 — quase lá'}
+                  </span>
                 </div>
                 <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
-                  <div className="h-full w-[65%] rounded-full bg-[#004884]" />
+                  <div className={`h-full rounded-full ${paidAt ? 'w-full bg-[#138835]' : 'w-[65%] bg-[#004884]'}`} />
                 </div>
                 <div className="mt-3 flex flex-wrap justify-between gap-2 text-[12px]">
                   <span className="flex items-center gap-1 text-[#138835]"><span className="text-[8px]">●</span> Identificação</span>
                   <span className="flex items-center gap-1 text-[#138835]"><span className="text-[8px]">●</span> Dados confirmados</span>
-                  <span className="flex items-center gap-1 text-[#004884]"><span className="text-[8px]">●</span> Emitir certificado</span>
+                  <span className={`flex items-center gap-1 ${paidAt ? 'text-[#138835]' : 'text-[#004884]'}`}><span className="text-[8px]">●</span> Emitir certificado</span>
                 </div>
               </div>
 
