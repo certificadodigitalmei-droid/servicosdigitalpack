@@ -38,8 +38,6 @@ import {
   setAutoCount,
   setAutoImport,
   setAutoIntervalSec,
-  setAutoImportDelaySec,
-  setAutoImportTarget,
   setDateMode,
   setSelectedDate,
   setFilters,
@@ -97,8 +95,6 @@ function ConsultaPage() {
   const autoCount = useStore(consultaStore, (s) => s.autoCount);
   const autoIntervalSec = useStore(consultaStore, (s) => s.autoIntervalSec);
   const autoImport = useStore(consultaStore, (s) => s.autoImport);
-  const autoImportDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
-  const autoImportTarget = useStore(consultaStore, (s) => s.autoImportTarget);
   const autoStats = useStore(consultaStore, (s) => s.autoStats);
   const autoImportRuns = useStore(consultaStore, (s) => s.autoImportRuns);
   const autoImportTotal = useStore(consultaStore, (s) => s.autoImportTotal);
@@ -518,67 +514,24 @@ function ConsultaPage() {
               />
             </div>
 
-            <div className="mt-3 flex flex-wrap items-end gap-3">
-              <div>
-                <Label className="mb-1 block text-xs">Delay entre importações (segundos)</Label>
-                <input
-                  type="number"
-                  min={5}
-                  step={5}
-                  value={autoImportDelaySec}
-                  onChange={(e) => setAutoImportDelaySec(Number(e.target.value))}
-                  disabled={autoImport}
-                  className="h-9 w-32 rounded-md border border-slate-300 bg-white px-3 text-sm disabled:bg-slate-100"
-                />
-              </div>
-              <div>
-                <Label className="mb-1 block text-xs">
-                  Meta total (0 = infinito)
-                </Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={0}
-                    step={10}
-                    value={autoImportTarget}
-                    onChange={(e) => setAutoImportTarget(Number(e.target.value))}
-                    className="h-9 w-32 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                    placeholder="0"
-                  />
-                  <Button size="sm" variant="outline" onClick={() => setAutoImportTarget(0)}>
-                    ∞
-                  </Button>
-                </div>
-              </div>
-              <div className="text-xs text-slate-600">
-                A cada ciclo: até <strong>{quantidade}</strong> CNPJ(s) · a cada{' '}
-                <strong>{autoImportDelaySec}s</strong> ·{' '}
-                {autoImportTarget > 0 ? (
-                  <>meta <strong>{autoImportTarget}</strong></>
-                ) : (
-                  <>sem meta (infinito)</>
-                )}
-              </div>
+            <div className="mt-3 rounded-md border border-brand-navy/20 bg-white/60 p-3 text-xs text-slate-700">
+              A importação automática é <strong>escrava do Envio em Massa</strong>: importa
+              exatamente <strong>1 empresa por vez</strong> (a mais recente da API) e só busca a
+              próxima depois que o envio anterior for confirmado. Assim, respeita o ritmo, limites
+              e descansos configurados no modelo de envio.
             </div>
 
             {autoImport && (
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <Stat label="Ciclos" value={autoImportRuns.toString()} />
+                <Stat label="Importadas (sessão)" value={autoImportTotal.toString()} />
                 <Stat
-                  label="Importadas (sessão)"
-                  value={
-                    autoImportTarget > 0
-                      ? `${autoImportTotal} / ${autoImportTarget}`
-                      : autoImportTotal.toString()
-                  }
-                />
-                <Stat label="Créditos máx/ciclo" value={quantidade.toString()} />
-                <Stat
-                  label="Próximo em"
-                  value={isImporting ? 'rodando…' : `~${autoImportDelaySec}s`}
+                  label="Status"
+                  value={isImporting ? 'importando…' : 'aguardando envio'}
                 />
               </div>
             )}
+
           </div>
         </CardContent>
       </Card>
