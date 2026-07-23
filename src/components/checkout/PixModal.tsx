@@ -3,8 +3,11 @@ import { Check, Clock, Copy, Loader2, ShieldCheck, X } from 'lucide-react';
 import pixLoader from '@/assets/pix-loader.png.asset.json';
 import { formatCPFOrCNPJ } from '@/lib/format';
 import { toast } from 'sonner';
+import { useServerFn } from '@tanstack/react-start';
+import { checkOrderStatus } from '@/lib/payments/status.functions';
 
 const brl = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`;
+
 
 const LOADING_STEPS = [
   'Conectando ao portal gov.br...',
