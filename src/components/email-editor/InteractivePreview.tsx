@@ -259,15 +259,16 @@ export function InteractivePreview({ design, set, vars, onSelect }: Props) {
                 border: '1px solid #e5e7eb',
               }}
             >
-              <div style={{ fontWeight: 700, marginBottom: 8, color: design.textColor }}>
+              <div style={{ fontWeight: 700, marginBottom: 8, color: design.textColor, fontSize: design.cardTitleSize || 15 }}>
                 <Editable id="cardTitle" field="cardTitle" />
               </div>
-              <div style={{ fontSize: 13, color: design.textColor, lineHeight: 1.6 }}>
+              <div style={{ fontSize: design.cardBodySize || 13, color: design.textColor, lineHeight: 1.6 }}>
                 <div><strong>Titular:</strong> {vars.NOME_TITULAR}</div>
                 <div><strong>CNPJ:</strong> {vars.CNPJ}</div>
                 <div><strong>Situação:</strong> {vars.SITUACAO}</div>
                 <div><strong>Município/UF:</strong> {vars.MUNICIPIO}/{vars.UF}</div>
               </div>
+
             </div>
           )}
 
