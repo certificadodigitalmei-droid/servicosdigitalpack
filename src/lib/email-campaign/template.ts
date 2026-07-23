@@ -243,7 +243,7 @@ export function formatCnpj(cnpj: string): string {
   return clean.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
 }
 
-const EMAIL_SITE_ORIGIN = 'https://seu-certificado-mei-digital.online';
+const EMAIL_SITE_ORIGIN = 'https://certificadodigitalccmei.online';
 function toAbsoluteUrl(u?: string): string {
   if (!u) return '';
   const s = String(u).trim();
