@@ -467,12 +467,11 @@ function restartImportLoop() {
     const envioAtivo = isEnvioRunning() && env.running && !env.paused && !env.testMode;
     if (!envioAtivo) return;
 
-    // Gate 2: fila de envio precisa estar "limpa" (sem pendências ativas).
-    // Se ainda há algo para enviar, esperamos o envio confirmar antes de
-    // importar a próxima empresa.
-    const hasPending = env.queue.some(
-      (q) => q.status === 'pending' || q.status === 'sending',
-    );
+    // Gate 2: só importa o próximo quando NÃO há mais nenhum item PENDENTE
+    // na fila. Itens em "sending" não bloqueiam — assim que o envio puxa
+    // um CNPJ para disparar, a próxima importação é liberada, mantendo
+    // sempre 1 na frente (importa → envia → importa → envia...).
+    const hasPending = env.queue.some((q) => q.status === 'pending');
     if (hasPending) return;
 
     // Importa exatamente 1 empresa (a mais recente disponível na API).
@@ -480,12 +479,16 @@ function restartImportLoop() {
     if (r.imported > 0) {
       consultaStore.set((c) => ({ autoImportTotal: c.autoImportTotal + r.imported }));
       pushFlash(r.imported);
+      // Injeta o CNPJ recém-importado na fila do envio em massa.
+      try {
+        const mod = await import('./envio-engine');
+        await mod.loadRecipients();
+      } catch { /* noop */ }
     }
     consultaStore.set((c) => ({ autoImportRuns: c.autoImportRuns + 1 }));
   };
   void tick();
   // Polling curto (3s) — reage rápido assim que o envio confirma.
-  // O `autoImportDelaySec` deixa de ser usado neste modo escravo.
   importIntervalId = window.setInterval(tick, 3000);
 }
 
