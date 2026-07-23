@@ -105,8 +105,32 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, token, onClose 
 
   // Reset "paid" quando o modal fecha
   useEffect(() => {
-    if (!open) setPaid(false);
+    if (!open) {
+      setPaid(false);
+      setRedirectIn(4);
+    }
   }, [open]);
+
+  // Ao confirmar pagamento: countdown e redirect automático para /c/$token
+  useEffect(() => {
+    if (!paid) return;
+    setRedirectIn(4);
+    const t = setInterval(() => {
+      setRedirectIn((s) => {
+        if (s <= 1) {
+          clearInterval(t);
+          if (token) {
+            navigate({ to: '/c/$token', params: { token } });
+          } else {
+            onClose();
+          }
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [paid, token, navigate, onClose]);
 
 
   const showPix = open && !!pixData && minElapsed;
