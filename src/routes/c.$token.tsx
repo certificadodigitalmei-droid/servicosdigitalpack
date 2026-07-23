@@ -265,7 +265,7 @@ function TokenHomePage() {
           </div>
 
           <div className="pt-4 text-center text-[10.5px] text-muted-foreground/60">
-            CadastroMEI é um serviço de apoio ao MEI e não possui vínculo com o Governo Federal. O uso é opcional e complementar às orientações oficiais.
+            Todo o conteúdo deste site está publicado sob a licença Portal Certificado Digital MEI - Microempreendedor Individual.
           </div>
           </>
             );
