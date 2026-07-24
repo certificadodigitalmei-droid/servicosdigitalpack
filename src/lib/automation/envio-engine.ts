@@ -272,6 +272,9 @@ function ensureDailyWindow() {
 
 export async function loadRecipients(opts: { limit?: number } = {}) {
   const limit = Math.max(1, opts.limit ?? 1);
+  // Guard: evita execuções concorrentes (auto-sync + clique manual/realtime)
+  // que podem inserir a mesma empresa duas vezes na fila.
+  if (envioStore.get().loading) return;
   envioStore.set({ loading: true });
   try {
     // A fila de envio espelha EXATAMENTE a lista de "Empresas Importadas":
