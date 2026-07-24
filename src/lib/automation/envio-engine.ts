@@ -561,6 +561,8 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
         testMode: cfg.testMode,
         testRecipient: cfg.testMode ? cfg.testRecipient || null : null,
         idempotencyKey: `campaign-${item.id}-${Date.now()}`,
+        companyId: item.id,
+        cnpj: item.cnpj,
       },
     });
 
