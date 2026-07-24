@@ -101,8 +101,12 @@ function TokenHomePage() {
 
   return (
     <Page>
+      {showLoader && (
+        <GovConsultaLoader cnpj={row.cnpj} nome={nomeFmt !== '—' ? nomeFmt : undefined} onFinish={() => setShowLoader(false)} />
+      )}
       <SiteHeader userName={nomeFmt !== '—' ? nomeFmt : undefined} userDoc={row.cnpj ?? undefined} />
       <Breadcrumb items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }]} />
+
 
 
       <main className="flex-1">
