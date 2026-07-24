@@ -139,10 +139,9 @@ function ConsultaPage() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [saldoLoading, setSaldoLoading] = useState(false);
 
-  // Abre o painel flutuante automaticamente quando o modo automático liga.
-  useEffect(() => {
-    if (autoCount && !listDialogOpen) setListDialogOpen(true);
-  }, [autoCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Popup "Ver lista" agora só abre por clique — o modo automático faz apenas
+  // uma contagem leve (1 request) sem forçar o popup nem paginar a base toda.
+
 
   const effectiveDate = dateMode === 'today' ? todayBR : selectedDate || todayBR;
 

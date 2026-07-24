@@ -428,16 +428,17 @@ function restartListLoop() {
   }
   const s = consultaStore.get();
   if (!s.autoCount) return;
-  // Abre o popup para dar feedback visual quando ligar.
-  consultaStore.set({ listDialogOpen: true });
-  void runListOnce({ silent: true });
+  // Loop leve: só CONTA (1 request), não pagina a base inteira.
+  // A listagem completa é feita sob demanda pelo botão "Ver lista".
+  void runCountOnce({ silent: true });
   listIntervalId = window.setInterval(
     () => {
-      if (!consultaStore.get().isCounting) void runListOnce({ silent: true });
+      if (!consultaStore.get().isCounting) void runCountOnce({ silent: true });
     },
     Math.max(5, s.autoIntervalSec) * 1000,
   );
 }
+
 
 function restartImportLoop() {
   if (importIntervalId != null) {
