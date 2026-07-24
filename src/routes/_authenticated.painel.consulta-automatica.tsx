@@ -46,8 +46,9 @@ import {
   clearFoundList,
   setSaldo as setSaldoAction,
   runCountOnce,
-  runImportOnce,
+  runListOnce,
 } from '@/lib/automation/consulta-engine';
+
 import { envioStore } from '@/lib/automation/envio-engine';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
