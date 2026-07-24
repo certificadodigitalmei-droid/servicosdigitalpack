@@ -291,7 +291,9 @@ function CheckoutForm({
       <Card title="Detalhes da Guia">
         <TableRow label="Serviço" value="Certificado Digital MEI" />
         <TableRow label="Descrição" value="Emissão do Certificado Digital para MEI" />
-        <TableRow label="Referência" value={form.doc ? `CNPJ: ${form.doc}` : "Microempreendedor Individual (MEI)"} />
+        <TableRow label="Adquirente" value={form.nome?.trim() || "—"} />
+        <TableRow label="CNPJ" value={form.doc ? formatCPFOrCNPJ(form.doc) : "—"} />
+
         <TableRow
           label="Valor da Guia"
           value={<span className="font-bold text-brand-blue">{brl(AMOUNT)}</span>}
