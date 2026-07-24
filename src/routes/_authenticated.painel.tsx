@@ -269,6 +269,7 @@ function PanelLayout() {
     if (path === '/painel/links-gerados') return 'Links Gerados';
     if (path === '/painel/pagamentos') return 'Pagamentos';
     if (path === '/painel/configuracoes-pagamento') return 'Configurações de Pagamento';
+    if (path === '/painel/exibicao-site') return 'Exibição do Site';
     if (path === '/painel/pop-up-site') return 'Pop-up do Site';
     if (path === '/painel/api-casa-dos-dados') return 'API Casa dos Dados';
     if (path === '/painel/importar-empresas') return 'Importar Empresas';
