@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import {
   Loader2,
@@ -31,6 +31,13 @@ import {
   runImportOnce,
 } from '@/lib/automation/consulta-engine';
 import { envioStore } from '@/lib/automation/envio-engine';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  DateRangeFilter,
+  computeDateRange,
+  type DatePreset,
+} from '@/components/painel/DateRangeFilter';
+import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
 
 export const Route = createFileRoute('/_authenticated/painel/importacao-automatica')({
   head: () => ({
@@ -61,6 +68,44 @@ function ImportacaoAutomaticaPage() {
   const dateMode = useStore(consultaStore, (s) => s.dateMode);
   const selectedDate = useStore(consultaStore, (s) => s.selectedDate);
   const filters = useStore(consultaStore, (s) => s.filters);
+
+  // Filtro de período — conta empresas importadas no banco no intervalo.
+  const [preset, setPreset] = useState<DatePreset>('today');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [periodCount, setPeriodCount] = useState<number | null>(null);
+  const [countLoading, setCountLoading] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setCountLoading(true);
+      try {
+        const { from, to } = computeDateRange(preset, customFrom, customTo);
+        let q = supabase.from('companies').select('id', { count: 'exact', head: true });
+        if (from) q = q.gte('created_at', from.toISOString());
+        if (to) q = q.lte('created_at', to.toISOString());
+        const { count, error } = await q;
+        if (!cancelled) {
+          if (error) throw error;
+          setPeriodCount(count ?? 0);
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          setPeriodCount(null);
+          console.error(e);
+        }
+      } finally {
+        if (!cancelled) setCountLoading(false);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [preset, customFrom, customTo, refreshTick]);
+
 
   // Fila em tempo real = itens PENDENTES (aguardando envio) na engine de envio.
   const queue = useStore(envioStore, (s) => s.queue);
@@ -140,7 +185,42 @@ function ImportacaoAutomaticaPage() {
             </p>
           )}
         </div>
+        <WipeAllButton
+          label="Apagar importadas"
+          title="Apagar todas as empresas importadas?"
+          description="Remove permanentemente todas as empresas importadas, seus links públicos, gerações, eventos e a fila de importação. Não afeta configurações, modelos, campanhas ou histórico de envios. Não pode ser desfeito."
+          steps={[
+            { label: 'link_events', run: () => supabase.from('link_events').delete().neq('id', EMPTY_UUID) },
+            { label: 'company_links', run: () => supabase.from('company_links').delete().neq('id', EMPTY_UUID) },
+            { label: 'link_generations', run: () => supabase.from('link_generations').delete().neq('id', EMPTY_UUID) },
+            { label: 'automatic_company_queue', run: () => supabase.from('automatic_company_queue').delete().neq('id', EMPTY_UUID) },
+            { label: 'companies', run: () => supabase.from('companies').delete().neq('id', EMPTY_UUID) },
+          ]}
+          onDone={() => setRefreshTick((t) => t + 1)}
+        />
       </div>
+
+      <DateRangeFilter
+        preset={preset}
+        onPresetChange={setPreset}
+        from={customFrom}
+        to={customTo}
+        onFromChange={setCustomFrom}
+        onToChange={setCustomTo}
+      />
+
+      <Card>
+        <CardContent className="flex flex-wrap items-center gap-3 py-4 text-sm">
+          <span className="text-slate-600">Empresas importadas no período:</span>
+          <span className="text-2xl font-bold tabular-nums text-brand-navy">
+            {countLoading ? '…' : (periodCount ?? 0).toLocaleString('pt-BR')}
+          </span>
+          <span className="ml-auto text-xs text-slate-500">
+            Contagem por data de importação (created_at) no banco.
+          </span>
+        </CardContent>
+      </Card>
+
 
       {/* Config atual (herdada da Consulta) */}
       <Card className="border-slate-200 bg-slate-50/60">
