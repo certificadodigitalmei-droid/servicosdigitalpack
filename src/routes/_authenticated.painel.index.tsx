@@ -109,16 +109,22 @@ function DashboardPage() {
   async function load() {
     setLoading(true);
     try {
-      let linksCountQ = supabase.from('company_links').select('id', { count: 'exact', head: true });
+      // "Links gerados" = e-mails efetivamente enviados no período (mesma
+      // fonte da aba E-mails Enviados: email_campaign_recipients.sent_at).
+      // Assim as datas batem: se enviou 220 ontem, aparece 220 ontem aqui.
+      let linksCountQ = supabase
+        .from('email_campaign_recipients')
+        .select('id', { count: 'exact', head: true })
+        .not('sent_at', 'is', null);
       let evQ = supabase.from('link_events').select('event_type,browser,os,device,visitor_id,token,created_at').limit(50000);
       if (range.from) {
         const iso = range.from.toISOString();
-        linksCountQ = linksCountQ.gte('created_at', iso);
+        linksCountQ = linksCountQ.gte('sent_at', iso);
         evQ = evQ.gte('created_at', iso);
       }
       if (range.to) {
         const iso = range.to.toISOString();
-        linksCountQ = linksCountQ.lte('created_at', iso);
+        linksCountQ = linksCountQ.lte('sent_at', iso);
         evQ = evQ.lte('created_at', iso);
       }
       let ordersQ = supabase
@@ -134,6 +140,7 @@ function DashboardPage() {
         supabase.from('company_links').select('token, cnpj'),
         ordersQ,
       ]);
+
       const events = (evRes.data ?? []) as EventRow[];
       const linkMap = new Map((linksRes.data ?? []).map((l: any) => [l.token, l.cnpj]));
       const paidOrders = (ordersRes.data ?? []) as { amount: number | null }[];
