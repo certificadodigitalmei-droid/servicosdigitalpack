@@ -271,6 +271,15 @@ function ensureDailyWindow() {
 /* ----------------------------- queue actions ------------------------------ */
 
 export async function loadRecipients(opts: { limit?: number } = {}) {
+  // Wrapper explícito para os botões de lote grandes na UI.
+  return loadRecipientsInternal(opts);
+}
+
+export async function loadRecipientsBulk(count: number) {
+  return loadRecipientsInternal({ limit: Math.max(1, count) });
+}
+
+async function loadRecipientsInternal(opts: { limit?: number } = {}) {
   const limit = Math.max(1, opts.limit ?? 1);
   // Guard: evita execuções concorrentes (auto-sync + clique manual/realtime)
   // que podem inserir a mesma empresa duas vezes na fila.

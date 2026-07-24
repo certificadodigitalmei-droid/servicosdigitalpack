@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import {
   envioStore,
   loadRecipients,
+  loadRecipientsBulk,
   resetStatuses,
   clearQueue,
   clearLogs,
@@ -601,6 +602,24 @@ function EnvioMassa() {
               <Button variant="outline" onClick={() => void loadRecipients()} disabled={loading || running}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 Carregar fila
+              </Button>
+              <Button
+                variant="outline"
+                className="border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800"
+                onClick={() => void loadRecipientsBulk(1000)}
+                disabled={loading || running}
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                Carregar 1.000
+              </Button>
+              <Button
+                variant="outline"
+                className="border-violet-300 bg-violet-50 text-violet-700 hover:bg-violet-100 hover:text-violet-800"
+                onClick={() => void loadRecipientsBulk(5000)}
+                disabled={loading || running}
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                Carregar 5.000
               </Button>
               <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3">
                 <Switch checked={autoLoadQueue} onCheckedChange={setAutoLoadQueue} />
