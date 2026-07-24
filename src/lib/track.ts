@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type TrackEvent = 'view_link' | 'view_checkout' | 'click_certificado' | 'click_guia';
+export type TrackEvent = 'view_link' | 'view_checkout' | 'click_certificado' | 'click_guia' | 'copy_pix';
 
 function getVisitorId(): string {
   if (typeof window === 'undefined') return 'ssr';
