@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import {
   envioStore,
   loadRecipients,
+  loadRecipientsBulk,
   resetStatuses,
   clearQueue,
   clearLogs,
