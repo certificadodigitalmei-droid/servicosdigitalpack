@@ -1495,6 +1495,63 @@ export type Database = {
         }
         Relationships: []
       }
+      smtp_servers: {
+        Row: {
+          created_at: string
+          daily_limit: number
+          encryption: string
+          from_email: string
+          from_name: string | null
+          host: string
+          hourly_limit: number
+          id: string
+          is_active: boolean
+          monthly_limit: number
+          name: string
+          notes: string | null
+          password: string
+          port: number
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          daily_limit?: number
+          encryption?: string
+          from_email: string
+          from_name?: string | null
+          host: string
+          hourly_limit?: number
+          id?: string
+          is_active?: boolean
+          monthly_limit?: number
+          name: string
+          notes?: string | null
+          password: string
+          port?: number
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          daily_limit?: number
+          encryption?: string
+          from_email?: string
+          from_name?: string | null
+          host?: string
+          hourly_limit?: number
+          id?: string
+          is_active?: boolean
+          monthly_limit?: number
+          name?: string
+          notes?: string | null
+          password?: string
+          port?: number
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       suppression_list: {
         Row: {
           cnpj: string | null
