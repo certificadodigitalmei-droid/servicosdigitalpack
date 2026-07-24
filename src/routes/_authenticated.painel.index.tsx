@@ -366,22 +366,22 @@ function DashboardPage() {
         <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Acessos no checkout" value={stats.viewCheckout} total={stats.viewCheckoutTotal} color="bg-purple-50 text-purple-600" hint="Únicos por navegador/dispositivo" />
         <MetricCard icon={<FileSignature className="h-5 w-5" />} label='Cliques "Gerar Guia"' value={stats.clickGuia} total={stats.clickGuiaTotal} color="bg-rose-50 text-rose-600" hint="Únicos por navegador/dispositivo" />
         <MetricCard
-          icon={<CheckCircle2 className="h-5 w-5" />}
-          label="Pagamentos confirmados"
-          value={stats.paid}
-          color="bg-emerald-50 text-emerald-600"
-          hint={stats.paidAmount > 0 ? `Total: R$ ${stats.paidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Pedidos com PIX pago'}
-        />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <MetricCard
           icon={<Copy className="h-5 w-5" />}
           label='Cópias do "PIX Copia e Cola"'
           value={stats.copyPix}
           total={stats.copyPixTotal}
           color="bg-teal-50 text-teal-600"
           hint="Únicos por navegador/dispositivo · total inclui repetidos"
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <MetricCard
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          label="Pagamentos confirmados"
+          value={stats.paid}
+          color="bg-emerald-50 text-emerald-600"
+          hint={stats.paidAmount > 0 ? `Total: R$ ${stats.paidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Pedidos com PIX pago'}
         />
       </div>
 
