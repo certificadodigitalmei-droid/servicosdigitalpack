@@ -99,7 +99,7 @@ function DashboardPage() {
   const [recent, setRecent] = useState<(EventRow & { cnpj?: string })[]>([]);
   const [journey, setJourney] = useState<{ step: number; label: string; color: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [preset, setPreset] = useState<Preset>('tudo');
+  const [preset, setPreset] = useState<Preset>('hoje');
   const [customFrom, setCustomFrom] = useState<string>('');
   const [customTo, setCustomTo] = useState<string>('');
   
@@ -109,13 +109,7 @@ function DashboardPage() {
   async function load() {
     setLoading(true);
     try {
-      // "Links gerados" conta apenas links criados manualmente via o Gerador de Links
-      // (generation_id preenchido). Links auto-importados pela automação aparecem
-      // na aba "Importação Automática" e não devem inflar essa métrica.
-      let linksCountQ = supabase
-        .from('company_links')
-        .select('id', { count: 'exact', head: true })
-        .not('generation_id', 'is', null);
+      let linksCountQ = supabase.from('company_links').select('id', { count: 'exact', head: true });
       let evQ = supabase.from('link_events').select('event_type,browser,os,device,visitor_id,token,created_at').limit(50000);
       if (range.from) {
         const iso = range.from.toISOString();
@@ -338,7 +332,7 @@ function DashboardPage() {
 
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <MetricCard icon={<LinkIcon className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-slate-100 text-slate-700" hint="Links criados manualmente pelo Gerador (exclui importação automática)" />
+        <MetricCard icon={<LinkIcon className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-slate-100 text-slate-700" hint="Total de links criados no período (manuais + automáticos)" />
         <MetricCard icon={<Link2 className="h-5 w-5" />} label="Acessos na primeira página" value={stats.viewLink} total={stats.viewLinkTotal} color="bg-blue-50 text-brand-blue" hint="Únicos por navegador/dispositivo" />
         <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label='Cliques "Emitir Certificado"' value={stats.clickCert} total={stats.clickCertTotal} color="bg-amber-50 text-amber-600" hint="Únicos por navegador/dispositivo" />
       </div>
