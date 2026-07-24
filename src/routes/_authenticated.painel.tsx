@@ -244,7 +244,6 @@ function PanelLayout() {
         { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
         { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
-        { title: 'Envio Google Workspace', icon: Send, to: '/painel/workspace-envio' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
       ],
     },
