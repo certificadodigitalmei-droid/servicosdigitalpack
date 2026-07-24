@@ -511,6 +511,24 @@ export function removeSentEmail(id: string) {
   envioStore.set((s) => ({ sentEmails: s.sentEmails.filter((e) => e.id !== id) }));
 }
 
+export function removeSentEmailsInRange(fromISO?: string, toISO?: string): number {
+  const fromMs = fromISO ? new Date(fromISO).getTime() : undefined;
+  const toMs = toISO ? new Date(toISO).getTime() : undefined;
+  let removed = 0;
+  envioStore.set((s) => {
+    const kept = s.sentEmails.filter((e) => {
+      const t = new Date(e.sentAt).getTime();
+      if (fromMs !== undefined && t < fromMs) return true;
+      if (toMs !== undefined && t > toMs) return true;
+      removed++;
+      return false;
+    });
+    return { sentEmails: kept };
+  });
+  if (removed > 0) pushLog(`🗑 ${removed} registro(s) de enviados removido(s) do período selecionado.`);
+  return removed;
+}
+
 /* --------------------------------- send ----------------------------------- */
 
 function buildVarsFor(item: QueueItem) {
