@@ -73,13 +73,12 @@ function EmpresasImportadasPage() {
   const [search, setSearch] = useState('');
   const [uf, setUf] = useState<string>('all');
   const [emailFilter, setEmailFilter] = useState<string>('all');
-  const [origin, setOrigin] = useState<string>('all'); // all | auto | manual
   const [quality, setQuality] = useState<string>('all'); // all | complete | pending_enrichment | test_partial | test
   const [openingFrom, setOpeningFrom] = useState('');
   const [openingTo, setOpeningTo] = useState('');
   const [importedFrom, setImportedFrom] = useState('');
   const [importedTo, setImportedTo] = useState('');
-  const [autoIds, setAutoIds] = useState<Set<string>>(new Set());
+  const [dia, setDia] = useState<string>(''); // filtro rápido: um único dia
 
   const load = async () => {
     setLoading(true);
@@ -119,22 +118,7 @@ function EmpresasImportadasPage() {
 
       const { data, error, count } = await q;
       if (error) throw error;
-      let list = (data ?? []) as Row[];
-
-      // origem: buscar quais estão na fila automática
-      if (list.length) {
-        const ids = list.map((r) => r.id);
-        const { data: queueRows } = await supabase
-          .from('automatic_company_queue')
-          .select('company_id')
-          .in('company_id', ids);
-        const set = new Set<string>((queueRows ?? []).map((q: any) => q.company_id).filter(Boolean));
-        setAutoIds(set);
-        if (origin === 'auto') list = list.filter((r) => set.has(r.id));
-        if (origin === 'manual') list = list.filter((r) => !set.has(r.id));
-      } else {
-        setAutoIds(new Set());
-      }
+      const list = (data ?? []) as Row[];
 
       setRows(list);
       setTotal(count ?? list.length);
@@ -225,15 +209,17 @@ function EmpresasImportadasPage() {
             </Select>
           </div>
           <div>
-            <Label>Origem</Label>
-            <Select value={origin} onValueChange={setOrigin}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="auto">Consulta Automática</SelectItem>
-                <SelectItem value="manual">Manual / Planilha</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label>Dia</Label>
+            <Input
+              type="date"
+              value={dia}
+              onChange={(e) => {
+                const d = e.target.value;
+                setDia(d);
+                setImportedFrom(d);
+                setImportedTo(d);
+              }}
+            />
           </div>
           <div>
             <Label>Qualidade dos dados</Label>
@@ -269,7 +255,7 @@ function EmpresasImportadasPage() {
               Aplicar filtros
             </Button>
             <Button variant="outline" onClick={() => {
-              setSearch(''); setUf('all'); setEmailFilter('all'); setOrigin('all');
+              setSearch(''); setUf('all'); setEmailFilter('all'); setDia('');
               setOpeningFrom(''); setOpeningTo(''); setImportedFrom(''); setImportedTo('');
               setPage(0); setTimeout(load, 0);
             }}>
@@ -296,18 +282,17 @@ function EmpresasImportadasPage() {
                   <TableHead>Abertura</TableHead>
                   <TableHead>UF</TableHead>
                   <TableHead>E-mail</TableHead>
-                  <TableHead>Origem</TableHead>
                   <TableHead>Importada em</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={10} className="py-8 text-center">
+                  <TableRow><TableCell colSpan={9} className="py-8 text-center">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
                   </TableCell></TableRow>
                 ) : rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="py-8 text-center text-sm text-slate-500">
+                  <TableRow><TableCell colSpan={9} className="py-8 text-center text-sm text-slate-500">
                     Nenhuma empresa encontrada.
                   </TableCell></TableRow>
                 ) : rows.map((r) => (
@@ -327,11 +312,6 @@ function EmpresasImportadasPage() {
                     <TableCell>{r.inicio_atividade ? formatDateBR(r.inicio_atividade) : 'Não informado'}</TableCell>
                     <TableCell>{r.uf || '—'}</TableCell>
                     <TableCell className="max-w-[180px] truncate">{r.email || 'Não informado'}</TableCell>
-                    <TableCell>
-                      {autoIds.has(r.id)
-                        ? <Badge variant="secondary">Consulta Automática</Badge>
-                        : <Badge variant="outline">Manual</Badge>}
-                    </TableCell>
                     <TableCell className="text-xs">{formatDateBR(r.created_at.slice(0, 10))}</TableCell>
                     <TableCell className="text-right">
                       <Button asChild size="sm" variant="outline">
