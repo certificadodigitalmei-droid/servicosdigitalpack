@@ -121,24 +121,24 @@ function DashboardPage() {
   async function load() {
     setLoading(true);
     try {
-      // "Links gerados" = e-mails efetivamente enviados no período (mesma
-      // fonte da aba E-mails Enviados: email_campaign_recipients.sent_at).
-      // Assim as datas batem: se enviou 220 ontem, aparece 220 ontem aqui.
+      // "Links gerados" = links criados no período (mesma fonte da aba
+      // "Links Gerados": company_links.created_at). Assim o Dashboard mostra
+      // TODOS os links gerados no período, tenham sido enviados ou não.
       let linksCountQ = supabase
-        .from('email_campaign_recipients')
-        .select('id', { count: 'exact', head: true })
-        .not('sent_at', 'is', null);
+        .from('company_links')
+        .select('id', { count: 'exact', head: true });
       let evQ = supabase.from('link_events').select('event_type,browser,os,device,visitor_id,token,created_at').limit(50000);
       if (range.from) {
         const iso = range.from.toISOString();
-        linksCountQ = linksCountQ.gte('sent_at', iso);
+        linksCountQ = linksCountQ.gte('created_at', iso);
         evQ = evQ.gte('created_at', iso);
       }
       if (range.to) {
         const iso = range.to.toISOString();
-        linksCountQ = linksCountQ.lte('sent_at', iso);
+        linksCountQ = linksCountQ.lte('created_at', iso);
         evQ = evQ.lte('created_at', iso);
       }
+
       let ordersQ = supabase
         .from('orders')
         .select('amount, paid_at')
