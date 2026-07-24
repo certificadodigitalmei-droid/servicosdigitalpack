@@ -382,10 +382,11 @@ function PanelLayout() {
                   <span className="hidden md:inline">Restaurar</span>
                 </Button>
                 {lastSavedAt && (
-                  <span className="hidden lg:inline text-[10px] text-slate-400">
-                    Nuvem: {new Date(lastSavedAt).toLocaleString('pt-BR')}
+                  <span className="hidden lg:inline text-[10px] text-emerald-600">
+                    ☁ Sync auto · {new Date(lastSavedAt).toLocaleString('pt-BR')}
                   </span>
                 )}
+
                 <div className="hidden text-right sm:block ml-2">
                   <div className="text-xs font-semibold text-slate-700">Administrador</div>
                   <div className="text-[10px] text-slate-400">Sessão ativa</div>
