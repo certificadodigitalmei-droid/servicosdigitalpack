@@ -212,19 +212,6 @@ function EmpresasImportadasPage() {
             </Select>
           </div>
           <div>
-            <Label>Dia</Label>
-            <Input
-              type="date"
-              value={dia}
-              onChange={(e) => {
-                const d = e.target.value;
-                setDia(d);
-                setImportedFrom(d);
-                setImportedTo(d);
-              }}
-            />
-          </div>
-          <div>
             <Label>Qualidade dos dados</Label>
             <Select value={quality} onValueChange={setQuality}>
               <SelectTrigger><SelectValue /></SelectTrigger>
