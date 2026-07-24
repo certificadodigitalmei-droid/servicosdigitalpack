@@ -83,6 +83,24 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
         },
         { apiKey, sendUrl: process.env.LOVABLE_SEND_URL }
       );
+      // Persiste registro durável do envio para deduplicar entre sessões.
+      // Só grava em envio REAL (testes não devem contar).
+      if (!data.testMode) {
+        try {
+          const normEmail = (data.recipient || '').trim().toLowerCase();
+          const normCnpj = (data.cnpj || '').replace(/\D+/g, '') || null;
+          await context.supabase.from('email_campaign_recipients').insert({
+            email: normEmail,
+            cnpj: normCnpj,
+            company_id: data.companyId ?? null,
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+            personalized_subject: data.subject,
+          });
+        } catch {
+          // Falha ao gravar histórico não deve invalidar o envio confirmado.
+        }
+      }
       return { sent: true, recipient, idempotencyKey };
     } catch (error) {
       if (error instanceof EmailAPIError) {
