@@ -45,7 +45,7 @@ function cleanPersonName(v?: string | null): string {
 }
 
 function TokenHomePage() {
-  const { row, initialPaidAt, popup } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null };
+  const { row, initialPaidAt, popup, loaderAlreadyShown } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null; loaderAlreadyShown: boolean };
   const { token } = Route.useParams();
   const nomeFmt = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '—';
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
@@ -57,16 +57,16 @@ function TokenHomePage() {
   const [showLoader, setShowLoader] = useState(false);
   const navigate = useNavigate();
 
-  // Mobile-only intro animation before revealing the page
+  // Mobile-only intro animation, exibida uma única vez (persistido no banco)
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (loaderAlreadyShown) return;
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
-    const key = `gov_loader_shown_${token}`;
-    if (isMobile && !sessionStorage.getItem(key)) {
-      setShowLoader(true);
-      sessionStorage.setItem(key, '1');
-    }
-  }, [token]);
+    if (!isMobile) return;
+    setShowLoader(true);
+    markLinkLoaderShown({ data: { token } }).catch(() => {});
+  }, [token, loaderAlreadyShown]);
+
 
 
 
