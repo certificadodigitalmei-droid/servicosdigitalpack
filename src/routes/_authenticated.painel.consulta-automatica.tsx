@@ -364,18 +364,10 @@ function ConsultaPage() {
                 variant="outline"
                 onClick={() => {
                   setListDialogOpen(true);
-                  if (foundList.length === 0 && !isCounting) {
-                    void runListOnce({ silent: true, maxPages: 25 });
+                  if (!isCounting) {
+                    void runListOnce({ silent: true });
                   }
                 }}
-              >
-                <List className="mr-1 h-4 w-4" />
-                Ver lista de CNPJs ({foundList.length})
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => void runListOnce({ silent: false, maxPages: 25 })}
                 disabled={isCounting}
               >
                 {isCounting ? (
@@ -383,7 +375,7 @@ function ConsultaPage() {
                 ) : (
                   <List className="mr-1 h-4 w-4" />
                 )}
-                Carregar mais 500
+                Ver lista de CNPJs ({foundList.length})
               </Button>
               {foundList.length > 0 && (
                 <Button
@@ -400,9 +392,10 @@ function ConsultaPage() {
 
               )}
               <span className="text-xs text-slate-500">
-                Salva no navegador por data + filtros.
+                Carrega todas as empresas da data e filtros escolhidos.
               </span>
             </div>
+
           </div>
 
           {countResult && (
