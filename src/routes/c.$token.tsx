@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react';
 import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, CalendarClock } from 'lucide-react';
 
 import { CertificatePopup } from '@/components/CertificatePopup';
+import { GovConsultaLoader } from '@/components/GovConsultaLoader';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
 import { resolveCompanyLink, getLinkPaymentStatus, type ResolvedCompany } from '@/lib/company-links.functions';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
 import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
+
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
