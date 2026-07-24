@@ -9,6 +9,7 @@ import { useStore } from '@/lib/automation/store';
 import { envioStore, clearSentEmails, removeSentEmail } from '@/lib/automation/envio-engine';
 import { formatCnpj } from '@/lib/email-campaign/template';
 import { toast } from 'sonner';
+import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
 
 export const Route = createFileRoute('/_authenticated/painel/enviados')({
   component: EnviadosPage,
