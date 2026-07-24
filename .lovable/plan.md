@@ -1,126 +1,77 @@
-# Fase 1 — Consulta Automática (Casa dos Dados) + Auth real
+# Integração Gmail API (Google Workspace)
 
 ## Objetivo
+- Site continua em `https://certificadodigitalccmei.online` (nada muda).
+- E-mails passam a sair **somente** de `certificadomeidigital@seu-certificado-mei-digital.online` via **Gmail API HTTPS + OAuth2** (nunca SMTP direto — Cloudflare Workers não suporta TCP).
 
-Substituir a senha `117711` por autenticação real com Supabase Auth + role `admin`, e entregar a funcionalidade **Consulta Automática** ligada à API oficial da Casa dos Dados, rodando em background via server route interna acionada por `pg_cron`. Sem atalhos de segurança, sem inventar endpoints.
+## O que será criado
 
-## O que será entregue
+### 1. Segredos (backend, nunca no frontend)
+Solicitados via `add_secret`:
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REFRESH_TOKEN`
+- `GOOGLE_SENDER_EMAIL` (fixo: `certificadomeidigital@seu-certificado-mei-digital.online`)
 
-### 1. Autenticação real (substitui 117711)
-- Migration cria enum `app_role` (`admin`, `user`), tabela `user_roles` (RLS, policies via `has_role`), função `public.has_role(_user_id, _role)` SECURITY DEFINER com search_path fixo.
-- Rota pública `/auth` com formulário e-mail + senha (sign in + sign up desabilitado por padrão — só admin existente pode entrar; sign up fica atrás de flag).
-- Layout `_authenticated/route.tsx` (integração-gerenciado, `ssr: false`) já existe → substitui o gate atual por `supabase.auth.getUser()` + redirect `/auth`.
-- Novo layout aninhado `_authenticated/_admin.tsx` que valida `has_role(uid,'admin')` via server fn `requireAdmin`; redireciona não-admin para `/`.
-- Painel inteiro (`/painel/*`) move-se para `_authenticated/_admin/painel.*` para exigir role admin.
-- Header do painel mostra e-mail do usuário e botão “Sair” (`supabase.auth.signOut` + cache teardown + navigate `/auth`).
-- Remoção completa: constante `PANEL_PASSWORD`, `STORAGE_KEY`, leitura/escrita `localStorage.panel_auth_v1`, formulário de senha estática.
+### 2. Banco de dados (migration)
+Nova tabela `email_send_queue`:
+- `id`, `to_email`, `subject`, `html`, `text`, `idempotency_key` (único), `status` (`queued|sending|sent|failed|suppressed`), `attempts`, `last_error`, `next_retry_at`, `sent_message_id`, `created_by`, `created_at`, `updated_at`.
+- RLS fechada: só `service_role` escreve; `authenticated` com role `admin` pode ler seus registros.
+- GRANTs corretos.
 
-### 2. Casa dos Dados — backend
-- Secrets solicitados: `CASA_DOS_DADOS_API_KEY`, `CASA_DOS_DADOS_API_BASE_URL` (default `https://api.casadosdados.com.br`), `CASA_DOS_DADOS_CRON_SECRET` (gerado), `PUBLIC_APP_URL` (definido).
-- Client server-only em `src/lib/casa-dos-dados/client.server.ts`: envia header `api-key`, base URL configurável, timeout, tratamento 401/403/429.
-- Endpoints oficiais usados:
-  - `POST /v5/cnpj/pesquisa` — pesquisa avançada (modo "empresas abertas hoje" com `data_abertura.inicio/fim` no fuso `America/Sao_Paulo`).
-  - `GET /v4/dashboard/cnpj/empresas-abertas/hoje` — botão “Consultar quantidade de hoje”.
-  - `GET /v4/cnpj/{cnpj}` — apenas quando explicitamente pedido (não automático nesta fase).
-  - `GET /v5/saldo` — apenas botão “Testar API” (sem gating de saldo nesta fase).
+### 3. Backend — módulo Gmail (`src/lib/gmail/`)
+- `gmail.server.ts`: helper `getAccessToken()` (refresh via `oauth2.googleapis.com/token`), `sendGmailMessage()` (POST `gmail.googleapis.com/gmail/v1/users/me/messages/send`), montagem RFC 2822 base64url.
+- Validação: sanitiza `to/subject`, rejeita `\r\n` em headers (bloqueio de header injection), Zod schemas.
+- Remetente **hardcoded** a partir de `process.env.GOOGLE_SENDER_EMAIL` — o cliente nunca envia `from`.
 
-### 3. Tabelas novas
-- `automatic_company_queries` — configuração da automação (uma por admin nesta fase, mas schema já suporta várias).
-- `automatic_company_query_runs` — histórico de cada execução.
-- `automatic_company_queue` — fila diária com `UNIQUE (automation_id, query_date, cnpj)`.
-- Todas com RLS: `SELECT/INSERT/UPDATE/DELETE` gated por `has_role(auth.uid(),'admin')`. Nada de `USING (true)`. Grants para `authenticated` + `service_role`; sem grant `anon`.
+### 4. Server functions (`src/lib/gmail/send.functions.ts`)
+Todas com `requireSupabaseAuth` + check `has_role(admin)`:
+- `enqueueWorkspaceEmail({ to, subject, html, text?, idempotencyKey })` — insere na fila.
+- `sendWorkspaceEmailNow(id)` — processa 1 item (usado por retry/test).
+- `testWorkspaceConnection()` — só faz refresh token + `GET users/me/profile`. **Não envia e-mail.**
+- `sendWorkspaceTestEmail()` — envia teste **apenas para o próprio `GOOGLE_SENDER_EMAIL`** (destino não é escolhido pelo admin).
+- Rate limit em memória por processo (janela de 1s) + respeito a `429 Retry-After` e `5xx` com backoff exponencial (attempts até 5, `next_retry_at`).
 
-### 4. Server route interna
-- `POST /api/internal/casa-dos-dados-worker` (não `/api/public/*`).
-- Exige header `x-cron-secret` == `CASA_DOS_DADOS_CRON_SECRET` (comparação timing-safe). Sem secret → 401 e nada é executado.
-- Fluxo:
-  1. `SELECT ... FOR UPDATE SKIP LOCKED` (via RPC SECURITY DEFINER) para pegar automações `enabled = true AND next_run_at <= now() AND status != 'running'`.
-  2. Marca `status='running'`.
-  3. Consulta Casa dos Dados com filtros salvos.
-  4. Dedupe por CNPJ (checa `companies` + `automatic_company_queue`).
-  5. Insere/atualiza `companies`; para novas ou sem link ativo, gera token cripto (`crypto.randomUUID`), cria `link_generations` + `company_links`, monta `LINK_PUBLICO = ${PUBLIC_APP_URL}/c/{token}` e `LINK_CHECKOUT = ${PUBLIC_APP_URL}/checkout/{token}`.
-  6. Reutiliza link ativo existente quando já houver.
-  7. Grava contagens no run e no queue.
-  8. `finally`: atualiza `last_run_at`, `next_run_at = last_run_at + interval_minutes`, `status='active'` (ou `'error'` com `last_error`).
-- Registra `skipped_concurrent_run` no run quando lock falhar.
+### 5. Route pública para webhook interno de processamento
+`src/routes/api/internal/gmail-queue-worker.ts` — processa próximos itens `queued/next_retry_at<=now()`. Chamado internamente/manual. Sem PII em logs.
 
-### 5. pg_cron
-- Extensões `pg_cron` + `pg_net` habilitadas.
-- Job `casa-dos-dados-dispatch` a cada minuto: `net.http_post` para `https://project--{id}.lovable.app/api/internal/casa-dos-dados-worker` com header `x-cron-secret`. O cron só dispara — a decisão de bater na Casa dos Dados fica no worker.
+### 6. UI — nova aba **Configurações → Google Workspace**
+`src/routes/_authenticated.painel.google-workspace.tsx`:
+- Cards informativos:
+  - **Site:** `certificadodigitalccmei.online`
+  - **Remetente Google Workspace:** `certificadomeidigital@seu-certificado-mei-digital.online`
+- Status: mostra se os 4 secrets estão configurados.
+- Botão **"Testar conexão"** → chama `testWorkspaceConnection` (não envia e-mail).
+- Botão **"Enviar teste para o próprio remetente"** com `AlertDialog` de confirmação → chama `sendWorkspaceTestEmail`.
+- Nada de host/porta/senha SMTP na tela.
 
-### 6. UI `/painel/consulta-automatica`
-- Aba nova acima de “Filtrar Empresas MEI” no sidebar.
-- Cards: **Status**, **Última execução**, **Fila do dia**, **Histórico**.
-- Formulário de configuração: modo (padrão “Empresas abertas hoje — RECOMENDADO”), quantidade por execução (1/5/10/20/50/100/500/Todas/Personalizada com `maximum_all_results_per_run` = 1000 default), filtros mínimos (somente MEI = Sim, situação ATIVA, somente matriz = Sim, com e-mail = Sim).
-- Botões: **Ativar automação**, **Desativar automação**, **Executar agora** (chama a server fn com role admin, mesma lógica do worker), **Testar API** (chama `/v5/saldo` sanitizado), **Consultar quantidade de hoje**, **Salvar configurações**.
-- Primeiro teste real: quantidade fixa em **1** e um botão explícito “Rodar teste com 1 empresa”.
+### 7. CORS
+Server functions do TanStack são same-origin — sem CORS. A route interna do worker responde apenas para origem própria; se precisar de CORS, allowlist explícita: `https://certificadodigitalccmei.online` + preview atual. **Nunca `*`.**
 
-### 7. Preservado
-- `companies`, `link_generations`, `company_links`, páginas `/c/$token`, `/checkout/$token`, importador de planilha, gerador manual de links, campanhas de e-mail — nada alterado além do necessário para roteamento admin.
+## O que NÃO muda
+- `send.functions.ts` do Lovable Emails atual permanece funcionando.
+- Aba SMTP existente permanece (cadastro informativo).
+- Templates, campanhas, links, checkout: intactos.
 
 ## Detalhes técnicos
+- Gmail API endpoint: `POST https://gmail.googleapis.com/gmail/v1/users/me/messages/send` com header `Authorization: Bearer <access_token>` e body `{ raw: base64url(RFC2822) }`.
+- Refresh: `POST https://oauth2.googleapis.com/token` com `grant_type=refresh_token`. Cache do access_token em memória do worker até `expires_in - 60s`.
+- BCC opcional para envio agrupado (parâmetro futuro; primeira versão faz envio individual).
+- Logs: só id da fila, status HTTP, código de erro do Google. Nunca token, corpo, destinatário completo em log de erro (mascarar `n***@dominio`).
 
-### Arquivos
+## Passos manuais do Google Cloud / Workspace (listarei ao final)
+1. Criar projeto no Google Cloud Console.
+2. Ativar **Gmail API**.
+3. Configurar OAuth consent screen (Internal, se Workspace).
+4. Criar credencial OAuth 2.0 Client ID tipo **Desktop app** (ou Web + redirect).
+5. Rodar fluxo OAuth uma vez com escopo `https://www.googleapis.com/auth/gmail.send` (ou `gmail.compose`) usando conta `certificadomeidigital@seu-certificado-mei-digital.online`, obter `refresh_token`.
+6. Colar os 4 valores no formulário seguro que abrirei com `add_secret`.
 
-Criados:
-- `src/routes/auth.tsx` — login e-mail/senha.
-- `src/routes/_authenticated/_admin.tsx` — gate admin.
-- `src/routes/_authenticated/_admin.painel.consulta-automatica.tsx` — UI.
-- `src/lib/casa-dos-dados/client.server.ts` — client HTTP com `api-key`.
-- `src/lib/casa-dos-dados/worker.server.ts` — lógica de execução (dedupe, links, run tracking).
-- `src/lib/casa-dos-dados/automation.functions.ts` — server fns (ativar/desativar/executar/testar/consultar-saldo/consultar-hoje/listar histórico) todas com `requireSupabaseAuth` + check `has_role`.
-- `src/routes/api/internal/casa-dos-dados-worker.ts` — server route com `x-cron-secret`.
-- Migration única com: enum, `user_roles`, `has_role`, três tabelas de automação, RPC de lock, RLS/grants, extensões `pg_cron`/`pg_net`.
-
-Movidos (renomeados para exigir admin):
-- `src/routes/_authenticated.painel.*` → `src/routes/_authenticated/_admin.painel.*` (todas as 6 rotas do painel).
-- `src/routes/_authenticated.tsx` → substituído pelo layout gerenciado da integração (deleta password gate).
-
-Não tocados: `checkout*`, `c.$token`, `certificado-mei.$token`, `index`, `login` (renomeio se conflitar), páginas legais, `SiteChrome`.
-
-### RLS crítica
-
-```sql
-create policy "admin manage automations" on public.automatic_company_queries
-  for all to authenticated
-  using (public.has_role(auth.uid(),'admin'))
-  with check (public.has_role(auth.uid(),'admin'));
-```
-Mesma forma para as outras duas tabelas. `user_roles` com policy de leitura própria + admin gerencia.
-
-### Trava anti-concorrência
-RPC SECURITY DEFINER retornando `automation_id` com `SELECT ... FOR UPDATE SKIP LOCKED LIMIT 1` + `UPDATE ... SET status='running'` na mesma transação. Sem lock adquirido → retorna null → worker responde 200 sem trabalho.
-
-### Cron
-```sql
-select cron.schedule(
-  'casa-dos-dados-dispatch',
-  '* * * * *',
-  $$ select net.http_post(
-       url:='https://project--59d22abc-af86-4ff1-bb47-5435d899aa25.lovable.app/api/internal/casa-dos-dados-worker',
-       headers:=jsonb_build_object('content-type','application/json','x-cron-secret', current_setting('app.cron_secret', true)),
-       body:='{}'::jsonb
-     ) $$
-);
-```
-O `x-cron-secret` será colocado via `insert` após o secret ser gerado (o valor bruto não pode ser lido depois, então setamos `alter database ... set app.cron_secret = '...'` numa `supabase--insert` que o usuário aprova).
-
-### Fora de escopo (Fase 2)
-Webhook Casa dos Dados; filtros avançados (UF/município/CNAE/etc.); gating por saldo; execução acima do limite de segurança; consulta individual `/v4/cnpj/{cnpj}` automática; múltiplos admins simultâneos; exportação de lote; testes automatizados das 20 condições listadas.
-
-## Testes que executarei ao final
-
-1. `Testar API` → mostra status HTTP retornado por `/v5/saldo`.
-2. `Consultar quantidade de hoje` → mostra número retornado.
-3. `Rodar teste com 1 empresa` → uma execução real com `quantity_per_run=1`, mostrando: run id, `api_total`, empresa importada (CNPJ, nome), token gerado, `LINK_PUBLICO`, `LINK_CHECKOUT`, saldo antes/depois.
-4. Segunda execução imediata → confirma dedupe (0 novas, 1 duplicada).
-5. Dispatcher pg_cron → uma passada real (aciono via `select cron.schedule` de teste ou chamada direta com secret).
-
-## Configuração manual necessária depois
-
-- Você preenche os secrets `CASA_DOS_DADOS_API_KEY` e (se quiser sobrescrever) `CASA_DOS_DADOS_API_BASE_URL`. `CASA_DOS_DADOS_CRON_SECRET` e `PUBLIC_APP_URL` eu configuro automaticamente.
-- Criar o primeiro admin: no Supabase Auth criar o usuário (email/senha), depois rodar via SQL (te passo o comando pronto) `insert into public.user_roles(user_id, role) values ('<uuid>', 'admin')`.
-
-## Se aprovar
-
-Executo nesta ordem: migration → secrets → arquivos → cron → subo os testes reais e colo os resultados no chat. Sem afirmar “funciona” sem output real.
+## Ordem de execução após aprovação
+1. Migration da tabela `email_send_queue`.
+2. `add_secret` dos 4 segredos.
+3. Módulo `gmail.server.ts` + server functions.
+4. Route interna worker.
+5. Página UI + entrada no menu Configurações.
+6. Build/typecheck.
+7. Relatório final com o que falta configurar do lado do Google.
