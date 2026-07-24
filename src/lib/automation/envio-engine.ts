@@ -312,17 +312,9 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
         .eq('active', true);
       for (const l of (links ?? []) as Array<{ company_id: string | null; public_token: string; public_url: string | null }>) {
         if (l.company_id && l.public_token && !linksMap[l.company_id]) {
-          let url = l.public_url || '';
-          // URL quebrada (`http:///c/...`, sem host, apontando pro preview do
-          // Lovable ou pro domínio antigo de envio) → reconstruir a partir do token.
-          if (
-            !url ||
-            /^https?:\/\/\/?/i.test(url) ||
-            !/^https?:\/\/[^/]+/i.test(url) ||
-            /lovable\.app|localhost|127\.0\.0\.1|seu-certificado-mei-digital\.online/i.test(url)
-          ) {
-            url = `${PUBLIC_BASE_URL}/c/${l.public_token}`;
-          }
+          // Sempre reescreve pra rota de animação — /acesso/{token} — mesmo
+          // quando o public_url já existe (links antigos apontam para /c/).
+          const url = `${PUBLIC_BASE_URL}/acesso/${l.public_token}`;
           linksMap[l.company_id] = { token: l.public_token, url };
         }
       }
