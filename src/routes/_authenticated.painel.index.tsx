@@ -18,6 +18,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useServerFn } from '@tanstack/react-start';
+import { getSitePopup } from '@/lib/site-popup.functions';
+
 
 export const Route = createFileRoute('/_authenticated/painel/')({
   component: DashboardPage,
@@ -102,6 +105,15 @@ function DashboardPage() {
   const [preset, setPreset] = useState<Preset>('hoje');
   const [customFrom, setCustomFrom] = useState<string>('');
   const [customTo, setCustomTo] = useState<string>('');
+  const [popupEnabled, setPopupEnabled] = useState<{ p1: boolean; p2: boolean }>({ p1: true, p2: true });
+  const fetchPopup = useServerFn(getSitePopup);
+  useEffect(() => {
+    let alive = true;
+    fetchPopup()
+      .then((s) => { if (alive) setPopupEnabled({ p1: !!s?.enabled, p2: !!s?.payment_enabled }); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [fetchPopup]);
   
 
   const range = useMemo(() => computeRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
@@ -436,35 +448,42 @@ function DashboardPage() {
       </Card>
 
       {/* Preview dos Pop-ups do site */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">
-            Pop-ups do site — cliques
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <PopupClicksCard
-              icon={<Bell className="h-5 w-5" />}
-              title="Pop-up 1 — Aviso do Certificado"
-              description='Abre quando o cliente clica em "Emitir Certificado" na primeira página.'
-              badge="1º passo"
-              badgeColor="bg-amber-100 text-amber-700"
-              uniqueClicks={stats.clickCert}
-              totalClicks={stats.clickCertTotal}
-            />
-            <PopupClicksCard
-              icon={<Info className="h-5 w-5" />}
-              title="Pop-up 2 — Informações do Pagamento"
-              description='Abre quando o cliente clica em "Gerar Guia" no checkout.'
-              badge="2º passo"
-              badgeColor="bg-purple-100 text-purple-700"
-              uniqueClicks={stats.clickGuia}
-              totalClicks={stats.clickGuiaTotal}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {(popupEnabled.p1 || popupEnabled.p2) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">
+              Pop-ups do site — cliques
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`grid gap-4 ${popupEnabled.p1 && popupEnabled.p2 ? 'md:grid-cols-2' : ''}`}>
+              {popupEnabled.p1 && (
+                <PopupClicksCard
+                  icon={<Bell className="h-5 w-5" />}
+                  title="Pop-up 1 — Aviso do Certificado"
+                  description='Abre quando o cliente clica em "Emitir Certificado" na primeira página.'
+                  badge="1º passo"
+                  badgeColor="bg-amber-100 text-amber-700"
+                  uniqueClicks={stats.clickCert}
+                  totalClicks={stats.clickCertTotal}
+                />
+              )}
+              {popupEnabled.p2 && (
+                <PopupClicksCard
+                  icon={<Info className="h-5 w-5" />}
+                  title="Pop-up 2 — Informações do Pagamento"
+                  description='Abre quando o cliente clica em "Gerar Guia" no checkout.'
+                  badge="2º passo"
+                  badgeColor="bg-purple-100 text-purple-700"
+                  uniqueClicks={stats.clickGuia}
+                  totalClicks={stats.clickGuiaTotal}
+                />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
 
 
 
