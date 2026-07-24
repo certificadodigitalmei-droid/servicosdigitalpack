@@ -204,14 +204,23 @@ export function buildRfc2822({
   return `${headers}\r\n\r\n${parts.join('\r\n')}\r\n`;
 }
 
+export const DEFAULT_FROM_NAME = 'Certificado Digital MEI';
+
 export async function sendGmailMessage(opts: {
   to: string;
   subject: string;
   html?: string;
   text?: string;
+  fromName?: string;
+  replyTo?: string;
+  listUnsubscribe?: string;
 }): Promise<{ messageId: string }> {
   const fromEmail = getSenderEmail();
-  const raw = buildRfc2822({ ...opts, fromEmail });
+  const raw = buildRfc2822({
+    ...opts,
+    fromEmail,
+    fromName: opts.fromName || DEFAULT_FROM_NAME,
+  });
   const encoded = base64UrlEncode(raw);
   const token = await getAccessToken();
 
