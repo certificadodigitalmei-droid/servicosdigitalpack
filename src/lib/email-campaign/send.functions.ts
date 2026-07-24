@@ -96,7 +96,7 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
             status: 'sent',
             sent_at: new Date().toISOString(),
             personalized_subject: data.subject,
-          });
+          } as any);
         } catch {
           // Falha ao gravar histórico não deve invalidar o envio confirmado.
         }
