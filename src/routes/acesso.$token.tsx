@@ -2,12 +2,14 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
 import { GovConsultaLoader } from '@/components/GovConsultaLoader';
-import { resolveCompanyLink, type ResolvedCompany } from '@/lib/company-links.functions';
+import { resolveCompanyLink, markLinkLoaderShown, type ResolvedCompany } from '@/lib/company-links.functions';
 
 /**
  * Rota de "acesso" — é o link público que enviamos ao cliente.
- * Mobile: exibe a animação e depois redireciona para /c/$token.
- * Desktop: pula a animação e vai direto para /c/$token.
+ * Todo acesso passa por aqui primeiro. Se alguém abrir /c/$token direto,
+ * o loader daquela rota redireciona para cá enquanto a animação não tiver sido exibida.
+ * Mobile: exibe a animação e depois vai para /c/$token.
+ * Desktop: marca como vista e vai direto para /c/$token, sem animação.
  */
 export const Route = createFileRoute('/acesso/$token')({
   loader: async ({ params }) => {
@@ -32,11 +34,12 @@ function AcessoPage() {
     if (typeof window === 'undefined') return;
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
     if (!isMobile) {
-      // Desktop: redireciona imediatamente, sem animação.
+      // Desktop: marca como visto (para evitar redirect loop na /c) e redireciona sem animação.
+      markLinkLoaderShown({ data: { token } }).catch(() => {});
       navigate({ to: '/c/$token', params: { token }, replace: true });
       return;
     }
-    // Mobile: mostra a animação; onFinish redireciona.
+    // Mobile: mostra a animação; onFinish marca e redireciona.
     setShowLoader(true);
   }, [token, navigate]);
 
@@ -44,7 +47,7 @@ function AcessoPage() {
   const cnpj = row?.cnpj ?? undefined;
 
   if (!showLoader) {
-    // Enquanto decide (SSR/desktop) mantém a tela limpa e clara.
+    // Enquanto decide (SSR/desktop) mantém a tela limpa e clara — sem flash dos dados.
     return <div className="min-h-screen bg-white" />;
   }
 
@@ -52,7 +55,10 @@ function AcessoPage() {
     <GovConsultaLoader
       cnpj={cnpj}
       nome={nome}
-      onFinish={() => navigate({ to: '/c/$token', params: { token }, replace: true })}
+      onFinish={() => {
+        markLinkLoaderShown({ data: { token } }).catch(() => {});
+        navigate({ to: '/c/$token', params: { token }, replace: true });
+      }}
     />
   );
 }
