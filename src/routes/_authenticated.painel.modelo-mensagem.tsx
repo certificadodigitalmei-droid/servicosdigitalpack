@@ -22,6 +22,7 @@ import {
   renderHtml,
   renderText,
   substitute,
+  isSubjectForbidden,
   type CampaignDesign,
 } from '@/lib/email-campaign/template';
 import { InteractivePreview } from '@/components/email-editor/InteractivePreview';
