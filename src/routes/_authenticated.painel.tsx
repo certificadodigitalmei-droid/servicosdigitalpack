@@ -250,6 +250,7 @@ function PanelLayout() {
       label: 'Configurações',
       items: [
         { title: 'Configurações de Pagamento', icon: DollarSign, to: '/painel/configuracoes-pagamento' },
+        { title: 'Exibição do Site', icon: LayoutDashboard, to: '/painel/exibicao-site' },
         { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
         { title: 'API Casa dos Dados', icon: KeyRound, to: '/painel/api-casa-dos-dados' },
         { title: 'Modelo de Mensagem', icon: Palette, to: '/painel/modelo-mensagem' },
@@ -268,6 +269,7 @@ function PanelLayout() {
     if (path === '/painel/links-gerados') return 'Links Gerados';
     if (path === '/painel/pagamentos') return 'Pagamentos';
     if (path === '/painel/configuracoes-pagamento') return 'Configurações de Pagamento';
+    if (path === '/painel/exibicao-site') return 'Exibição do Site';
     if (path === '/painel/pop-up-site') return 'Pop-up do Site';
     if (path === '/painel/api-casa-dos-dados') return 'API Casa dos Dados';
     if (path === '/painel/importar-empresas') return 'Importar Empresas';

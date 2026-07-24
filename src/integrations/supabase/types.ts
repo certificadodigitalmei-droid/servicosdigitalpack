@@ -1327,6 +1327,27 @@ export type Database = {
         }
         Relationships: []
       }
+      site_display_settings: {
+        Row: {
+          id: number
+          show_cert_landing: boolean
+          show_cert_success: boolean
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          show_cert_landing?: boolean
+          show_cert_success?: boolean
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          show_cert_landing?: boolean
+          show_cert_success?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_popup_settings: {
         Row: {
           badge_text: string
