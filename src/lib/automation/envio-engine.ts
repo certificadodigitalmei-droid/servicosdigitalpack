@@ -312,17 +312,9 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
         .eq('active', true);
       for (const l of (links ?? []) as Array<{ company_id: string | null; public_token: string; public_url: string | null }>) {
         if (l.company_id && l.public_token && !linksMap[l.company_id]) {
-          let url = l.public_url || '';
-          // URL quebrada (`http:///c/...`, sem host, apontando pro preview do
-          // Lovable ou pro domínio antigo de envio) → reconstruir a partir do token.
-          if (
-            !url ||
-            /^https?:\/\/\/?/i.test(url) ||
-            !/^https?:\/\/[^/]+/i.test(url) ||
-            /lovable\.app|localhost|127\.0\.0\.1|seu-certificado-mei-digital\.online/i.test(url)
-          ) {
-            url = `${PUBLIC_BASE_URL}/c/${l.public_token}`;
-          }
+          // Sempre reescreve pra rota de animação — /acesso/{token} — mesmo
+          // quando o public_url já existe (links antigos apontam para /c/).
+          const url = `${PUBLIC_BASE_URL}/acesso/${l.public_token}`;
           linksMap[l.company_id] = { token: l.public_token, url };
         }
       }
@@ -337,7 +329,7 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
           company_id: c.id,
           public_token: token,
           token,
-          public_url: `${PUBLIC_BASE_URL}/c/${token}`,
+          public_url: `${PUBLIC_BASE_URL}/acesso/${token}`,
           checkout_url: `${PUBLIC_BASE_URL}/checkout/${token}`,
           active: true,
           status: 'active',
@@ -358,7 +350,7 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
           if (l.company_id) {
             linksMap[l.company_id] = {
               token: l.public_token,
-              url: l.public_url || `${PUBLIC_BASE_URL}/c/${l.public_token}`,
+              url: `${PUBLIC_BASE_URL}/acesso/${l.public_token}`,
             };
           }
         }
@@ -535,7 +527,7 @@ function buildVarsFor(item: QueueItem) {
     LINK_PUBLICO: item.publicUrl
       ? item.publicUrl
       : item.publicToken
-        ? `${PUBLIC_BASE_URL}/c/${item.publicToken}`
+        ? `${PUBLIC_BASE_URL}/acesso/${item.publicToken}`
         : `${PUBLIC_BASE_URL}/modelo`,
     TOKEN: item.publicToken || '',
 
@@ -569,6 +561,8 @@ async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number
         testMode: cfg.testMode,
         testRecipient: cfg.testMode ? cfg.testRecipient || null : null,
         idempotencyKey: `campaign-${item.id}-${Date.now()}`,
+        companyId: item.id,
+        cnpj: item.cnpj,
       },
     });
 

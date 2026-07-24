@@ -19,6 +19,11 @@ export type CampaignSendInput = {
   fromName?: string;
   testMode?: boolean;
   testRecipient?: string | null;
+  // Identificadores para deduplicação durável: gravamos sent_at em
+  // email_campaign_recipients para que a fila jamais reinsira alguém que
+  // já foi disparado, mesmo depois de trocar de navegador ou limpar o cache.
+  companyId?: string | null;
+  cnpj?: string | null;
 };
 
 export type CampaignSendResult =
@@ -78,6 +83,24 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
         },
         { apiKey, sendUrl: process.env.LOVABLE_SEND_URL }
       );
+      // Persiste registro durável do envio para deduplicar entre sessões.
+      // Só grava em envio REAL (testes não devem contar).
+      if (!data.testMode) {
+        try {
+          const normEmail = (data.recipient || '').trim().toLowerCase();
+          const normCnpj = (data.cnpj || '').replace(/\D+/g, '') || null;
+          await context.supabase.from('email_campaign_recipients').insert({
+            email: normEmail,
+            cnpj: normCnpj,
+            company_id: data.companyId ?? null,
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+            personalized_subject: data.subject,
+          } as any);
+        } catch {
+          // Falha ao gravar histórico não deve invalidar o envio confirmado.
+        }
+      }
       return { sent: true, recipient, idempotencyKey };
     } catch (error) {
       if (error instanceof EmailAPIError) {
