@@ -22,7 +22,6 @@ import {
   renderHtml,
   renderText,
   substitute,
-  isSubjectForbidden,
   type CampaignDesign,
 } from '@/lib/email-campaign/template';
 import { InteractivePreview } from '@/components/email-editor/InteractivePreview';
@@ -553,12 +552,6 @@ function SectionEditor({
       return (
         <>
           <FieldText label="Assunto" hint="Aparece na caixa de entrada" value={subject} onChange={setSubject} />
-          {isSubjectForbidden(subject) && (
-            <div className="rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-700">
-              Este assunto contém termos alarmistas (ex.: "RESTRIÇÃO NO SEU CNPJ") e será <strong>bloqueado no envio</strong>.
-              Prefira algo neutro, como <em>"Informações sobre o Certificado Digital do seu MEI"</em>.
-            </div>
-          )}
           <FieldText label="Preheader" hint="Prévia curta ao lado do assunto" value={preheader} onChange={setPreheader} />
           <div className="rounded-md border border-slate-200 bg-slate-50/70 p-3 space-y-3">
             <div className="text-[11px] font-semibold text-slate-700 uppercase tracking-wide">Remetente</div>
