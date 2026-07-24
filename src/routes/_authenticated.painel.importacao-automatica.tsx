@@ -382,19 +382,35 @@ function ImportacaoAutomaticaPage() {
       {/* 2. Fila em tempo real */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-emerald-600" />
-            2. Fila em tempo real
-            <Badge variant="outline" className="ml-2">
-              {pendingQueue.length} aguardando envio
-            </Badge>
-          </CardTitle>
-          <CardDescription>
-            Empresas já importadas que ainda não tiveram o e-mail disparado. Assim que o
-            Envio em Massa confirmar o envio, o item some daqui e vai para
-            <strong> E-mails Enviados</strong> — só então a próxima importação é liberada.
-          </CardDescription>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-emerald-600" />
+                2. Fila em tempo real
+                <Badge variant="outline" className="ml-2">
+                  {pendingQueue.length} aguardando envio
+                </Badge>
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Empresas já importadas que ainda não tiveram o e-mail disparado. Assim que o
+                Envio em Massa confirmar o envio, o item some daqui e vai para
+                <strong> E-mails Enviados</strong> — só então a próxima importação é liberada.
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pendingQueue.length === 0}
+              onClick={() => {
+                if (!confirm(`Remover ${pendingQueue.length} pendente(s) da fila? O histórico de envios não é afetado.`)) return;
+                import('@/lib/automation/envio-engine').then((m) => m.clearPendingQueue());
+              }}
+            >
+              Limpar fila
+            </Button>
+          </div>
         </CardHeader>
+
         <CardContent>
           {pendingQueue.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50 py-10 text-center">
