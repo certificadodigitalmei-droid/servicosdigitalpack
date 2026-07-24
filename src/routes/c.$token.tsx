@@ -8,6 +8,7 @@ import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
 import { resolveCompanyLink, getLinkPaymentStatus, type ResolvedCompany } from '@/lib/company-links.functions';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
+import { getSiteDisplay, type SiteDisplaySettings } from '@/lib/site-display.functions';
 import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 
@@ -15,13 +16,14 @@ import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
-    const [row, payment, popup] = await Promise.all([
+    const [row, payment, popup, display] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
       getLinkPaymentStatus({ data: { token: params.token } }).catch(() => ({ paid: false, paid_at: null as string | null })),
       getSitePopup().catch(() => null),
+      getSiteDisplay().catch(() => ({ show_cert_landing: true, show_cert_success: true } as SiteDisplaySettings)),
     ]);
     if (!row) throw notFound();
-    return { row, initialPaidAt: payment.paid_at, popup };
+    return { row, initialPaidAt: payment.paid_at, popup, display };
   },
 
 
