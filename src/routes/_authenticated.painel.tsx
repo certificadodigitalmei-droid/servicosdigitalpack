@@ -251,7 +251,6 @@ function PanelLayout() {
       label: 'Configurações',
       items: [
         { title: 'Configurações de Pagamento', icon: DollarSign, to: '/painel/configuracoes-pagamento' },
-        { title: 'Google Workspace', icon: Mail, to: '/painel/google-workspace' },
         { title: 'Servidores SMTP', icon: Server, to: '/painel/smtp' },
         { title: 'Exibição do Site', icon: LayoutDashboard, to: '/painel/exibicao-site' },
         { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
