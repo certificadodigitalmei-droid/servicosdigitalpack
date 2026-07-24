@@ -99,7 +99,7 @@ function DashboardPage() {
   const [recent, setRecent] = useState<(EventRow & { cnpj?: string })[]>([]);
   const [journey, setJourney] = useState<{ step: number; label: string; color: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [preset, setPreset] = useState<Preset>('tudo');
+  const [preset, setPreset] = useState<Preset>('hoje');
   const [customFrom, setCustomFrom] = useState<string>('');
   const [customTo, setCustomTo] = useState<string>('');
   
