@@ -53,30 +53,69 @@ export const testWorkspaceConnection = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { fetchGmailProfile, getSenderEmail, GmailError } = await import('./gmail.server');
+    const { getAccessToken, getSenderEmail, GmailError } = await import('./gmail.server');
+    const sender = getSenderEmail();
+    const requiredScope = 'https://www.googleapis.com/auth/gmail.send';
     try {
-      const profile = await fetchGmailProfile();
-      const expected = getSenderEmail().toLowerCase();
-      const ok = profile.emailAddress.toLowerCase() === expected;
+      // 1) Trocar refresh_token por access_token (sem chamar users.getProfile).
+      const accessToken = await getAccessToken();
+
+      // 3) Validar o access_token no endpoint oficial tokeninfo.
+      const res = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(accessToken)}`,
+      );
+      if (!res.ok) {
+        return {
+          ok: false,
+          sender,
+          error: `tokeninfo_failed: status ${res.status}`,
+        };
+      }
+      const info = (await res.json()) as {
+        aud?: string;
+        scope?: string;
+        expires_in?: string | number;
+      };
+
+      const scopes = (info.scope ?? '').split(/\s+/).filter(Boolean);
+      const hasSendScope =
+        scopes.includes(requiredScope) || scopes.includes('gmail.send');
+      const audMatches = info.aud === process.env.GOOGLE_CLIENT_ID;
+
+      if (!audMatches) {
+        return {
+          ok: false,
+          sender,
+          error:
+            'client_mismatch: o access_token não pertence ao GOOGLE_CLIENT_ID configurado.',
+        };
+      }
+      if (!hasSendScope) {
+        return {
+          ok: false,
+          sender,
+          error: `missing_scope: o token não possui ${requiredScope}.`,
+        };
+      }
+
+      // 5) Token ativo, pertence ao client_id e possui gmail.send.
       return {
-        ok,
-        connectedAs: profile.emailAddress,
-        expected,
-        warning: ok
-          ? null
-          : 'O refresh_token pertence a uma conta diferente do GOOGLE_SENDER_EMAIL.',
+        ok: true,
+        sender,
+        message: 'Conexão autorizada para envio via Gmail API',
       };
     } catch (e) {
       const err = e as InstanceType<typeof GmailError>;
+      // 2) Erro seguro — não expõe token nem segredos.
       return {
         ok: false,
-        connectedAs: null,
-        expected: null,
-        warning: null,
+        sender,
         error: `${err.code ?? 'error'}: ${err.message}`,
       };
     }
   });
+
+
 
 export const sendWorkspaceTestEmail = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
