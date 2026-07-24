@@ -244,7 +244,6 @@ function PanelLayout() {
         { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
         { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
-        { title: 'Envio Google Workspace', icon: Send, to: '/painel/workspace-envio' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
       ],
     },
@@ -252,7 +251,6 @@ function PanelLayout() {
       label: 'Configurações',
       items: [
         { title: 'Configurações de Pagamento', icon: DollarSign, to: '/painel/configuracoes-pagamento' },
-        { title: 'Google Workspace', icon: Mail, to: '/painel/google-workspace' },
         { title: 'Servidores SMTP', icon: Server, to: '/painel/smtp' },
         { title: 'Exibição do Site', icon: LayoutDashboard, to: '/painel/exibicao-site' },
         { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
