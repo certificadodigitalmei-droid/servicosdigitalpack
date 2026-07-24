@@ -118,22 +118,7 @@ function EmpresasImportadasPage() {
 
       const { data, error, count } = await q;
       if (error) throw error;
-      let list = (data ?? []) as Row[];
-
-      // origem: buscar quais estão na fila automática
-      if (list.length) {
-        const ids = list.map((r) => r.id);
-        const { data: queueRows } = await supabase
-          .from('automatic_company_queue')
-          .select('company_id')
-          .in('company_id', ids);
-        const set = new Set<string>((queueRows ?? []).map((q: any) => q.company_id).filter(Boolean));
-        setAutoIds(set);
-        if (origin === 'auto') list = list.filter((r) => set.has(r.id));
-        if (origin === 'manual') list = list.filter((r) => !set.has(r.id));
-      } else {
-        setAutoIds(new Set());
-      }
+      const list = (data ?? []) as Row[];
 
       setRows(list);
       setTotal(count ?? list.length);
