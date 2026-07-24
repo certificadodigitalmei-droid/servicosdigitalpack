@@ -658,6 +658,7 @@ export type Database = {
           id: string
           is_test_record: boolean
           last_access_at: string | null
+          loader_shown_at: string | null
           public_token: string
           public_url: string | null
           status: string | null
@@ -679,6 +680,7 @@ export type Database = {
           id?: string
           is_test_record?: boolean
           last_access_at?: string | null
+          loader_shown_at?: string | null
           public_token: string
           public_url?: string | null
           status?: string | null
@@ -700,6 +702,7 @@ export type Database = {
           id?: string
           is_test_record?: boolean
           last_access_at?: string | null
+          loader_shown_at?: string | null
           public_token?: string
           public_url?: string | null
           status?: string | null

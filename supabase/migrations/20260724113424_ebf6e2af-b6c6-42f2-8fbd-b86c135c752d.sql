@@ -1,0 +1,1 @@
+ALTER TABLE public.company_links ADD COLUMN IF NOT EXISTS loader_shown_at timestamptz;

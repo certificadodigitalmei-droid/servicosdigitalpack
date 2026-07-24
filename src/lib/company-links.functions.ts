@@ -54,3 +54,28 @@ export const getLinkPaymentStatus = createServerFn({ method: 'GET' })
     if (!order?.paid_at) return { paid: false, paid_at: null };
     return { paid: true, paid_at: order.paid_at };
   });
+
+export const getLinkLoaderState = createServerFn({ method: 'GET' })
+  .inputValidator((data) => z.object({ token: z.string().min(1).max(200) }).parse(data))
+  .handler(async ({ data }): Promise<{ shown: boolean }> => {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { data: link } = await supabaseAdmin
+      .from('company_links')
+      .select('loader_shown_at')
+      .eq('public_token', data.token)
+      .maybeSingle();
+    return { shown: Boolean(link?.loader_shown_at) };
+  });
+
+export const markLinkLoaderShown = createServerFn({ method: 'POST' })
+  .inputValidator((data) => z.object({ token: z.string().min(1).max(200) }).parse(data))
+  .handler(async ({ data }): Promise<{ ok: true }> => {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    await supabaseAdmin
+      .from('company_links')
+      .update({ loader_shown_at: new Date().toISOString() })
+      .eq('public_token', data.token)
+      .is('loader_shown_at', null);
+    return { ok: true };
+  });
+
