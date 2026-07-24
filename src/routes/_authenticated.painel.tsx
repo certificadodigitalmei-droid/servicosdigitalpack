@@ -285,6 +285,7 @@ function PanelLayout() {
     if (path === '/painel/modelo-mensagem') return 'Modelo de Mensagem';
 
     if (path === '/painel/envio-massa') return 'Envio em Massa';
+    if (path === '/painel/workspace-envio') return 'Envio Google Workspace';
     if (path === '/painel/enviados') return 'E-mails Enviados';
     if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
     return 'Painel';
