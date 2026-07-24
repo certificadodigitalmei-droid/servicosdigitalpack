@@ -282,7 +282,6 @@ function EmpresasImportadasPage() {
                   <TableHead>Abertura</TableHead>
                   <TableHead>UF</TableHead>
                   <TableHead>E-mail</TableHead>
-                  <TableHead>Origem</TableHead>
                   <TableHead>Importada em</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
