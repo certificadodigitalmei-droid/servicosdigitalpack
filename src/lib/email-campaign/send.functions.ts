@@ -19,6 +19,11 @@ export type CampaignSendInput = {
   fromName?: string;
   testMode?: boolean;
   testRecipient?: string | null;
+  // Identificadores para deduplicação durável: gravamos sent_at em
+  // email_campaign_recipients para que a fila jamais reinsira alguém que
+  // já foi disparado, mesmo depois de trocar de navegador ou limpar o cache.
+  companyId?: string | null;
+  cnpj?: string | null;
 };
 
 export type CampaignSendResult =
