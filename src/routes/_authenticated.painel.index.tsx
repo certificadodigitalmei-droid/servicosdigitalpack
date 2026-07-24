@@ -109,13 +109,7 @@ function DashboardPage() {
   async function load() {
     setLoading(true);
     try {
-      // "Links gerados" conta apenas links criados manualmente via o Gerador de Links
-      // (generation_id preenchido). Links auto-importados pela automação aparecem
-      // na aba "Importação Automática" e não devem inflar essa métrica.
-      let linksCountQ = supabase
-        .from('company_links')
-        .select('id', { count: 'exact', head: true })
-        .not('generation_id', 'is', null);
+      let linksCountQ = supabase.from('company_links').select('id', { count: 'exact', head: true });
       let evQ = supabase.from('link_events').select('event_type,browser,os,device,visitor_id,token,created_at').limit(50000);
       if (range.from) {
         const iso = range.from.toISOString();
