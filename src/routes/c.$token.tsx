@@ -3,10 +3,11 @@ import { useEffect, useState } from 'react';
 import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, CalendarClock } from 'lucide-react';
 
 import { CertificatePopup } from '@/components/CertificatePopup';
+import { GovConsultaLoader } from '@/components/GovConsultaLoader';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
-import { resolveCompanyLink, getLinkPaymentStatus, type ResolvedCompany } from '@/lib/company-links.functions';
+import { resolveCompanyLink, getLinkPaymentStatus, getLinkLoaderState, markLinkLoaderShown, type ResolvedCompany } from '@/lib/company-links.functions';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
 import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
@@ -14,13 +15,14 @@ import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
-    const [row, payment, popup] = await Promise.all([
+    const [row, payment, popup, loaderState] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
       getLinkPaymentStatus({ data: { token: params.token } }).catch(() => ({ paid: false, paid_at: null as string | null })),
       getSitePopup().catch(() => null),
+      getLinkLoaderState({ data: { token: params.token } }).catch(() => ({ shown: true })),
     ]);
     if (!row) throw notFound();
-    return { row, initialPaidAt: payment.paid_at, popup };
+    return { row, initialPaidAt: payment.paid_at, popup, loaderShown: loaderState.shown };
   },
 
   head: () => ({
@@ -44,7 +46,7 @@ function cleanPersonName(v?: string | null): string {
 }
 
 function TokenHomePage() {
-  const { row, initialPaidAt, popup } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null };
+  const { row, initialPaidAt, popup, loaderShown } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null; loaderShown: boolean };
   const { token } = Route.useParams();
   const nomeFmt = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '—';
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
@@ -53,6 +55,9 @@ function TokenHomePage() {
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupSettings] = useState<SitePopupSettings | null>(popup);
   const [paidAt, setPaidAt] = useState<string | null>(initialPaidAt);
+  // Overlay do loader: por padrão visível (SSR) para não haver flash dos dados no celular.
+  // Em desktop o CSS `lg:hidden` esconde instantaneamente. Se já foi exibido antes, também escondemos.
+  const [loaderVisible, setLoaderVisible] = useState<boolean>(!loaderShown);
   const navigate = useNavigate();
 
 
@@ -92,10 +97,23 @@ function TokenHomePage() {
 
   return (
     <Page>
-      {/* Animação de intro fica em /acesso/$token (mobile). Aqui já é a página final. */}
+      {/* Loader overlay — apenas mobile (lg:hidden). Cobre a página inteira e evita flash dos dados. */}
+      {loaderVisible && (
+        <div className="fixed inset-0 z-[9999] bg-white lg:hidden">
+          <GovConsultaLoader
+            cnpj={row.cnpj ?? undefined}
+            nome={nomeFmt !== '—' ? nomeFmt : undefined}
+            onFinish={() => {
+              setLoaderVisible(false);
+              markLinkLoaderShown({ data: { token } }).catch(() => {});
+            }}
+          />
+        </div>
+      )}
 
       <SiteHeader userName={nomeFmt !== '—' ? nomeFmt : undefined} userDoc={row.cnpj ?? undefined} />
       <Breadcrumb items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }]} />
+
 
 
 
