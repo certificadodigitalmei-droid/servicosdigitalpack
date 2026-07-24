@@ -31,6 +31,7 @@ import {
 // FloatingStatsPanel agora é montado globalmente em _authenticated.painel.tsx
 import { getEmailStats, type EmailStatsResult } from '@/lib/email-campaign/stats.functions';
 import { useStore } from '@/lib/automation/store';
+import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
 
 import { toast } from 'sonner';
 import {
@@ -39,7 +40,6 @@ import {
   resetStatuses,
   clearQueue,
   clearLogs,
-  clearSentEmails,
   startSending,
   togglePause,
   stopSending,
@@ -54,8 +54,6 @@ import {
   setHourlyLimit,
   setHourlyRestMin,
   setStopAtDaily,
-
-  resetDailyCounter,
   setTestMode,
   setTestRecipient,
   setFromName,
@@ -103,6 +101,22 @@ function EnvioMassa() {
   const sentThisHour = useStore(envioStore, (s) => s.sentThisHour);
   const importDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
   const sentEmails = useStore(envioStore, (s) => s.sentEmails);
+
+  // Filtro de período (para contadores de histórico de enviados nesta aba)
+  const [preset, setPreset] = useState<DatePreset>('today');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const range = useMemo(() => computeDateRange(preset, fromDate, toDate), [preset, fromDate, toDate]);
+  const sentInPeriod = useMemo(() => {
+    const fromMs = range.from?.getTime();
+    const toMs = range.to?.getTime();
+    return sentEmails.filter((e) => {
+      const t = new Date(e.sentAt).getTime();
+      if (fromMs !== undefined && t < fromMs) return false;
+      if (toMs !== undefined && t > toMs) return false;
+      return true;
+    }).length;
+  }, [sentEmails, range.from, range.to]);
 
   const [emailStatsRaw, setEmailStatsRaw] = useState<EmailStatsResult | null>(null);
   const [statsBaseline, setStatsBaseline] = useState<{ lastHour: any; last24h: any } | null>(() => {
@@ -272,6 +286,15 @@ function EnvioMassa() {
         )}
       </div>
 
+      <DateRangeFilter
+        preset={preset}
+        onPresetChange={setPreset}
+        from={fromDate}
+        to={toDate}
+        onFromChange={setFromDate}
+        onToChange={setToDate}
+      />
+
       {/* Limites do Lovable Emails + Enviados confirmados */}
       <Card className="border-blue-100 bg-gradient-to-br from-blue-50/60 to-white">
         <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
@@ -358,7 +381,8 @@ function EnvioMassa() {
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <MiniStat label="Enviados no período" value={sentInPeriod} color="text-indigo-700" />
             <MiniStat label="Enviados confirmados (histórico total)" value={sentEmails.length} color="text-emerald-700" />
             <MiniStat
               label="Meta diária (parar ao atingir)"
@@ -692,27 +716,8 @@ function EnvioMassa() {
               <Button variant="outline" onClick={clearLogs} disabled={logs.length === 0}>
                 <RotateCcw className="h-4 w-4" /> Limpar log
               </Button>
-              <Button
-                variant="outline"
-                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                onClick={() => {
-                  if (
-                    confirm(
-                      'Limpar TUDO?\n\nIsso vai:\n• Esvaziar a fila\n• Apagar o log\n• Apagar histórico de enviados (local)\n• Zerar os contadores do dia e da hora\n\nOs pedidos e destinatários já enviados no servidor não são afetados.',
-                    )
-                  ) {
-                    stopSending();
-                    clearQueue();
-                    clearLogs();
-                    clearSentEmails();
-                    resetDailyCounter();
-                    toast.success('Envio em Massa limpo.');
-                  }
-                }}
-                disabled={running}
-              >
-                <Trash2 className="h-4 w-4" /> Limpar tudo
-              </Button>
+              {/* "Limpar tudo" removido — histórico de enviados é permanente aqui.
+                  Para apagar registros pontuais, use a aba E-mails Enviados (por período). */}
 
               <Button
                 variant="outline"

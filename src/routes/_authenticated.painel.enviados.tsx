@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Trash2, Search, Download, Copy, ExternalLink } from 'lucide-react';
 import { useStore } from '@/lib/automation/store';
-import { envioStore, clearSentEmails, removeSentEmail } from '@/lib/automation/envio-engine';
+import { envioStore, removeSentEmail, removeSentEmailsInRange } from '@/lib/automation/envio-engine';
 import { formatCnpj } from '@/lib/email-campaign/template';
 import { toast } from 'sonner';
 import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
@@ -129,14 +129,26 @@ function EnviadosPage() {
               size="sm"
               variant="destructive"
               onClick={() => {
-                if (confirm('Limpar TODO o histórico de enviados? Não afeta a caixa de saída real, apenas este registro local.')) {
-                  clearSentEmails();
-                  toast.success('Histórico limpo.');
+                if (filtered.length === 0) return;
+                const label =
+                  preset === 'all'
+                    ? 'TODO o histórico'
+                    : `${filtered.length} registro(s) do período selecionado`;
+                if (
+                  confirm(
+                    `Apagar ${label}?\n\nSó remove deste registro local. Não afeta a caixa de saída real nem o histórico do servidor.`,
+                  )
+                ) {
+                  const fromISO = range.from?.toISOString();
+                  const toISO = range.to?.toISOString();
+                  const removed = removeSentEmailsInRange(fromISO, toISO);
+                  toast.success(`${removed} registro(s) apagado(s) do período.`);
                 }
               }}
-              disabled={sent.length === 0}
+              disabled={filtered.length === 0}
+              title="Apaga apenas os registros dentro do período selecionado no filtro acima"
             >
-              <Trash2 className="h-4 w-4" /> Limpar
+              <Trash2 className="h-4 w-4" /> Apagar do período
             </Button>
           </div>
         </CardHeader>
