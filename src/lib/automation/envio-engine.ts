@@ -376,6 +376,50 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
       if (e) sentSet.add('e:' + e);
     }
 
+    // Também consulta o banco: qualquer destinatário com sent_at != null em
+    // email_campaign_recipients conta como já enviado (sobrevive a limpar
+    // histórico local, trocar de navegador, restaurar snapshot, etc.).
+    try {
+      const emailsToCheck = Array.from(
+        new Set(all.map((c: any) => normEmail(c.email || '')).filter(Boolean)),
+      );
+      const cnpjsToCheck = Array.from(
+        new Set(all.map((c: any) => normCnpj(c.cnpj)).filter(Boolean)),
+      );
+      const CHUNK = 500;
+      for (let i = 0; i < emailsToCheck.length; i += CHUNK) {
+        const slice = emailsToCheck.slice(i, i + CHUNK);
+        const { data } = await supabase
+          .from('email_campaign_recipients')
+          .select('email, cnpj')
+          .not('sent_at', 'is', null)
+          .in('email', slice);
+        for (const r of (data ?? []) as Array<{ email: string | null; cnpj: string | null }>) {
+          const e = normEmail(r.email);
+          const c = normCnpj(r.cnpj);
+          if (e) sentSet.add('e:' + e);
+          if (c) sentSet.add('c:' + c);
+        }
+      }
+      for (let i = 0; i < cnpjsToCheck.length; i += CHUNK) {
+        const slice = cnpjsToCheck.slice(i, i + CHUNK);
+        const { data } = await supabase
+          .from('email_campaign_recipients')
+          .select('email, cnpj')
+          .not('sent_at', 'is', null)
+          .in('cnpj', slice);
+        for (const r of (data ?? []) as Array<{ email: string | null; cnpj: string | null }>) {
+          const e = normEmail(r.email);
+          const c = normCnpj(r.cnpj);
+          if (e) sentSet.add('e:' + e);
+          if (c) sentSet.add('c:' + c);
+        }
+      }
+    } catch {
+      // Se a consulta falhar, seguimos apenas com o índice em memória.
+    }
+
+
     // IDs / chaves já presentes na fila atual para nunca duplicar.
     const currentQueue = envioStore.get().queue;
     const queuedCnpj = new Set<string>();
