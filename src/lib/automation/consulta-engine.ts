@@ -232,7 +232,7 @@ export async function runCountOnce(opts: { silent?: boolean } = {}) {
  * Chamado pelo Modo Automático: pagina TODA a lista da data/filtros,
  * mescla no `foundList` sem duplicar e emite flash quando acha novos.
  */
-export async function runListOnce(opts: { silent?: boolean } = {}) {
+export async function runListOnce(opts: { silent?: boolean; maxPages?: number } = {}) {
   const s = consultaStore.get();
   const date = effectiveDate();
   const filters = s.filters;
@@ -245,14 +245,14 @@ export async function runListOnce(opts: { silent?: boolean } = {}) {
 
   consultaStore.set({ isCounting: true });
   const pageSize = 20;
-  // Sem teto artificial: paramos quando a página vem incompleta,
-  // quando atingimos r.total da API, ou em erro. Backstop apenas
-  // para evitar loop infinito em caso de bug da API.
-  const HARD_BACKSTOP_PAGES = 100_000;
+  // Limite prático para não travar a UI. Ver lista completa é sob demanda,
+  // e o usuário pode chamar novamente para carregar mais páginas.
+  const HARD_BACKSTOP_PAGES = Math.max(1, opts.maxPages ?? 25);
   const now = new Date().toISOString();
   let page = 1;
   let lastStatus: CountResult = { date, total: null, ok: true, status: 200 };
   let totalAdded = 0;
+
 
   try {
     while (page <= HARD_BACKSTOP_PAGES) {
