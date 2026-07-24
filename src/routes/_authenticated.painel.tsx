@@ -244,6 +244,7 @@ function PanelLayout() {
         { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
         { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
+        { title: 'Envio Google Workspace', icon: Send, to: '/painel/workspace-envio' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
       ],
     },
@@ -284,6 +285,7 @@ function PanelLayout() {
     if (path === '/painel/modelo-mensagem') return 'Modelo de Mensagem';
 
     if (path === '/painel/envio-massa') return 'Envio em Massa';
+    if (path === '/painel/workspace-envio') return 'Envio Google Workspace';
     if (path === '/painel/enviados') return 'E-mails Enviados';
     if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
     return 'Painel';
