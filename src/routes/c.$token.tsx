@@ -52,7 +52,20 @@ function TokenHomePage() {
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupSettings] = useState<SitePopupSettings | null>(popup);
   const [paidAt, setPaidAt] = useState<string | null>(initialPaidAt);
+  const [showLoader, setShowLoader] = useState(false);
   const navigate = useNavigate();
+
+  // Mobile-only intro animation before revealing the page
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+    const key = `gov_loader_shown_${token}`;
+    if (isMobile && !sessionStorage.getItem(key)) {
+      setShowLoader(true);
+      sessionStorage.setItem(key, '1');
+    }
+  }, [token]);
+
 
 
   // Poll payment status only if not already paid; start after 8s
