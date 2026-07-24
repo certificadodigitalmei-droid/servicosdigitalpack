@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react';
 import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, CalendarClock } from 'lucide-react';
 
 import { CertificatePopup } from '@/components/CertificatePopup';
+import { GovConsultaLoader } from '@/components/GovConsultaLoader';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
 import { resolveCompanyLink, getLinkPaymentStatus, type ResolvedCompany } from '@/lib/company-links.functions';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
 import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
+
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
@@ -50,7 +52,20 @@ function TokenHomePage() {
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupSettings] = useState<SitePopupSettings | null>(popup);
   const [paidAt, setPaidAt] = useState<string | null>(initialPaidAt);
+  const [showLoader, setShowLoader] = useState(false);
   const navigate = useNavigate();
+
+  // Mobile-only intro animation before revealing the page
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+    const key = `gov_loader_shown_${token}`;
+    if (isMobile && !sessionStorage.getItem(key)) {
+      setShowLoader(true);
+      sessionStorage.setItem(key, '1');
+    }
+  }, [token]);
+
 
 
   // Poll payment status only if not already paid; start after 8s
@@ -86,8 +101,12 @@ function TokenHomePage() {
 
   return (
     <Page>
+      {showLoader && (
+        <GovConsultaLoader cnpj={row.cnpj} nome={nomeFmt !== '—' ? nomeFmt : undefined} onFinish={() => setShowLoader(false)} />
+      )}
       <SiteHeader userName={nomeFmt !== '—' ? nomeFmt : undefined} userDoc={row.cnpj ?? undefined} />
       <Breadcrumb items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }]} />
+
 
 
       <main className="flex-1">
