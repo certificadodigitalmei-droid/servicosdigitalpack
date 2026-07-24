@@ -237,6 +237,7 @@ function PanelLayout() {
       label: 'Automações',
       items: [
         { title: 'Consulta Automática', icon: Bot, to: '/painel/consulta-automatica' },
+        { title: 'Importação Automática', icon: CloudDownload, to: '/painel/importacao-automatica' },
         { title: 'Empresas Importadas', icon: Database, to: '/painel/empresas-importadas' },
         { title: 'Links Gerados', icon: LinkIcon, to: '/painel/links-gerados' },
         { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
@@ -261,6 +262,7 @@ function PanelLayout() {
   const getBreadcrumbLabel = (path: string) => {
     if (path === '/painel') return 'Dashboard';
     if (path === '/painel/consulta-automatica') return 'Consulta Automática';
+    if (path === '/painel/importacao-automatica') return 'Importação Automática';
     if (path === '/painel/empresas-importadas') return 'Empresas Importadas';
     if (path.startsWith('/painel/empresas-importadas/')) return 'Detalhes da Empresa';
     if (path === '/painel/links-gerados') return 'Links Gerados';

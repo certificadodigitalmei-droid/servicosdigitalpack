@@ -30,6 +30,7 @@ import { Route as AuthenticatedPainelPagamentosRouteImport } from './routes/_aut
 import { Route as AuthenticatedPainelModeloMensagemRouteImport } from './routes/_authenticated.painel.modelo-mensagem'
 import { Route as AuthenticatedPainelLinksGeradosRouteImport } from './routes/_authenticated.painel.links-gerados'
 import { Route as AuthenticatedPainelImportarEmpresasRouteImport } from './routes/_authenticated.painel.importar-empresas'
+import { Route as AuthenticatedPainelImportacaoAutomaticaRouteImport } from './routes/_authenticated.painel.importacao-automatica'
 import { Route as AuthenticatedPainelGeradorLinksRouteImport } from './routes/_authenticated.painel.gerador-links'
 import { Route as AuthenticatedPainelFiltrarMeiRouteImport } from './routes/_authenticated.painel.filtrar-mei'
 import { Route as AuthenticatedPainelEnvioMassaRouteImport } from './routes/_authenticated.painel.envio-massa'
@@ -162,6 +163,12 @@ const AuthenticatedPainelImportarEmpresasRoute =
     path: '/importar-empresas',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelImportacaoAutomaticaRoute =
+  AuthenticatedPainelImportacaoAutomaticaRouteImport.update({
+    id: '/importacao-automatica',
+    path: '/importacao-automatica',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 const AuthenticatedPainelGeradorLinksRoute =
   AuthenticatedPainelGeradorLinksRouteImport.update({
     id: '/gerador-links',
@@ -283,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/painel/envio-massa': typeof AuthenticatedPainelEnvioMassaRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
+  '/painel/importacao-automatica': typeof AuthenticatedPainelImportacaoAutomaticaRoute
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
@@ -320,6 +328,7 @@ export interface FileRoutesByTo {
   '/painel/envio-massa': typeof AuthenticatedPainelEnvioMassaRoute
   '/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
+  '/painel/importacao-automatica': typeof AuthenticatedPainelImportacaoAutomaticaRoute
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
@@ -361,6 +370,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/envio-massa': typeof AuthenticatedPainelEnvioMassaRoute
   '/_authenticated/painel/filtrar-mei': typeof AuthenticatedPainelFiltrarMeiRoute
   '/_authenticated/painel/gerador-links': typeof AuthenticatedPainelGeradorLinksRouteWithChildren
+  '/_authenticated/painel/importacao-automatica': typeof AuthenticatedPainelImportacaoAutomaticaRoute
   '/_authenticated/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/_authenticated/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/_authenticated/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
@@ -402,6 +412,7 @@ export interface FileRouteTypes {
     | '/painel/envio-massa'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
+    | '/painel/importacao-automatica'
     | '/painel/importar-empresas'
     | '/painel/links-gerados'
     | '/painel/modelo-mensagem'
@@ -439,6 +450,7 @@ export interface FileRouteTypes {
     | '/painel/envio-massa'
     | '/painel/filtrar-mei'
     | '/painel/gerador-links'
+    | '/painel/importacao-automatica'
     | '/painel/importar-empresas'
     | '/painel/links-gerados'
     | '/painel/modelo-mensagem'
@@ -479,6 +491,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/envio-massa'
     | '/_authenticated/painel/filtrar-mei'
     | '/_authenticated/painel/gerador-links'
+    | '/_authenticated/painel/importacao-automatica'
     | '/_authenticated/painel/importar-empresas'
     | '/_authenticated/painel/links-gerados'
     | '/_authenticated/painel/modelo-mensagem'
@@ -668,6 +681,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelImportarEmpresasRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/importacao-automatica': {
+      id: '/_authenticated/painel/importacao-automatica'
+      path: '/importacao-automatica'
+      fullPath: '/painel/importacao-automatica'
+      preLoaderRoute: typeof AuthenticatedPainelImportacaoAutomaticaRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
     '/_authenticated/painel/gerador-links': {
       id: '/_authenticated/painel/gerador-links'
       path: '/gerador-links'
@@ -833,6 +853,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelEnvioMassaRoute: typeof AuthenticatedPainelEnvioMassaRoute
   AuthenticatedPainelFiltrarMeiRoute: typeof AuthenticatedPainelFiltrarMeiRoute
   AuthenticatedPainelGeradorLinksRoute: typeof AuthenticatedPainelGeradorLinksRouteWithChildren
+  AuthenticatedPainelImportacaoAutomaticaRoute: typeof AuthenticatedPainelImportacaoAutomaticaRoute
   AuthenticatedPainelImportarEmpresasRoute: typeof AuthenticatedPainelImportarEmpresasRoute
   AuthenticatedPainelLinksGeradosRoute: typeof AuthenticatedPainelLinksGeradosRoute
   AuthenticatedPainelModeloMensagemRoute: typeof AuthenticatedPainelModeloMensagemRoute
@@ -857,6 +878,8 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelFiltrarMeiRoute: AuthenticatedPainelFiltrarMeiRoute,
   AuthenticatedPainelGeradorLinksRoute:
     AuthenticatedPainelGeradorLinksRouteWithChildren,
+  AuthenticatedPainelImportacaoAutomaticaRoute:
+    AuthenticatedPainelImportacaoAutomaticaRoute,
   AuthenticatedPainelImportarEmpresasRoute:
     AuthenticatedPainelImportarEmpresasRoute,
   AuthenticatedPainelLinksGeradosRoute: AuthenticatedPainelLinksGeradosRoute,
@@ -907,13 +930,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
