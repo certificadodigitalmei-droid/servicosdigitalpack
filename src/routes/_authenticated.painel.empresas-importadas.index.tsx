@@ -181,6 +181,14 @@ function EmpresasImportadasPage() {
         />
       </div>
 
+      <DateRangeFilter
+        preset={preset}
+        onPresetChange={setPreset}
+        from={customFrom}
+        to={customTo}
+        onFromChange={setCustomFrom}
+        onToChange={setCustomTo}
+      />
 
       <Card>
         <CardHeader>
