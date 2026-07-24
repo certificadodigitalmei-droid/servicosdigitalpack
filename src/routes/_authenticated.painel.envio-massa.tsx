@@ -102,6 +102,22 @@ function EnvioMassa() {
   const importDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
   const sentEmails = useStore(envioStore, (s) => s.sentEmails);
 
+  // Filtro de período (para contadores de histórico de enviados nesta aba)
+  const [preset, setPreset] = useState<DatePreset>('today');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const range = useMemo(() => computeDateRange(preset, fromDate, toDate), [preset, fromDate, toDate]);
+  const sentInPeriod = useMemo(() => {
+    const fromMs = range.from?.getTime();
+    const toMs = range.to?.getTime();
+    return sentEmails.filter((e) => {
+      const t = new Date(e.sentAt).getTime();
+      if (fromMs !== undefined && t < fromMs) return false;
+      if (toMs !== undefined && t > toMs) return false;
+      return true;
+    }).length;
+  }, [sentEmails, range.from, range.to]);
+
   const [emailStatsRaw, setEmailStatsRaw] = useState<EmailStatsResult | null>(null);
   const [statsBaseline, setStatsBaseline] = useState<{ lastHour: any; last24h: any } | null>(() => {
     if (typeof window === 'undefined') return null;
