@@ -329,7 +329,7 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
           company_id: c.id,
           public_token: token,
           token,
-          public_url: `${PUBLIC_BASE_URL}/c/${token}`,
+          public_url: `${PUBLIC_BASE_URL}/acesso/${token}`,
           checkout_url: `${PUBLIC_BASE_URL}/checkout/${token}`,
           active: true,
           status: 'active',
@@ -350,7 +350,7 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
           if (l.company_id) {
             linksMap[l.company_id] = {
               token: l.public_token,
-              url: l.public_url || `${PUBLIC_BASE_URL}/c/${l.public_token}`,
+              url: `${PUBLIC_BASE_URL}/acesso/${l.public_token}`,
             };
           }
         }
