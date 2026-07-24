@@ -87,15 +87,26 @@ function PanelLayout() {
   const [saving, setSaving] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const doSave = useServerFn(saveCloudState);
   const doLoad = useServerFn(getCloudState);
 
-  const saveAll = async () => {
-    setSaving(true);
+  const persistNow = async () => {
     try {
       const snapshot = collectLocalSnapshot();
       const r = await doSave({ data: { snapshot } });
       setLastSavedAt(r.savedAt);
+      try { window.localStorage.setItem('painel:cloudSyncedAt', r.savedAt); } catch {}
+      return r.savedAt;
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  const saveAll = async () => {
+    setSaving(true);
+    try {
+      await persistNow();
       toast.success('Configurações do site salvas na nuvem.');
     } catch (e: any) {
       toast.error('Falha ao salvar: ' + (e?.message ?? 'erro'));
@@ -115,6 +126,9 @@ function PanelLayout() {
         return;
       }
       applyLocalSnapshot(r.snapshot as Record<string, string>);
+      if (r.updatedAt) {
+        try { window.localStorage.setItem('painel:cloudSyncedAt', r.updatedAt); } catch {}
+      }
       toast.success('Configurações restauradas. Recarregando…');
       setTimeout(() => window.location.reload(), 600);
     } catch (e: any) {
@@ -123,16 +137,93 @@ function PanelLayout() {
     }
   };
 
-  // Ao montar, busca updated_at para exibir "última nuvem" (sem restaurar automaticamente).
+  // AUTO-RESTORE no mount: se a nuvem tem snapshot mais recente que o
+  // último sincronizado neste navegador, aplica silenciosamente antes de
+  // renderizar as sub-rotas. Assim o painel deixa de depender do navegador.
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         const r = await doLoad();
+        if (cancelled) return;
         if (r.updatedAt) setLastSavedAt(r.updatedAt);
+        if (r.snapshot && r.updatedAt) {
+          const localSyncedAt = (() => {
+            try { return window.localStorage.getItem('painel:cloudSyncedAt'); } catch { return null; }
+          })();
+          const cloudMs = new Date(r.updatedAt).getTime();
+          const localMs = localSyncedAt ? new Date(localSyncedAt).getTime() : 0;
+          if (!localSyncedAt || cloudMs > localMs) {
+            applyLocalSnapshot(r.snapshot as Record<string, string>);
+            try { window.localStorage.setItem('painel:cloudSyncedAt', r.updatedAt); } catch {}
+            // Recarrega uma vez para as telas lerem o estado restaurado do zero.
+            const key = 'painel:cloudReloaded:' + r.updatedAt;
+            const already = (() => { try { return window.sessionStorage.getItem(key); } catch { return null; } })();
+            if (!already) {
+              try { window.sessionStorage.setItem(key, '1'); } catch {}
+              window.location.reload();
+              return;
+            }
+          }
+        }
       } catch { /* silencioso */ }
+      if (!cancelled) setHydrated(true);
     })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // AUTO-SAVE: intercepta writes em localStorage nas chaves do painel e
+  // agenda um upload debounced (2,5s). Também salva ao sair da aba.
+  useEffect(() => {
+    if (!hydrated || typeof window === 'undefined') return;
+    const isTracked = (k: string) => CLOUD_PREFIXES.some((p) => k.startsWith(p));
+    let timer: number | null = null;
+    let dirty = false;
+    const schedule = () => {
+      dirty = true;
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(async () => {
+        timer = null;
+        if (!dirty) return;
+        dirty = false;
+        try { await persistNow(); } catch { /* silencioso; próximo write tentará de novo */ }
+      }, 2500);
+    };
+
+    const origSet = window.localStorage.setItem.bind(window.localStorage);
+    const origRemove = window.localStorage.removeItem.bind(window.localStorage);
+    window.localStorage.setItem = function (k: string, v: string) {
+      origSet(k, v);
+      if (isTracked(k)) schedule();
+    } as typeof window.localStorage.setItem;
+    window.localStorage.removeItem = function (k: string) {
+      origRemove(k);
+      if (isTracked(k)) schedule();
+    } as typeof window.localStorage.removeItem;
+
+    const flush = () => {
+      if (dirty) {
+        dirty = false;
+        // Envio síncrono não é possível; dispara sem aguardar.
+        persistNow().catch(() => {});
+      }
+    };
+    const onVis = () => { if (document.visibilityState === 'hidden') flush(); };
+    window.addEventListener('beforeunload', flush);
+    document.addEventListener('visibilitychange', onVis);
+
+    return () => {
+      if (timer) window.clearTimeout(timer);
+      window.localStorage.setItem = origSet as typeof window.localStorage.setItem;
+      window.localStorage.removeItem = origRemove as typeof window.localStorage.removeItem;
+      window.removeEventListener('beforeunload', flush);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
+
+
 
 
   const menuGroups: { label: string; items: { title: string; icon: typeof LayoutDashboard; to: string }[] }[] = [
@@ -291,10 +382,11 @@ function PanelLayout() {
                   <span className="hidden md:inline">Restaurar</span>
                 </Button>
                 {lastSavedAt && (
-                  <span className="hidden lg:inline text-[10px] text-slate-400">
-                    Nuvem: {new Date(lastSavedAt).toLocaleString('pt-BR')}
+                  <span className="hidden lg:inline text-[10px] text-emerald-600">
+                    ☁ Sync auto · {new Date(lastSavedAt).toLocaleString('pt-BR')}
                   </span>
                 )}
+
                 <div className="hidden text-right sm:block ml-2">
                   <div className="text-xs font-semibold text-slate-700">Administrador</div>
                   <div className="text-[10px] text-slate-400">Sessão ativa</div>
