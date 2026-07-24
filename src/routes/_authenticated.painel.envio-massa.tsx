@@ -381,7 +381,7 @@ function EnvioMassa() {
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <MiniStat label="Enviados no período" value={sentInPeriod} color="text-indigo-700" />
             <MiniStat label="Enviados confirmados (histórico total)" value={sentEmails.length} color="text-emerald-700" />
             <MiniStat
