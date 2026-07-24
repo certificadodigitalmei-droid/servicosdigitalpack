@@ -46,8 +46,9 @@ import {
   clearFoundList,
   setSaldo as setSaldoAction,
   runCountOnce,
-  runImportOnce,
+  runListOnce,
 } from '@/lib/automation/consulta-engine';
+
 import { envioStore } from '@/lib/automation/envio-engine';
 
 export const Route = createFileRoute('/_authenticated/painel/consulta-automatica')({
@@ -361,10 +362,28 @@ function ConsultaPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setListDialogOpen(true)}
+                onClick={() => {
+                  setListDialogOpen(true);
+                  if (foundList.length === 0 && !isCounting) {
+                    void runListOnce({ silent: true, maxPages: 25 });
+                  }
+                }}
               >
                 <List className="mr-1 h-4 w-4" />
                 Ver lista de CNPJs ({foundList.length})
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void runListOnce({ silent: false, maxPages: 25 })}
+                disabled={isCounting}
+              >
+                {isCounting ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <List className="mr-1 h-4 w-4" />
+                )}
+                Carregar mais 500
               </Button>
               {foundList.length > 0 && (
                 <Button
@@ -378,6 +397,7 @@ function ConsultaPage() {
                 >
                   <Trash2 className="mr-1 h-4 w-4" /> Limpar lista salva
                 </Button>
+
               )}
               <span className="text-xs text-slate-500">
                 Salva no navegador por data + filtros.
