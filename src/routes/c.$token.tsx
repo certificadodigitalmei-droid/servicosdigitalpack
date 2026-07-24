@@ -49,7 +49,7 @@ function cleanPersonName(v?: string | null): string {
 }
 
 function TokenHomePage() {
-  const { row, initialPaidAt, popup } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null };
+  const { row, initialPaidAt, popup, display } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null; display: SiteDisplaySettings };
   const { token } = Route.useParams();
   const nomeFmt = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '—';
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
