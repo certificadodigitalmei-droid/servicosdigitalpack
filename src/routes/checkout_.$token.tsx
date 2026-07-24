@@ -189,7 +189,9 @@ function CheckoutTokenPage() {
                   <Card title="Detalhes da Guia">
                     <TableRow label="Serviço" value="Certificado Digital MEI" />
                     <TableRow label="Descrição" value="Emissão do Certificado Digital para MEI" />
-                    <TableRow label="Referência" value={`${row.razao_social || row.nome || '—'} (CNPJ: ${formatCPFOrCNPJ(row.cnpj || '')})`} />
+                    <TableRow label="Adquirente" value={row.razao_social || row.nome || '—'} />
+                    <TableRow label="CNPJ" value={row.cnpj ? formatCPFOrCNPJ(row.cnpj) : '—'} />
+
                     <TableRow
                       label="Valor da Guia"
                       value={<span className="font-bold text-brand-blue">{brl(AMOUNT)}</span>}
