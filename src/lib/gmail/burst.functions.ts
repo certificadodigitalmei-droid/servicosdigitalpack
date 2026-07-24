@@ -17,6 +17,16 @@ async function assertAdmin(supabase: any, userId: string) {
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Bloqueia assuntos com linguagem agressiva/alarmista que prejudicam
+// entregabilidade e violam boas práticas anti-spam.
+const FORBIDDEN_SUBJECT_PATTERNS: RegExp[] = [
+  /restri[cç][aã]o\s+no\s+seu\s+cnpj/i,
+  /suspens[aã]o\s+do\s+cnpj/i,
+  /bloqueio\s+do\s+cnpj/i,
+  /multa\s+da\s+receita/i,
+  /urgente!!+/i,
+];
+
 const messageSchema = z.object({
   to: z
     .string()
@@ -24,11 +34,23 @@ const messageSchema = z.object({
     .max(320)
     .refine((v) => emailRegex.test(v), 'e-mail inválido')
     .refine((v) => !/[\r\n]/.test(v), 'caractere inválido'),
-  subject: z.string().trim().min(1).max(500).refine((v) => !/[\r\n]/.test(v), 'assunto inválido'),
+  subject: z
+    .string()
+    .trim()
+    .min(1)
+    .max(500)
+    .refine((v) => !/[\r\n]/.test(v), 'assunto inválido')
+    .refine(
+      (v) => !FORBIDDEN_SUBJECT_PATTERNS.some((re) => re.test(v)),
+      'Assunto bloqueado: evite termos alarmistas como "RESTRIÇÃO NO SEU CNPJ".',
+    ),
   html: z.string().max(500_000).optional(),
   text: z.string().max(500_000).optional(),
   companyId: z.string().uuid().nullable().optional(),
   cnpj: z.string().max(32).nullable().optional(),
+  fromName: z.string().trim().max(120).optional(),
+  replyTo: z.string().trim().max(320).optional(),
+  listUnsubscribe: z.string().trim().max(500).optional(),
 });
 
 const burstSchema = z.object({
