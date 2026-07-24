@@ -185,7 +185,42 @@ function ImportacaoAutomaticaPage() {
             </p>
           )}
         </div>
+        <WipeAllButton
+          label="Apagar importadas"
+          title="Apagar todas as empresas importadas?"
+          description="Remove permanentemente todas as empresas importadas, seus links públicos, gerações, eventos e a fila de importação. Não afeta configurações, modelos, campanhas ou histórico de envios. Não pode ser desfeito."
+          steps={[
+            { label: 'link_events', run: () => supabase.from('link_events').delete().neq('id', EMPTY_UUID) },
+            { label: 'company_links', run: () => supabase.from('company_links').delete().neq('id', EMPTY_UUID) },
+            { label: 'link_generations', run: () => supabase.from('link_generations').delete().neq('id', EMPTY_UUID) },
+            { label: 'automatic_company_queue', run: () => supabase.from('automatic_company_queue').delete().neq('id', EMPTY_UUID) },
+            { label: 'companies', run: () => supabase.from('companies').delete().neq('id', EMPTY_UUID) },
+          ]}
+          onDone={() => setRefreshTick((t) => t + 1)}
+        />
       </div>
+
+      <DateRangeFilter
+        preset={preset}
+        onPresetChange={setPreset}
+        from={customFrom}
+        to={customTo}
+        onFromChange={setCustomFrom}
+        onToChange={setCustomTo}
+      />
+
+      <Card>
+        <CardContent className="flex flex-wrap items-center gap-3 py-4 text-sm">
+          <span className="text-slate-600">Empresas importadas no período:</span>
+          <span className="text-2xl font-bold tabular-nums text-brand-navy">
+            {countLoading ? '…' : (periodCount ?? 0).toLocaleString('pt-BR')}
+          </span>
+          <span className="ml-auto text-xs text-slate-500">
+            Contagem por data de importação (created_at) no banco.
+          </span>
+        </CardContent>
+      </Card>
+
 
       {/* Config atual (herdada da Consulta) */}
       <Card className="border-slate-200 bg-slate-50/60">
