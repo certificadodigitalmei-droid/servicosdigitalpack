@@ -7,21 +7,23 @@ import { GovConsultaLoader } from '@/components/GovConsultaLoader';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
-import { resolveCompanyLink, getLinkPaymentStatus, type ResolvedCompany } from '@/lib/company-links.functions';
+import { resolveCompanyLink, getLinkPaymentStatus, getLinkLoaderState, markLinkLoaderShown, type ResolvedCompany } from '@/lib/company-links.functions';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
 import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
-    const [row, payment, popup] = await Promise.all([
+    const [row, payment, popup, loaderState] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
       getLinkPaymentStatus({ data: { token: params.token } }).catch(() => ({ paid: false, paid_at: null as string | null })),
       getSitePopup().catch(() => null),
+      getLinkLoaderState({ data: { token: params.token } }).catch(() => ({ shown: true })),
     ]);
     if (!row) throw notFound();
-    return { row, initialPaidAt: payment.paid_at, popup };
+    return { row, initialPaidAt: payment.paid_at, popup, loaderAlreadyShown: loaderState.shown };
   },
+
   head: () => ({
     meta: [
       { title: 'Portal do Empreendedor — Certificado Digital MEI' },
