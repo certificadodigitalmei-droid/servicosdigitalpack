@@ -172,12 +172,14 @@ function DashboardPage() {
         view_checkout: new Set(),
         click_certificado: new Set(),
         click_guia: new Set(),
+        copy_pix: new Set(),
       };
       for (const e of events) {
         if (e.event_type === 'view_link') s.viewLinkTotal++;
         else if (e.event_type === 'view_checkout') s.viewCheckoutTotal++;
         else if (e.event_type === 'click_certificado') s.clickCertTotal++;
         else if (e.event_type === 'click_guia') s.clickGuiaTotal++;
+        else if (e.event_type === 'copy_pix') s.copyPixTotal++;
 
         const key = `${e.token}:${e.visitor_id}`;
         const isUnique = !uniq[e.event_type]?.has(key);
@@ -187,6 +189,7 @@ function DashboardPage() {
           else if (e.event_type === 'view_checkout') s.viewCheckout++;
           else if (e.event_type === 'click_certificado') s.clickCert++;
           else if (e.event_type === 'click_guia') s.clickGuia++;
+          else if (e.event_type === 'copy_pix') s.copyPix++;
           if (e.event_type === 'view_link' || e.event_type === 'view_checkout') {
             const b = e.browser || 'Desconhecido';
             const d = e.device || 'Desconhecido';
