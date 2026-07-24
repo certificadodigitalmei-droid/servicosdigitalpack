@@ -69,6 +69,44 @@ function ImportacaoAutomaticaPage() {
   const selectedDate = useStore(consultaStore, (s) => s.selectedDate);
   const filters = useStore(consultaStore, (s) => s.filters);
 
+  // Filtro de período — conta empresas importadas no banco no intervalo.
+  const [preset, setPreset] = useState<DatePreset>('today');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [periodCount, setPeriodCount] = useState<number | null>(null);
+  const [countLoading, setCountLoading] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setCountLoading(true);
+      try {
+        const { from, to } = computeDateRange(preset, customFrom, customTo);
+        let q = supabase.from('companies').select('id', { count: 'exact', head: true });
+        if (from) q = q.gte('created_at', from.toISOString());
+        if (to) q = q.lte('created_at', to.toISOString());
+        const { count, error } = await q;
+        if (!cancelled) {
+          if (error) throw error;
+          setPeriodCount(count ?? 0);
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          setPeriodCount(null);
+          console.error(e);
+        }
+      } finally {
+        if (!cancelled) setCountLoading(false);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [preset, customFrom, customTo, refreshTick]);
+
+
   // Fila em tempo real = itens PENDENTES (aguardando envio) na engine de envio.
   const queue = useStore(envioStore, (s) => s.queue);
   const envioRunning = useStore(envioStore, (s) => s.running);
