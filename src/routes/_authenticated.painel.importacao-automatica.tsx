@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import {
   Loader2,
@@ -31,6 +31,13 @@ import {
   runImportOnce,
 } from '@/lib/automation/consulta-engine';
 import { envioStore } from '@/lib/automation/envio-engine';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  DateRangeFilter,
+  computeDateRange,
+  type DatePreset,
+} from '@/components/painel/DateRangeFilter';
+import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
 
 export const Route = createFileRoute('/_authenticated/painel/importacao-automatica')({
   head: () => ({
