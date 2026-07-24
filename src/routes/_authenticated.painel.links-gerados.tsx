@@ -95,7 +95,7 @@ function LinksGeradosPage() {
   const [status, setStatus] = useState('all');
   const [origin, setOrigin] = useState('all');
   const [stage, setStage] = useState('all'); // all|no_view|visited|checkout|certificado|guia|paid
-  const [preset, setPreset] = useState<DatePreset>('all');
+  const [preset, setPreset] = useState<DatePreset>('today');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [autoLinkIds, setAutoLinkIds] = useState<Set<string>>(new Set());
