@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CheckoutTokenRouteImport } from './routes/checkout_.$token'
 import { Route as CertificadoMeiTokenRouteImport } from './routes/certificado-mei.$token'
 import { Route as CTokenRouteImport } from './routes/c.$token'
+import { Route as AcessoTokenRouteImport } from './routes/acesso.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedMonitorEnvioRouteImport } from './routes/_authenticated.monitor-envio'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
@@ -89,6 +90,11 @@ const CertificadoMeiTokenRoute = CertificadoMeiTokenRouteImport.update({
 const CTokenRoute = CTokenRouteImport.update({
   id: '/c/$token',
   path: '/c/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcessoTokenRoute = AcessoTokenRouteImport.update({
+  id: '/acesso/$token',
+  path: '/acesso/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
@@ -264,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/modelo': typeof ModeloRoute
   '/monitor-envio': typeof AuthenticatedMonitorEnvioRoute
   '/painel': typeof AuthenticatedPainelRouteWithChildren
+  '/acesso/$token': typeof AcessoTokenRoute
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -301,6 +308,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/modelo': typeof ModeloRoute
   '/monitor-envio': typeof AuthenticatedMonitorEnvioRoute
+  '/acesso/$token': typeof AcessoTokenRoute
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -340,6 +348,7 @@ export interface FileRoutesById {
   '/modelo': typeof ModeloRoute
   '/_authenticated/monitor-envio': typeof AuthenticatedMonitorEnvioRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRouteWithChildren
+  '/acesso/$token': typeof AcessoTokenRoute
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout_/$token': typeof CheckoutTokenRoute
@@ -380,6 +389,7 @@ export interface FileRouteTypes {
     | '/modelo'
     | '/monitor-envio'
     | '/painel'
+    | '/acesso/$token'
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout/$token'
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/modelo'
     | '/monitor-envio'
+    | '/acesso/$token'
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout/$token'
@@ -455,6 +466,7 @@ export interface FileRouteTypes {
     | '/modelo'
     | '/_authenticated/monitor-envio'
     | '/_authenticated/painel'
+    | '/acesso/$token'
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout_/$token'
@@ -493,6 +505,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   LoginRoute: typeof LoginRoute
   ModeloRoute: typeof ModeloRoute
+  AcessoTokenRoute: typeof AcessoTokenRoute
   CTokenRoute: typeof CTokenRoute
   CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
   CheckoutTokenRoute: typeof CheckoutTokenRoute
@@ -569,6 +582,13 @@ declare module '@tanstack/react-router' {
       path: '/c/$token'
       fullPath: '/c/$token'
       preLoaderRoute: typeof CTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acesso/$token': {
+      id: '/acesso/$token'
+      path: '/acesso/$token'
+      fullPath: '/acesso/$token'
+      preLoaderRoute: typeof AcessoTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/painel': {
@@ -871,6 +891,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   LoginRoute: LoginRoute,
   ModeloRoute: ModeloRoute,
+  AcessoTokenRoute: AcessoTokenRoute,
   CTokenRoute: CTokenRoute,
   CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
   CheckoutTokenRoute: CheckoutTokenRoute,
