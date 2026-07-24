@@ -40,7 +40,6 @@ import {
   resetStatuses,
   clearQueue,
   clearLogs,
-  clearSentEmails,
   startSending,
   togglePause,
   stopSending,
@@ -55,8 +54,6 @@ import {
   setHourlyLimit,
   setHourlyRestMin,
   setStopAtDaily,
-
-  resetDailyCounter,
   setTestMode,
   setTestRecipient,
   setFromName,
