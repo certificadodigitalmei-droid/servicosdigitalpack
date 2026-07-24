@@ -255,7 +255,7 @@ export async function runListOnce(opts: { silent?: boolean } = {}) {
   let totalAdded = 0;
 
   try {
-    while (page <= maxPages) {
+    while (page <= HARD_BACKSTOP_PAGES) {
       const r: any = await listByDate({
         data: { date, filters, limit: pageSize, page },
       });
