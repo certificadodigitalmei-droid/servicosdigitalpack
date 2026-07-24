@@ -312,11 +312,6 @@ function EmpresasImportadasPage() {
                     <TableCell>{r.inicio_atividade ? formatDateBR(r.inicio_atividade) : 'Não informado'}</TableCell>
                     <TableCell>{r.uf || '—'}</TableCell>
                     <TableCell className="max-w-[180px] truncate">{r.email || 'Não informado'}</TableCell>
-                    <TableCell>
-                      {autoIds.has(r.id)
-                        ? <Badge variant="secondary">Consulta Automática</Badge>
-                        : <Badge variant="outline">Manual</Badge>}
-                    </TableCell>
                     <TableCell className="text-xs">{formatDateBR(r.created_at.slice(0, 10))}</TableCell>
                     <TableCell className="text-right">
                       <Button asChild size="sm" variant="outline">
