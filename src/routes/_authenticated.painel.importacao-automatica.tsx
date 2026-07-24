@@ -469,10 +469,24 @@ function ImportacaoAutomaticaPage() {
       {(importedRows.length > 0 || failedRows.length > 0) && (
         <Card>
           <CardHeader>
-            <CardTitle>Resultado do último lote</CardTitle>
-            <CardDescription>
-              {importedRows.length} importada(s), {failedRows.length} falha(s).
-            </CardDescription>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <CardTitle>Resultado do último lote</CardTitle>
+                <CardDescription>
+                  {importedRows.length} importada(s), {failedRows.length} falha(s).
+                </CardDescription>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (!confirm('Limpar resultado do último lote? Isso não apaga empresas nem links já salvos.')) return;
+                  consultaStore.set({ importedRows: [], failedRows: [] });
+                }}
+              >
+                Limpar
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             {importedRows.map((row) => (
