@@ -83,6 +83,17 @@ function EmpresasImportadasPage() {
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
 
+  // Sincroniza o preset de período com os campos "Importada (de/até)"
+  useEffect(() => {
+    const r = computeDateRange(preset, customFrom, customTo);
+    setImportedFrom(r.from ? r.from.toISOString().slice(0, 10) : '');
+    setImportedTo(r.to ? r.to.toISOString().slice(0, 10) : '');
+    setPage(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preset, customFrom, customTo]);
+
+
+
   const load = async () => {
     setLoading(true);
     try {
