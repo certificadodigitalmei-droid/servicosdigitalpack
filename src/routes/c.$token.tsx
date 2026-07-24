@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, notFound, redirect, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, CalendarClock } from 'lucide-react';
 
@@ -15,15 +15,22 @@ import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
-    const [row, payment, popup, loaderState] = await Promise.all([
+    // Regra: todo acesso ao link deve passar primeiro pela URL de animação /acesso/$token.
+    // Se o loader ainda não foi marcado como visto, redireciona para /acesso/$token,
+    // que trata mobile (animação) e desktop (skip) e depois volta para cá.
+    const loaderState = await getLinkLoaderState({ data: { token: params.token } }).catch(() => ({ shown: true }));
+    if (!loaderState.shown) {
+      throw redirect({ to: '/acesso/$token', params: { token: params.token }, replace: true });
+    }
+    const [row, payment, popup] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
       getLinkPaymentStatus({ data: { token: params.token } }).catch(() => ({ paid: false, paid_at: null as string | null })),
       getSitePopup().catch(() => null),
-      getLinkLoaderState({ data: { token: params.token } }).catch(() => ({ shown: true })),
     ]);
     if (!row) throw notFound();
-    return { row, initialPaidAt: payment.paid_at, popup, loaderShown: loaderState.shown };
+    return { row, initialPaidAt: payment.paid_at, popup, loaderShown: true };
   },
+
 
   head: () => ({
     meta: [
