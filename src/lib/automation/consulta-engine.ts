@@ -249,7 +249,11 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
   // e o usuário pode chamar novamente para carregar mais páginas.
   const HARD_BACKSTOP_PAGES = Math.max(1, opts.maxPages ?? 25);
   const now = new Date().toISOString();
-  let page = 1;
+  // Retoma a partir da próxima página se a lista dessa chave já tem itens.
+  const existingCount = consultaStore.get().foundList.length;
+  let page = Math.max(1, Math.floor(existingCount / pageSize) + 1);
+  const startPage = page;
+
   let lastStatus: CountResult = { date, total: null, ok: true, status: 200 };
   let totalAdded = 0;
 
