@@ -692,27 +692,8 @@ function EnvioMassa() {
               <Button variant="outline" onClick={clearLogs} disabled={logs.length === 0}>
                 <RotateCcw className="h-4 w-4" /> Limpar log
               </Button>
-              <Button
-                variant="outline"
-                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                onClick={() => {
-                  if (
-                    confirm(
-                      'Limpar TUDO?\n\nIsso vai:\n• Esvaziar a fila\n• Apagar o log\n• Apagar histórico de enviados (local)\n• Zerar os contadores do dia e da hora\n\nOs pedidos e destinatários já enviados no servidor não são afetados.',
-                    )
-                  ) {
-                    stopSending();
-                    clearQueue();
-                    clearLogs();
-                    clearSentEmails();
-                    resetDailyCounter();
-                    toast.success('Envio em Massa limpo.');
-                  }
-                }}
-                disabled={running}
-              >
-                <Trash2 className="h-4 w-4" /> Limpar tudo
-              </Button>
+              {/* "Limpar tudo" removido — histórico de enviados é permanente aqui.
+                  Para apagar registros pontuais, use a aba E-mails Enviados (por período). */}
 
               <Button
                 variant="outline"
