@@ -73,13 +73,12 @@ function EmpresasImportadasPage() {
   const [search, setSearch] = useState('');
   const [uf, setUf] = useState<string>('all');
   const [emailFilter, setEmailFilter] = useState<string>('all');
-  const [origin, setOrigin] = useState<string>('all'); // all | auto | manual
   const [quality, setQuality] = useState<string>('all'); // all | complete | pending_enrichment | test_partial | test
   const [openingFrom, setOpeningFrom] = useState('');
   const [openingTo, setOpeningTo] = useState('');
   const [importedFrom, setImportedFrom] = useState('');
   const [importedTo, setImportedTo] = useState('');
-  const [autoIds, setAutoIds] = useState<Set<string>>(new Set());
+  const [dia, setDia] = useState<string>(''); // filtro rápido: um único dia
 
   const load = async () => {
     setLoading(true);
