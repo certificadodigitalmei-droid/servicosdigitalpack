@@ -79,7 +79,9 @@ function EmpresasImportadasPage() {
   const [openingTo, setOpeningTo] = useState('');
   const [importedFrom, setImportedFrom] = useState('');
   const [importedTo, setImportedTo] = useState('');
-  const [dia, setDia] = useState<string>(''); // filtro rápido: um único dia
+  const [preset, setPreset] = useState<DatePreset>('today');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
 
   const load = async () => {
     setLoading(true);
