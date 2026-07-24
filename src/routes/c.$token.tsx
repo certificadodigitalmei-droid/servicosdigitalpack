@@ -216,6 +216,7 @@ function TokenHomePage() {
             {/* Coluna lateral — checkout (sticky em desktop) */}
             <aside className="lg:sticky lg:top-6 space-y-4">
               <div className={`rounded-md border bg-card p-0 overflow-hidden shadow-sm lg:shadow-[0_20px_60px_-24px_rgba(0,72,132,0.35)] ${paidAt ? 'border-emerald-500' : 'border-border'}`}>
+                {((!paidAt && display.show_cert_landing) || (paidAt && display.show_cert_success)) && (
                 <div className={`relative border-b ${paidAt ? 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-white' : 'border-border bg-[#f0f5ff]'}`}>
                   <img
                     src={certificadoA1Asset.url}
@@ -254,6 +255,7 @@ function TokenHomePage() {
                     </>
                   )}
                 </div>
+                )}
                 {!paidAt && (
                   <div className="flex items-start gap-4 p-5 lg:flex-col lg:items-center lg:text-center lg:p-6">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#f0f5ff] text-[#004884] lg:h-16 lg:w-16">
