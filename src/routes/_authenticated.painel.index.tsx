@@ -374,6 +374,17 @@ function DashboardPage() {
         />
       </div>
 
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <MetricCard
+          icon={<Copy className="h-5 w-5" />}
+          label='Cópias do "PIX Copia e Cola"'
+          value={stats.copyPix}
+          total={stats.copyPixTotal}
+          color="bg-teal-50 text-teal-600"
+          hint="Únicos por navegador/dispositivo · total inclui repetidos"
+        />
+      </div>
+
 
 
       <div className="grid gap-4 md:grid-cols-2">
