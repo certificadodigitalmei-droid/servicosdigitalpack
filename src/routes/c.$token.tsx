@@ -97,10 +97,23 @@ function TokenHomePage() {
 
   return (
     <Page>
-      {/* Animação de intro fica em /acesso/$token (mobile). Aqui já é a página final. */}
+      {/* Loader overlay — apenas mobile (lg:hidden). Cobre a página inteira e evita flash dos dados. */}
+      {loaderVisible && (
+        <div className="fixed inset-0 z-[9999] bg-white lg:hidden">
+          <GovConsultaLoader
+            cnpj={row.cnpj ?? undefined}
+            nome={nomeFmt !== '—' ? nomeFmt : undefined}
+            onFinish={() => {
+              setLoaderVisible(false);
+              markLinkLoaderShown({ data: { token } }).catch(() => {});
+            }}
+          />
+        </div>
+      )}
 
       <SiteHeader userName={nomeFmt !== '—' ? nomeFmt : undefined} userDoc={row.cnpj ?? undefined} />
       <Breadcrumb items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }]} />
+
 
 
 
