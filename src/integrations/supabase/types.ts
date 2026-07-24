@@ -1054,6 +1054,60 @@ export type Database = {
         }
         Relationships: []
       }
+      email_send_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          created_by: string | null
+          html: string | null
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          last_status_code: number | null
+          next_retry_at: string | null
+          sent_message_id: string | null
+          status: string
+          subject: string
+          text: string | null
+          to_email: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          created_by?: string | null
+          html?: string | null
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          last_status_code?: number | null
+          next_retry_at?: string | null
+          sent_message_id?: string | null
+          status?: string
+          subject: string
+          text?: string | null
+          to_email: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          created_by?: string | null
+          html?: string | null
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          last_status_code?: number | null
+          next_retry_at?: string | null
+          sent_message_id?: string | null
+          status?: string
+          subject?: string
+          text?: string | null
+          to_email?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_settings: {
         Row: {
           batch_size: number | null
