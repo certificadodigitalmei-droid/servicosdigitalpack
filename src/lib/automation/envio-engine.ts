@@ -527,7 +527,7 @@ function buildVarsFor(item: QueueItem) {
     LINK_PUBLICO: item.publicUrl
       ? item.publicUrl
       : item.publicToken
-        ? `${PUBLIC_BASE_URL}/c/${item.publicToken}`
+        ? `${PUBLIC_BASE_URL}/acesso/${item.publicToken}`
         : `${PUBLIC_BASE_URL}/modelo`,
     TOKEN: item.publicToken || '',
 
