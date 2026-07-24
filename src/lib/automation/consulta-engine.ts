@@ -259,10 +259,11 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
 
 
   try {
-    while (page <= HARD_BACKSTOP_PAGES) {
+    while (page < startPage + HARD_BACKSTOP_PAGES) {
       const r: any = await listByDate({
         data: { date, filters, limit: pageSize, page },
       });
+
       lastStatus = { date: r.date, total: r.total, ok: r.ok, status: r.status };
       const items = r.items ?? [];
       if (items.length > 0) {
