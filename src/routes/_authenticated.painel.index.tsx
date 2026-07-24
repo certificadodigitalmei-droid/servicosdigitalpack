@@ -18,6 +18,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useServerFn } from '@tanstack/react-start';
+import { getSitePopup } from '@/lib/site-popup.functions';
+
 
 export const Route = createFileRoute('/_authenticated/painel/')({
   component: DashboardPage,
