@@ -286,6 +286,15 @@ function EnvioMassa() {
         )}
       </div>
 
+      <DateRangeFilter
+        preset={preset}
+        onPresetChange={setPreset}
+        from={fromDate}
+        to={toDate}
+        onFromChange={setFromDate}
+        onToChange={setToDate}
+      />
+
       {/* Limites do Lovable Emails + Enviados confirmados */}
       <Card className="border-blue-100 bg-gradient-to-br from-blue-50/60 to-white">
         <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
