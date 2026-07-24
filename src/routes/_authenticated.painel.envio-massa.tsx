@@ -31,6 +31,7 @@ import {
 // FloatingStatsPanel agora é montado globalmente em _authenticated.painel.tsx
 import { getEmailStats, type EmailStatsResult } from '@/lib/email-campaign/stats.functions';
 import { useStore } from '@/lib/automation/store';
+import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
 
 import { toast } from 'sonner';
 import {
