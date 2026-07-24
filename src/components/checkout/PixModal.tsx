@@ -170,6 +170,7 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, token, onClose 
       }
       setCopied(true);
       toast.success('Código PIX copiado!');
+      if (token) void trackEvent(token, 'copy_pix');
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error('Não foi possível copiar. Selecione o código manualmente.');
