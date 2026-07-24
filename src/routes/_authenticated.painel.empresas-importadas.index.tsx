@@ -255,7 +255,7 @@ function EmpresasImportadasPage() {
               Aplicar filtros
             </Button>
             <Button variant="outline" onClick={() => {
-              setSearch(''); setUf('all'); setEmailFilter('all'); setOrigin('all');
+              setSearch(''); setUf('all'); setEmailFilter('all'); setDia('');
               setOpeningFrom(''); setOpeningTo(''); setImportedFrom(''); setImportedTo('');
               setPage(0); setTimeout(load, 0);
             }}>
