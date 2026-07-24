@@ -15,13 +15,14 @@ import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
-    const [row, payment, popup] = await Promise.all([
+    const [row, payment, popup, loaderState] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
       getLinkPaymentStatus({ data: { token: params.token } }).catch(() => ({ paid: false, paid_at: null as string | null })),
       getSitePopup().catch(() => null),
+      getLinkLoaderState({ data: { token: params.token } }).catch(() => ({ shown: true })),
     ]);
     if (!row) throw notFound();
-    return { row, initialPaidAt: payment.paid_at, popup };
+    return { row, initialPaidAt: payment.paid_at, popup, loaderShown: loaderState.shown };
   },
 
   head: () => ({
