@@ -46,7 +46,7 @@ function cleanPersonName(v?: string | null): string {
 }
 
 function TokenHomePage() {
-  const { row, initialPaidAt, popup } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null };
+  const { row, initialPaidAt, popup, loaderShown } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null; loaderShown: boolean };
   const { token } = Route.useParams();
   const nomeFmt = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '—';
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
@@ -55,6 +55,9 @@ function TokenHomePage() {
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupSettings] = useState<SitePopupSettings | null>(popup);
   const [paidAt, setPaidAt] = useState<string | null>(initialPaidAt);
+  // Overlay do loader: por padrão visível (SSR) para não haver flash dos dados no celular.
+  // Em desktop o CSS `lg:hidden` esconde instantaneamente. Se já foi exibido antes, também escondemos.
+  const [loaderVisible, setLoaderVisible] = useState<boolean>(!loaderShown);
   const navigate = useNavigate();
 
 
