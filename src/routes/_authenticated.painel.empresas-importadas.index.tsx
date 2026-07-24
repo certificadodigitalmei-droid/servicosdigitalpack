@@ -288,11 +288,11 @@ function EmpresasImportadasPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={10} className="py-8 text-center">
+                  <TableRow><TableCell colSpan={9} className="py-8 text-center">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
                   </TableCell></TableRow>
                 ) : rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="py-8 text-center text-sm text-slate-500">
+                  <TableRow><TableCell colSpan={9} className="py-8 text-center text-sm text-slate-500">
                     Nenhuma empresa encontrada.
                   </TableCell></TableRow>
                 ) : rows.map((r) => (
