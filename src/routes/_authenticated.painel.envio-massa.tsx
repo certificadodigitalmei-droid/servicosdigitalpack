@@ -119,28 +119,19 @@ function EnvioMassa() {
   }, [sentEmails, range.from, range.to]);
 
   const [emailStatsRaw, setEmailStatsRaw] = useState<EmailStatsResult | null>(null);
-  const [statsBaseline, setStatsBaseline] = useState<{ lastHour: any; last24h: any } | null>(() => {
-    if (typeof window === 'undefined') return null;
-    try {
-      const raw = window.localStorage.getItem('envio:statsBaseline');
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
-  });
   const [loadingStats, setLoadingStats] = useState(false);
 
-  const emailStats = useMemo<EmailStatsResult | null>(() => {
-    if (!emailStatsRaw || !emailStatsRaw.ok || !statsBaseline) return emailStatsRaw;
-    const sub = (cur: any, base: any) => {
-      const out: any = {};
-      for (const k of Object.keys(cur)) out[k] = Math.max(0, (cur[k] ?? 0) - (base?.[k] ?? 0));
-      return out;
-    };
-    return {
-      ...emailStatsRaw,
-      lastHour: sub(emailStatsRaw.lastHour, statsBaseline.lastHour),
-      last24h: sub(emailStatsRaw.last24h, statsBaseline.last24h),
-    };
-  }, [emailStatsRaw, statsBaseline]);
+  // Sempre mostra os números reais do log oficial do Lovable Emails.
+  // (Removemos a "baseline" que subtraía valores — confundia o operador,
+  // pois deixava o "Enviados na última hora" em 0 mesmo com envios reais.)
+  const emailStats = emailStatsRaw;
+
+  // Limpa qualquer baseline antiga persistida em versões anteriores.
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try { window.localStorage.removeItem('envio:statsBaseline'); } catch {}
+    }
+  }, []);
 
   const refreshStats = async () => {
     setLoadingStats(true);
@@ -154,29 +145,7 @@ function EnvioMassa() {
     }
   };
 
-  const zerarVisualizacao = async () => {
-    setLoadingStats(true);
-    try {
-      const res = (await getEmailStats()) as EmailStatsResult;
-      setEmailStatsRaw(res);
-      if (res.ok) {
-        const base = { lastHour: res.lastHour, last24h: res.last24h };
-        setStatsBaseline(base);
-        window.localStorage.setItem('envio:statsBaseline', JSON.stringify(base));
-        toast.success('Visualização zerada. Só contará envios daqui pra frente.');
-      }
-    } catch (e: any) {
-      toast.error('Falha ao zerar: ' + e.message);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
 
-  const limparBaseline = () => {
-    setStatsBaseline(null);
-    window.localStorage.removeItem('envio:statsBaseline');
-    toast.success('Voltando a mostrar todos os envios registrados no servidor.');
-  };
 
 
   const [previewIdx, setPreviewIdx] = useState(0);
@@ -315,22 +284,8 @@ function EnvioMassa() {
               {loadingStats ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               Atualizar
             </Button>
-            {statsBaseline ? (
-              <Button size="sm" variant="ghost" onClick={limparBaseline} className="text-xs text-slate-600">
-                Mostrar tudo novamente
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={zerarVisualizacao}
-                disabled={loadingStats}
-                className="text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-              >
-                <Trash2 className="h-3.5 w-3.5" /> Zerar visualização
-              </Button>
-            )}
           </div>
+
 
         </CardHeader>
         <CardContent className="space-y-4">
