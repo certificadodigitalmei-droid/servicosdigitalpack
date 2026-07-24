@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Link2, Link as LinkIcon, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet, Trash2, Calendar as CalendarIcon, CheckCircle2, Bell, Info } from 'lucide-react';
+import { Link2, Link as LinkIcon, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet, Trash2, Calendar as CalendarIcon, CheckCircle2, Bell, Info, Copy } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatCNPJ } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +27,7 @@ export const Route = createFileRoute('/_authenticated/painel/')({
 });
 
 type EventRow = {
-  event_type: 'view_link' | 'view_checkout' | 'click_certificado' | 'click_guia';
+  event_type: 'view_link' | 'view_checkout' | 'click_certificado' | 'click_guia' | 'copy_pix';
   browser: string | null;
   os: string | null;
   device: string | null;
@@ -42,10 +42,12 @@ type Stats = {
   viewCheckout: number;
   clickCert: number;
   clickGuia: number;
+  copyPix: number;
   viewLinkTotal: number;
   viewCheckoutTotal: number;
   clickCertTotal: number;
   clickGuiaTotal: number;
+  copyPixTotal: number;
   paid: number;
   paidAmount: number;
   byBrowser: Record<string, number>;
@@ -60,10 +62,12 @@ const EMPTY: Stats = {
   viewCheckout: 0,
   clickCert: 0,
   clickGuia: 0,
+  copyPix: 0,
   viewLinkTotal: 0,
   viewCheckoutTotal: 0,
   clickCertTotal: 0,
   clickGuiaTotal: 0,
+  copyPixTotal: 0,
   paid: 0,
   paidAmount: 0,
   byBrowser: {},
@@ -168,12 +172,14 @@ function DashboardPage() {
         view_checkout: new Set(),
         click_certificado: new Set(),
         click_guia: new Set(),
+        copy_pix: new Set(),
       };
       for (const e of events) {
         if (e.event_type === 'view_link') s.viewLinkTotal++;
         else if (e.event_type === 'view_checkout') s.viewCheckoutTotal++;
         else if (e.event_type === 'click_certificado') s.clickCertTotal++;
         else if (e.event_type === 'click_guia') s.clickGuiaTotal++;
+        else if (e.event_type === 'copy_pix') s.copyPixTotal++;
 
         const key = `${e.token}:${e.visitor_id}`;
         const isUnique = !uniq[e.event_type]?.has(key);
@@ -183,6 +189,7 @@ function DashboardPage() {
           else if (e.event_type === 'view_checkout') s.viewCheckout++;
           else if (e.event_type === 'click_certificado') s.clickCert++;
           else if (e.event_type === 'click_guia') s.clickGuia++;
+          else if (e.event_type === 'copy_pix') s.copyPix++;
           if (e.event_type === 'view_link' || e.event_type === 'view_checkout') {
             const b = e.browser || 'Desconhecido';
             const d = e.device || 'Desconhecido';
@@ -364,6 +371,17 @@ function DashboardPage() {
           value={stats.paid}
           color="bg-emerald-50 text-emerald-600"
           hint={stats.paidAmount > 0 ? `Total: R$ ${stats.paidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Pedidos com PIX pago'}
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <MetricCard
+          icon={<Copy className="h-5 w-5" />}
+          label='Cópias do "PIX Copia e Cola"'
+          value={stats.copyPix}
+          total={stats.copyPixTotal}
+          color="bg-teal-50 text-teal-600"
+          hint="Únicos por navegador/dispositivo · total inclui repetidos"
         />
       </div>
 
