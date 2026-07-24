@@ -18,18 +18,29 @@ export const Route = createFileRoute('/_authenticated/painel/enviados')({
 function EnviadosPage() {
   const sent = useStore(envioStore, (s) => s.sentEmails);
   const [q, setQ] = useState('');
+  const [preset, setPreset] = useState<DatePreset>('today');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+
+  const range = useMemo(() => computeDateRange(preset, from, to), [preset, from, to]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    if (!term) return sent;
-    return sent.filter(
-      (e) =>
+    const fromMs = range.from?.getTime();
+    const toMs = range.to?.getTime();
+    return sent.filter((e) => {
+      const t = new Date(e.sentAt).getTime();
+      if (fromMs !== undefined && t < fromMs) return false;
+      if (toMs !== undefined && t > toMs) return false;
+      if (!term) return true;
+      return (
         e.email.toLowerCase().includes(term) ||
         e.cnpj.toLowerCase().includes(term) ||
         e.company_name.toLowerCase().includes(term) ||
-        e.subject.toLowerCase().includes(term),
-    );
-  }, [sent, q]);
+        e.subject.toLowerCase().includes(term)
+      );
+    });
+  }, [sent, q, range.from, range.to]);
 
   const stats = useMemo(() => {
     const startDay = new Date();
@@ -44,8 +55,8 @@ function EnviadosPage() {
       if (t >= startHour) lastHour++;
       if (e.testMode) test++;
     }
-    return { total: sent.length, today, lastHour, test };
-  }, [sent]);
+    return { total: sent.length, today, lastHour, test, inRange: filtered.length };
+  }, [sent, filtered.length]);
 
   const exportCsv = () => {
     const header = ['data_envio', 'email', 'cnpj', 'empresa', 'assunto', 'modo_teste', 'link'];
