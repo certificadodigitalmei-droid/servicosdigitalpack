@@ -89,7 +89,7 @@ export async function runImportBatch(
     const r = await searchOpeningsByDate({
       filters: input.filters,
       date: input.date,
-        limit: discoveryLimit,
+      limit: discoveryLimit,
       page,
       completo: false,
       timeoutMs: 20_000,
