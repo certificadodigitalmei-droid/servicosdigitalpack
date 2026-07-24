@@ -93,11 +93,20 @@ function EnviadosPage() {
         </p>
       </div>
 
+      <DateRangeFilter
+        preset={preset}
+        onPresetChange={setPreset}
+        from={from}
+        to={to}
+        onFromChange={setFrom}
+        onToChange={setTo}
+      />
+
       <div className="grid gap-3 sm:grid-cols-4">
-        <StatCard label="Total registrado" value={stats.total} color="text-slate-900" />
+        <StatCard label="No período" value={stats.inRange} color="text-indigo-600" />
         <StatCard label="Enviados hoje" value={stats.today} color="text-emerald-600" />
         <StatCard label="Última hora" value={stats.lastHour} color="text-blue-600" />
-        <StatCard label="Testes" value={stats.test} color="text-amber-600" />
+        <StatCard label="Total registrado" value={stats.total} color="text-slate-900" />
       </div>
 
       <Card>
