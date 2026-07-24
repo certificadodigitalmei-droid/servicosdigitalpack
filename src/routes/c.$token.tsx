@@ -92,9 +92,8 @@ function TokenHomePage() {
 
   return (
     <Page>
-      {showLoader && (
-        <GovConsultaLoader cnpj={row.cnpj} nome={nomeFmt !== '—' ? nomeFmt : undefined} onFinish={() => setShowLoader(false)} />
-      )}
+      {/* Animação de intro fica em /acesso/$token (mobile). Aqui já é a página final. */}
+
       <SiteHeader userName={nomeFmt !== '—' ? nomeFmt : undefined} userDoc={row.cnpj ?? undefined} />
       <Breadcrumb items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }]} />
 
