@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useServerFn } from '@tanstack/react-start';
 import { useNavigate } from '@tanstack/react-router';
 import { checkOrderStatus } from '@/lib/payments/status.functions';
+import { trackEvent } from '@/lib/track';
 
 const brl = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`;
 
