@@ -245,7 +245,10 @@ export async function runListOnce(opts: { silent?: boolean } = {}) {
 
   consultaStore.set({ isCounting: true });
   const pageSize = 20;
-  const maxPages = 500;
+  // Sem teto artificial: paramos quando a página vem incompleta,
+  // quando atingimos r.total da API, ou em erro. Backstop apenas
+  // para evitar loop infinito em caso de bug da API.
+  const HARD_BACKSTOP_PAGES = 100_000;
   const now = new Date().toISOString();
   let page = 1;
   let lastStatus: CountResult = { date, total: null, ok: true, status: 200 };
