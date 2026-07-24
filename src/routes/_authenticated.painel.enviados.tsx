@@ -9,6 +9,7 @@ import { useStore } from '@/lib/automation/store';
 import { envioStore, clearSentEmails, removeSentEmail } from '@/lib/automation/envio-engine';
 import { formatCnpj } from '@/lib/email-campaign/template';
 import { toast } from 'sonner';
+import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
 
 export const Route = createFileRoute('/_authenticated/painel/enviados')({
   component: EnviadosPage,
@@ -17,18 +18,29 @@ export const Route = createFileRoute('/_authenticated/painel/enviados')({
 function EnviadosPage() {
   const sent = useStore(envioStore, (s) => s.sentEmails);
   const [q, setQ] = useState('');
+  const [preset, setPreset] = useState<DatePreset>('today');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+
+  const range = useMemo(() => computeDateRange(preset, from, to), [preset, from, to]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    if (!term) return sent;
-    return sent.filter(
-      (e) =>
+    const fromMs = range.from?.getTime();
+    const toMs = range.to?.getTime();
+    return sent.filter((e) => {
+      const t = new Date(e.sentAt).getTime();
+      if (fromMs !== undefined && t < fromMs) return false;
+      if (toMs !== undefined && t > toMs) return false;
+      if (!term) return true;
+      return (
         e.email.toLowerCase().includes(term) ||
         e.cnpj.toLowerCase().includes(term) ||
         e.company_name.toLowerCase().includes(term) ||
-        e.subject.toLowerCase().includes(term),
-    );
-  }, [sent, q]);
+        e.subject.toLowerCase().includes(term)
+      );
+    });
+  }, [sent, q, range.from, range.to]);
 
   const stats = useMemo(() => {
     const startDay = new Date();
@@ -43,8 +55,8 @@ function EnviadosPage() {
       if (t >= startHour) lastHour++;
       if (e.testMode) test++;
     }
-    return { total: sent.length, today, lastHour, test };
-  }, [sent]);
+    return { total: sent.length, today, lastHour, test, inRange: filtered.length };
+  }, [sent, filtered.length]);
 
   const exportCsv = () => {
     const header = ['data_envio', 'email', 'cnpj', 'empresa', 'assunto', 'modo_teste', 'link'];
@@ -81,11 +93,20 @@ function EnviadosPage() {
         </p>
       </div>
 
+      <DateRangeFilter
+        preset={preset}
+        onPresetChange={setPreset}
+        from={from}
+        to={to}
+        onFromChange={setFrom}
+        onToChange={setTo}
+      />
+
       <div className="grid gap-3 sm:grid-cols-4">
-        <StatCard label="Total registrado" value={stats.total} color="text-slate-900" />
+        <StatCard label="No período" value={stats.inRange} color="text-indigo-600" />
         <StatCard label="Enviados hoje" value={stats.today} color="text-emerald-600" />
         <StatCard label="Última hora" value={stats.lastHour} color="text-blue-600" />
-        <StatCard label="Testes" value={stats.test} color="text-amber-600" />
+        <StatCard label="Total registrado" value={stats.total} color="text-slate-900" />
       </div>
 
       <Card>

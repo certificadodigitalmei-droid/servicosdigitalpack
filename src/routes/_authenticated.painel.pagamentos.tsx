@@ -86,7 +86,7 @@ function fmtMoney(v: number) {
 function PagamentosPage() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [preset, setPreset] = useState<Preset>('tudo');
+  const [preset, setPreset] = useState<Preset>('hoje');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'awaiting_payment' | 'other'>('all');

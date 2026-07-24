@@ -25,6 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
 import { toast } from 'sonner';
+import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
 
 export const Route = createFileRoute('/_authenticated/painel/empresas-importadas/')({
   head: () => ({ meta: [{ title: 'Empresas Importadas | Painel' }] }),
@@ -78,7 +79,20 @@ function EmpresasImportadasPage() {
   const [openingTo, setOpeningTo] = useState('');
   const [importedFrom, setImportedFrom] = useState('');
   const [importedTo, setImportedTo] = useState('');
-  const [dia, setDia] = useState<string>(''); // filtro rápido: um único dia
+  const [preset, setPreset] = useState<DatePreset>('today');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+
+  // Sincroniza o preset de período com os campos "Importada (de/até)"
+  useEffect(() => {
+    const r = computeDateRange(preset, customFrom, customTo);
+    setImportedFrom(r.from ? r.from.toISOString().slice(0, 10) : '');
+    setImportedTo(r.to ? r.to.toISOString().slice(0, 10) : '');
+    setPage(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preset, customFrom, customTo]);
+
+
 
   const load = async () => {
     setLoading(true);
@@ -167,6 +181,14 @@ function EmpresasImportadasPage() {
         />
       </div>
 
+      <DateRangeFilter
+        preset={preset}
+        onPresetChange={setPreset}
+        from={customFrom}
+        to={customTo}
+        onFromChange={setCustomFrom}
+        onToChange={setCustomTo}
+      />
 
       <Card>
         <CardHeader>
@@ -209,19 +231,6 @@ function EmpresasImportadasPage() {
             </Select>
           </div>
           <div>
-            <Label>Dia</Label>
-            <Input
-              type="date"
-              value={dia}
-              onChange={(e) => {
-                const d = e.target.value;
-                setDia(d);
-                setImportedFrom(d);
-                setImportedTo(d);
-              }}
-            />
-          </div>
-          <div>
             <Label>Qualidade dos dados</Label>
             <Select value={quality} onValueChange={setQuality}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -255,7 +264,7 @@ function EmpresasImportadasPage() {
               Aplicar filtros
             </Button>
             <Button variant="outline" onClick={() => {
-              setSearch(''); setUf('all'); setEmailFilter('all'); setDia('');
+              setSearch(''); setUf('all'); setEmailFilter('all'); setPreset('today'); setCustomFrom(''); setCustomTo('');
               setOpeningFrom(''); setOpeningTo(''); setImportedFrom(''); setImportedTo('');
               setPage(0); setTimeout(load, 0);
             }}>
