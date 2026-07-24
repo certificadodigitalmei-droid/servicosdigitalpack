@@ -54,8 +54,8 @@ function GoogleWorkspacePage() {
     mutationFn: async () => testConn(),
     onSuccess: (r: any) => {
       setTestResult(r);
-      if (r.ok) toast.success(`Conectado como ${r.connectedAs}`);
-      else toast.error(r.error || r.warning || 'Falha no teste de conexão');
+      if (r.ok) toast.success('Conexão autorizada para envio via Gmail API');
+      else toast.error(r.error || 'Falha no teste de conexão');
     },
     onError: (e: any) => toast.error(e.message ?? 'Erro'),
   });
@@ -171,11 +171,13 @@ function GoogleWorkspacePage() {
 
           {testResult && (
             <Alert variant={testResult.ok ? 'default' : 'destructive'} className="mt-4">
-              <AlertTitle>{testResult.ok ? 'Conexão OK' : 'Falha na conexão'}</AlertTitle>
+              <AlertTitle>
+                {testResult.ok ? 'Conexão autorizada para envio via Gmail API' : 'Falha na conexão'}
+              </AlertTitle>
               <AlertDescription className="text-xs font-mono break-all">
                 {testResult.ok
-                  ? `Conta autenticada: ${testResult.connectedAs}`
-                  : testResult.error || testResult.warning}
+                  ? `Remetente: ${testResult.sender}`
+                  : testResult.error}
               </AlertDescription>
             </Alert>
           )}
