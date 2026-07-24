@@ -121,24 +121,24 @@ function DashboardPage() {
   async function load() {
     setLoading(true);
     try {
-      // "Links gerados" = e-mails efetivamente enviados no período (mesma
-      // fonte da aba E-mails Enviados: email_campaign_recipients.sent_at).
-      // Assim as datas batem: se enviou 220 ontem, aparece 220 ontem aqui.
+      // "Links gerados" = links criados no período (mesma fonte da aba
+      // "Links Gerados": company_links.created_at). Assim o Dashboard mostra
+      // TODOS os links gerados no período, tenham sido enviados ou não.
       let linksCountQ = supabase
-        .from('email_campaign_recipients')
-        .select('id', { count: 'exact', head: true })
-        .not('sent_at', 'is', null);
+        .from('company_links')
+        .select('id', { count: 'exact', head: true });
       let evQ = supabase.from('link_events').select('event_type,browser,os,device,visitor_id,token,created_at').limit(50000);
       if (range.from) {
         const iso = range.from.toISOString();
-        linksCountQ = linksCountQ.gte('sent_at', iso);
+        linksCountQ = linksCountQ.gte('created_at', iso);
         evQ = evQ.gte('created_at', iso);
       }
       if (range.to) {
         const iso = range.to.toISOString();
-        linksCountQ = linksCountQ.lte('sent_at', iso);
+        linksCountQ = linksCountQ.lte('created_at', iso);
         evQ = evQ.lte('created_at', iso);
       }
+
       let ordersQ = supabase
         .from('orders')
         .select('amount, paid_at')
@@ -351,7 +351,7 @@ function DashboardPage() {
 
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <MetricCard icon={<LinkIcon className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-slate-100 text-slate-700" hint="E-mails enviados no período (mesma contagem da aba E-mails Enviados)" />
+        <MetricCard icon={<LinkIcon className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-slate-100 text-slate-700" hint="Links criados no período (mesma contagem da aba Links Gerados)" />
         <MetricCard icon={<Link2 className="h-5 w-5" />} label="Acessos na primeira página" value={stats.viewLink} total={stats.viewLinkTotal} color="bg-blue-50 text-brand-blue" hint="Únicos por navegador/dispositivo" />
         <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label='Cliques "Emitir Certificado"' value={stats.clickCert} total={stats.clickCertTotal} color="bg-amber-50 text-amber-600" hint="Únicos por navegador/dispositivo" />
       </div>
