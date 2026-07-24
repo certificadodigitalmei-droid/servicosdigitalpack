@@ -284,22 +284,8 @@ function EnvioMassa() {
               {loadingStats ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               Atualizar
             </Button>
-            {statsBaseline ? (
-              <Button size="sm" variant="ghost" onClick={limparBaseline} className="text-xs text-slate-600">
-                Mostrar tudo novamente
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={zerarVisualizacao}
-                disabled={loadingStats}
-                className="text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-              >
-                <Trash2 className="h-3.5 w-3.5" /> Zerar visualização
-              </Button>
-            )}
           </div>
+
 
         </CardHeader>
         <CardContent className="space-y-4">
