@@ -81,6 +81,9 @@ export const sendWorkspaceBurst = createServerFn({ method: 'POST' })
             subject: m.subject,
             html: m.html,
             text: m.text,
+            fromName: m.fromName,
+            replyTo: m.replyTo,
+            listUnsubscribe: m.listUnsubscribe,
           });
           // Grava histórico durável (só em envio REAL, não em teste)
           if (!data.testMode) {
