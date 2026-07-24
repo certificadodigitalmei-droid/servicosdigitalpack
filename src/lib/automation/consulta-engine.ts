@@ -245,9 +245,10 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
 
   consultaStore.set({ isCounting: true });
   const pageSize = 20;
-  // Limite prático para não travar a UI. Ver lista completa é sob demanda,
-  // e o usuário pode chamar novamente para carregar mais páginas.
-  const HARD_BACKSTOP_PAGES = Math.max(1, opts.maxPages ?? 25);
+  // Padrão: carrega TODAS as páginas da data/filtros escolhidos.
+  // Chamador pode limitar via `maxPages` se quiser paginar sob demanda.
+  const HARD_BACKSTOP_PAGES = Math.max(1, opts.maxPages ?? Number.POSITIVE_INFINITY);
+
   const now = new Date().toISOString();
   // Retoma a partir da próxima página se a lista dessa chave já tem itens.
   const existingCount = consultaStore.get().foundList.length;
