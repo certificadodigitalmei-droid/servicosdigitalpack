@@ -69,7 +69,15 @@ export async function runImportBatch(
   // até encontrar CNPJs novos ou atingir o limite de tentativas. Isso evita
   // ficar "preso" na página 1 quando todos os primeiros resultados já foram
   // importados anteriormente.
-  const maxPages = input.skipExisting ? 10 : 1;
+  // Quando a importação automática roda 1-a-1, os primeiros resultados da API
+  // (mais recentes) rapidamente viram empresas já importadas. Se buscarmos só
+  // 1 item por página e pararmos em 10 páginas, o ciclo trava exatamente depois
+  // dos 10 primeiros CNPJs. Para manter o fluxo contínuo, a descoberta gratuita
+  // olha uma página cheia e avança várias páginas até achar o próximo CNPJ novo;
+  // ainda enriquecemos/importamos apenas `input.limit` empresas, preservando a
+  // regra do envio: importar 1 → enviar 1 → importar o próximo.
+  const discoveryLimit = input.skipExisting ? Math.max(15, input.limit) : input.limit;
+  const maxPages = input.skipExisting ? 100 : 1;
   let page = startPage;
   let lastStatus = 0;
   let apiTotal: number | null = null;
@@ -81,7 +89,7 @@ export async function runImportBatch(
     const r = await searchOpeningsByDate({
       filters: input.filters,
       date: input.date,
-      limit: input.limit,
+      limit: discoveryLimit,
       page,
       completo: false,
       timeoutMs: 20_000,
@@ -127,7 +135,7 @@ export async function runImportBatch(
     }
 
     if (pageToEnrich.length > 0) {
-      toEnrich = pageToEnrich;
+      toEnrich = pageToEnrich.slice(0, input.limit);
       break;
     }
 
