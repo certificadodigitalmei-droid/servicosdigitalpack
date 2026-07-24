@@ -484,6 +484,8 @@ function EnvioMassa() {
                         { key: 'h_high', title: 'Ativo', sub: 'Bom rep.', v: 150, batch: 250 },
                         { key: 'h_max', title: 'Máximo saudável', sub: 'Após aquecimento', v: 200, batch: 350 },
                         { key: 'h_turbo', title: 'Turbo', sub: 'Domínio maduro', v: 300, batch: 500 },
+                        { key: 'h_400', title: 'Alto volume', sub: 'Domínio bem aquecido', v: 400, batch: 600 },
+                        { key: 'h_500', title: 'Volume máximo', sub: 'Reputação sólida', v: 500, batch: 800 },
                       ].map((p) => {
                         const delay = Math.max(1, Math.round(3600 / p.v));
                         const hint =
