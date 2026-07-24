@@ -498,6 +498,22 @@ export function clearQueue() {
   toast.success('Fila limpa.');
 }
 
+export function clearPendingQueue() {
+  const before = envioStore.get().queue.length;
+  envioStore.set((s) => ({
+    queue: s.queue.filter((q) => q.status !== 'pending'),
+  }));
+  const after = envioStore.get().queue.length;
+  const removed = before - after;
+  if (removed > 0) {
+    pushLog(`🗑 ${removed} pendente(s) removido(s) da fila.`);
+    toast.success(`${removed} pendente(s) removido(s).`);
+  } else {
+    toast.info('Nenhum item pendente na fila.');
+  }
+}
+
+
 export function clearLogs() {
   envioStore.set({ logs: [] });
 }
