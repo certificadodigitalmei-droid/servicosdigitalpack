@@ -173,9 +173,23 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 };
 
 
-export const DEFAULT_SUBJECT = '{{NOME_TITULAR}}, atualização pendente do seu CNPJ';
+export const DEFAULT_SUBJECT = 'Informações sobre o Certificado Digital do seu MEI';
 export const DEFAULT_PREHEADER =
-  'Verifique os dados do CNPJ {{CNPJ}} e finalize seu Certificado Digital MEI.';
+  'Consulte os dados do CNPJ {{CNPJ}} e conclua a emissão do seu Certificado Digital MEI.';
+
+/** Padrões de assunto agressivos que devem ser bloqueados/avisados na UI. */
+export const FORBIDDEN_SUBJECT_PATTERNS: RegExp[] = [
+  /restri[cç][aã]o\s+no\s+seu\s+cnpj/i,
+  /suspens[aã]o\s+do\s+cnpj/i,
+  /bloqueio\s+do\s+cnpj/i,
+  /multa\s+da\s+receita/i,
+  /urgente!!+/i,
+];
+
+export function isSubjectForbidden(subject: string): boolean {
+  const s = String(subject || '');
+  return FORBIDDEN_SUBJECT_PATTERNS.some((re) => re.test(s));
+}
 
 export type Vars = Record<string, string>;
 

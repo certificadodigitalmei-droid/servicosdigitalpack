@@ -96,6 +96,28 @@ function base64UrlEncode(input: string): string {
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+/**
+ * Standard base64 (RFC 4648) with CRLF line wrapping at 76 chars — required
+ * by `Content-Transfer-Encoding: base64` MIME parts. URL-safe base64 breaks
+ * Gmail's part decoder and was the root cause of the "</tr" leak seen in
+ * the inbox.
+ */
+function base64MimeEncode(input: string): string {
+  const bytes = new TextEncoder().encode(input);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  const b64 = btoa(bin);
+  return b64.replace(/(.{76})/g, '$1\r\n');
+}
+
+function encodeMimeHeader(value: string): string {
+  if (/^[\x20-\x7E]*$/.test(value)) return value;
+  const bytes = new TextEncoder().encode(value);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return `=?UTF-8?B?${btoa(bin)}?=`;
+}
+
 export function buildRfc2822({
   to,
   subject,
@@ -103,6 +125,8 @@ export function buildRfc2822({
   text,
   fromEmail,
   fromName,
+  replyTo,
+  listUnsubscribe,
 }: {
   to: string;
   subject: string;
@@ -110,22 +134,49 @@ export function buildRfc2822({
   text?: string;
   fromEmail: string;
   fromName?: string;
+  replyTo?: string;
+  listUnsubscribe?: string;
 }): string {
   assertHeaderSafe('to', to);
   assertHeaderSafe('subject', subject);
   assertHeaderSafe('from', fromEmail);
   if (fromName) assertHeaderSafe('fromName', fromName);
+  if (replyTo) assertHeaderSafe('replyTo', replyTo);
+  if (listUnsubscribe) assertHeaderSafe('listUnsubscribe', listUnsubscribe);
 
-  const from = fromName ? `${fromName} <${fromEmail}>` : fromEmail;
+  const from = fromName ? `${encodeMimeHeader(fromName)} <${fromEmail}>` : fromEmail;
   const boundary = `bnd_${crypto.randomUUID().replace(/-/g, '')}`;
+  const domain = fromEmail.split('@')[1] || 'localhost';
 
-  const headers = [
+  const headerLines = [
     `From: ${from}`,
     `To: ${to}`,
-    `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
+    `Subject: ${encodeMimeHeader(subject)}`,
+    `Date: ${new Date().toUTCString()}`,
+    `Message-ID: <${crypto.randomUUID()}@${domain}>`,
     'MIME-Version: 1.0',
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
-  ].join('\r\n');
+  ];
+  if (replyTo) headerLines.push(`Reply-To: ${replyTo}`);
+  if (listUnsubscribe) {
+    headerLines.push(`List-Unsubscribe: ${listUnsubscribe}`);
+    headerLines.push('List-Unsubscribe-Post: List-Unsubscribe=One-Click');
+  }
+  const headers = headerLines.join('\r\n');
+
+  const textBody =
+    text ||
+    (html
+      ? html
+          .replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/\s+\n/g, '\n')
+          .trim()
+      : '');
 
   const parts: string[] = [];
   parts.push(
@@ -134,7 +185,7 @@ export function buildRfc2822({
       'Content-Type: text/plain; charset="UTF-8"',
       'Content-Transfer-Encoding: base64',
       '',
-      base64UrlEncode(text || (html ? html.replace(/<[^>]+>/g, '') : '')),
+      base64MimeEncode(textBody),
     ].join('\r\n'),
   );
   if (html) {
@@ -144,23 +195,32 @@ export function buildRfc2822({
         'Content-Type: text/html; charset="UTF-8"',
         'Content-Transfer-Encoding: base64',
         '',
-        base64UrlEncode(html),
+        base64MimeEncode(html),
       ].join('\r\n'),
     );
   }
   parts.push(`--${boundary}--`);
 
-  return `${headers}\r\n\r\n${parts.join('\r\n')}`;
+  return `${headers}\r\n\r\n${parts.join('\r\n')}\r\n`;
 }
+
+export const DEFAULT_FROM_NAME = 'Certificado Digital MEI';
 
 export async function sendGmailMessage(opts: {
   to: string;
   subject: string;
   html?: string;
   text?: string;
+  fromName?: string;
+  replyTo?: string;
+  listUnsubscribe?: string;
 }): Promise<{ messageId: string }> {
   const fromEmail = getSenderEmail();
-  const raw = buildRfc2822({ ...opts, fromEmail });
+  const raw = buildRfc2822({
+    ...opts,
+    fromEmail,
+    fromName: opts.fromName || DEFAULT_FROM_NAME,
+  });
   const encoded = base64UrlEncode(raw);
   const token = await getAccessToken();
 
