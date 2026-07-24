@@ -1,34 +1,27 @@
-import { createFileRoute, Link, notFound, redirect, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, notFound, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, CalendarClock } from 'lucide-react';
 
 import { CertificatePopup } from '@/components/CertificatePopup';
-import { GovConsultaLoader } from '@/components/GovConsultaLoader';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
-import { resolveCompanyLink, getLinkPaymentStatus, getLinkLoaderState, markLinkLoaderShown, type ResolvedCompany } from '@/lib/company-links.functions';
+import { resolveCompanyLink, getLinkPaymentStatus, type ResolvedCompany } from '@/lib/company-links.functions';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
 import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 
 
+
 export const Route = createFileRoute('/c/$token')({
   loader: async ({ params }) => {
-    // Regra: todo acesso ao link deve passar primeiro pela URL de animação /acesso/$token.
-    // Se o loader ainda não foi marcado como visto, redireciona para /acesso/$token,
-    // que trata mobile (animação) e desktop (skip) e depois volta para cá.
-    const loaderState = await getLinkLoaderState({ data: { token: params.token } }).catch(() => ({ shown: true }));
-    if (!loaderState.shown) {
-      throw redirect({ to: '/acesso/$token', params: { token: params.token }, replace: true });
-    }
     const [row, payment, popup] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
       getLinkPaymentStatus({ data: { token: params.token } }).catch(() => ({ paid: false, paid_at: null as string | null })),
       getSitePopup().catch(() => null),
     ]);
     if (!row) throw notFound();
-    return { row, initialPaidAt: payment.paid_at, popup, loaderShown: true };
+    return { row, initialPaidAt: payment.paid_at, popup };
   },
 
 
@@ -46,6 +39,7 @@ export const Route = createFileRoute('/c/$token')({
   component: TokenHomePage,
 });
 
+
 function cleanPersonName(v?: string | null): string {
   if (!v) return '';
   // remove digits, strip stray punctuation from formatted CNPJ prefixes, collapse whitespace
@@ -53,7 +47,7 @@ function cleanPersonName(v?: string | null): string {
 }
 
 function TokenHomePage() {
-  const { row, initialPaidAt, popup, loaderShown } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null; loaderShown: boolean };
+  const { row, initialPaidAt, popup } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null };
   const { token } = Route.useParams();
   const nomeFmt = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '—';
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
@@ -62,10 +56,8 @@ function TokenHomePage() {
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupSettings] = useState<SitePopupSettings | null>(popup);
   const [paidAt, setPaidAt] = useState<string | null>(initialPaidAt);
-  // Overlay do loader: por padrão visível (SSR) para não haver flash dos dados no celular.
-  // Em desktop o CSS `lg:hidden` esconde instantaneamente. Se já foi exibido antes, também escondemos.
-  const [loaderVisible, setLoaderVisible] = useState<boolean>(!loaderShown);
   const navigate = useNavigate();
+
 
 
 
@@ -104,19 +96,8 @@ function TokenHomePage() {
 
   return (
     <Page>
-      {/* Loader overlay — apenas mobile (lg:hidden). Cobre a página inteira e evita flash dos dados. */}
-      {loaderVisible && (
-        <div className="fixed inset-0 z-[9999] bg-white lg:hidden">
-          <GovConsultaLoader
-            cnpj={row.cnpj ?? undefined}
-            nome={nomeFmt !== '—' ? nomeFmt : undefined}
-            onFinish={() => {
-              setLoaderVisible(false);
-              markLinkLoaderShown({ data: { token } }).catch(() => {});
-            }}
-          />
-        </div>
-      )}
+
+
 
       <SiteHeader userName={nomeFmt !== '—' ? nomeFmt : undefined} userDoc={row.cnpj ?? undefined} />
       <Breadcrumb items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }]} />
