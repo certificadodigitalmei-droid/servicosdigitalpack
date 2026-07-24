@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Bell, ShieldAlert, Scale, Award, ShieldCheck, X, Lock, KeyRound, Headphones, ArrowRight, FileText } from 'lucide-react';
-import { getSitePopup, POPUP_DEFAULTS, type SitePopupSettings } from '@/lib/site-popup.functions';
+import { POPUP_DEFAULTS, type SitePopupSettings } from '@/lib/site-popup.functions';
 import { formatCNPJ } from '@/lib/format';
 import { renderRich } from '@/lib/rich-text';
 
@@ -21,14 +21,7 @@ type Props = {
 };
 
 export function CertificatePopup({ open, onClose, onContinue, cnpj, settings: initial }: Props) {
-  const [settings, setSettings] = useState<SitePopupSettings | null>(initial ?? null);
-
-  useEffect(() => {
-    if (!open || settings) return;
-    getSitePopup()
-      .then(setSettings)
-      .catch(() => setSettings(POPUP_DEFAULTS));
-  }, [open, settings]);
+  const settings = initial ?? null;
 
   useEffect(() => {
     if (!open) return;
