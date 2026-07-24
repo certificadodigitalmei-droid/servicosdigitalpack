@@ -27,7 +27,7 @@ export const Route = createFileRoute('/_authenticated/painel/')({
 });
 
 type EventRow = {
-  event_type: 'view_link' | 'view_checkout' | 'click_certificado' | 'click_guia';
+  event_type: 'view_link' | 'view_checkout' | 'click_certificado' | 'click_guia' | 'copy_pix';
   browser: string | null;
   os: string | null;
   device: string | null;
@@ -42,10 +42,12 @@ type Stats = {
   viewCheckout: number;
   clickCert: number;
   clickGuia: number;
+  copyPix: number;
   viewLinkTotal: number;
   viewCheckoutTotal: number;
   clickCertTotal: number;
   clickGuiaTotal: number;
+  copyPixTotal: number;
   paid: number;
   paidAmount: number;
   byBrowser: Record<string, number>;
@@ -60,10 +62,12 @@ const EMPTY: Stats = {
   viewCheckout: 0,
   clickCert: 0,
   clickGuia: 0,
+  copyPix: 0,
   viewLinkTotal: 0,
   viewCheckoutTotal: 0,
   clickCertTotal: 0,
   clickGuiaTotal: 0,
+  copyPixTotal: 0,
   paid: 0,
   paidAmount: 0,
   byBrowser: {},
