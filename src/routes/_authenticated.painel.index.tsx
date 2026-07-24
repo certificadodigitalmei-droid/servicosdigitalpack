@@ -105,6 +105,15 @@ function DashboardPage() {
   const [preset, setPreset] = useState<Preset>('hoje');
   const [customFrom, setCustomFrom] = useState<string>('');
   const [customTo, setCustomTo] = useState<string>('');
+  const [popupEnabled, setPopupEnabled] = useState<{ p1: boolean; p2: boolean }>({ p1: true, p2: true });
+  const fetchPopup = useServerFn(getSitePopup);
+  useEffect(() => {
+    let alive = true;
+    fetchPopup()
+      .then((s) => { if (alive) setPopupEnabled({ p1: !!s?.enabled, p2: !!s?.payment_enabled }); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [fetchPopup]);
   
 
   const range = useMemo(() => computeRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
