@@ -296,7 +296,7 @@ function LinksGeradosPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Links Gerados</h1>
-          <p className="text-sm text-slate-600">Todos os links públicos e de checkout já criados, com métricas completas.</p>
+          <p className="text-sm text-slate-600">Todos os links já criados. O período abaixo filtra as métricas de <b>cliques e pagamentos</b> (não a criação do link).</p>
         </div>
         <WipeAllButton
           label="Apagar todos os links"
