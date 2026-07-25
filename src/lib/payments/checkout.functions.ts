@@ -194,12 +194,10 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       } else {
         pix = await callUniaoPay(apiKey, baseUrl, {
           amount: data.amount,
-          productName: data.productName,
-          name: data.name,
-          orderId: order.id,
           webhookUrl: data.webhookUrl,
         });
       }
+
     } catch (e: any) {
       console.error("[Payments] Falha ao gerar PIX", { provider, error: e?.message });
       throw e;
