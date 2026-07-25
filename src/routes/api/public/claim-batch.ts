@@ -140,7 +140,7 @@ export const Route = createFileRoute('/api/public/claim-batch')({
               !reservedIds.has(r.id) &&
               !sentEmails.has(String(r.email).toLowerCase().trim()),
           );
-          if (eligible.length === 0) return Response.json({ jobs: [] });
+          if (eligible.length === 0) return Response.json({ jobs: testJobs, count: testJobs.length });
 
           // 2) Garante company_links para cada eligible
           const eligibleIds = eligible.map((r: any) => r.id);
