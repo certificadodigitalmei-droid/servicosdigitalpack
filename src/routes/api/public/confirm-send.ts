@@ -71,7 +71,7 @@ export const Route = createFileRoute('/api/public/confirm-send')({
 
           // Grava no histórico central de envios para bloquear reenvio pelo mestre
           // ou por outro satélite, mesmo depois de limpar cache local.
-          if (status === 'sent') {
+          if (status === 'sent' && !(job as any).is_test) {
             const { data: company } = await supabaseAdmin
               .from('companies')
               .select('razao_social_original, nome_titular_exibicao')
