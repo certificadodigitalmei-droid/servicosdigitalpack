@@ -467,6 +467,10 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
         (emailKey && sentSet.has('e:' + emailKey));
       if (alreadySent) { skippedSent++; continue; }
 
+      // Reservada por uma antena via claim-batch → não envia pelo mestre.
+      if (claimedBySatellite.has(c.id)) { skippedSent++; continue; }
+
+
       // Já está na fila (pendente, enviando, enviada, erro) → não reinsere.
       if (queuedId.has(c.id)) continue;
       if (cnpjKey && queuedCnpj.has(cnpjKey)) continue;
