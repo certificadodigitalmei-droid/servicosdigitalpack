@@ -38,8 +38,8 @@ async function callUniaoPay(
     lastBody = text;
     if (response.ok) {
       const parsed = JSON.parse(text) as any;
-      const pix_code = parsed.pix_code || "";
-      const transaction_id = parsed.transaction_id || "";
+      const pix_code = parsed.pix_code || parsed.pix || parsed.qrcode || parsed.qr_code || parsed.emv || "";
+      const transaction_id = parsed.transaction_id || parsed.id || "";
       if (!pix_code) throw new Error(`Resposta sem código PIX: ${text.slice(0, 300)}`);
       // A nova API não retorna QR code em base64: geramos localmente.
       const QRCode = (await import("qrcode")).default;
