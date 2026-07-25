@@ -741,8 +741,8 @@ export async function startSending() {
       await new Promise((r) => setTimeout(r, 60_000));
       continue;
     }
-    const item = cur.queue.find((x) => x.status === 'pending' || x.status === 'error');
-    if (!item) {
+    const pendings = cur.queue.filter((x) => x.status === 'pending' || x.status === 'error');
+    if (pendings.length === 0) {
       // Se a importação automática está ligada, o envio não para: aguarda
       // novos CNPJs entrarem na fila (importa 1 → envia → importa próximo).
       let autoImportOn = false;
@@ -769,14 +769,49 @@ export async function startSending() {
     }
     if (stopFlag) break;
 
+    // Envio PARALELO: descobre quantos canais ativos existem
+    // (conta local + N workers Lovable). Envia esse número de e-mails
+    // ao mesmo tempo, cada um roteado para um canal diferente. Assim,
+    // com 1 worker cadastrado, saem 2 e-mails simultaneamente (2x mais
+    // rápido); com 2 workers, saem 3 e-mails, e assim por diante.
+    let parallelism = 1;
+    try {
+      const { data: aw } = await supabase
+        .from('email_workers')
+        .select('id')
+        .eq('is_active', true);
+      parallelism = 1 + (aw?.length ?? 0);
+    } catch { parallelism = 1; }
 
-
-    const res = await sendOne(item);
-    if (!res.ok && res.waitSec) {
-      const waitMs = Math.min(res.waitSec, 300) * 1000;
-      await new Promise((r) => setTimeout(r, waitMs));
-      if (!stopFlag) await sendOne(item);
+    // Respeita limites (por hora / diário) ao dimensionar o lote.
+    const cur2 = envioStore.get();
+    if (cur2.limitMode === 'hourly' && cur2.hourlyLimit > 0) {
+      parallelism = Math.min(parallelism, Math.max(1, cur2.hourlyLimit - cur2.sentThisHour));
     }
+    if (cur2.limitMode === 'daily' && cur2.dailyLimit > 0) {
+      parallelism = Math.min(parallelism, Math.max(1, cur2.dailyLimit - cur2.sentToday));
+    }
+    parallelism = Math.max(1, parallelism);
+
+    const batch = pendings.slice(0, parallelism);
+    if (batch.length > 1) {
+      pushLog(`⇉ Disparando ${batch.length} e-mails em paralelo (${batch.length} canais).`);
+    }
+    const results = await Promise.all(batch.map((it, i) => sendOne(it, i)));
+
+    // Se algum canal disse "rate_limited", aguarda o maior retryAfter
+    const maxWait = Math.max(0, ...results.map((r) => r.waitSec ?? 0));
+    if (maxWait > 0 && !stopFlag) {
+      await new Promise((r) => setTimeout(r, Math.min(maxWait, 300) * 1000));
+      // reenviar os que ficaram pending por rate limit
+      for (let i = 0; i < batch.length; i++) {
+        if (!results[i].ok && results[i].waitSec) {
+          if (stopFlag) break;
+          await sendOne(batch[i], i);
+        }
+      }
+    }
+
     if (!stopFlag) {
       const delay = Math.max(1, envioStore.get().delaySec);
       await new Promise((r) => setTimeout(r, delay * 1000));
