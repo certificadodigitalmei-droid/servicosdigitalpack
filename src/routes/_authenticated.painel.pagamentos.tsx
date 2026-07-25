@@ -190,7 +190,9 @@ function PagamentosPage() {
       toast.success('Código PIX copiado');
     } catch {
       toast.error('Não foi possível copiar');
+    }
   }
+
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
