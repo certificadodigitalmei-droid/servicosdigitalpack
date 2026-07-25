@@ -91,49 +91,72 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
       .from('email_workers')
       .select('*')
       .eq('is_active', true)
-      .order('last_used_at', { ascending: true, nullsFirst: true })
-      .order('priority', { ascending: true });
+      .order('priority', { ascending: true })
+      .order('last_used_at', { ascending: true, nullsFirst: true });
 
     let deliveredVia: 'local' | 'worker' = 'local';
     let workerError: string | null = null;
 
-    if (workers && workers.length > 0) {
-      for (const w of workers) {
-        try {
-          const wPayload = {
-            ...payload,
-            from: w.from_email ? `${w.from_name || fromName} <${w.from_email}>` : payload.from,
-          };
-          const res = await fetch(w.worker_url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${w.worker_api_key}` },
-            body: JSON.stringify(wPayload),
-          });
-          if (res.ok) {
-            deliveredVia = 'worker';
-            await (context.supabase as any).from('email_workers').update({
-              last_used_at: new Date().toISOString(),
-              last_success_at: new Date().toISOString(),
-              last_error: null,
-            }).eq('id', w.id);
-            break;
-          }
-          const bodyText = await res.text();
-          workerError = `worker ${w.name}: HTTP ${res.status} ${bodyText.slice(0, 200)}`;
+    const activeWorkers = workers ?? [];
+    const totalChannels = 1 + activeWorkers.length; // 0 = local; 1..N = workers
+    const idx = typeof data.channelIndex === 'number' ? data.channelIndex : -1;
+
+    // Fila ordenada de workers a tentar. Se channelIndex foi passado,
+    // começa por aquele canal específico; caso contrário, mantém a
+    // rotação por menor uso (comportamento anterior).
+    let workerOrder: any[] = activeWorkers;
+    let preferLocal = false;
+    if (idx >= 0 && totalChannels > 0) {
+      const chosen = idx % totalChannels;
+      if (chosen === 0) {
+        preferLocal = true;
+        workerOrder = activeWorkers; // se local falhar? mantemos os workers como fallback abaixo
+      } else {
+        const w = activeWorkers[chosen - 1];
+        workerOrder = [w, ...activeWorkers.filter((x: any) => x.id !== w.id)];
+      }
+    }
+
+    const tryWorker = async (w: any) => {
+      try {
+        const wPayload = {
+          ...payload,
+          from: w.from_email ? `${w.from_name || fromName} <${w.from_email}>` : payload.from,
+        };
+        const res = await fetch(w.worker_url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${w.worker_api_key}` },
+          body: JSON.stringify(wPayload),
+        });
+        if (res.ok) {
           await (context.supabase as any).from('email_workers').update({
             last_used_at: new Date().toISOString(),
-            last_error: workerError,
-            last_error_at: new Date().toISOString(),
+            last_success_at: new Date().toISOString(),
+            last_error: null,
           }).eq('id', w.id);
-          // 429/5xx: tenta próximo worker
-        } catch (e) {
-          workerError = `worker ${w.name}: ${(e as Error).message}`;
-          await (context.supabase as any).from('email_workers').update({
-            last_used_at: new Date().toISOString(),
-            last_error: workerError,
-            last_error_at: new Date().toISOString(),
-          }).eq('id', w.id);
+          return true;
         }
+        const bodyText = await res.text();
+        workerError = `worker ${w.name}: HTTP ${res.status} ${bodyText.slice(0, 200)}`;
+        await (context.supabase as any).from('email_workers').update({
+          last_used_at: new Date().toISOString(),
+          last_error: workerError,
+          last_error_at: new Date().toISOString(),
+        }).eq('id', w.id);
+      } catch (e) {
+        workerError = `worker ${w.name}: ${(e as Error).message}`;
+        await (context.supabase as any).from('email_workers').update({
+          last_used_at: new Date().toISOString(),
+          last_error: workerError,
+          last_error_at: new Date().toISOString(),
+        }).eq('id', w.id);
+      }
+      return false;
+    };
+
+    if (!preferLocal && workerOrder.length > 0) {
+      for (const w of workerOrder) {
+        if (await tryWorker(w)) { deliveredVia = 'worker'; break; }
       }
     }
 
