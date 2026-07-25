@@ -245,6 +245,7 @@ function PanelLayout() {
         { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
+        { title: 'Satélites (Envio Distribuído)', icon: Server, to: '/painel/satelites' },
       ],
     },
     {
