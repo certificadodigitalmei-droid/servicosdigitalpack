@@ -346,15 +346,30 @@ function ImportacaoAutomaticaPage() {
 
             <div className="mt-3 rounded-md border border-brand-navy/20 bg-white/60 p-3 text-xs text-slate-700 space-y-2">
               <p>
-                A importação automática é <strong>escrava do Envio em Massa</strong>: importa
-                exatamente <strong>1 empresa por vez</strong> (a mais recente da API) e só
-                busca a próxima depois que o envio anterior for confirmado.
+                Mantém sempre <strong>{bufferTarget} empresa(s)</strong> prontas na fila.
+                Quando o mestre ou uma antena consome uma, a importação puxa a
+                próxima (sempre a mais recente). Empresas reservadas por antenas
+                <strong> nunca</strong> entram na fila do mestre — sem envio duplicado.
               </p>
-              <p className="text-slate-500">
-                Regra: importa → aparece na fila abaixo → Envio em Massa dispara →
-                confirma → libera a próxima importação. Nunca há mais de 1 empresa
-                aguardando envio.
-              </p>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <Label className="text-xs">Empresas prontas na fila:</Label>
+                <input
+                  type="number"
+                  min={1}
+                  max={1000}
+                  step={1}
+                  value={bufferTarget}
+                  onChange={(e) => setBufferTarget(Number(e.target.value) || 100)}
+                  className="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 text-sm"
+                />
+                <div className="flex gap-1">
+                  {[10, 50, 100, 200, 500].map((n) => (
+                    <Button key={n} size="sm" variant="outline" onClick={() => setBufferTarget(n)}>
+                      {n}
+                    </Button>
+                  ))}
+                </div>
+              </div>
               {autoImport && !envioAtivo && (
                 <p className="rounded bg-amber-50 border border-amber-200 px-2 py-1.5 text-amber-800">
                   ⏸ Aguardando o <strong>Envio em Massa</strong> ser iniciado em modo real
@@ -362,6 +377,7 @@ function ImportacaoAutomaticaPage() {
                 </p>
               )}
             </div>
+
 
             {autoImport && (
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
