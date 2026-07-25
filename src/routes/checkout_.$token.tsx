@@ -25,13 +25,15 @@ import type { ResolvedCompany } from '@/lib/company-links.functions';
 
 export const Route = createFileRoute('/checkout_/$token')({
   loader: async ({ params }) => {
-    const [row, popup] = await Promise.all([
+    const [row, popup, pricing] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
       getSitePopup().catch(() => null),
+      getPricing().catch(() => DEFAULT_PRICING),
     ]);
     if (!row) throw notFound();
-    return { row, popup };
+    return { row, popup, pricing };
   },
+
   head: () => ({
     meta: [{ title: 'Pagamento — Central MEI Digital' }],
   }),
