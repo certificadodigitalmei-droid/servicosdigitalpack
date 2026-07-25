@@ -24,11 +24,8 @@ import { Route as AuthenticatedMonitorEnvioRouteImport } from './routes/_authent
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
 import { Route as ApiPublicWebhookUniaopayRouteImport } from './routes/api/public/webhook-uniaopay'
 import { Route as ApiPublicWebhookNexuspayRouteImport } from './routes/api/public/webhook-nexuspay'
-import { Route as ApiPublicConfirmSendRouteImport } from './routes/api/public/confirm-send'
-import { Route as ApiPublicClaimBatchRouteImport } from './routes/api/public/claim-batch'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
 import { Route as AuthenticatedPainelWorkspaceEnvioRouteImport } from './routes/_authenticated.painel.workspace-envio'
-import { Route as AuthenticatedPainelSatelitesRouteImport } from './routes/_authenticated.painel.satelites'
 import { Route as AuthenticatedPainelPrecosRouteImport } from './routes/_authenticated.painel.precos'
 import { Route as AuthenticatedPainelPopUpSiteRouteImport } from './routes/_authenticated.painel.pop-up-site'
 import { Route as AuthenticatedPainelPagamentosRouteImport } from './routes/_authenticated.painel.pagamentos'
@@ -134,16 +131,6 @@ const ApiPublicWebhookNexuspayRoute =
     path: '/api/public/webhook-nexuspay',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicConfirmSendRoute = ApiPublicConfirmSendRouteImport.update({
-  id: '/api/public/confirm-send',
-  path: '/api/public/confirm-send',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicClaimBatchRoute = ApiPublicClaimBatchRouteImport.update({
-  id: '/api/public/claim-batch',
-  path: '/api/public/claim-batch',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiInternalCasaDosDadosWorkerRoute =
   ApiInternalCasaDosDadosWorkerRouteImport.update({
     id: '/api/internal/casa-dos-dados-worker',
@@ -154,12 +141,6 @@ const AuthenticatedPainelWorkspaceEnvioRoute =
   AuthenticatedPainelWorkspaceEnvioRouteImport.update({
     id: '/workspace-envio',
     path: '/workspace-envio',
-    getParentRoute: () => AuthenticatedPainelRoute,
-  } as any)
-const AuthenticatedPainelSatelitesRoute =
-  AuthenticatedPainelSatelitesRouteImport.update({
-    id: '/satelites',
-    path: '/satelites',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelPrecosRoute =
@@ -346,11 +327,8 @@ export interface FileRoutesByFullPath {
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
-  '/painel/satelites': typeof AuthenticatedPainelSatelitesRoute
   '/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
-  '/api/public/claim-batch': typeof ApiPublicClaimBatchRoute
-  '/api/public/confirm-send': typeof ApiPublicConfirmSendRoute
   '/api/public/webhook-nexuspay': typeof ApiPublicWebhookNexuspayRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
@@ -391,11 +369,8 @@ export interface FileRoutesByTo {
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
-  '/painel/satelites': typeof AuthenticatedPainelSatelitesRoute
   '/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
-  '/api/public/claim-batch': typeof ApiPublicClaimBatchRoute
-  '/api/public/confirm-send': typeof ApiPublicConfirmSendRoute
   '/api/public/webhook-nexuspay': typeof ApiPublicWebhookNexuspayRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
@@ -440,11 +415,8 @@ export interface FileRoutesById {
   '/_authenticated/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/_authenticated/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/_authenticated/painel/precos': typeof AuthenticatedPainelPrecosRoute
-  '/_authenticated/painel/satelites': typeof AuthenticatedPainelSatelitesRoute
   '/_authenticated/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
-  '/api/public/claim-batch': typeof ApiPublicClaimBatchRoute
-  '/api/public/confirm-send': typeof ApiPublicConfirmSendRoute
   '/api/public/webhook-nexuspay': typeof ApiPublicWebhookNexuspayRoute
   '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
@@ -489,11 +461,8 @@ export interface FileRouteTypes {
     | '/painel/pagamentos'
     | '/painel/pop-up-site'
     | '/painel/precos'
-    | '/painel/satelites'
     | '/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
-    | '/api/public/claim-batch'
-    | '/api/public/confirm-send'
     | '/api/public/webhook-nexuspay'
     | '/api/public/webhook-uniaopay'
     | '/painel/'
@@ -534,11 +503,8 @@ export interface FileRouteTypes {
     | '/painel/pagamentos'
     | '/painel/pop-up-site'
     | '/painel/precos'
-    | '/painel/satelites'
     | '/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
-    | '/api/public/claim-batch'
-    | '/api/public/confirm-send'
     | '/api/public/webhook-nexuspay'
     | '/api/public/webhook-uniaopay'
     | '/painel'
@@ -582,11 +548,8 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/pagamentos'
     | '/_authenticated/painel/pop-up-site'
     | '/_authenticated/painel/precos'
-    | '/_authenticated/painel/satelites'
     | '/_authenticated/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
-    | '/api/public/claim-batch'
-    | '/api/public/confirm-send'
     | '/api/public/webhook-nexuspay'
     | '/api/public/webhook-uniaopay'
     | '/_authenticated/painel/'
@@ -612,8 +575,6 @@ export interface RootRouteChildren {
   CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
   CheckoutTokenRoute: typeof CheckoutTokenRoute
   ApiInternalCasaDosDadosWorkerRoute: typeof ApiInternalCasaDosDadosWorkerRoute
-  ApiPublicClaimBatchRoute: typeof ApiPublicClaimBatchRoute
-  ApiPublicConfirmSendRoute: typeof ApiPublicConfirmSendRoute
   ApiPublicWebhookNexuspayRoute: typeof ApiPublicWebhookNexuspayRoute
   ApiPublicWebhookUniaopayRoute: typeof ApiPublicWebhookUniaopayRoute
   ApiPublicEmailAssetKeyRoute: typeof ApiPublicEmailAssetKeyRoute
@@ -730,20 +691,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhookNexuspayRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/confirm-send': {
-      id: '/api/public/confirm-send'
-      path: '/api/public/confirm-send'
-      fullPath: '/api/public/confirm-send'
-      preLoaderRoute: typeof ApiPublicConfirmSendRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/claim-batch': {
-      id: '/api/public/claim-batch'
-      path: '/api/public/claim-batch'
-      fullPath: '/api/public/claim-batch'
-      preLoaderRoute: typeof ApiPublicClaimBatchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/internal/casa-dos-dados-worker': {
       id: '/api/internal/casa-dos-dados-worker'
       path: '/api/internal/casa-dos-dados-worker'
@@ -756,13 +703,6 @@ declare module '@tanstack/react-router' {
       path: '/workspace-envio'
       fullPath: '/painel/workspace-envio'
       preLoaderRoute: typeof AuthenticatedPainelWorkspaceEnvioRouteImport
-      parentRoute: typeof AuthenticatedPainelRoute
-    }
-    '/_authenticated/painel/satelites': {
-      id: '/_authenticated/painel/satelites'
-      path: '/satelites'
-      fullPath: '/painel/satelites'
-      preLoaderRoute: typeof AuthenticatedPainelSatelitesRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/precos': {
@@ -1002,7 +942,6 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelPagamentosRoute: typeof AuthenticatedPainelPagamentosRoute
   AuthenticatedPainelPopUpSiteRoute: typeof AuthenticatedPainelPopUpSiteRoute
   AuthenticatedPainelPrecosRoute: typeof AuthenticatedPainelPrecosRoute
-  AuthenticatedPainelSatelitesRoute: typeof AuthenticatedPainelSatelitesRoute
   AuthenticatedPainelWorkspaceEnvioRoute: typeof AuthenticatedPainelWorkspaceEnvioRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
@@ -1036,7 +975,6 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelPagamentosRoute: AuthenticatedPainelPagamentosRoute,
   AuthenticatedPainelPopUpSiteRoute: AuthenticatedPainelPopUpSiteRoute,
   AuthenticatedPainelPrecosRoute: AuthenticatedPainelPrecosRoute,
-  AuthenticatedPainelSatelitesRoute: AuthenticatedPainelSatelitesRoute,
   AuthenticatedPainelWorkspaceEnvioRoute:
     AuthenticatedPainelWorkspaceEnvioRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
@@ -1071,8 +1009,6 @@ const rootRouteChildren: RootRouteChildren = {
   CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
   CheckoutTokenRoute: CheckoutTokenRoute,
   ApiInternalCasaDosDadosWorkerRoute: ApiInternalCasaDosDadosWorkerRoute,
-  ApiPublicClaimBatchRoute: ApiPublicClaimBatchRoute,
-  ApiPublicConfirmSendRoute: ApiPublicConfirmSendRoute,
   ApiPublicWebhookNexuspayRoute: ApiPublicWebhookNexuspayRoute,
   ApiPublicWebhookUniaopayRoute: ApiPublicWebhookUniaopayRoute,
   ApiPublicEmailAssetKeyRoute: ApiPublicEmailAssetKeyRoute,
@@ -1084,13 +1020,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
