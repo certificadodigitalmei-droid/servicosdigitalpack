@@ -179,7 +179,9 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
     if (orderErr) throw orderErr;
     if (!order) throw new Error("Falha ao criar pedido");
 
-    await supabaseAdmin.from("consent_logs").insert({
+    // Consent log e chamada ao PIX rodam em paralelo — o insert não bloqueia a
+    // geração do código PIX (era o principal ofensor de latência).
+    const consentPromise = supabaseAdmin.from("consent_logs").insert({
       order_id: order.id,
       privacy_accepted: true,
       terms_accepted: true,
@@ -197,24 +199,28 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
           webhookUrl: data.webhookUrl,
         });
       }
-
     } catch (e: any) {
       console.error("[Payments] Falha ao gerar PIX", { provider, error: e?.message });
       throw e;
     }
 
-    await supabaseAdmin
-      .from("orders")
-      .update({
-        status: "awaiting_payment",
-        payment_provider: provider,
-        external_transaction_id: pix.transaction_id || null,
-        pix_code: pix.pix_code || null,
-        pix_qr_code: pix.qr_code_base64 || null,
-        pix_expiration: pix.expiration?.toISOString() || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", order.id);
+    // Update do pedido em paralelo com o consent log — aguardamos ambos antes
+    // de responder para garantir consistência, mas sem serializar.
+    await Promise.all([
+      consentPromise,
+      supabaseAdmin
+        .from("orders")
+        .update({
+          status: "awaiting_payment",
+          payment_provider: provider,
+          external_transaction_id: pix.transaction_id || null,
+          pix_code: pix.pix_code || null,
+          pix_qr_code: pix.qr_code_base64 || null,
+          pix_expiration: pix.expiration?.toISOString() || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", order.id),
+    ]);
 
     return {
       orderId: order.id,
