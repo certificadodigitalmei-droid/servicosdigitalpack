@@ -471,6 +471,20 @@ function PagamentosPage() {
                             <Copy className="h-3.5 w-3.5 mr-1" /> PIX
                           </Button>
                         )}
+                        {!isPaid && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50"
+                            onClick={() => markAsPaid(o.id)}
+                            disabled={markingId === o.id}
+                            title="Marcar como pago manualmente"
+                          >
+                            {markingId === o.id
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <><CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Pago</>}
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
