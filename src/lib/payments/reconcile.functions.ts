@@ -104,3 +104,25 @@ export const reconcilePendingOrders = createServerFn({ method: "POST" })
 
     return { checked: pending.length, updated };
   });
+
+export const markOrderPaidManually = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ orderId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: roleRow } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!roleRow) throw new Error("Forbidden");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const nowIso = new Date().toISOString();
+    const { error } = await supabaseAdmin
+      .from("orders")
+      .update({ status: "paid", paid_at: nowIso, updated_at: nowIso })
+      .eq("id", data.orderId);
+    if (error) throw error;
+    return { ok: true, paid_at: nowIso };
+  });
