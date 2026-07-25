@@ -597,6 +597,7 @@ async function sendOne(item: QueueItem, channelIndex?: number): Promise<{ ok: bo
         idempotencyKey: `campaign-${item.id}-${Date.now()}`,
         companyId: item.id,
         cnpj: item.cnpj,
+        channelIndex,
       },
     });
 
