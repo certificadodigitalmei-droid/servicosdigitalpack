@@ -4,6 +4,8 @@ import { createOrderAndPixCharge } from '@/lib/payments/checkout.functions';
 import { PixModal } from '@/components/checkout/PixModal';
 import { PaymentInfoPopup } from '@/components/checkout/PaymentInfoPopup';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
+import { getPricing, DEFAULT_PRICING } from '@/lib/pricing.functions';
+
 
 // Loads company data by token and forwards to the existing /checkout page.
 // The visible URL stays /checkout/$token — no GET parameters are exposed.
