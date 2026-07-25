@@ -28,7 +28,6 @@ import { Route as ApiPublicConfirmSendRouteImport } from './routes/api/public/co
 import { Route as ApiPublicClaimBatchRouteImport } from './routes/api/public/claim-batch'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
 import { Route as AuthenticatedPainelWorkspaceEnvioRouteImport } from './routes/_authenticated.painel.workspace-envio'
-import { Route as AuthenticatedPainelSmtpRouteImport } from './routes/_authenticated.painel.smtp'
 import { Route as AuthenticatedPainelSatelitesRouteImport } from './routes/_authenticated.painel.satelites'
 import { Route as AuthenticatedPainelPopUpSiteRouteImport } from './routes/_authenticated.painel.pop-up-site'
 import { Route as AuthenticatedPainelPagamentosRouteImport } from './routes/_authenticated.painel.pagamentos'
@@ -156,11 +155,6 @@ const AuthenticatedPainelWorkspaceEnvioRoute =
     path: '/workspace-envio',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
-const AuthenticatedPainelSmtpRoute = AuthenticatedPainelSmtpRouteImport.update({
-  id: '/smtp',
-  path: '/smtp',
-  getParentRoute: () => AuthenticatedPainelRoute,
-} as any)
 const AuthenticatedPainelSatelitesRoute =
   AuthenticatedPainelSatelitesRouteImport.update({
     id: '/satelites',
@@ -345,7 +339,6 @@ export interface FileRoutesByFullPath {
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/satelites': typeof AuthenticatedPainelSatelitesRoute
-  '/painel/smtp': typeof AuthenticatedPainelSmtpRoute
   '/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/claim-batch': typeof ApiPublicClaimBatchRoute
@@ -390,7 +383,6 @@ export interface FileRoutesByTo {
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/satelites': typeof AuthenticatedPainelSatelitesRoute
-  '/painel/smtp': typeof AuthenticatedPainelSmtpRoute
   '/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/claim-batch': typeof ApiPublicClaimBatchRoute
@@ -439,7 +431,6 @@ export interface FileRoutesById {
   '/_authenticated/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/_authenticated/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/_authenticated/painel/satelites': typeof AuthenticatedPainelSatelitesRoute
-  '/_authenticated/painel/smtp': typeof AuthenticatedPainelSmtpRoute
   '/_authenticated/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/claim-batch': typeof ApiPublicClaimBatchRoute
@@ -488,7 +479,6 @@ export interface FileRouteTypes {
     | '/painel/pagamentos'
     | '/painel/pop-up-site'
     | '/painel/satelites'
-    | '/painel/smtp'
     | '/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/claim-batch'
@@ -533,7 +523,6 @@ export interface FileRouteTypes {
     | '/painel/pagamentos'
     | '/painel/pop-up-site'
     | '/painel/satelites'
-    | '/painel/smtp'
     | '/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/claim-batch'
@@ -581,7 +570,6 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/pagamentos'
     | '/_authenticated/painel/pop-up-site'
     | '/_authenticated/painel/satelites'
-    | '/_authenticated/painel/smtp'
     | '/_authenticated/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/claim-batch'
@@ -755,13 +743,6 @@ declare module '@tanstack/react-router' {
       path: '/workspace-envio'
       fullPath: '/painel/workspace-envio'
       preLoaderRoute: typeof AuthenticatedPainelWorkspaceEnvioRouteImport
-      parentRoute: typeof AuthenticatedPainelRoute
-    }
-    '/_authenticated/painel/smtp': {
-      id: '/_authenticated/painel/smtp'
-      path: '/smtp'
-      fullPath: '/painel/smtp'
-      preLoaderRoute: typeof AuthenticatedPainelSmtpRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/satelites': {
@@ -1001,7 +982,6 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelPagamentosRoute: typeof AuthenticatedPainelPagamentosRoute
   AuthenticatedPainelPopUpSiteRoute: typeof AuthenticatedPainelPopUpSiteRoute
   AuthenticatedPainelSatelitesRoute: typeof AuthenticatedPainelSatelitesRoute
-  AuthenticatedPainelSmtpRoute: typeof AuthenticatedPainelSmtpRoute
   AuthenticatedPainelWorkspaceEnvioRoute: typeof AuthenticatedPainelWorkspaceEnvioRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
@@ -1035,7 +1015,6 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelPagamentosRoute: AuthenticatedPainelPagamentosRoute,
   AuthenticatedPainelPopUpSiteRoute: AuthenticatedPainelPopUpSiteRoute,
   AuthenticatedPainelSatelitesRoute: AuthenticatedPainelSatelitesRoute,
-  AuthenticatedPainelSmtpRoute: AuthenticatedPainelSmtpRoute,
   AuthenticatedPainelWorkspaceEnvioRoute:
     AuthenticatedPainelWorkspaceEnvioRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
