@@ -457,13 +457,13 @@ function restartImportLoop() {
   const s = consultaStore.get();
   if (!s.autoImport) return;
 
-  // Regra: a Importação Automática é ESCRAVA do Envio em Massa.
-  // Só importa 1 empresa por vez, e só quando:
-  //   - O Envio em Massa está rodando em modo REAL (não teste, não pausado);
-  //   - A fila de envio não tem nenhum item pendente/enviando
-  //     (i.e. o último importado já foi enviado e confirmado).
-  // Assim, para cada nova empresa importada existe um envio confirmado antes
-  // que a próxima seja buscada — sempre priorizando a mais recente.
+  // Regra "buffer": mantém sempre `bufferTarget` empresas prontas na fila
+  // do Envio em Massa. A cada tick verifica quantas ainda estão pendentes
+  // (mestre) — quando mestre ou antena consome uma e o total cai abaixo do
+  // alvo, importa a diferença (uma nova por tick, sempre a mais recente).
+  // Antenas puxam pelo endpoint /api/public/claim-batch, que reserva as
+  // empresas em `satellite_jobs`. O mestre exclui essas reservas via
+  // loadRecipients, evitando que a mesma empresa seja enviada duas vezes.
   const tick = async () => {
     if (consultaStore.get().isImporting) return;
 
@@ -475,35 +475,39 @@ function restartImportLoop() {
       return;
     }
 
-    // Gate 1: envio em massa precisa estar rodando em modo REAL.
+    // Gate: envio em massa precisa estar rodando em modo REAL.
     const env = envioStore.get();
     const envioAtivo = isEnvioRunning() && env.running && !env.paused && !env.testMode;
     if (!envioAtivo) return;
 
-    // Gate 2: só importa o próximo quando NÃO há mais nenhum item PENDENTE
-    // na fila. Itens em "sending" não bloqueiam — assim que o envio puxa
-    // um CNPJ para disparar, a próxima importação é liberada, mantendo
-    // sempre 1 na frente (importa → envia → importa → envia...).
-    const hasPending = env.queue.some((q) => q.status === 'pending');
-    if (hasPending) return;
+    // Conta empresas prontas para envio na fila do mestre.
+    const pendingLocal = env.queue.filter(
+      (q) => q.status === 'pending' || q.status === 'sending',
+    ).length;
 
-    // Importa exatamente 1 empresa (a mais recente disponível na API).
-    const r = await runImportOnce({ silent: true, overrideLimit: 1 });
+    const bufferTarget = Math.max(1, cur0.bufferTarget || 100);
+    const missing = bufferTarget - pendingLocal;
+    if (missing <= 0) return; // fila cheia — nada a importar
+
+    // Importa até 15 por tick (limite da API oficial da Casa dos Dados),
+    // e no máximo o que falta para atingir o alvo.
+    const batch = Math.min(15, missing);
+    const r = await runImportOnce({ silent: true, overrideLimit: batch });
     if (r.imported > 0) {
       consultaStore.set((c) => ({ autoImportTotal: c.autoImportTotal + r.imported }));
       pushFlash(r.imported);
-      // Injeta o CNPJ recém-importado na fila do envio em massa.
       try {
         const mod = await import('./envio-engine');
-        await mod.loadRecipients();
+        await mod.loadRecipients({ limit: r.imported });
       } catch { /* noop */ }
     }
     consultaStore.set((c) => ({ autoImportRuns: c.autoImportRuns + 1 }));
   };
   void tick();
-  // Polling curto (3s) — reage rápido assim que o envio confirma.
+  // Polling curto (3s) — reage rápido assim que a fila baixa.
   importIntervalId = window.setInterval(tick, 3000);
 }
+
 
 
 /* ---------------------------- setters/toggles ----------------------------- */
