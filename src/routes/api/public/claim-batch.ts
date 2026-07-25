@@ -49,6 +49,53 @@ export const Route = createFileRoute('/api/public/claim-batch')({
         }
 
         try {
+          // 0) Drena jobs de teste enfileirados manualmente para este satélite.
+          //    Eles são retornados ANTES dos envios reais para permitir
+          //    validar rapidamente a integração/template do satélite.
+          const { data: pendingTests } = await supabaseAdmin
+            .from('satellite_jobs')
+            .select('id, company_id, cnpj, email, public_token, public_url')
+            .eq('satellite_id', satellite_id)
+            .eq('status', 'pending_test')
+            .order('claimed_at', { ascending: true })
+            .limit(batch_size);
+
+          const testJobs: any[] = [];
+          if (pendingTests && pendingTests.length > 0) {
+            const testIds = pendingTests.map((j: any) => j.id);
+            await supabaseAdmin
+              .from('satellite_jobs')
+              .update({ status: 'claimed', claimed_at: new Date().toISOString() })
+              .in('id', testIds);
+
+            const companyIds = pendingTests.map((j: any) => j.company_id);
+            const { data: testCompanies } = await supabaseAdmin
+              .from('companies')
+              .select('id, razao_social_original, nome_titular_exibicao')
+              .in('id', companyIds);
+            const cmap = new Map<string, any>();
+            for (const c of (testCompanies ?? []) as any[]) cmap.set(c.id, c);
+
+            for (const j of pendingTests as any[]) {
+              const c = cmap.get(j.company_id);
+              testJobs.push({
+                job_id: j.id,
+                cnpj: j.cnpj,
+                email: j.email,
+                public_token: j.public_token,
+                public_url: j.public_url,
+                company_name: c?.nome_titular_exibicao || c?.razao_social_original || 'Teste',
+                razao_social: c?.razao_social_original || 'Teste',
+                nome_titular: c?.nome_titular_exibicao || '',
+                is_test: true,
+              });
+            }
+          }
+
+          const remaining = batch_size - testJobs.length;
+          if (remaining <= 0) {
+            return Response.json({ jobs: testJobs, count: testJobs.length });
+          }
           // 1) Candidatos: empresas com email válido, mais recentes primeiro,
           //    excluindo as já reservadas ou já enviadas localmente.
           const { data: candidates, error: candErr } = await supabaseAdmin
