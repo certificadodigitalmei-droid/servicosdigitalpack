@@ -73,7 +73,7 @@ export function DashboardOverviewStrip() {
     );
   }
 
-  const { status, importacao, envio, links, pagamentos, antenas } = data;
+  const { status, importacao, envio, links, pagamentos } = data;
 
   return (
     <div className="space-y-3">
@@ -87,7 +87,7 @@ export function DashboardOverviewStrip() {
           <div className="flex flex-wrap items-center gap-4">
             <StatusDot s={status.importacao} label="Importação" />
             <StatusDot s={status.envio} label="Envio" />
-            <StatusDot s={status.antenas} label="Antenas" />
+            
             <StatusDot s={status.gateway} label="Gateway PIX" />
             <StatusDot s={status.casaDados} label="Casa dos Dados" />
           </div>
@@ -126,34 +126,6 @@ export function DashboardOverviewStrip() {
           </div>
         </ModuleCard>
 
-        {/* Antenas */}
-        <ModuleCard
-          icon={<Radio className="h-4 w-4 text-violet-600" />}
-          title="Antenas / Satélites"
-          to="/painel/satelites"
-          badge={`${antenas.online}/${antenas.total} online`}
-        >
-          <div className="grid grid-cols-2 gap-3">
-            <Kpi label="Envios hoje" value={antenas.enviosHoje} />
-            <Kpi label="Jobs pendentes" value={antenas.jobsPendentes} />
-            <Kpi label="Reservados" value={antenas.jobsReservados} />
-            <Kpi label="Antenas ativas" value={`${antenas.online}`} sub={`de ${antenas.total} conhecidas`} />
-          </div>
-          {antenas.porAntena.length > 0 && (
-            <div className="mt-3 space-y-1 border-t border-slate-100 pt-2 text-xs">
-              {antenas.porAntena.slice(0, 4).map((a) => (
-                <div key={a.satellite_id} className="flex items-center justify-between text-slate-600">
-                  <span className="truncate font-mono">{a.satellite_id}</span>
-                  <span className="tabular-nums text-slate-500">
-                    <span className="text-emerald-600">{a.sent}✓</span>{' '}
-                    <span className="text-amber-600">{a.pending}⏳</span>{' '}
-                    <span className="text-rose-600">{a.failed}✕</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </ModuleCard>
 
         {/* Links */}
         <ModuleCard

@@ -102,6 +102,11 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
       supabase.from('orders').select('id,amount,paid_at,customer_name,reference_name').eq('status', 'paid').order('paid_at', { ascending: false }).limit(5),
       supabase.from('payment_gateways').select('name,is_active').eq('is_active', true).maybeSingle(),
     ]);
+    const pagosHoje = (ordersHoje ?? []).length;
+    const valorHoje = (ordersHoje ?? []).reduce((s: number, r: any) => s + Number(r.amount ?? 0), 0);
+    const ticketMedio = pagosHoje > 0 ? valorHoje / pagosHoje : 0;
+    const conversao = (pixGerados ?? 0) > 0 ? ((pagos ?? 0) / (pixGerados ?? 1)) * 100 : 0;
+
     // ------ Status semáforos ------
     const status = {
       importacao: (automacoesAtivas > 0 ? 'ok' : 'off') as ModuleStatus,
