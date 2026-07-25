@@ -44,7 +44,7 @@ function PaymentGatewaysPage() {
   const [editing, setEditing] = useState<PaymentGateway | null>(null);
   const [form, setForm] = useState({
     name: '',
-    provider_type: 'nexuspay' as 'uniaopay' | 'nexuspay',
+    provider_type: 'uniaopay' as 'uniaopay',
     api_key: '',
     base_url: '',
     notes: '',
@@ -52,9 +52,10 @@ function PaymentGatewaysPage() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', provider_type: 'nexuspay', api_key: '', base_url: '', notes: '' });
+    setForm({ name: '', provider_type: 'uniaopay', api_key: '', base_url: '', notes: '' });
     setDialogOpen(true);
   };
+
   const openEdit = (g: PaymentGateway) => {
     setEditing(g);
     setForm({
