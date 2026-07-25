@@ -286,6 +286,7 @@ function LinksGeradosPage() {
 
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [page]);
   useEffect(() => { setPage(0); void load(); /* eslint-disable-next-line */ }, [preset, from, to, origin, status]);
+  useRealtimeRefresh(['company_links', 'link_events', 'orders'], () => void load(), []);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
