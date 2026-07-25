@@ -546,6 +546,11 @@ export function setAutoImportTarget(n: number) {
   consultaStore.set({ autoImportTarget: Math.max(0, Math.floor(n || 0)) });
 }
 
+export function setBufferTarget(n: number) {
+  consultaStore.set({ bufferTarget: Math.max(1, Math.min(1000, Math.floor(n || 100))) });
+}
+
+
 export function setDateMode(m: 'today' | 'specific') {
   consultaStore.set({ dateMode: m });
   if (m === 'today') consultaStore.set({ selectedDate: todayBRString() });
