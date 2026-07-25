@@ -11,7 +11,7 @@ const TABLES: Array<{ table: string; queryKey: string }> = [
   { table: 'email_send_queue', queryKey: 'email_send_queue' },
   { table: 'automatic_company_query_runs', queryKey: 'automation_runs' },
   { table: 'automatic_company_queries', queryKey: 'automations' },
-  { table: 'satellite_jobs', queryKey: 'satellite_jobs' },
+  
   { table: 'email_workers', queryKey: 'email_workers' },
   { table: 'companies', queryKey: 'companies' },
   { table: 'payment_gateways', queryKey: 'payment_gateways' },

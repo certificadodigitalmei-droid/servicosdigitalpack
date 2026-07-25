@@ -347,8 +347,8 @@ function ImportacaoAutomaticaPage() {
             <div className="mt-3 rounded-md border border-brand-navy/20 bg-white/60 p-3 text-xs text-slate-700 space-y-2">
               <p>
                 Mantém sempre <strong>{bufferTarget} empresa(s)</strong> prontas na fila.
-                Quando o mestre ou uma antena consome uma, a importação puxa a
-                próxima (sempre a mais recente). Empresas reservadas por antenas
+                Quando o envio consome uma, a importação puxa a
+                próxima (sempre a mais recente). Empresas já processadas
                 <strong> nunca</strong> entram na fila do mestre — sem envio duplicado.
               </p>
               <div className="flex flex-wrap items-center gap-2 pt-1">
