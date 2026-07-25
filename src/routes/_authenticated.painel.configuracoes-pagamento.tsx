@@ -60,7 +60,7 @@ function PaymentGatewaysPage() {
     setEditing(g);
     setForm({
       name: g.name,
-      provider_type: g.provider_type,
+      provider_type: 'uniaopay',
       api_key: '',
       base_url: g.base_url ?? '',
       notes: g.notes ?? '',
