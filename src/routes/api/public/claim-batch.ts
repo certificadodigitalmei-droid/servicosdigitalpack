@@ -295,9 +295,10 @@ export const Route = createFileRoute('/api/public/claim-batch')({
               j.subject = substitute(tpl.subject, vars);
               j.html = renderHtml(tpl.design, vars);
               j.text = renderText(tpl.design, vars);
-              j.from_name = tpl.fromName;
-              j.from_address = tpl.fromAddress;
-              j.reply_to = tpl.replyTo;
+              // NÃO enviamos from_address/from_name/reply_to do mestre:
+              // cada satélite envia pelo próprio domínio verificado no
+              // workspace dele. Forçar o remetente do mestre causaria
+              // 403 no_matching_sender na antena.
             }
           } catch (tplErr) {
             console.error('claim-batch: falha ao renderizar template mestre', tplErr);
