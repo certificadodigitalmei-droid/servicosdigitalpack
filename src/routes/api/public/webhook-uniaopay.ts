@@ -7,27 +7,59 @@ export const Route = createFileRoute('/api/public/webhook-uniaopay')({
       POST: async ({ request }) => {
         try {
           const body = await request.json();
-          const apiKey = request.headers.get('x-api-key');
 
-          // Validação básica se necessário ou verificação de assinatura
-          // Aqui assumimos que o UniaoPay envia o payload conforme especificado
-          if (body.event === 'payment.confirmed') {
-            const { transaction } = body;
-            const orderId = transaction.external_id;
+          // Novo formato: { event: "PAYMENT_CONFIRMED", transaction_id, status: "PAID", ... }
+          // Formato antigo (compat): { event: "payment.confirmed", transaction: { external_id, id } }
+          const event = String(body?.event || '').toUpperCase();
+          const isPaid =
+            event === 'PAYMENT_CONFIRMED' ||
+            event === 'PAYMENT.CONFIRMED' ||
+            String(body?.status || '').toUpperCase() === 'PAID';
 
-            if (orderId) {
-              // Atualiza o status do pedido para 'paid'
-              const nowIso = new Date().toISOString();
-              const { error } = await supabaseAdmin
-                .from('orders')
-                .update({ status: 'paid', paid_at: nowIso, updated_at: nowIso })
-                .eq('id', orderId);
+          if (!isPaid) {
+            return new Response('OK', { status: 200 });
+          }
 
-              if (error) {
-                console.error('Erro ao atualizar pedido no webhook:', error);
-                return new Response('Error updating order', { status: 500 });
-              }
+          const transactionId: string | undefined =
+            body?.transaction_id || body?.transaction?.id || body?.id;
+          const externalId: string | undefined =
+            body?.external_id || body?.transaction?.external_id;
+
+          if (!transactionId && !externalId) {
+            console.warn('[webhook-uniaopay] payload sem identificadores', body);
+            return new Response('OK', { status: 200 });
+          }
+
+          const nowIso = new Date().toISOString();
+          const patch = { status: 'paid', paid_at: nowIso, updated_at: nowIso } as const;
+
+          let updated = 0;
+          if (externalId) {
+            const { data, error } = await supabaseAdmin
+              .from('orders')
+              .update(patch)
+              .eq('id', externalId)
+              .select('id');
+            if (error) {
+              console.error('[webhook-uniaopay] update by external_id falhou', error);
             }
+            updated = data?.length ?? 0;
+          }
+          if (updated === 0 && transactionId) {
+            const { data, error } = await supabaseAdmin
+              .from('orders')
+              .update(patch)
+              .eq('external_transaction_id', transactionId)
+              .select('id');
+            if (error) {
+              console.error('[webhook-uniaopay] update by transaction_id falhou', error);
+              return new Response('Error updating order', { status: 500 });
+            }
+            updated = data?.length ?? 0;
+          }
+
+          if (updated === 0) {
+            console.warn('[webhook-uniaopay] nenhum pedido encontrado', { transactionId, externalId });
           }
 
           return new Response('OK', { status: 200 });
@@ -35,7 +67,7 @@ export const Route = createFileRoute('/api/public/webhook-uniaopay')({
           console.error('Webhook error:', err);
           return new Response('Invalid payload', { status: 400 });
         }
-      }
-    }
-  }
+      },
+    },
+  },
 });
