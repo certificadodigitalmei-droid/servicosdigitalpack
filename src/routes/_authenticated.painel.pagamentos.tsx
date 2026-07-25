@@ -362,8 +362,14 @@ function PagamentosPage() {
       {/* Tabela */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">
-            Pedidos ({filtered.length})
+          <CardTitle className="text-sm text-slate-500 uppercase tracking-wide flex items-center justify-between">
+            <span>Pedidos ({filtered.length})</span>
+            {selected.size > 0 && (
+              <Button size="sm" variant="destructive" onClick={deleteSelected} disabled={deleting}>
+                {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Apagar {selected.size} selecionado(s)
+              </Button>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
