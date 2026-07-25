@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { bootConsultaEngine } from '@/lib/automation/consulta-engine';
 import { bootEnvioEngine } from '@/lib/automation/envio-engine';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 export const Route = createFileRoute('/_authenticated')({
   ssr: false,
@@ -13,6 +14,7 @@ export const Route = createFileRoute('/_authenticated')({
 function AuthenticatedLayout() {
   const navigate = useNavigate();
   const [state, setState] = useState<'checking' | 'ok' | 'no_user' | 'no_admin'>('checking');
+  useRealtimeSync();
 
   useEffect(() => {
     // Boot engines de automação (loops em nível de módulo continuam vivos
