@@ -291,11 +291,3 @@ export const Route = createFileRoute('/api/public/claim-batch')({
     },
   },
 });
-        } catch (err: any) {
-          console.error('claim-batch error:', err);
-          return new Response(err?.message || 'Internal error', { status: 500 });
-        }
-      },
-    },
-  },
-});
