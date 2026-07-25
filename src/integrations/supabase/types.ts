@@ -1162,6 +1162,78 @@ export type Database = {
         }
         Relationships: []
       }
+      email_workers: {
+        Row: {
+          created_at: string
+          daily_limit: number
+          from_email: string | null
+          from_name: string | null
+          hourly_limit: number
+          id: string
+          is_active: boolean
+          last_error: string | null
+          last_error_at: string | null
+          last_success_at: string | null
+          last_test_at: string | null
+          last_test_message: string | null
+          last_test_ok: boolean | null
+          last_used_at: string | null
+          monthly_limit: number
+          name: string
+          notes: string | null
+          priority: number
+          updated_at: string
+          worker_api_key: string
+          worker_url: string
+        }
+        Insert: {
+          created_at?: string
+          daily_limit?: number
+          from_email?: string | null
+          from_name?: string | null
+          hourly_limit?: number
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          last_error_at?: string | null
+          last_success_at?: string | null
+          last_test_at?: string | null
+          last_test_message?: string | null
+          last_test_ok?: boolean | null
+          last_used_at?: string | null
+          monthly_limit?: number
+          name: string
+          notes?: string | null
+          priority?: number
+          updated_at?: string
+          worker_api_key: string
+          worker_url: string
+        }
+        Update: {
+          created_at?: string
+          daily_limit?: number
+          from_email?: string | null
+          from_name?: string | null
+          hourly_limit?: number
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          last_error_at?: string | null
+          last_success_at?: string | null
+          last_test_at?: string | null
+          last_test_message?: string | null
+          last_test_ok?: boolean | null
+          last_used_at?: string | null
+          monthly_limit?: number
+          name?: string
+          notes?: string | null
+          priority?: number
+          updated_at?: string
+          worker_api_key?: string
+          worker_url?: string
+        }
+        Relationships: []
+      }
       link_events: {
         Row: {
           browser: string | null
@@ -1546,63 +1618,6 @@ export type Database = {
           support_email?: string | null
           support_phone?: string | null
           updated_at?: string
-        }
-        Relationships: []
-      }
-      smtp_servers: {
-        Row: {
-          created_at: string
-          daily_limit: number
-          encryption: string
-          from_email: string
-          from_name: string | null
-          host: string
-          hourly_limit: number
-          id: string
-          is_active: boolean
-          monthly_limit: number
-          name: string
-          notes: string | null
-          password: string
-          port: number
-          updated_at: string
-          username: string
-        }
-        Insert: {
-          created_at?: string
-          daily_limit?: number
-          encryption?: string
-          from_email: string
-          from_name?: string | null
-          host: string
-          hourly_limit?: number
-          id?: string
-          is_active?: boolean
-          monthly_limit?: number
-          name: string
-          notes?: string | null
-          password: string
-          port?: number
-          updated_at?: string
-          username: string
-        }
-        Update: {
-          created_at?: string
-          daily_limit?: number
-          encryption?: string
-          from_email?: string
-          from_name?: string | null
-          host?: string
-          hourly_limit?: number
-          id?: string
-          is_active?: boolean
-          monthly_limit?: number
-          name?: string
-          notes?: string | null
-          password?: string
-          port?: number
-          updated_at?: string
-          username?: string
         }
         Relationships: []
       }
