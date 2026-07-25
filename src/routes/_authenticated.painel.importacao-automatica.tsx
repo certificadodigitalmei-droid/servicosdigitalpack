@@ -28,9 +28,11 @@ import {
   consultaStore,
   setAutoImport,
   setQuantidade,
+  setBufferTarget,
   runImportOnce,
 } from '@/lib/automation/consulta-engine';
 import { envioStore } from '@/lib/automation/envio-engine';
+
 import { supabase } from '@/integrations/supabase/client';
 import {
   DateRangeFilter,
