@@ -121,8 +121,9 @@ function LinksGeradosPage() {
 
       if (status === 'active') q = q.eq('active', true);
       if (status === 'inactive') q = q.eq('active', false);
-      if (range.gte) q = q.gte('created_at', range.gte);
-      if (range.lte) q = q.lte('created_at', range.lte);
+      // Origem: manual = upload CSV (tem generation_id), automática = consulta (sem generation_id)
+      if (origin === 'manual') q = q.not('generation_id', 'is', null);
+      if (origin === 'auto') q = q.is('generation_id', null);
       if (search.trim()) {
         const s = search.trim();
         q = q.or(`public_token.ilike.%${s}%`);
@@ -145,75 +146,114 @@ function LinksGeradosPage() {
         });
       }
 
-      if (list.length) {
-        const ids = list.map((r) => r.id);
-        const { data: queueRows } = await supabase
-          .from('automatic_company_queue')
-          .select('company_link_id')
-          .in('company_link_id', ids);
-        const set = new Set<string>((queueRows ?? []).map((q: any) => q.company_link_id).filter(Boolean));
-        setAutoLinkIds(set);
-        if (origin === 'auto') list = list.filter((r) => set.has(r.id));
-        if (origin === 'manual') list = list.filter((r) => !set.has(r.id));
-      } else {
-        setAutoLinkIds(new Set());
-      }
+      // Marca cada link como Automática/Manual baseado no generation_id
+      const autoSet = new Set<string>(list.filter((r) => !r.generation_id).map((r) => r.id));
+      setAutoLinkIds(autoSet);
 
-      // Load events for the visible tokens
-      const tokens = list.map((r) => r.public_token).filter(Boolean);
-      let per: Record<string, Stats> = {};
-      let agg = emptyStats();
-      if (tokens.length) {
-        let eq = supabase.from('link_events').select('token,event_type,device,visitor_id,created_at').in('token', tokens);
-        if (range.gte) eq = eq.gte('created_at', range.gte);
-        if (range.lte) eq = eq.lte('created_at', range.lte);
-        const { data: events } = await eq;
-        const visitorsGlobal = new Set<string>();
-        const visitorsPer: Record<string, Set<string>> = {};
-        for (const e of (events ?? []) as any[]) {
-          const t = e.token as string;
-          if (!per[t]) { per[t] = emptyStats(); visitorsPer[t] = new Set(); }
-          const s = per[t];
-          const type = e.event_type as EventType;
-          s.total += 1; agg.total += 1;
-          if (type in s) { (s as any)[type] += 1; (agg as any)[type] += 1; }
-          const dev = e.device || 'Desconhecido';
-          s.devices[dev] = (s.devices[dev] ?? 0) + 1;
-          agg.devices[dev] = (agg.devices[dev] ?? 0) + 1;
-          if (e.visitor_id) { visitorsPer[t].add(e.visitor_id); visitorsGlobal.add(e.visitor_id); }
+      // ===== KPIs AGREGADOS: TODOS os eventos no período (não só os da página) =====
+      const agg = emptyStats();
+      const visitorsGlobal = new Set<string>();
+      {
+        const size = 1000;
+        let offset = 0;
+        while (offset <= 50000) {
+          let eq = supabase
+            .from('link_events')
+            .select('event_type,device,visitor_id')
+            .range(offset, offset + size - 1);
+          if (range.gte) eq = eq.gte('created_at', range.gte);
+          if (range.lte) eq = eq.lte('created_at', range.lte);
+          const { data: events, error: eErr } = await eq;
+          if (eErr) break;
+          const rr = (events ?? []) as any[];
+          for (const e of rr) {
+            const type = e.event_type as EventType;
+            agg.total += 1;
+            if (type in agg) (agg as any)[type] += 1;
+            const dev = e.device || 'Desconhecido';
+            agg.devices[dev] = (agg.devices[dev] ?? 0) + 1;
+            if (e.visitor_id) visitorsGlobal.add(e.visitor_id);
+          }
+          if (rr.length < size) break;
+          offset += size;
         }
-        for (const t of Object.keys(per)) per[t].unique_visitors = visitorsPer[t].size;
         agg.unique_visitors = visitorsGlobal.size;
       }
 
-      // Load paid orders for the visible links
-      const linkIds = list.map((r) => r.id).filter(Boolean);
-      const paidMap: Record<string, { count: number; amount: number; last_paid_at: string | null }> = {};
+      // ===== Métricas por token (tabela) — apenas tokens visíveis =====
+      const tokens = list.map((r) => r.public_token).filter(Boolean);
+      const per: Record<string, Stats> = {};
+      const visitorsPer: Record<string, Set<string>> = {};
+      if (tokens.length) {
+        const tokenChunks: string[][] = [];
+        for (let i = 0; i < tokens.length; i += 200) tokenChunks.push(tokens.slice(i, i + 200));
+        for (const tc of tokenChunks) {
+          let offset = 0;
+          const size = 1000;
+          while (offset <= 20000) {
+            let eq = supabase
+              .from('link_events')
+              .select('token,event_type,device,visitor_id')
+              .in('token', tc)
+              .range(offset, offset + size - 1);
+            if (range.gte) eq = eq.gte('created_at', range.gte);
+            if (range.lte) eq = eq.lte('created_at', range.lte);
+            const { data: events, error: eErr } = await eq;
+            if (eErr) break;
+            const rr = (events ?? []) as any[];
+            for (const e of rr) {
+              const t = e.token as string;
+              if (!per[t]) { per[t] = emptyStats(); visitorsPer[t] = new Set(); }
+              const s = per[t];
+              const type = e.event_type as EventType;
+              s.total += 1;
+              if (type in s) (s as any)[type] += 1;
+              const dev = e.device || 'Desconhecido';
+              s.devices[dev] = (s.devices[dev] ?? 0) + 1;
+              if (e.visitor_id) visitorsPer[t].add(e.visitor_id);
+            }
+            if (rr.length < size) break;
+            offset += size;
+          }
+        }
+        for (const t of Object.keys(per)) per[t].unique_visitors = visitorsPer[t]?.size ?? 0;
+      }
+
+      // ===== Pagamentos AGREGADOS (todos os pagos no período) =====
       let paidCount = 0;
       let paidAmount = 0;
-      if (linkIds.length) {
-        let oq = supabase
-          .from('orders')
-          .select('public_link_id,amount,paid_at,status')
-          .in('public_link_id', linkIds)
-          .eq('status', 'paid');
-        if (range.gte) oq = oq.gte('paid_at', range.gte);
-        if (range.lte) oq = oq.lte('paid_at', range.lte);
-        const { data: paidRows } = await oq;
-        for (const o of (paidRows ?? []) as any[]) {
-          const id = o.public_link_id as string;
-          if (!paidMap[id]) paidMap[id] = { count: 0, amount: 0, last_paid_at: null };
-          paidMap[id].count += 1;
-          paidMap[id].amount += Number(o.amount ?? 0);
-          if (!paidMap[id].last_paid_at || (o.paid_at && o.paid_at > paidMap[id].last_paid_at!)) {
-            paidMap[id].last_paid_at = o.paid_at;
+      const paidMap: Record<string, { count: number; amount: number; last_paid_at: string | null }> = {};
+      {
+        const size = 1000;
+        let offset = 0;
+        while (offset <= 20000) {
+          let oq = supabase
+            .from('orders')
+            .select('public_link_id,amount,paid_at')
+            .eq('status', 'paid')
+            .range(offset, offset + size - 1);
+          if (range.gte) oq = oq.gte('paid_at', range.gte);
+          if (range.lte) oq = oq.lte('paid_at', range.lte);
+          const { data: paidRows, error: oErr } = await oq;
+          if (oErr) break;
+          const rr = (paidRows ?? []) as any[];
+          for (const o of rr) {
+            paidCount += 1;
+            paidAmount += Number(o.amount ?? 0);
+            const id = o.public_link_id as string | null;
+            if (!id) continue;
+            if (!paidMap[id]) paidMap[id] = { count: 0, amount: 0, last_paid_at: null };
+            paidMap[id].count += 1;
+            paidMap[id].amount += Number(o.amount ?? 0);
+            if (!paidMap[id].last_paid_at || (o.paid_at && o.paid_at > paidMap[id].last_paid_at!)) {
+              paidMap[id].last_paid_at = o.paid_at;
+            }
           }
-          paidCount += 1;
-          paidAmount += Number(o.amount ?? 0);
+          if (rr.length < size) break;
+          offset += size;
         }
       }
 
-      // Filter by funnel stage reached (deepest event wins)
       if (stage !== 'all') {
         list = list.filter((r) => {
           const s = per[r.public_token] ?? emptyStats();
@@ -245,7 +285,7 @@ function LinksGeradosPage() {
   };
 
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [page]);
-  useEffect(() => { setPage(0); void load(); /* eslint-disable-next-line */ }, [preset, from, to]);
+  useEffect(() => { setPage(0); void load(); /* eslint-disable-next-line */ }, [preset, from, to, origin, status]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
