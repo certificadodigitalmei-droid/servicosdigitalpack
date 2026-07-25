@@ -58,7 +58,7 @@ export const Route = createFileRoute('/checkout_/$token')({
   component: CheckoutTokenPage,
 });
 
-const DEFAULT_AMOUNT = 97.0;
+
 const brl = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`;
 
 
