@@ -24,6 +24,10 @@ export type CampaignSendInput = {
   // já foi disparado, mesmo depois de trocar de navegador ou limpar o cache.
   companyId?: string | null;
   cnpj?: string | null;
+  // Índice do canal para envio paralelo. 0 = conta local; 1..N = workers.
+  // Quando informado, o envio vai deterministicamente para aquele canal
+  // (permitindo N envios simultâneos, um por conta).
+  channelIndex?: number;
 };
 
 export type CampaignSendResult =
