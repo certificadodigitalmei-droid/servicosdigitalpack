@@ -67,24 +67,77 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
 
     const idempotencyKey = data.idempotencyKey || crypto.randomUUID();
 
+    const payload = {
+      to: recipient,
+      from: `${fromName} <${fromAddress}>`,
+      sender_domain: SENDER_DOMAIN,
+      subject: data.subject,
+      html,
+      text,
+      purpose: 'transactional' as const,
+      label: data.testMode ? 'campaign-test' : 'campaign',
+      idempotency_key: idempotencyKey,
+      reply_to: data.replyTo ?? fromAddress,
+    };
+
+    // Tenta rotear via workers Lovable adicionais (outras contas) para
+    // somar capacidade. Se todos falharem/estiverem indisponíveis, cai
+    // no envio local (LOVABLE_API_KEY deste projeto).
+    const { data: workers } = await (context.supabase as any)
+      .from('email_workers')
+      .select('*')
+      .eq('is_active', true)
+      .order('last_used_at', { ascending: true, nullsFirst: true })
+      .order('priority', { ascending: true });
+
+    let deliveredVia: 'local' | 'worker' = 'local';
+    let workerError: string | null = null;
+
+    if (workers && workers.length > 0) {
+      for (const w of workers) {
+        try {
+          const wPayload = {
+            ...payload,
+            from: w.from_email ? `${w.from_name || fromName} <${w.from_email}>` : payload.from,
+          };
+          const res = await fetch(w.worker_url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${w.worker_api_key}` },
+            body: JSON.stringify(wPayload),
+          });
+          if (res.ok) {
+            deliveredVia = 'worker';
+            await (context.supabase as any).from('email_workers').update({
+              last_used_at: new Date().toISOString(),
+              last_success_at: new Date().toISOString(),
+              last_error: null,
+            }).eq('id', w.id);
+            break;
+          }
+          const bodyText = await res.text();
+          workerError = `worker ${w.name}: HTTP ${res.status} ${bodyText.slice(0, 200)}`;
+          await (context.supabase as any).from('email_workers').update({
+            last_used_at: new Date().toISOString(),
+            last_error: workerError,
+            last_error_at: new Date().toISOString(),
+          }).eq('id', w.id);
+          // 429/5xx: tenta próximo worker
+        } catch (e) {
+          workerError = `worker ${w.name}: ${(e as Error).message}`;
+          await (context.supabase as any).from('email_workers').update({
+            last_used_at: new Date().toISOString(),
+            last_error: workerError,
+            last_error_at: new Date().toISOString(),
+          }).eq('id', w.id);
+        }
+      }
+    }
+
     try {
-      await sendLovableEmail(
-        {
-          to: recipient,
-          from: `${fromName} <${fromAddress}>`,
-          sender_domain: SENDER_DOMAIN,
-          subject: data.subject,
-          html,
-          text,
-          purpose: 'transactional',
-          label: data.testMode ? 'campaign-test' : 'campaign',
-          idempotency_key: idempotencyKey,
-          reply_to: data.replyTo ?? fromAddress,
-        },
-        { apiKey, sendUrl: process.env.LOVABLE_SEND_URL }
-      );
+      if (deliveredVia !== 'worker') {
+        await sendLovableEmail(payload, { apiKey, sendUrl: process.env.LOVABLE_SEND_URL });
+      }
       // Persiste registro durável do envio para deduplicar entre sessões.
-      // Só grava em envio REAL (testes não devem contar).
       if (!data.testMode) {
         try {
           const normEmail = (data.recipient || '').trim().toLowerCase();
