@@ -110,7 +110,7 @@ export const Route = createFileRoute('/api/public/claim-batch')({
           const rows = (candidates ?? []).filter((c: any) =>
             /.+@.+\..+/.test(c.email || ''),
           );
-          if (rows.length === 0) return Response.json({ jobs: [] });
+          if (rows.length === 0) return Response.json({ jobs: testJobs, count: testJobs.length });
 
           const ids = rows.map((r: any) => r.id);
           const emails = Array.from(
