@@ -412,6 +412,28 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
       // Se a consulta falhar, seguimos apenas com o índice em memória.
     }
 
+    // Empresas já reservadas/enviadas por qualquer satélite (via claim-batch).
+    // Nunca reinserir na fila do mestre — evita envio duplicado mestre × antena.
+    const claimedBySatellite = new Set<string>();
+    try {
+      const ids = all.map((c: any) => c.id).filter(Boolean);
+      const CHUNK2 = 500;
+      for (let i = 0; i < ids.length; i += CHUNK2) {
+        const slice = ids.slice(i, i + CHUNK2);
+        const { data } = await supabase
+          .from('satellite_jobs')
+          .select('company_id')
+          .in('company_id', slice)
+          .in('status', ['claimed', 'sent']);
+        for (const r of (data ?? []) as Array<{ company_id: string | null }>) {
+          if (r.company_id) claimedBySatellite.add(r.company_id);
+        }
+      }
+    } catch {
+      // sem satellite_jobs disponível — segue com dedup local.
+    }
+
+
 
     // IDs / chaves já presentes na fila atual para nunca duplicar.
     const currentQueue = envioStore.get().queue;
