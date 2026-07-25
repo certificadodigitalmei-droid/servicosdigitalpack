@@ -1453,6 +1453,65 @@ export type Database = {
         }
         Relationships: []
       }
+      satellite_jobs: {
+        Row: {
+          claimed_at: string
+          cnpj: string | null
+          company_id: string
+          confirmed_at: string | null
+          created_at: string
+          email: string
+          error_message: string | null
+          id: string
+          provider_message_id: string | null
+          public_token: string | null
+          public_url: string | null
+          satellite_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          claimed_at?: string
+          cnpj?: string | null
+          company_id: string
+          confirmed_at?: string | null
+          created_at?: string
+          email: string
+          error_message?: string | null
+          id?: string
+          provider_message_id?: string | null
+          public_token?: string | null
+          public_url?: string | null
+          satellite_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          claimed_at?: string
+          cnpj?: string | null
+          company_id?: string
+          confirmed_at?: string | null
+          created_at?: string
+          email?: string
+          error_message?: string | null
+          id?: string
+          provider_message_id?: string | null
+          public_token?: string | null
+          public_url?: string | null
+          satellite_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "satellite_jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_display_settings: {
         Row: {
           id: number
