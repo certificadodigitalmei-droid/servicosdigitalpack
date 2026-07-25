@@ -1,0 +1,1 @@
+DELETE FROM public.payment_gateways WHERE provider_type = 'nexuspay';
