@@ -65,6 +65,8 @@ function ImportacaoAutomaticaPage() {
   const isImporting = useStore(consultaStore, (s) => s.isImporting);
   const autoImportRuns = useStore(consultaStore, (s) => s.autoImportRuns);
   const autoImportTotal = useStore(consultaStore, (s) => s.autoImportTotal);
+  const bufferTarget = useStore(consultaStore, (s) => s.bufferTarget);
+
   const importedRowsAll = useStore(consultaStore, (s) => s.importedRows);
   const failedRowsAll = useStore(consultaStore, (s) => s.failedRows);
   const dateMode = useStore(consultaStore, (s) => s.dateMode);
