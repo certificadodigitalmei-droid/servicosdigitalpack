@@ -10,6 +10,7 @@ import {
   Search,
   Calendar as CalendarIcon,
   Copy,
+  Trash2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -192,6 +193,59 @@ function PagamentosPage() {
     }
   }
 
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+
+  function toggleOne(id: string) {
+    setSelected(prev => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }
+  function toggleAll() {
+    setSelected(prev => {
+      if (prev.size === filtered.length) return new Set();
+      return new Set(filtered.map(o => o.id));
+    });
+  }
+
+  async function deleteOne(id: string) {
+    if (!confirm('Apagar este pedido? Esta ação não pode ser desfeita.')) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from('orders').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Pedido apagado');
+      setOrders(prev => prev.filter(o => o.id !== id));
+      setSelected(prev => { const n = new Set(prev); n.delete(id); return n; });
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao apagar');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function deleteSelected() {
+    if (selected.size === 0) return;
+    if (!confirm(`Apagar ${selected.size} pedido(s) selecionado(s)? Ação irreversível.`)) return;
+    setDeleting(true);
+    try {
+      const ids = Array.from(selected);
+      const { error } = await supabase.from('orders').delete().in('id', ids);
+      if (error) throw error;
+      toast.success(`${ids.length} pedido(s) apagado(s)`);
+      setOrders(prev => prev.filter(o => !selected.has(o.id)));
+      setSelected(new Set());
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao apagar');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+
   return (
     <div className="space-y-6 pb-12">
       <div className="flex items-center justify-between">
@@ -310,8 +364,14 @@ function PagamentosPage() {
       {/* Tabela */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">
-            Pedidos ({filtered.length})
+          <CardTitle className="text-sm text-slate-500 uppercase tracking-wide flex items-center justify-between">
+            <span>Pedidos ({filtered.length})</span>
+            {selected.size > 0 && (
+              <Button size="sm" variant="destructive" onClick={deleteSelected} disabled={deleting}>
+                {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Apagar {selected.size} selecionado(s)
+              </Button>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -319,6 +379,14 @@ function PagamentosPage() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b text-xs uppercase text-slate-500">
                 <tr>
+                  <th className="p-2 text-left w-8">
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && selected.size === filtered.length}
+                      onChange={toggleAll}
+                      aria-label="Selecionar todos"
+                    />
+                  </th>
                   <th className="p-2 text-left">Data</th>
                   <th className="p-2 text-left">CNPJ / Empresa</th>
                   <th className="p-2 text-left">Cliente</th>
@@ -331,12 +399,12 @@ function PagamentosPage() {
               </thead>
               <tbody>
                 {loading && (
-                  <tr><td colSpan={8} className="p-8 text-center text-slate-400">
+                  <tr><td colSpan={9} className="p-8 text-center text-slate-400">
                     <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Carregando...
                   </td></tr>
                 )}
                 {!loading && filtered.length === 0 && (
-                  <tr><td colSpan={8} className="p-8 text-center text-slate-400">
+                  <tr><td colSpan={9} className="p-8 text-center text-slate-400">
                     Nenhum pedido encontrado.
                   </td></tr>
                 )}
@@ -346,7 +414,15 @@ function PagamentosPage() {
                   const info = statusMap[key] ?? { label: o.status, color: 'bg-slate-100 text-slate-600', icon: Clock };
                   const Icon = info.icon;
                   return (
-                    <tr key={o.id} className="border-b last:border-0 hover:bg-slate-50">
+                    <tr key={o.id} className={`border-b last:border-0 hover:bg-slate-50 ${selected.has(o.id) ? 'bg-blue-50/40' : ''}`}>
+                      <td className="p-2">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(o.id)}
+                          onChange={() => toggleOne(o.id)}
+                          aria-label="Selecionar"
+                        />
+                      </td>
                       <td className="p-2 text-slate-500 whitespace-nowrap">
                         {new Date(o.created_at).toLocaleString('pt-BR')}
                       </td>
@@ -373,12 +449,22 @@ function PagamentosPage() {
                       <td className="p-2 text-xs text-slate-500 whitespace-nowrap">
                         {o.paid_at ? new Date(o.paid_at).toLocaleString('pt-BR') : '—'}
                       </td>
-                      <td className="p-2 text-right">
+                      <td className="p-2 text-right whitespace-nowrap">
                         {o.pix_code && !isPaid && (
                           <Button size="sm" variant="ghost" onClick={() => copyPix(o.pix_code)}>
                             <Copy className="h-3.5 w-3.5 mr-1" /> PIX
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => deleteOne(o.id)}
+                          disabled={deleting}
+                          title="Apagar pedido"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </td>
                     </tr>
                   );
