@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
 import { formatCNPJ } from '@/lib/format';
 import { toast } from 'sonner';
+import { useRealtimeRefresh } from '@/hooks/use-realtime-refresh';
 
 export const Route = createFileRoute('/_authenticated/painel/links-gerados')({
   head: () => ({ meta: [{ title: 'Links Gerados | Painel' }] }),
