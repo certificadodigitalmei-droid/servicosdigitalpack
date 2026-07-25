@@ -1,0 +1,1 @@
+UPDATE public.payment_gateways SET base_url = 'https://uniao7pay.shop/api/v1', updated_at = now() WHERE provider_type = 'uniaopay';

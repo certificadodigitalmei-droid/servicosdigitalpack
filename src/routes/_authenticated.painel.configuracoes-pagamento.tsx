@@ -27,9 +27,10 @@ export const Route = createFileRoute('/_authenticated/painel/configuracoes-pagam
 const PROVIDER_META: Record<string, { label: string; docsUrl?: string; defaultBase: string; webhookPath: string }> = {
   uniaopay: {
     label: 'UniãoPay',
-    defaultBase: 'https://uniao7pay.shop/api/v1/uniaopay',
+    defaultBase: 'https://uniao7pay.shop/api/v1',
     webhookPath: '/api/public/webhook-uniaopay',
   },
+
   nexuspay: {
     label: 'NexusPay (zpay)',
     docsUrl: 'https://nexuspay.squareweb.app/api/docs',

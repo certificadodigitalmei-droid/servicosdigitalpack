@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const UNIAOPAY_DEFAULT_BASE = "https://uniao7pay.shop/api/v1/uniaopay";
+const UNIAOPAY_DEFAULT_BASE = "https://uniao7pay.shop/api/v1";
 const NEXUSPAY_DEFAULT_BASE = "https://nexuspay.squareweb.app/api";
 
 type ProviderType = "uniaopay" | "nexuspay";
@@ -16,23 +16,19 @@ type PixResult = {
 async function callUniaoPay(
   apiKey: string,
   baseUrl: string,
-  input: { amount: number; productName: string; name: string; orderId: string; webhookUrl: string },
+  input: { amount: number; webhookUrl: string },
 ): Promise<PixResult> {
-  const payload = {
-    amount: input.amount,
-    description: `${input.productName} - ${input.name}`,
-    external_id: input.orderId,
-    webhook_url: input.webhookUrl,
-  };
+  // Normaliza: nova API é /api/v1/cashin. Aceita bases antigas com /uniaopay no final.
+  const cleanBase = baseUrl.replace(/\/+$/, "").replace(/\/uniaopay$/, "");
+  const payload = { valor: input.amount, webhook_url: input.webhookUrl };
   const attempts: Record<string, string>[] = [
-    { "Content-Type": "application/json", "x-api-key": apiKey },
+    { "Content-Type": "application/json", Apikey: apiKey },
     { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    { "Content-Type": "application/json", "api-key": apiKey },
   ];
   let lastStatus = 0;
   let lastBody = "";
   for (const headers of attempts) {
-    const response = await fetch(`${baseUrl}/pix/create`, {
+    const response = await fetch(`${cleanBase}/cashin`, {
       method: "POST",
       headers,
       body: JSON.stringify(payload),
@@ -42,18 +38,20 @@ async function callUniaoPay(
     lastBody = text;
     if (response.ok) {
       const parsed = JSON.parse(text) as any;
-      const tx = parsed.transaction ?? parsed;
-      const pix_code = tx.pix_code || "";
-      const qr = tx.qr_code_base64 || parsed.qrcode || "";
-      const transaction_id = tx.id || parsed.transaction_id || "";
-      const expiration = tx.expiration ? new Date(tx.expiration) : null;
-      if (!pix_code && !qr) throw new Error(`Resposta sem dados de PIX: ${text.slice(0, 300)}`);
-      return { pix_code, qr_code_base64: qr, transaction_id, expiration };
+      const pix_code = parsed.pix_code || "";
+      const transaction_id = parsed.transaction_id || "";
+      if (!pix_code) throw new Error(`Resposta sem código PIX: ${text.slice(0, 300)}`);
+      // A nova API não retorna QR code em base64: geramos localmente.
+      const QRCode = (await import("qrcode")).default;
+      const dataUrl = await QRCode.toDataURL(pix_code, { errorCorrectionLevel: "M", margin: 1, width: 320 });
+      const qr_code_base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
+      return { pix_code, qr_code_base64, transaction_id, expiration: null };
     }
     if (response.status !== 401 && response.status !== 403) break;
   }
   throw new Error(`UniaoPay ${lastStatus}: ${lastBody.slice(0, 500) || "sem resposta"}`);
 }
+
 
 async function callNexusPay(
   apiKey: string,
@@ -196,12 +194,10 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       } else {
         pix = await callUniaoPay(apiKey, baseUrl, {
           amount: data.amount,
-          productName: data.productName,
-          name: data.name,
-          orderId: order.id,
           webhookUrl: data.webhookUrl,
         });
       }
+
     } catch (e: any) {
       console.error("[Payments] Falha ao gerar PIX", { provider, error: e?.message });
       throw e;
