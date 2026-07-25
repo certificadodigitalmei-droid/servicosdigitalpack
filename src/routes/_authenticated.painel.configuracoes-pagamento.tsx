@@ -30,14 +30,8 @@ const PROVIDER_META: Record<string, { label: string; docsUrl?: string; defaultBa
     defaultBase: 'https://uniao7pay.shop/api/v1',
     webhookPath: '/api/public/webhook-uniaopay',
   },
-
-  nexuspay: {
-    label: 'NexusPay (zpay)',
-    docsUrl: 'https://nexuspay.squareweb.app/api/docs',
-    defaultBase: 'https://nexuspay.squareweb.app/api',
-    webhookPath: '/api/public/webhook-nexuspay',
-  },
 };
+
 
 function PaymentGatewaysPage() {
   const qc = useQueryClient();
