@@ -190,7 +190,58 @@ function PagamentosPage() {
       toast.success('Código PIX copiado');
     } catch {
       toast.error('Não foi possível copiar');
+  }
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+
+  function toggleOne(id: string) {
+    setSelected(prev => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }
+  function toggleAll() {
+    setSelected(prev => {
+      if (prev.size === filtered.length) return new Set();
+      return new Set(filtered.map(o => o.id));
+    });
+  }
+
+  async function deleteOne(id: string) {
+    if (!confirm('Apagar este pedido? Esta ação não pode ser desfeita.')) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from('orders').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Pedido apagado');
+      setOrders(prev => prev.filter(o => o.id !== id));
+      setSelected(prev => { const n = new Set(prev); n.delete(id); return n; });
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao apagar');
+    } finally {
+      setDeleting(false);
     }
+  }
+
+  async function deleteSelected() {
+    if (selected.size === 0) return;
+    if (!confirm(`Apagar ${selected.size} pedido(s) selecionado(s)? Ação irreversível.`)) return;
+    setDeleting(true);
+    try {
+      const ids = Array.from(selected);
+      const { error } = await supabase.from('orders').delete().in('id', ids);
+      if (error) throw error;
+      toast.success(`${ids.length} pedido(s) apagado(s)`);
+      setOrders(prev => prev.filter(o => !selected.has(o.id)));
+      setSelected(new Set());
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao apagar');
+    } finally {
+      setDeleting(false);
+    }
+  }
   }
 
   return (
