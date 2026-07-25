@@ -264,7 +264,33 @@ export const Route = createFileRoute('/api/public/claim-batch')({
           });
 
           const combined = [...testJobs, ...jobs];
+
+          // Anexa template renderizado pelo mestre para que a antena envie
+          // exatamente o mesmo conteúdo configurado no painel principal.
+          try {
+            const tpl = await loadMasterTemplate();
+            for (const j of combined) {
+              const vars = buildVars(j);
+              j.subject = substitute(tpl.subject, vars);
+              j.html = renderHtml(tpl.design, vars);
+              j.text = renderText(tpl.design, vars);
+              j.from_name = tpl.fromName;
+              j.from_address = tpl.fromAddress;
+              j.reply_to = tpl.replyTo;
+            }
+          } catch (tplErr) {
+            console.error('claim-batch: falha ao renderizar template mestre', tplErr);
+          }
+
           return Response.json({ jobs: combined, count: combined.length });
+        } catch (err: any) {
+          console.error('claim-batch error:', err);
+          return new Response(err?.message || 'Internal error', { status: 500 });
+        }
+      },
+    },
+  },
+});
         } catch (err: any) {
           console.error('claim-batch error:', err);
           return new Response(err?.message || 'Internal error', { status: 500 });
