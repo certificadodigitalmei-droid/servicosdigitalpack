@@ -4,6 +4,8 @@ import { createOrderAndPixCharge } from '@/lib/payments/checkout.functions';
 import { PixModal } from '@/components/checkout/PixModal';
 import { PaymentInfoPopup } from '@/components/checkout/PaymentInfoPopup';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
+import { getPricing, DEFAULT_PRICING } from '@/lib/pricing.functions';
+
 
 // Loads company data by token and forwards to the existing /checkout page.
 // The visible URL stays /checkout/$token — no GET parameters are exposed.
@@ -23,13 +25,15 @@ import type { ResolvedCompany } from '@/lib/company-links.functions';
 
 export const Route = createFileRoute('/checkout_/$token')({
   loader: async ({ params }) => {
-    const [row, popup] = await Promise.all([
+    const [row, popup, pricing] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
       getSitePopup().catch(() => null),
+      getPricing().catch(() => DEFAULT_PRICING),
     ]);
     if (!row) throw notFound();
-    return { row, popup };
+    return { row, popup, pricing };
   },
+
   head: () => ({
     meta: [{ title: 'Pagamento — Central MEI Digital' }],
   }),
@@ -54,7 +58,7 @@ export const Route = createFileRoute('/checkout_/$token')({
   component: CheckoutTokenPage,
 });
 
-const DEFAULT_AMOUNT = 97.0;
+
 const brl = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`;
 
 
@@ -64,12 +68,20 @@ function cleanPersonName(v?: string | null): string {
 }
 
 function CheckoutTokenPage() {
-  const { row, popup } = Route.useLoaderData() as { row: ResolvedCompany; popup: SitePopupSettings | null };
+  const { row, popup, pricing } = Route.useLoaderData() as {
+    row: ResolvedCompany;
+    popup: SitePopupSettings | null;
+    pricing: { product_amount: number };
+  };
   const { token } = Route.useParams();
   const navigate = useNavigate();
 
   const headerName = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '';
-  const AMOUNT = row.amount_cents != null ? row.amount_cents / 100 : DEFAULT_AMOUNT;
+  // O valor é sempre o configurado em Configurações > Preços — aplica-se a
+  // todos os links (novos e já enviados). PIX gerado usa esse valor.
+  const AMOUNT = pricing?.product_amount ?? DEFAULT_PRICING.product_amount;
+
+
 
 
   const [form, setForm] = useState({
