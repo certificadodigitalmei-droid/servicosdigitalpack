@@ -379,6 +379,14 @@ function PagamentosPage() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b text-xs uppercase text-slate-500">
                 <tr>
+                  <th className="p-2 text-left w-8">
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && selected.size === filtered.length}
+                      onChange={toggleAll}
+                      aria-label="Selecionar todos"
+                    />
+                  </th>
                   <th className="p-2 text-left">Data</th>
                   <th className="p-2 text-left">CNPJ / Empresa</th>
                   <th className="p-2 text-left">Cliente</th>
@@ -391,12 +399,12 @@ function PagamentosPage() {
               </thead>
               <tbody>
                 {loading && (
-                  <tr><td colSpan={8} className="p-8 text-center text-slate-400">
+                  <tr><td colSpan={9} className="p-8 text-center text-slate-400">
                     <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Carregando...
                   </td></tr>
                 )}
                 {!loading && filtered.length === 0 && (
-                  <tr><td colSpan={8} className="p-8 text-center text-slate-400">
+                  <tr><td colSpan={9} className="p-8 text-center text-slate-400">
                     Nenhum pedido encontrado.
                   </td></tr>
                 )}
