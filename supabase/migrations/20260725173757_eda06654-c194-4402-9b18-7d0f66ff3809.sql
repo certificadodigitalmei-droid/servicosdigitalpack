@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public.satellite_jobs CASCADE;
