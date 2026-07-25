@@ -68,12 +68,20 @@ function cleanPersonName(v?: string | null): string {
 }
 
 function CheckoutTokenPage() {
-  const { row, popup } = Route.useLoaderData() as { row: ResolvedCompany; popup: SitePopupSettings | null };
+  const { row, popup, pricing } = Route.useLoaderData() as {
+    row: ResolvedCompany;
+    popup: SitePopupSettings | null;
+    pricing: { product_amount: number };
+  };
   const { token } = Route.useParams();
   const navigate = useNavigate();
 
   const headerName = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '';
-  const AMOUNT = row.amount_cents != null ? row.amount_cents / 100 : DEFAULT_AMOUNT;
+  // O valor é sempre o configurado em Configurações > Preços — aplica-se a
+  // todos os links (novos e já enviados). PIX gerado usa esse valor.
+  const AMOUNT = pricing?.product_amount ?? DEFAULT_PRICING.product_amount;
+
+
 
 
   const [form, setForm] = useState({
