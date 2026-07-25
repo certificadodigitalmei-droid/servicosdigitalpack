@@ -66,6 +66,7 @@ type State = {
   autoImport: boolean;
   autoImportDelaySec: number;
   autoImportTarget: number; // 0 = infinito, senão para quando autoImportTotal >= alvo
+  bufferTarget: number; // quantas empresas manter prontas na fila (mestre + antenas)
   dateMode: 'today' | 'specific';
   selectedDate: string; // ISO yyyy-mm-dd
   filters: Filters;
