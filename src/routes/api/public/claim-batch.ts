@@ -1,5 +1,46 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
+import { DEFAULT_DESIGN, renderHtml, renderText, substitute, type CampaignDesign, type Vars } from '@/lib/email-campaign/template';
+
+const DEFAULT_SUBJECT = '{{NOME_TITULAR}}, atualização pendente do seu CNPJ';
+
+async function loadMasterTemplate(): Promise<{ design: CampaignDesign; subject: string; fromName?: string; fromAddress?: string; replyTo?: string }> {
+  const { data: adminRole } = await supabaseAdmin
+    .from('user_roles').select('user_id').eq('role', 'admin').limit(1).maybeSingle();
+  let payload: any = null;
+  if (adminRole?.user_id) {
+    const { data } = await supabaseAdmin
+      .from('message_templates').select('payload').eq('user_id', adminRole.user_id).maybeSingle();
+    payload = data?.payload ?? null;
+  }
+  if (!payload) {
+    const { data } = await supabaseAdmin
+      .from('message_templates').select('payload').order('updated_at', { ascending: false }).limit(1).maybeSingle();
+    payload = data?.payload ?? null;
+  }
+  const design: CampaignDesign = { ...DEFAULT_DESIGN, ...((payload?.design as any) ?? {}) };
+  return {
+    design,
+    subject: (payload?.subject as string) || DEFAULT_SUBJECT,
+    fromName: payload?.fromName,
+    fromAddress: payload?.fromAddress,
+    replyTo: payload?.replyTo,
+  };
+}
+
+function buildVars(job: { cnpj: string; email: string; company_name: string; razao_social: string; nome_titular: string; public_url: string; public_token: string }): Vars {
+  return {
+    NOME_EMPRESARIAL: job.company_name,
+    NOME_TITULAR: job.nome_titular || job.company_name,
+    RAZAO_SOCIAL: job.razao_social,
+    CNPJ: job.cnpj,
+    EMAIL: job.email,
+    LINK_PUBLICO: job.public_url,
+    TOKEN: job.public_token,
+    SITUACAO: 'CNPJ sem certificado ativo',
+    REFERENCIA: `MEI-${new Date().getFullYear()}`,
+  };
+}
 
 /**
  * Endpoint chamado pelos projetos satélites para reservar um lote de empresas
