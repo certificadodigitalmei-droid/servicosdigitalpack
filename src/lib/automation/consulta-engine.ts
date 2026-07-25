@@ -66,7 +66,7 @@ type State = {
   autoImport: boolean;
   autoImportDelaySec: number;
   autoImportTarget: number; // 0 = infinito, senão para quando autoImportTotal >= alvo
-  bufferTarget: number; // quantas empresas manter prontas na fila (mestre + antenas)
+  bufferTarget: number; // quantas empresas manter prontas na fila
   dateMode: 'today' | 'specific';
   selectedDate: string; // ISO yyyy-mm-dd
   filters: Filters;
@@ -458,12 +458,9 @@ function restartImportLoop() {
   if (!s.autoImport) return;
 
   // Regra "buffer": mantém sempre `bufferTarget` empresas prontas na fila
-  // do Envio em Massa. A cada tick verifica quantas ainda estão pendentes
-  // (mestre) — quando mestre ou antena consome uma e o total cai abaixo do
-  // alvo, importa a diferença (uma nova por tick, sempre a mais recente).
-  // Antenas puxam pelo endpoint /api/public/claim-batch, que reserva as
-  // empresas em `satellite_jobs`. O mestre exclui essas reservas via
-  // loadRecipients, evitando que a mesma empresa seja enviada duas vezes.
+  // do Envio em Massa. A cada tick verifica quantas ainda estão pendentes —
+  // quando o envio consome uma e o total cai abaixo do alvo, importa a
+  // diferença (uma nova por tick, sempre a mais recente).
   const tick = async () => {
     if (consultaStore.get().isImporting) return;
 

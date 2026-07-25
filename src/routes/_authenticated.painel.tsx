@@ -21,7 +21,7 @@ import {
   MessageSquare,
   Cloud,
   CloudDownload,
-  Server,
+  
   Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -245,7 +245,7 @@ function PanelLayout() {
         { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
-        { title: 'Satélites (Envio Distribuído)', icon: Server, to: '/painel/satelites' },
+        
       ],
     },
     {
@@ -290,7 +290,7 @@ function PanelLayout() {
     if (path === '/painel/envio-massa') return 'Envio em Massa';
     if (path === '/painel/workspace-envio') return 'Envio Google Workspace';
     if (path === '/painel/enviados') return 'E-mails Enviados';
-    if (path === '/painel/satelites') return 'Satélites';
+    
     if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
     return 'Painel';
   };

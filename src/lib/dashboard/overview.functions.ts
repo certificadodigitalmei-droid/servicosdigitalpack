@@ -8,7 +8,6 @@ export type DashboardOverview = {
   status: {
     importacao: ModuleStatus;
     envio: ModuleStatus;
-    antenas: ModuleStatus;
     gateway: ModuleStatus;
     casaDados: ModuleStatus;
   };
@@ -44,14 +43,6 @@ export type DashboardOverview = {
     conversao: number;
     ultimos: Array<{ id: string; nome: string; valor: number; paid_at: string }>;
     gatewayAtivo: string | null;
-  };
-  antenas: {
-    total: number;
-    online: number;
-    jobsReservados: number;
-    jobsPendentes: number;
-    enviosHoje: number;
-    porAntena: Array<{ satellite_id: string; sent: number; pending: number; failed: number; lastAt: string | null }>;
   };
 };
 
@@ -116,35 +107,10 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const ticketMedio = pagosHoje > 0 ? valorHoje / pagosHoje : 0;
     const conversao = (pixGerados ?? 0) > 0 ? ((pagos ?? 0) / (pixGerados ?? 1)) * 100 : 0;
 
-    // ------ Antenas ------
-    const { data: jobsRaw } = await supabase
-      .from('satellite_jobs')
-      .select('satellite_id,status,updated_at,claimed_at')
-      .gte('claimed_at', dayAgo);
-    const bySat = new Map<string, { sent: number; pending: number; failed: number; lastAt: string | null }>();
-    let jobsReservados = 0;
-    let jobsPendentes = 0;
-    let enviosHojeAnt = 0;
-    for (const j of jobsRaw ?? []) {
-      const sat = (j as any).satellite_id ?? 'desconhecido';
-      const entry = bySat.get(sat) ?? { sent: 0, pending: 0, failed: 0, lastAt: null };
-      const st = (j as any).status;
-      const t = (j as any).updated_at ?? (j as any).claimed_at ?? null;
-      if (st === 'sent' || st === 'confirmed') { entry.sent += 1; enviosHojeAnt += 1; }
-      else if (st === 'failed' || st === 'error') entry.failed += 1;
-      else { entry.pending += 1; if (st === 'claimed' || st === 'reserved') jobsReservados += 1; }
-      if (!entry.lastAt || (t && t > entry.lastAt)) entry.lastAt = t;
-      bySat.set(sat, entry);
-    }
-    const { count: pendentesGlobal } = await supabase.from('satellite_jobs').select('id', { count: 'exact', head: true }).in('status', ['pending', 'reserved', 'claimed']);
-    jobsPendentes = pendentesGlobal ?? 0;
-    const online = Array.from(bySat.values()).filter((s) => s.lastAt && Date.parse(s.lastAt) > Date.now() - 10 * 60 * 1000).length;
-
     // ------ Status semáforos ------
     const status = {
       importacao: (automacoesAtivas > 0 ? 'ok' : 'off') as ModuleStatus,
       envio: (workersAtivos > 0 || (enviadosHoje ?? 0) > 0 ? 'ok' : 'off') as ModuleStatus,
-      antenas: (online > 0 ? 'ok' : bySat.size > 0 ? 'warn' : 'off') as ModuleStatus,
       gateway: (gateway ? 'ok' : 'off') as ModuleStatus,
       casaDados: 'ok' as ModuleStatus,
     };
@@ -189,14 +155,6 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
           paid_at: o.paid_at,
         })),
         gatewayAtivo: (gateway as any)?.name ?? null,
-      },
-      antenas: {
-        total: bySat.size,
-        online,
-        jobsReservados,
-        jobsPendentes,
-        enviosHoje: enviosHojeAnt,
-        porAntena: Array.from(bySat.entries()).map(([satellite_id, v]) => ({ satellite_id, ...v })),
       },
     };
   });
