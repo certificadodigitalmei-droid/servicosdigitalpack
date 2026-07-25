@@ -20,7 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCPFOrCNPJ } from '@/lib/format';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
 import { useServerFn } from '@tanstack/react-start';
-import { reconcilePendingOrders } from '@/lib/payments/reconcile.functions';
+import { reconcilePendingOrders, markOrderPaidManually } from '@/lib/payments/reconcile.functions';
 
 export const Route = createFileRoute('/_authenticated/painel/pagamentos')({
   head: () => ({
@@ -116,7 +116,23 @@ function PagamentosPage() {
   }
 
   const reconcileFn = useServerFn(reconcilePendingOrders);
+  const markPaidFn = useServerFn(markOrderPaidManually);
   const [reconciling, setReconciling] = useState(false);
+  const [markingId, setMarkingId] = useState<string | null>(null);
+
+  async function markAsPaid(id: string) {
+    if (!confirm('Marcar este pedido como PAGO manualmente?')) return;
+    setMarkingId(id);
+    try {
+      const res = await markPaidFn({ data: { orderId: id } });
+      toast.success('Pedido marcado como pago');
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'paid', paid_at: res.paid_at } : o));
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao marcar como pago');
+    } finally {
+      setMarkingId(null);
+    }
+  }
 
   async function reconcile(silent = false) {
     setReconciling(true);
@@ -453,6 +469,20 @@ function PagamentosPage() {
                         {o.pix_code && !isPaid && (
                           <Button size="sm" variant="ghost" onClick={() => copyPix(o.pix_code)}>
                             <Copy className="h-3.5 w-3.5 mr-1" /> PIX
+                          </Button>
+                        )}
+                        {!isPaid && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50"
+                            onClick={() => markAsPaid(o.id)}
+                            disabled={markingId === o.id}
+                            title="Marcar como pago manualmente"
+                          >
+                            {markingId === o.id
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <><CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Pago</>}
                           </Button>
                         )}
                         <Button
