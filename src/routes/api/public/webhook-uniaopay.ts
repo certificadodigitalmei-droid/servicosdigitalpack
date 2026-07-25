@@ -17,9 +17,10 @@ export const Route = createFileRoute('/api/public/webhook-uniaopay')({
 
             if (orderId) {
               // Atualiza o status do pedido para 'paid'
+              const nowIso = new Date().toISOString();
               const { error } = await supabaseAdmin
                 .from('orders')
-                .update({ status: 'paid', updated_at: new Date().toISOString() })
+                .update({ status: 'paid', paid_at: nowIso, updated_at: nowIso })
                 .eq('id', orderId);
 
               if (error) {
