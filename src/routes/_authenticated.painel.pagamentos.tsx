@@ -116,7 +116,23 @@ function PagamentosPage() {
   }
 
   const reconcileFn = useServerFn(reconcilePendingOrders);
+  const markPaidFn = useServerFn(markOrderPaidManually);
   const [reconciling, setReconciling] = useState(false);
+  const [markingId, setMarkingId] = useState<string | null>(null);
+
+  async function markAsPaid(id: string) {
+    if (!confirm('Marcar este pedido como PAGO manualmente?')) return;
+    setMarkingId(id);
+    try {
+      const res = await markPaidFn({ data: { orderId: id } });
+      toast.success('Pedido marcado como pago');
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'paid', paid_at: res.paid_at } : o));
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao marcar como pago');
+    } finally {
+      setMarkingId(null);
+    }
+  }
 
   async function reconcile(silent = false) {
     setReconciling(true);
