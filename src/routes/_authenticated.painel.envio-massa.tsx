@@ -64,6 +64,7 @@ import {
   mergedDesign,
   loadSavedSubject,
   syncFromMessageModel,
+  ensureDailyWindow,
 } from '@/lib/automation/envio-engine';
 
 
@@ -167,6 +168,10 @@ function EnvioMassa() {
   // Não carrega destinatários automaticamente — só quando o toggle
   // "Auto-carregar fila" estiver ligado, ou via botão manual.
   useEffect(() => {
+    // Reseta contadores de dia/hora ANTES de qualquer render — evita mostrar
+    // envios de ontem como se fossem de hoje.
+    ensureDailyWindow();
+    const id = setInterval(ensureDailyWindow, 30_000);
     syncFromMessageModel();
     void refreshStats();
     // Limpeza única: remove pendências antigas herdadas do modo em lote.
@@ -177,6 +182,7 @@ function EnvioMassa() {
         window.localStorage.setItem('envio:pendingClearedV2', '1');
       }
     } catch { /* noop */ }
+    return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
