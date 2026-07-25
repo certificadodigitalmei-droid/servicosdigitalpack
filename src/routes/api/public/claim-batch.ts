@@ -185,7 +185,7 @@ export const Route = createFileRoute('/api/public/claim-batch')({
           // 3) Tenta reservar via INSERT com conflito ignorado.
           //    O índice único parcial em (company_id) WHERE status IN ('claimed','sent')
           //    garante que dois satélites concorrentes não peguem a mesma empresa.
-          const toClaim = eligible.slice(0, batch_size).filter((r: any) => linkMap[r.id]);
+          const toClaim = eligible.slice(0, remaining).filter((r: any) => linkMap[r.id]);
           const jobInserts = toClaim.map((r: any) => ({
             satellite_id,
             company_id: r.id,
