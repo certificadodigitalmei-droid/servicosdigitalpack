@@ -1,0 +1,1 @@
+UPDATE public.orders SET paid_at = COALESCE(paid_at, updated_at, created_at) WHERE status = 'paid' AND paid_at IS NULL;
