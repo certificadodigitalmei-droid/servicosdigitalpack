@@ -223,10 +223,30 @@ export const Route = createFileRoute('/api/public/claim-batch')({
             }
           }
 
-          // 3) Tenta reservar via INSERT com conflito ignorado.
-          //    O índice único parcial em (company_id) WHERE status IN ('claimed','sent')
-          //    garante que dois satélites concorrentes não peguem a mesma empresa.
-          const toClaim = eligible.slice(0, remaining).filter((r: any) => linkMap[r.id]);
+          // 3) Tenta reservar via INSERT. O índice único parcial em (company_id)
+          //    WHERE status IN ('claimed','sent') AND is_test=false não pode ser
+          //    usado como alvo de ON CONFLICT (Postgres rejeita índices parciais
+          //    sem WHERE correspondente), então filtramos manualmente empresas
+          //    já reservadas/enviadas antes do INSERT.
+          const candidateIds = eligible
+            .slice(0, remaining)
+            .filter((r: any) => linkMap[r.id])
+            .map((r: any) => r.id);
+
+          let alreadyClaimed = new Set<string>();
+          if (candidateIds.length > 0) {
+            const { data: existing } = await supabaseAdmin
+              .from('satellite_jobs')
+              .select('company_id')
+              .in('company_id', candidateIds)
+              .in('status', ['claimed', 'sent'])
+              .eq('is_test', false);
+            alreadyClaimed = new Set(((existing ?? []) as any[]).map((r) => r.company_id));
+          }
+
+          const toClaim = eligible
+            .slice(0, remaining)
+            .filter((r: any) => linkMap[r.id] && !alreadyClaimed.has(r.id));
           const jobInserts = toClaim.map((r: any) => ({
             satellite_id,
             company_id: r.id,
@@ -237,14 +257,15 @@ export const Route = createFileRoute('/api/public/claim-batch')({
             status: 'claimed' as const,
           }));
 
-          const { data: claimed, error: claimErr } = await supabaseAdmin
-            .from('satellite_jobs')
-            .upsert(jobInserts, {
-              onConflict: 'company_id',
-              ignoreDuplicates: true,
-            })
-            .select('id, company_id, cnpj, email, public_token, public_url');
-          if (claimErr) throw claimErr;
+          let claimed: any[] = [];
+          if (jobInserts.length > 0) {
+            const { data, error: claimErr } = await supabaseAdmin
+              .from('satellite_jobs')
+              .insert(jobInserts)
+              .select('id, company_id, cnpj, email, public_token, public_url');
+            if (claimErr) throw claimErr;
+            claimed = data ?? [];
+          }
 
           const byId = new Map<string, any>();
           for (const r of eligible) byId.set(r.id, r);
