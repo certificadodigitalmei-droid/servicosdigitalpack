@@ -74,7 +74,7 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
 
     // ------ Importação ------
     const [{ count: filaPronta }, { data: ultimaEmpresa }, { count: empresasHoje }, { data: autos }] = await Promise.all([
-      supabase.from('companies').select('id', { count: 'exact', head: true }).eq('status', 'pending_send'),
+      supabase.from('companies').select('id', { count: 'exact', head: true }).eq('status', 'encontrada'),
       supabase.from('companies').select('created_at').order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('companies').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
       supabase.from('automatic_company_queries').select('enabled,next_run_at,status'),
