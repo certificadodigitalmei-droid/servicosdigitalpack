@@ -49,7 +49,7 @@ export const Route = createFileRoute('/api/public/confirm-send')({
         try {
           const { data: job, error: jobErr } = await supabaseAdmin
             .from('satellite_jobs')
-            .select('id, satellite_id, company_id, cnpj, email, public_token, public_url, status')
+            .select('id, satellite_id, company_id, cnpj, email, public_token, public_url, status, is_test')
             .eq('id', job_id)
             .maybeSingle();
           if (jobErr) throw jobErr;
