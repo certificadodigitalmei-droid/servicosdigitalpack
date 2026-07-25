@@ -176,9 +176,17 @@ export const Route = createFileRoute('/api/public/claim-batch')({
             (alreadySent ?? []).map((r: any) => String(r.email).toLowerCase().trim()),
           );
 
+          // Já na fila do mestre aguardando envio (evita corrida mestre x antena)
+          const { data: queuedByMaster } = await supabaseAdmin
+            .from('contact_queue')
+            .select('company_id')
+            .in('company_id', ids);
+          const queuedIds = new Set((queuedByMaster ?? []).map((r: any) => r.company_id));
+
           const eligible = rows.filter(
             (r: any) =>
               !reservedIds.has(r.id) &&
+              !queuedIds.has(r.id) &&
               !sentEmails.has(String(r.email).toLowerCase().trim()),
           );
           if (eligible.length === 0) return Response.json({ jobs: testJobs, count: testJobs.length });
