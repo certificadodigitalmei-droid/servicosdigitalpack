@@ -1463,6 +1463,7 @@ export type Database = {
           email: string
           error_message: string | null
           id: string
+          is_test: boolean
           provider_message_id: string | null
           public_token: string | null
           public_url: string | null
@@ -1479,6 +1480,7 @@ export type Database = {
           email: string
           error_message?: string | null
           id?: string
+          is_test?: boolean
           provider_message_id?: string | null
           public_token?: string | null
           public_url?: string | null
@@ -1495,6 +1497,7 @@ export type Database = {
           email?: string
           error_message?: string | null
           id?: string
+          is_test?: boolean
           provider_message_id?: string | null
           public_token?: string | null
           public_url?: string | null
