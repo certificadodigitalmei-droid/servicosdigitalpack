@@ -249,7 +249,7 @@ export const setReplyTo = (v: string) => envioStore.set({ replyTo: v });
 export const setShowFloating = (v: boolean) => envioStore.set({ showFloating: v });
 export const setHeroImageUrl = (v: string) => envioStore.set({ heroImageUrl: v });
 
-function ensureDailyWindow() {
+export function ensureDailyWindow() {
   const s = envioStore.get();
   const today = todayStr();
   const hour = hourStr();
@@ -265,6 +265,7 @@ function ensureDailyWindow() {
   }
   if (Object.keys(patch).length) envioStore.set(patch);
 }
+
 
 
 
