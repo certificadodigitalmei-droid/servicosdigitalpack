@@ -1,77 +1,76 @@
-# Integração Gmail API (Google Workspace)
+# Painel Geral Sincronizado
 
-## Objetivo
-- Site continua em `https://certificadodigitalccmei.online` (nada muda).
-- E-mails passam a sair **somente** de `certificadomeidigital@seu-certificado-mei-digital.online` via **Gmail API HTTPS + OAuth2** (nunca SMTP direto — Cloudflare Workers não suporta TCP).
+Objetivo: um Dashboard mestre em `/painel` mostrando o estado de TODOS os módulos ao vivo, e cada aba lateral reformulada para exibir dados completos do seu módulo — tudo sincronizado via Supabase Realtime.
 
-## O que será criado
+## 1. Dashboard mestre (`/painel/index`)
 
-### 1. Segredos (backend, nunca no frontend)
-Solicitados via `add_secret`:
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-- `GOOGLE_REFRESH_TOKEN`
-- `GOOGLE_SENDER_EMAIL` (fixo: `certificadomeidigital@seu-certificado-mei-digital.online`)
+Página única com 6 blocos, cada um com KPIs + mini-tabela viva:
 
-### 2. Banco de dados (migration)
-Nova tabela `email_send_queue`:
-- `id`, `to_email`, `subject`, `html`, `text`, `idempotency_key` (único), `status` (`queued|sending|sent|failed|suppressed`), `attempts`, `last_error`, `next_retry_at`, `sent_message_id`, `created_by`, `created_at`, `updated_at`.
-- RLS fechada: só `service_role` escreve; `authenticated` com role `admin` pode ler seus registros.
-- GRANTs corretos.
+```text
+┌─────────────────────────────────────────────────────────┐
+│  STATUS GERAL (bolinhas verde/vermelho + últimos 60s)   │
+│  Importação • Envio • Antenas • Gateway PIX • Casa Dados│
+├──────────────────────┬──────────────────────────────────┤
+│ IMPORTAÇÃO           │ ENVIO                            │
+│ Fila pronta / meta   │ Enviados hoje / limite           │
+│ Última empresa +hora │ Perfil ativo • Restante hora     │
+│ Casa Dados: saldo    │ Falhas 24h • Próximo disparo     │
+├──────────────────────┼──────────────────────────────────┤
+│ LINKS                │ PAGAMENTOS                       │
+│ Gerados hoje/total   │ PIX gerados / Pagos hoje         │
+│ Cliques emitir/guia  │ Ticket médio • Conversão %       │
+│ Copy PIX / Acessos   │ Últimos 5 pagos (nome, valor)    │
+├──────────────────────┼──────────────────────────────────┤
+│ ANTENAS              │ AUTOMAÇÃO                        │
+│ N antenas online     │ Rodando / pausadas               │
+│ Jobs reservados/fila │ Última execução • Erros          │
+│ Envios por antena    │ Próximo ciclo em Xs              │
+└──────────────────────┴──────────────────────────────────┘
+```
 
-### 3. Backend — módulo Gmail (`src/lib/gmail/`)
-- `gmail.server.ts`: helper `getAccessToken()` (refresh via `oauth2.googleapis.com/token`), `sendGmailMessage()` (POST `gmail.googleapis.com/gmail/v1/users/me/messages/send`), montagem RFC 2822 base64url.
-- Validação: sanitiza `to/subject`, rejeita `\r\n` em headers (bloqueio de header injection), Zod schemas.
-- Remetente **hardcoded** a partir de `process.env.GOOGLE_SENDER_EMAIL` — o cliente nunca envia `from`.
+Cada bloco tem link "ver tudo" para a aba correspondente.
 
-### 4. Server functions (`src/lib/gmail/send.functions.ts`)
-Todas com `requireSupabaseAuth` + check `has_role(admin)`:
-- `enqueueWorkspaceEmail({ to, subject, html, text?, idempotencyKey })` — insere na fila.
-- `sendWorkspaceEmailNow(id)` — processa 1 item (usado por retry/test).
-- `testWorkspaceConnection()` — só faz refresh token + `GET users/me/profile`. **Não envia e-mail.**
-- `sendWorkspaceTestEmail()` — envia teste **apenas para o próprio `GOOGLE_SENDER_EMAIL`** (destino não é escolhido pelo admin).
-- Rate limit em memória por processo (janela de 1s) + respeito a `429 Retry-After` e `5xx` com backoff exponencial (attempts até 5, `next_retry_at`).
+## 2. Sincronia (Supabase Realtime)
 
-### 5. Route pública para webhook interno de processamento
-`src/routes/api/internal/gmail-queue-worker.ts` — processa próximos itens `queued/next_retry_at<=now()`. Chamado internamente/manual. Sem PII em logs.
+Um único hook `useRealtimeSync()` monta canais em `postgres_changes` para:
+`orders`, `company_links`, `link_events`, `email_send_queue`,
+`automatic_company_query_runs`, `satellite_jobs`, `email_workers`,
+`companies` (INSERT), `payment_gateways`.
 
-### 6. UI — nova aba **Configurações → Google Workspace**
-`src/routes/_authenticated.painel.google-workspace.tsx`:
-- Cards informativos:
-  - **Site:** `certificadodigitalccmei.online`
-  - **Remetente Google Workspace:** `certificadomeidigital@seu-certificado-mei-digital.online`
-- Status: mostra se os 4 secrets estão configurados.
-- Botão **"Testar conexão"** → chama `testWorkspaceConnection` (não envia e-mail).
-- Botão **"Enviar teste para o próprio remetente"** com `AlertDialog` de confirmação → chama `sendWorkspaceTestEmail`.
-- Nada de host/porta/senha SMTP na tela.
+Cada mudança invalida a query TanStack correspondente
+(`queryClient.invalidateQueries({ queryKey: [...] })`). Fallback: refetch
+a cada 15s se o socket cair.
 
-### 7. CORS
-Server functions do TanStack são same-origin — sem CORS. A route interna do worker responde apenas para origem própria; se precisar de CORS, allowlist explícita: `https://certificadodigitalccmei.online` + preview atual. **Nunca `*`.**
+Migração ativa realtime nas tabelas listadas.
 
-## O que NÃO muda
-- `send.functions.ts` do Lovable Emails atual permanece funcionando.
-- Aba SMTP existente permanece (cadastro informativo).
-- Templates, campanhas, links, checkout: intactos.
+## 3. Reformulação por aba (mantém rotas atuais)
 
-## Detalhes técnicos
-- Gmail API endpoint: `POST https://gmail.googleapis.com/gmail/v1/users/me/messages/send` com header `Authorization: Bearer <access_token>` e body `{ raw: base64url(RFC2822) }`.
-- Refresh: `POST https://oauth2.googleapis.com/token` com `grant_type=refresh_token`. Cache do access_token em memória do worker até `expires_in - 60s`.
-- BCC opcional para envio agrupado (parâmetro futuro; primeira versão faz envio individual).
-- Logs: só id da fila, status HTTP, código de erro do Google. Nunca token, corpo, destinatário completo em log de erro (mascarar `n***@dominio`).
+Cada aba passa a mostrar 3 seções fixas: **KPIs do módulo**, **Ao vivo** (últimos 20 eventos), **Ações/config**. Vou padronizar um layout com `<ModulePage title kpis liveFeed>`.
 
-## Passos manuais do Google Cloud / Workspace (listarei ao final)
-1. Criar projeto no Google Cloud Console.
-2. Ativar **Gmail API**.
-3. Configurar OAuth consent screen (Internal, se Workspace).
-4. Criar credencial OAuth 2.0 Client ID tipo **Desktop app** (ou Web + redirect).
-5. Rodar fluxo OAuth uma vez com escopo `https://www.googleapis.com/auth/gmail.send` (ou `gmail.compose`) usando conta `certificadomeidigital@seu-certificado-mei-digital.online`, obter `refresh_token`.
-6. Colar os 4 valores no formulário seguro que abrirei com `add_secret`.
+- `painel/index` — Dashboard mestre novo (item 1)
+- `consulta-automatica` — saldo Casa Dados formatado, ciclos, últimas empresas puxadas, erros
+- `importacao-automatica` — fila pronta ao vivo, buffer, últimas importações
+- `envio-massa` — perfil, contador hora/dia, próximas 20 na fila, últimas 20 enviadas
+- `monitor-envio` — já é painel externo, garanto realtime igual
+- `links-gerados` — já reformulado; adiciono canal realtime para eventos
+- `pagamentos` — realtime de `orders`, filtro por gateway, últimos 20 pagos
+- `satelites` — heartbeat/última atividade por antena, jobs pendentes por antena
+- `campanhas-email` / `enviados` — status live de `email_send_queue`
+- `configuracoes-pagamento`, `precos`, `pop-up-site`, `exibicao-site`, `modelo-mensagem`, `api-casa-dos-dados`, `google-workspace` — mantém, adiciono cabeçalho de status ("Gateway ativo: X", "Preço atual: R$ Y") sincronizado
 
-## Ordem de execução após aprovação
-1. Migration da tabela `email_send_queue`.
-2. `add_secret` dos 4 segredos.
-3. Módulo `gmail.server.ts` + server functions.
-4. Route interna worker.
-5. Página UI + entrada no menu Configurações.
-6. Build/typecheck.
-7. Relatório final com o que falta configurar do lado do Google.
+## 4. Detalhes técnicos
+
+- Hook central: `src/hooks/use-realtime-sync.ts` (monta canais no `_authenticated` layout, remove no unmount).
+- Cada aba usa `useQuery` com `staleTime: 15_000` + invalidação por realtime.
+- Server fn nova: `src/lib/dashboard/overview.functions.ts` retorna todos os KPIs do mestre em UMA chamada (evita 8 requests).
+- Migração: `ALTER PUBLICATION supabase_realtime ADD TABLE ...` para as 9 tabelas.
+- Cards reaproveitam `Card` shadcn já existente; sem novas libs.
+- Zero mudança de esquema de negócio — só leitura + realtime.
+
+## 5. Fora de escopo (não mexo)
+
+- Regras de envio, pricing, webhooks de pagamento, lógica das antenas, template de e-mail. Só leitura/visualização + realtime.
+
+## Entrega
+
+Faço em 1 turno só, na ordem: migração realtime → hook → server fn overview → dashboard mestre → padroniza cada aba com KPIs + feed live.

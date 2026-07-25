@@ -55,7 +55,7 @@ function SatelitesPage() {
   const enqueue = useServerFn(enqueueSatelliteTest);
 
   const { data, refetch, isFetching } = useQuery({
-    queryKey: ['satellite-jobs'],
+    queryKey: ['satellite_jobs'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('satellite_jobs')

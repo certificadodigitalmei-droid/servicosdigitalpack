@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useServerFn } from '@tanstack/react-start';
 import { getSitePopup } from '@/lib/site-popup.functions';
+import { DashboardOverviewStrip } from '@/components/painel/DashboardOverviewStrip';
 
 
 export const Route = createFileRoute('/_authenticated/painel/')({
@@ -285,10 +286,12 @@ function DashboardPage() {
 
   return (
     <div className="space-y-8 pb-12">
+      <DashboardOverviewStrip />
+
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-500">Acompanhe o desempenho dos links gerados.</p>
+          <h1 className="text-3xl font-bold text-slate-900">Dashboard de Links</h1>
+          <p className="text-slate-500">Detalhes por período (jornada, dispositivos, eventos).</p>
         </div>
         <div className="flex items-center gap-2">
           <AlertDialog>
