@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const NEXUSPAY_DEFAULT_BASE = "https://nexuspay.squareweb.app/api";
