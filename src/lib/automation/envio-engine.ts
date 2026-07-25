@@ -573,7 +573,7 @@ function buildVarsFor(item: QueueItem) {
   });
 }
 
-async function sendOne(item: QueueItem): Promise<{ ok: boolean; waitSec?: number }> {
+async function sendOne(item: QueueItem, channelIndex?: number): Promise<{ ok: boolean; waitSec?: number }> {
   envioStore.set((s) => ({
     queue: s.queue.map((q) =>
       q.id === item.id ? { ...q, status: 'sending', message: undefined } : q,
