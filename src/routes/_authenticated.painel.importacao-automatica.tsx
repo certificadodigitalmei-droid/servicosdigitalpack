@@ -349,7 +349,7 @@ function ImportacaoAutomaticaPage() {
                 Mantém sempre <strong>{bufferTarget} empresa(s)</strong> prontas na fila.
                 Quando o envio consome uma, a importação puxa a
                 próxima (sempre a mais recente). Empresas já processadas
-                <strong> nunca</strong> entram na fila do mestre — sem envio duplicado.
+                <strong> nunca</strong> entram novamente na fila — sem envio duplicado.
               </p>
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <Label className="text-xs">Empresas prontas na fila:</Label>
