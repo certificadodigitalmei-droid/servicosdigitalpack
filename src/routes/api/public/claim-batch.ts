@@ -222,7 +222,8 @@ export const Route = createFileRoute('/api/public/claim-batch')({
             };
           });
 
-          return Response.json({ jobs, count: jobs.length });
+          const combined = [...testJobs, ...jobs];
+          return Response.json({ jobs: combined, count: combined.length });
         } catch (err: any) {
           console.error('claim-batch error:', err);
           return new Response(err?.message || 'Internal error', { status: 500 });
