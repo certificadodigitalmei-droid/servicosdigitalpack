@@ -414,7 +414,15 @@ function PagamentosPage() {
                   const info = statusMap[key] ?? { label: o.status, color: 'bg-slate-100 text-slate-600', icon: Clock };
                   const Icon = info.icon;
                   return (
-                    <tr key={o.id} className="border-b last:border-0 hover:bg-slate-50">
+                    <tr key={o.id} className={`border-b last:border-0 hover:bg-slate-50 ${selected.has(o.id) ? 'bg-blue-50/40' : ''}`}>
+                      <td className="p-2">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(o.id)}
+                          onChange={() => toggleOne(o.id)}
+                          aria-label="Selecionar"
+                        />
+                      </td>
                       <td className="p-2 text-slate-500 whitespace-nowrap">
                         {new Date(o.created_at).toLocaleString('pt-BR')}
                       </td>
@@ -441,12 +449,22 @@ function PagamentosPage() {
                       <td className="p-2 text-xs text-slate-500 whitespace-nowrap">
                         {o.paid_at ? new Date(o.paid_at).toLocaleString('pt-BR') : '—'}
                       </td>
-                      <td className="p-2 text-right">
+                      <td className="p-2 text-right whitespace-nowrap">
                         {o.pix_code && !isPaid && (
                           <Button size="sm" variant="ghost" onClick={() => copyPix(o.pix_code)}>
                             <Copy className="h-3.5 w-3.5 mr-1" /> PIX
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => deleteOne(o.id)}
+                          disabled={deleting}
+                          title="Apagar pedido"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </td>
                     </tr>
                   );
