@@ -252,6 +252,8 @@ function PanelLayout() {
       label: 'Configurações',
       items: [
         { title: 'Configurações de Pagamento', icon: DollarSign, to: '/painel/configuracoes-pagamento' },
+        { title: 'Preços', icon: DollarSign, to: '/painel/precos' },
+
         
         { title: 'Exibição do Site', icon: LayoutDashboard, to: '/painel/exibicao-site' },
         { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
