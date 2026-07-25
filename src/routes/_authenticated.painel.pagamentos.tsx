@@ -21,6 +21,7 @@ import { formatCPFOrCNPJ } from '@/lib/format';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
 import { useServerFn } from '@tanstack/react-start';
 import { reconcilePendingOrders, markOrderPaidManually } from '@/lib/payments/reconcile.functions';
+import { useRealtimeRefresh } from '@/hooks/use-realtime-refresh';
 
 export const Route = createFileRoute('/_authenticated/painel/pagamentos')({
   head: () => ({
@@ -163,6 +164,9 @@ function PagamentosPage() {
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Atualiza sozinho quando pedidos mudam (webhook, marcação manual, etc)
+  useRealtimeRefresh(['orders'], () => load(), []);
 
   const stats = useMemo(() => {
     const paid = orders.filter(o => o.status === 'paid' || o.paid_at);
