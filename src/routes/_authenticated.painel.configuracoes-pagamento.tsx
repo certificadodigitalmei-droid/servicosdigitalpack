@@ -30,14 +30,8 @@ const PROVIDER_META: Record<string, { label: string; docsUrl?: string; defaultBa
     defaultBase: 'https://uniao7pay.shop/api/v1',
     webhookPath: '/api/public/webhook-uniaopay',
   },
-
-  nexuspay: {
-    label: 'NexusPay (zpay)',
-    docsUrl: 'https://nexuspay.squareweb.app/api/docs',
-    defaultBase: 'https://nexuspay.squareweb.app/api',
-    webhookPath: '/api/public/webhook-nexuspay',
-  },
 };
+
 
 function PaymentGatewaysPage() {
   const qc = useQueryClient();
@@ -50,7 +44,7 @@ function PaymentGatewaysPage() {
   const [editing, setEditing] = useState<PaymentGateway | null>(null);
   const [form, setForm] = useState({
     name: '',
-    provider_type: 'nexuspay' as 'uniaopay' | 'nexuspay',
+    provider_type: 'uniaopay' as 'uniaopay',
     api_key: '',
     base_url: '',
     notes: '',
@@ -58,14 +52,15 @@ function PaymentGatewaysPage() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', provider_type: 'nexuspay', api_key: '', base_url: '', notes: '' });
+    setForm({ name: '', provider_type: 'uniaopay', api_key: '', base_url: '', notes: '' });
     setDialogOpen(true);
   };
+
   const openEdit = (g: PaymentGateway) => {
     setEditing(g);
     setForm({
       name: g.name,
-      provider_type: g.provider_type,
+      provider_type: 'uniaopay',
       api_key: '',
       base_url: g.base_url ?? '',
       notes: g.notes ?? '',
@@ -221,16 +216,7 @@ function PaymentGatewaysPage() {
             </div>
             <div className="space-y-2">
               <Label>Provedor</Label>
-              <Select
-                value={form.provider_type}
-                onValueChange={(v) => setForm({ ...form, provider_type: v as any })}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nexuspay">NexusPay (zpay_...)</SelectItem>
-                  <SelectItem value="uniaopay">UniãoPay</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="rounded-md border bg-slate-50 px-3 py-2 text-sm text-slate-700">UniãoPay</div>
             </div>
             <div className="space-y-2">
               <Label>Chave da API {editing && <span className="text-xs text-slate-500">(deixe em branco para manter)</span>}</Label>
@@ -238,9 +224,10 @@ function PaymentGatewaysPage() {
                 type="password"
                 value={form.api_key}
                 onChange={(e) => setForm({ ...form, api_key: e.target.value })}
-                placeholder={form.provider_type === 'nexuspay' ? 'zpay_...' : 'sua_chave_uniaopay'}
+                placeholder="sua_chave_uniaopay"
               />
             </div>
+
             <div className="space-y-2">
               <Label>Base URL <span className="text-xs text-slate-500">(opcional)</span></Label>
               <Input
