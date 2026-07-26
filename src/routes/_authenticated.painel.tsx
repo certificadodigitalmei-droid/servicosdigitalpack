@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link, useLocation, useNavigate } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import {
   LayoutDashboard,
@@ -92,17 +92,20 @@ function PanelLayout() {
   const doSave = useServerFn(saveCloudState);
   const doLoad = useServerFn(getCloudState);
 
+  const lastSnapshotJsonRef = useRef<string>('');
   const persistNow = async () => {
-    try {
-      const snapshot = collectLocalSnapshot();
-      const r = await doSave({ data: { snapshot } });
-      setLastSavedAt(r.savedAt);
-      try { window.localStorage.setItem('painel:cloudSyncedAt', r.savedAt); } catch {}
-      return r.savedAt;
-    } catch (e) {
-      throw e;
+    const snapshot = collectLocalSnapshot();
+    const json = JSON.stringify(snapshot);
+    if (json === lastSnapshotJsonRef.current) {
+      return lastSavedAt; // nada mudou, não gasta upsert
     }
+    const r = await doSave({ data: { snapshot } });
+    lastSnapshotJsonRef.current = json;
+    setLastSavedAt(r.savedAt);
+    try { window.localStorage.setItem('painel:cloudSyncedAt', r.savedAt); } catch {}
+    return r.savedAt;
   };
+
 
   const saveAll = async () => {
     setSaving(true);
@@ -178,7 +181,10 @@ function PanelLayout() {
   // agenda um upload debounced (2,5s). Também salva ao sair da aba.
   useEffect(() => {
     if (!hydrated || typeof window === 'undefined') return;
-    const isTracked = (k: string) => CLOUD_PREFIXES.some((p) => k.startsWith(p));
+    const isTracked = (k: string) =>
+      CLOUD_PREFIXES.some((p) => k.startsWith(p)) &&
+      k !== 'painel:cloudSyncedAt' &&
+      !k.startsWith('painel:cloudReloaded:');
     let timer: number | null = null;
     let dirty = false;
     const schedule = () => {
@@ -189,8 +195,9 @@ function PanelLayout() {
         if (!dirty) return;
         dirty = false;
         try { await persistNow(); } catch { /* silencioso; próximo write tentará de novo */ }
-      }, 2500);
+      }, 15000);
     };
+
 
     const origSet = window.localStorage.setItem.bind(window.localStorage);
     const origRemove = window.localStorage.removeItem.bind(window.localStorage);
