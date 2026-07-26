@@ -1,0 +1,2 @@
+CREATE INDEX IF NOT EXISTS companies_created_at_desc_idx ON public.companies (created_at DESC);
+CREATE INDEX IF NOT EXISTS company_links_company_active_idx ON public.company_links (company_id) WHERE active = true;
