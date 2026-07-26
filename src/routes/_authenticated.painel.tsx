@@ -181,7 +181,10 @@ function PanelLayout() {
   // agenda um upload debounced (2,5s). Também salva ao sair da aba.
   useEffect(() => {
     if (!hydrated || typeof window === 'undefined') return;
-    const isTracked = (k: string) => CLOUD_PREFIXES.some((p) => k.startsWith(p));
+    const isTracked = (k: string) =>
+      CLOUD_PREFIXES.some((p) => k.startsWith(p)) &&
+      k !== 'painel:cloudSyncedAt' &&
+      !k.startsWith('painel:cloudReloaded:');
     let timer: number | null = null;
     let dirty = false;
     const schedule = () => {
@@ -192,8 +195,9 @@ function PanelLayout() {
         if (!dirty) return;
         dirty = false;
         try { await persistNow(); } catch { /* silencioso; próximo write tentará de novo */ }
-      }, 2500);
+      }, 15000);
     };
+
 
     const origSet = window.localStorage.setItem.bind(window.localStorage);
     const origRemove = window.localStorage.removeItem.bind(window.localStorage);
