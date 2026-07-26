@@ -44,9 +44,27 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+function isBrazilRequest(request: Request): boolean {
+  const country =
+    request.headers.get("cf-ipcountry") ||
+    request.headers.get("x-vercel-ip-country") ||
+    request.headers.get("x-country-code") ||
+    "";
+  return country.toUpperCase() === "BR";
+}
+
+function shouldBypassGeoBlock(url: URL): boolean {
+  // Webhooks/cron/callbacks externos precisam continuar acessíveis globalmente.
+  return url.pathname.startsWith("/api/public/") || url.pathname.startsWith("/api/internal/");
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+      if (!shouldBypassGeoBlock(url) && !isBrazilRequest(request)) {
+        return Response.redirect("https://www.google.com/", 302);
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
@@ -59,3 +77,4 @@ export default {
     }
   },
 };
+
