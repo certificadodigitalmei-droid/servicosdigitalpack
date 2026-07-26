@@ -92,17 +92,20 @@ function PanelLayout() {
   const doSave = useServerFn(saveCloudState);
   const doLoad = useServerFn(getCloudState);
 
+  const lastSnapshotJsonRef = useRef<string>('');
   const persistNow = async () => {
-    try {
-      const snapshot = collectLocalSnapshot();
-      const r = await doSave({ data: { snapshot } });
-      setLastSavedAt(r.savedAt);
-      try { window.localStorage.setItem('painel:cloudSyncedAt', r.savedAt); } catch {}
-      return r.savedAt;
-    } catch (e) {
-      throw e;
+    const snapshot = collectLocalSnapshot();
+    const json = JSON.stringify(snapshot);
+    if (json === lastSnapshotJsonRef.current) {
+      return lastSavedAt; // nada mudou, não gasta upsert
     }
+    const r = await doSave({ data: { snapshot } });
+    lastSnapshotJsonRef.current = json;
+    setLastSavedAt(r.savedAt);
+    try { window.localStorage.setItem('painel:cloudSyncedAt', r.savedAt); } catch {}
+    return r.savedAt;
   };
+
 
   const saveAll = async () => {
     setSaving(true);
