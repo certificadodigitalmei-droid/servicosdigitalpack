@@ -1,10 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const UNIAOPAY_DEFAULT_BASE = "https://uniao7pay.shop/api/v1";
-const NEXUSPAY_DEFAULT_BASE = "https://nexuspay.squareweb.app/api";
-
-type ProviderType = "uniaopay" | "nexuspay";
+const SIGILOPAY_DEFAULT_BASE = "https://app.sigilopay.com.br/api/v1";
 
 type PixResult = {
   pix_code: string;
@@ -13,72 +10,70 @@ type PixResult = {
   expiration: Date | null;
 };
 
-async function callUniaoPay(
-  apiKey: string,
-  baseUrl: string,
-  input: { amount: number; webhookUrl: string },
-): Promise<PixResult> {
-  // Normaliza: nova API é /api/v1/cashin. Aceita bases antigas com /uniaopay no final.
-  const cleanBase = baseUrl.replace(/\/+$/, "").replace(/\/uniaopay$/, "");
-  const payload = { valor: input.amount, webhook_url: input.webhookUrl };
-  const attempts: Record<string, string>[] = [
-    { "Content-Type": "application/json", Apikey: apiKey },
-    { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-  ];
-  let lastStatus = 0;
-  let lastBody = "";
-  for (const headers of attempts) {
-    const response = await fetch(`${cleanBase}/cashin`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-    });
-    const text = await response.text();
-    lastStatus = response.status;
-    lastBody = text;
-    if (response.ok) {
-      const parsed = JSON.parse(text) as any;
-      const pix_code = parsed.pix_code || parsed.pix || parsed.qrcode || parsed.qr_code || parsed.emv || "";
-      const transaction_id = parsed.transaction_id || parsed.id || "";
-      if (!pix_code) throw new Error(`Resposta sem código PIX: ${text.slice(0, 300)}`);
-      // A nova API não retorna QR code em base64: geramos localmente.
-      const QRCode = (await import("qrcode")).default;
-      const dataUrl = await QRCode.toDataURL(pix_code, { errorCorrectionLevel: "M", margin: 1, width: 320 });
-      const qr_code_base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
-      return { pix_code, qr_code_base64, transaction_id, expiration: null };
-    }
-    if (response.status !== 401 && response.status !== 403) break;
-  }
-  throw new Error(`UniaoPay ${lastStatus}: ${lastBody.slice(0, 500) || "sem resposta"}`);
+// api_key column stores "publicKey|secretKey"
+function splitKeys(apiKey: string): { publicKey: string; secretKey: string } {
+  const [publicKey = "", secretKey = ""] = (apiKey || "").split("|");
+  return { publicKey: publicKey.trim(), secretKey: secretKey.trim() };
 }
 
-
-async function callNexusPay(
+async function callSigiloPay(
   apiKey: string,
   baseUrl: string,
-  input: { amount: number },
+  input: {
+    identifier: string;
+    amount: number;
+    callbackUrl: string;
+    client: { name: string; email: string; phone: string; document: string };
+    productName: string;
+  },
 ): Promise<PixResult> {
-  const cleanBase = baseUrl.replace(/\/+$/, "").replace(/\/v1$/, "");
-  const response = await fetch(`${cleanBase}/v1/deposit`, {
+  const { publicKey, secretKey } = splitKeys(apiKey);
+  if (!publicKey || !secretKey) {
+    throw new Error("Configure a chave pública e a chave secreta da SigiloPay em Configurações de Pagamento.");
+  }
+  const cleanBase = (baseUrl || SIGILOPAY_DEFAULT_BASE).replace(/\/+$/, "");
+
+  const payload = {
+    identifier: input.identifier,
+    amount: input.amount,
+    client: input.client,
+    products: [
+      {
+        id: input.identifier,
+        name: input.productName,
+        quantity: 1,
+        price: input.amount,
+      },
+    ],
+    callbackUrl: input.callbackUrl,
+  };
+
+  const response = await fetch(`${cleanBase}/gateway/pix/receive`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-API-KEY": apiKey },
-    body: JSON.stringify({ amount: input.amount }),
+    headers: {
+      "Content-Type": "application/json",
+      "x-public-key": publicKey,
+      "x-secret-key": secretKey,
+    },
+    body: JSON.stringify(payload),
   });
+
   const text = await response.text();
   if (!response.ok) {
-    throw new Error(`NexusPay ${response.status}: ${text.slice(0, 500) || "sem resposta"}`);
+    throw new Error(`SigiloPay ${response.status}: ${text.slice(0, 500) || "sem resposta"}`);
   }
+
   const parsed = JSON.parse(text) as any;
-  // NexusPay envelopa a resposta em { success, data: {...} }
-  const payload = parsed?.data ?? parsed;
-  const pix_code = payload.pix_code || payload.pixCode || "";
-  const rawQr = payload.qr_code || payload.qrcode || payload.qr_code_base64 || "";
-  const transaction_id = payload.transaction_id || payload.id || "";
+  const pix = parsed?.pix ?? {};
+  const pix_code = pix.code || pix.emv || pix.pixCode || "";
+  const transaction_id = parsed?.transactionId || parsed?.id || "";
   if (!pix_code) throw new Error(`Resposta sem código PIX: ${text.slice(0, 300)}`);
 
-  let qr_code_base64 = rawQr;
+  let qr_code_base64 = pix.base64 || "";
+  if (qr_code_base64.startsWith("data:image")) {
+    qr_code_base64 = qr_code_base64.replace(/^data:image\/[a-z]+;base64,/, "");
+  }
   if (!qr_code_base64) {
-    // NexusPay às vezes retorna qr_code vazio: gera localmente a partir do pix_code
     const QRCode = (await import("qrcode")).default;
     const dataUrl = await QRCode.toDataURL(pix_code, { errorCorrectionLevel: "M", margin: 1, width: 320 });
     qr_code_base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
@@ -112,18 +107,12 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       .eq("is_active", true)
       .maybeSingle();
 
-    // Fallback legado: UniãoPay via secret quando nenhum gateway ativo cadastrado
-    const provider: ProviderType = (gateway?.provider_type as ProviderType) || "uniaopay";
-    let apiKey = gateway?.api_key ?? "";
-    if (!gateway || apiKey === "USE_ENV_UNIAOPAY_API_KEY") {
-      apiKey = process.env.UNIAOPAY_API_KEY || "";
+    if (!gateway || !gateway.api_key) {
+      throw new Error("Nenhum gateway SigiloPay ativo. Cadastre em Configurações de Pagamento.");
     }
-    if (!apiKey) {
-      throw new Error("Nenhum gateway de pagamento ativo/configurado. Cadastre em Configurações de Pagamento.");
-    }
-    const baseUrl =
-      gateway?.base_url ||
-      (provider === "nexuspay" ? NEXUSPAY_DEFAULT_BASE : UNIAOPAY_DEFAULT_BASE);
+    const provider = "sigilopay";
+    const apiKey = gateway.api_key as string;
+    const baseUrl = gateway.base_url || SIGILOPAY_DEFAULT_BASE;
 
     // Resolve link → company
     let companyId: string | null = null;
@@ -179,8 +168,6 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
     if (orderErr) throw orderErr;
     if (!order) throw new Error("Falha ao criar pedido");
 
-    // Consent log e chamada ao PIX rodam em paralelo — o insert não bloqueia a
-    // geração do código PIX (era o principal ofensor de latência).
     const consentPromise = supabaseAdmin.from("consent_logs").insert({
       order_id: order.id,
       privacy_accepted: true,
@@ -191,21 +178,23 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
 
     let pix: PixResult;
     try {
-      if (provider === "nexuspay") {
-        pix = await callNexusPay(apiKey, baseUrl, { amount: data.amount });
-      } else {
-        pix = await callUniaoPay(apiKey, baseUrl, {
-          amount: data.amount,
-          webhookUrl: data.webhookUrl,
-        });
-      }
+      pix = await callSigiloPay(apiKey, baseUrl, {
+        identifier: order.id,
+        amount: data.amount,
+        callbackUrl: data.webhookUrl,
+        client: {
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          document: data.document,
+        },
+        productName: data.productName,
+      });
     } catch (e: any) {
-      console.error("[Payments] Falha ao gerar PIX", { provider, error: e?.message });
+      console.error("[Payments] Falha ao gerar PIX SigiloPay", { error: e?.message });
       throw e;
     }
 
-    // Update do pedido em paralelo com o consent log — aguardamos ambos antes
-    // de responder para garantir consistência, mas sem serializar.
     await Promise.all([
       consentPromise,
       supabaseAdmin
