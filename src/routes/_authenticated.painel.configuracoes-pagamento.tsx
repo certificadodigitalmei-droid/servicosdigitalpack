@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   listPaymentGateways,
@@ -24,14 +23,12 @@ export const Route = createFileRoute('/_authenticated/painel/configuracoes-pagam
   component: PaymentGatewaysPage,
 });
 
-const PROVIDER_META: Record<string, { label: string; docsUrl?: string; defaultBase: string; webhookPath: string }> = {
-  uniaopay: {
-    label: 'UniãoPay',
-    defaultBase: 'https://uniao7pay.shop/api/v1',
-    webhookPath: '/api/public/webhook-uniaopay',
-  },
+const SIGILOPAY_META = {
+  label: 'SigiloPay',
+  docsUrl: 'https://app.sigilopay.com.br/docs',
+  defaultBase: 'https://app.sigilopay.com.br/api/v1',
+  webhookPath: '/api/public/webhook-sigilopay',
 };
-
 
 function PaymentGatewaysPage() {
   const qc = useQueryClient();
@@ -44,15 +41,15 @@ function PaymentGatewaysPage() {
   const [editing, setEditing] = useState<PaymentGateway | null>(null);
   const [form, setForm] = useState({
     name: '',
-    provider_type: 'uniaopay' as 'uniaopay',
-    api_key: '',
+    public_key: '',
+    secret_key: '',
     base_url: '',
     notes: '',
   });
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', provider_type: 'uniaopay', api_key: '', base_url: '', notes: '' });
+    setForm({ name: '', public_key: '', secret_key: '', base_url: '', notes: '' });
     setDialogOpen(true);
   };
 
@@ -60,8 +57,8 @@ function PaymentGatewaysPage() {
     setEditing(g);
     setForm({
       name: g.name,
-      provider_type: 'uniaopay',
-      api_key: '',
+      public_key: '',
+      secret_key: '',
       base_url: g.base_url ?? '',
       notes: g.notes ?? '',
     });
@@ -74,8 +71,8 @@ function PaymentGatewaysPage() {
         data: {
           id: editing?.id,
           name: form.name.trim(),
-          provider_type: form.provider_type,
-          api_key: form.api_key.trim() || undefined,
+          public_key: form.public_key.trim() || undefined,
+          secret_key: form.secret_key.trim() || undefined,
           base_url: form.base_url.trim(),
           notes: form.notes.trim() || undefined,
         },
@@ -115,7 +112,7 @@ function PaymentGatewaysPage() {
         <div>
           <h1 className="text-2xl font-bold text-brand-navy">Configurações de Pagamento</h1>
           <p className="text-sm text-slate-500">
-            Cadastre múltiplos provedores de PIX e escolha qual será usado para gerar as cobranças.
+            Cadastre suas contas SigiloPay e escolha qual será usada para gerar as cobranças.
           </p>
         </div>
         <Button onClick={openNew} className="bg-brand-blue hover:bg-brand-navy">
@@ -129,69 +126,65 @@ function PaymentGatewaysPage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {(gateways ?? []).map((g) => {
-            const meta = PROVIDER_META[g.provider_type];
-            return (
-              <Card key={g.id} className={g.is_active ? 'border-emerald-400 shadow-sm' : ''}>
-                <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-                  <div className="min-w-0">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      {g.name}
-                      {g.is_active && (
-                        <Badge className="bg-emerald-500 hover:bg-emerald-500">
-                          <Check className="mr-1 h-3 w-3" /> Ativo
-                        </Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription>
-                      {meta?.label ?? g.provider_type}
-                      {meta?.docsUrl && (
-                        <a
-                          href={meta.docsUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="ml-2 inline-flex items-center gap-1 text-brand-blue underline"
-                        >
-                          docs <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
-                    </CardDescription>
-                  </div>
-                  <div className="flex flex-shrink-0 gap-2">
-                    {!g.is_active && (
-                      <Button size="sm" variant="secondary" onClick={() => activateMut.mutate(g.id)}>
-                        Ativar
-                      </Button>
+          {(gateways ?? []).map((g) => (
+            <Card key={g.id} className={g.is_active ? 'border-emerald-400 shadow-sm' : ''}>
+              <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+                <div className="min-w-0">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    {g.name}
+                    {g.is_active && (
+                      <Badge className="bg-emerald-500 hover:bg-emerald-500">
+                        <Check className="mr-1 h-3 w-3" /> Ativo
+                      </Badge>
                     )}
-                    <Button size="sm" variant="outline" onClick={() => openEdit(g)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={() => {
-                        if (confirm('Remover este gateway?')) deleteMut.mutate(g.id);
-                      }}
+                  </CardTitle>
+                  <CardDescription>
+                    {SIGILOPAY_META.label}
+                    <a
+                      href={SIGILOPAY_META.docsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ml-2 inline-flex items-center gap-1 text-brand-blue underline"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      docs <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </CardDescription>
+                </div>
+                <div className="flex flex-shrink-0 gap-2">
+                  {!g.is_active && (
+                    <Button size="sm" variant="secondary" onClick={() => activateMut.mutate(g.id)}>
+                      Ativar
                     </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm text-slate-600">
-                  <div><span className="font-medium text-slate-700">Chave:</span> <code>{g.api_key_masked}</code></div>
-                  <div><span className="font-medium text-slate-700">Base URL:</span> {g.base_url || meta?.defaultBase}</div>
-                  {meta && origin && (
-                    <div>
-                      <span className="font-medium text-slate-700">Webhook (colar no painel do provedor):</span>{' '}
-                      <code className="break-all">{origin}{meta.webhookPath}</code>
-                    </div>
                   )}
-                  {g.notes && <div className="text-slate-500">{g.notes}</div>}
-                </CardContent>
-              </Card>
-            );
-          })}
+                  <Button size="sm" variant="outline" onClick={() => openEdit(g)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => {
+                      if (confirm('Remover este gateway?')) deleteMut.mutate(g.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-slate-600">
+                <div><span className="font-medium text-slate-700">Chave pública:</span> <code>{g.public_key_masked || '—'}</code></div>
+                <div><span className="font-medium text-slate-700">Chave secreta:</span> <code>{g.secret_key_masked || '—'}</code></div>
+                <div><span className="font-medium text-slate-700">Base URL:</span> {g.base_url || SIGILOPAY_META.defaultBase}</div>
+                {origin && (
+                  <div>
+                    <span className="font-medium text-slate-700">Webhook (colar no painel SigiloPay):</span>{' '}
+                    <code className="break-all">{origin}{SIGILOPAY_META.webhookPath}</code>
+                  </div>
+                )}
+                {g.notes && <div className="text-slate-500">{g.notes}</div>}
+              </CardContent>
+            </Card>
+          ))}
           {(gateways ?? []).length === 0 && (
             <div className="rounded-lg border border-dashed p-8 text-center text-sm text-slate-500">
               Nenhum gateway cadastrado.
@@ -203,7 +196,7 @@ function PaymentGatewaysPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? 'Editar gateway' : 'Novo gateway'}</DialogTitle>
+            <DialogTitle>{editing ? 'Editar gateway' : 'Novo gateway SigiloPay'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -211,29 +204,45 @@ function PaymentGatewaysPage() {
               <Input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Ex: NexusPay Principal"
+                placeholder="Ex: SigiloPay Principal"
               />
             </div>
             <div className="space-y-2">
               <Label>Provedor</Label>
-              <div className="rounded-md border bg-slate-50 px-3 py-2 text-sm text-slate-700">UniãoPay</div>
+              <div className="rounded-md border bg-slate-50 px-3 py-2 text-sm text-slate-700">SigiloPay</div>
             </div>
             <div className="space-y-2">
-              <Label>Chave da API {editing && <span className="text-xs text-slate-500">(deixe em branco para manter)</span>}</Label>
+              <Label>
+                Chave pública (x-public-key){' '}
+                {editing && <span className="text-xs text-slate-500">(deixe em branco para manter)</span>}
+              </Label>
               <Input
                 type="password"
-                value={form.api_key}
-                onChange={(e) => setForm({ ...form, api_key: e.target.value })}
-                placeholder="sua_chave_uniaopay"
+                value={form.public_key}
+                onChange={(e) => setForm({ ...form, public_key: e.target.value })}
+                placeholder="pk_..."
+                autoComplete="off"
               />
             </div>
-
+            <div className="space-y-2">
+              <Label>
+                Chave secreta (x-secret-key){' '}
+                {editing && <span className="text-xs text-slate-500">(deixe em branco para manter)</span>}
+              </Label>
+              <Input
+                type="password"
+                value={form.secret_key}
+                onChange={(e) => setForm({ ...form, secret_key: e.target.value })}
+                placeholder="sk_..."
+                autoComplete="off"
+              />
+            </div>
             <div className="space-y-2">
               <Label>Base URL <span className="text-xs text-slate-500">(opcional)</span></Label>
               <Input
                 value={form.base_url}
                 onChange={(e) => setForm({ ...form, base_url: e.target.value })}
-                placeholder={PROVIDER_META[form.provider_type].defaultBase}
+                placeholder={SIGILOPAY_META.defaultBase}
               />
             </div>
             <div className="space-y-2">
@@ -250,7 +259,11 @@ function PaymentGatewaysPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
             <Button
               className="bg-brand-blue hover:bg-brand-navy"
-              disabled={upsertMut.isPending || !form.name || (!editing && !form.api_key)}
+              disabled={
+                upsertMut.isPending ||
+                !form.name ||
+                (!editing && (!form.public_key || !form.secret_key))
+              }
               onClick={() => upsertMut.mutate()}
             >
               {upsertMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -17,8 +17,9 @@ async function assertAdmin(supabase: any, userId: string) {
 export type PaymentGateway = {
   id: string;
   name: string;
-  provider_type: 'uniaopay' | 'nexuspay';
-  api_key_masked: string;
+  provider_type: 'sigilopay';
+  public_key_masked: string;
+  secret_key_masked: string;
   base_url: string | null;
   is_active: boolean;
   notes: string | null;
@@ -28,9 +29,13 @@ export type PaymentGateway = {
 
 function mask(key: string): string {
   if (!key) return '';
-  if (key === 'USE_ENV_UNIAOPAY_API_KEY') return '••• (secret UNIAOPAY_API_KEY)';
-  if (key.length <= 12) return '•'.repeat(key.length);
-  return `${key.slice(0, 6)}${'•'.repeat(8)}${key.slice(-4)}`;
+  if (key.length <= 8) return '•'.repeat(key.length);
+  return `${key.slice(0, 4)}${'•'.repeat(6)}${key.slice(-4)}`;
+}
+
+function splitKeys(apiKey: string): { publicKey: string; secretKey: string } {
+  const [publicKey = '', secretKey = ''] = (apiKey || '').split('|');
+  return { publicKey: publicKey.trim(), secretKey: secretKey.trim() };
 }
 
 export const listPaymentGateways = createServerFn({ method: 'GET' })
@@ -43,17 +48,21 @@ export const listPaymentGateways = createServerFn({ method: 'GET' })
       .select('*')
       .order('created_at', { ascending: true });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((g: any) => ({
-      id: g.id,
-      name: g.name,
-      provider_type: g.provider_type,
-      api_key_masked: mask(g.api_key),
-      base_url: g.base_url,
-      is_active: g.is_active,
-      notes: g.notes,
-      created_at: g.created_at,
-      updated_at: g.updated_at,
-    })) as PaymentGateway[];
+    return (data ?? []).map((g: any) => {
+      const { publicKey, secretKey } = splitKeys(g.api_key);
+      return {
+        id: g.id,
+        name: g.name,
+        provider_type: g.provider_type,
+        public_key_masked: mask(publicKey),
+        secret_key_masked: mask(secretKey),
+        base_url: g.base_url,
+        is_active: g.is_active,
+        notes: g.notes,
+        created_at: g.created_at,
+        updated_at: g.updated_at,
+      };
+    }) as PaymentGateway[];
   });
 
 export const upsertPaymentGateway = createServerFn({ method: 'POST' })
@@ -63,8 +72,8 @@ export const upsertPaymentGateway = createServerFn({ method: 'POST' })
       .object({
         id: z.string().uuid().optional(),
         name: z.string().min(2).max(120),
-        provider_type: z.enum(['uniaopay', 'nexuspay']),
-        api_key: z.string().min(6).max(500).optional(),
+        public_key: z.string().min(4).max(300).optional(),
+        secret_key: z.string().min(4).max(300).optional(),
         base_url: z.string().url().max(300).optional().or(z.literal('')),
         notes: z.string().max(500).optional(),
       })
@@ -74,28 +83,41 @@ export const upsertPaymentGateway = createServerFn({ method: 'POST' })
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
-
-
     if (data.id) {
       const patch: any = {
         name: data.name,
-        provider_type: data.provider_type,
+        provider_type: 'sigilopay',
         base_url: data.base_url && data.base_url.length > 0 ? data.base_url : null,
         notes: data.notes ?? null,
       };
-      if (data.api_key) patch.api_key = data.api_key;
+      if (data.public_key || data.secret_key) {
+        // Merge com valores atuais quando um dos dois vier em branco.
+        const { data: existing } = await supabaseAdmin
+          .from('payment_gateways')
+          .select('api_key')
+          .eq('id', data.id)
+          .maybeSingle();
+        const current = splitKeys(existing?.api_key || '');
+        const pub = data.public_key?.trim() || current.publicKey;
+        const sec = data.secret_key?.trim() || current.secretKey;
+        if (!pub || !sec) throw new Error('Informe a chave pública e a chave secreta');
+        patch.api_key = `${pub}|${sec}`;
+      }
       const { error } = await supabaseAdmin.from('payment_gateways').update(patch).eq('id', data.id);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
 
-    if (!data.api_key) throw new Error('api_key é obrigatório ao cadastrar');
+    if (!data.public_key || !data.secret_key) {
+      throw new Error('Informe a chave pública e a chave secreta');
+    }
+    const combined = `${data.public_key.trim()}|${data.secret_key.trim()}`;
     const { data: inserted, error } = await supabaseAdmin
       .from('payment_gateways')
       .insert({
         name: data.name,
-        provider_type: data.provider_type,
-        api_key: data.api_key,
+        provider_type: 'sigilopay',
+        api_key: combined,
         base_url: data.base_url && data.base_url.length > 0 ? data.base_url : null,
         notes: data.notes ?? null,
         is_active: false,
@@ -113,7 +135,6 @@ export const activatePaymentGateway = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-    // desativa todos e ativa apenas o escolhido
     const { error: e1 } = await supabaseAdmin
       .from('payment_gateways')
       .update({ is_active: false })

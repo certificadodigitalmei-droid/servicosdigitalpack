@@ -2,37 +2,32 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const NEXUSPAY_DEFAULT_BASE = "https://nexuspay.squareweb.app/api";
-const PAID_STATUSES = ["paid", "completed", "confirmed", "approved", "success"];
+const SIGILOPAY_DEFAULT_BASE = "https://app.sigilopay.com.br/api/v1";
+const PAID_STATUSES = ["paid", "ok", "completed", "confirmed", "approved", "success"];
 
-async function fetchNexusStatus(apiKey: string, baseUrl: string, txId: string): Promise<string | null> {
-  const cleanBase = baseUrl.replace(/\/+$/, "").replace(/\/v1$/, "");
-  try {
-    const res = await fetch(`${cleanBase}/v1/transaction/${encodeURIComponent(txId)}`, {
-      headers: { "X-API-KEY": apiKey },
-    });
-    if (!res.ok) return null;
-    const json: any = await res.json().catch(() => null);
-    const status = json?.data?.status ?? json?.status ?? null;
-    return typeof status === "string" ? status.toLowerCase() : null;
-  } catch (err) {
-    console.error("[reconcile] nexus fetch error", err);
-    return null;
-  }
+function splitKeys(apiKey: string): { publicKey: string; secretKey: string } {
+  const [publicKey = "", secretKey = ""] = (apiKey || "").split("|");
+  return { publicKey: publicKey.trim(), secretKey: secretKey.trim() };
 }
 
-async function fetchUniaoPayStatus(apiKey: string, baseUrl: string, txId: string): Promise<string | null> {
-  const cleanBase = (baseUrl || "https://api.uniaopay.com.br").replace(/\/+$/, "");
+async function fetchSigiloStatus(apiKey: string, baseUrl: string, txId: string): Promise<string | null> {
+  const { publicKey, secretKey } = splitKeys(apiKey);
+  if (!publicKey || !secretKey) return null;
+  const cleanBase = (baseUrl || SIGILOPAY_DEFAULT_BASE).replace(/\/+$/, "");
   try {
-    const res = await fetch(`${cleanBase}/v1/transactions/${encodeURIComponent(txId)}`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
+    const res = await fetch(`${cleanBase}/transactions?id=${encodeURIComponent(txId)}`, {
+      headers: { "x-public-key": publicKey, "x-secret-key": secretKey },
     });
     if (!res.ok) return null;
     const json: any = await res.json().catch(() => null);
-    const status = json?.data?.status ?? json?.status ?? null;
-    return typeof status === "string" ? status.toLowerCase() : null;
+    const raw =
+      json?.transaction?.status ??
+      json?.data?.status ??
+      json?.status ??
+      null;
+    return typeof raw === "string" ? raw.toLowerCase() : null;
   } catch (err) {
-    console.error("[reconcile] uniaopay fetch error", err);
+    console.error("[reconcile] sigilopay fetch error", err);
     return null;
   }
 }
@@ -40,7 +35,6 @@ async function fetchUniaoPayStatus(apiKey: string, baseUrl: string, txId: string
 export const reconcilePendingOrders = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    // Verifica se o usuário é admin
     const { data: roleRow } = await context.supabase
       .from("user_roles")
       .select("role")
@@ -51,44 +45,31 @@ export const reconcilePendingOrders = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Busca pedidos pendentes das últimas 48h
     const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
     const { data: pending, error } = await supabaseAdmin
       .from("orders")
-      .select("id, status, payment_provider, external_transaction_id")
+      .select("id, status, external_transaction_id")
       .eq("status", "awaiting_payment")
       .gte("created_at", since);
 
     if (error) throw error;
     if (!pending || pending.length === 0) return { checked: 0, updated: 0 };
 
-    // Cache de gateways por provider
-    const gatewayCache = new Map<string, { api_key: string; base_url: string }>();
-    const getGateway = async (provider: string) => {
-      if (gatewayCache.has(provider)) return gatewayCache.get(provider)!;
-      const { data } = await supabaseAdmin
-        .from("payment_gateways")
-        .select("api_key, base_url")
-        .eq("provider_type", provider)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (data) gatewayCache.set(provider, data as any);
-      return data as { api_key: string; base_url: string } | null;
-    };
+    const { data: gateway } = await supabaseAdmin
+      .from("payment_gateways")
+      .select("api_key, base_url")
+      .eq("is_active", true)
+      .maybeSingle();
+    if (!gateway) return { checked: pending.length, updated: 0 };
 
     let updated = 0;
     for (const order of pending) {
-      if (!order.external_transaction_id || !order.payment_provider) continue;
-      const gw = await getGateway(order.payment_provider);
-      if (!gw) continue;
-
-      let remote: string | null = null;
-      if (order.payment_provider === "nexuspay") {
-        remote = await fetchNexusStatus(gw.api_key, gw.base_url || NEXUSPAY_DEFAULT_BASE, order.external_transaction_id);
-      } else if (order.payment_provider === "uniaopay") {
-        remote = await fetchUniaoPayStatus(gw.api_key, gw.base_url, order.external_transaction_id);
-      }
-
+      if (!order.external_transaction_id) continue;
+      const remote = await fetchSigiloStatus(
+        gateway.api_key,
+        gateway.base_url || SIGILOPAY_DEFAULT_BASE,
+        order.external_transaction_id,
+      );
       if (remote && PAID_STATUSES.includes(remote)) {
         await supabaseAdmin
           .from("orders")
