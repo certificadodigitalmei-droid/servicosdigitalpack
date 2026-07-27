@@ -22,8 +22,7 @@ import { Route as AcessoTokenRouteImport } from './routes/acesso.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedMonitorEnvioRouteImport } from './routes/_authenticated.monitor-envio'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
-import { Route as ApiPublicWebhookUniaopayRouteImport } from './routes/api/public/webhook-uniaopay'
-import { Route as ApiPublicWebhookNexuspayRouteImport } from './routes/api/public/webhook-nexuspay'
+import { Route as ApiPublicWebhookSigilopayRouteImport } from './routes/api/public/webhook-sigilopay'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
 import { Route as AuthenticatedPainelWorkspaceEnvioRouteImport } from './routes/_authenticated.painel.workspace-envio'
 import { Route as AuthenticatedPainelPrecosRouteImport } from './routes/_authenticated.painel.precos'
@@ -119,16 +118,10 @@ const AuthenticatedPainelIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
-const ApiPublicWebhookUniaopayRoute =
-  ApiPublicWebhookUniaopayRouteImport.update({
-    id: '/api/public/webhook-uniaopay',
-    path: '/api/public/webhook-uniaopay',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicWebhookNexuspayRoute =
-  ApiPublicWebhookNexuspayRouteImport.update({
-    id: '/api/public/webhook-nexuspay',
-    path: '/api/public/webhook-nexuspay',
+const ApiPublicWebhookSigilopayRoute =
+  ApiPublicWebhookSigilopayRouteImport.update({
+    id: '/api/public/webhook-sigilopay',
+    path: '/api/public/webhook-sigilopay',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiInternalCasaDosDadosWorkerRoute =
@@ -329,8 +322,7 @@ export interface FileRoutesByFullPath {
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
   '/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
-  '/api/public/webhook-nexuspay': typeof ApiPublicWebhookNexuspayRoute
-  '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
+  '/api/public/webhook-sigilopay': typeof ApiPublicWebhookSigilopayRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
@@ -371,8 +363,7 @@ export interface FileRoutesByTo {
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
   '/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
-  '/api/public/webhook-nexuspay': typeof ApiPublicWebhookNexuspayRoute
-  '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
+  '/api/public/webhook-sigilopay': typeof ApiPublicWebhookSigilopayRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
@@ -417,8 +408,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/precos': typeof AuthenticatedPainelPrecosRoute
   '/_authenticated/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
-  '/api/public/webhook-nexuspay': typeof ApiPublicWebhookNexuspayRoute
-  '/api/public/webhook-uniaopay': typeof ApiPublicWebhookUniaopayRoute
+  '/api/public/webhook-sigilopay': typeof ApiPublicWebhookSigilopayRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
   '/_authenticated/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/_authenticated/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
@@ -463,8 +453,7 @@ export interface FileRouteTypes {
     | '/painel/precos'
     | '/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
-    | '/api/public/webhook-nexuspay'
-    | '/api/public/webhook-uniaopay'
+    | '/api/public/webhook-sigilopay'
     | '/painel/'
     | '/painel/empresas-importadas/$companyId'
     | '/painel/gerador-links/historico'
@@ -505,8 +494,7 @@ export interface FileRouteTypes {
     | '/painel/precos'
     | '/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
-    | '/api/public/webhook-nexuspay'
-    | '/api/public/webhook-uniaopay'
+    | '/api/public/webhook-sigilopay'
     | '/painel'
     | '/painel/empresas-importadas/$companyId'
     | '/painel/gerador-links/historico'
@@ -550,8 +538,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/precos'
     | '/_authenticated/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
-    | '/api/public/webhook-nexuspay'
-    | '/api/public/webhook-uniaopay'
+    | '/api/public/webhook-sigilopay'
     | '/_authenticated/painel/'
     | '/_authenticated/painel/empresas-importadas/$companyId'
     | '/_authenticated/painel/gerador-links/historico'
@@ -575,8 +562,7 @@ export interface RootRouteChildren {
   CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
   CheckoutTokenRoute: typeof CheckoutTokenRoute
   ApiInternalCasaDosDadosWorkerRoute: typeof ApiInternalCasaDosDadosWorkerRoute
-  ApiPublicWebhookNexuspayRoute: typeof ApiPublicWebhookNexuspayRoute
-  ApiPublicWebhookUniaopayRoute: typeof ApiPublicWebhookUniaopayRoute
+  ApiPublicWebhookSigilopayRoute: typeof ApiPublicWebhookSigilopayRoute
   ApiPublicEmailAssetKeyRoute: typeof ApiPublicEmailAssetKeyRoute
   ApiPublicHooksAutoImportMeiRoute: typeof ApiPublicHooksAutoImportMeiRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -677,18 +663,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
-    '/api/public/webhook-uniaopay': {
-      id: '/api/public/webhook-uniaopay'
-      path: '/api/public/webhook-uniaopay'
-      fullPath: '/api/public/webhook-uniaopay'
-      preLoaderRoute: typeof ApiPublicWebhookUniaopayRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/webhook-nexuspay': {
-      id: '/api/public/webhook-nexuspay'
-      path: '/api/public/webhook-nexuspay'
-      fullPath: '/api/public/webhook-nexuspay'
-      preLoaderRoute: typeof ApiPublicWebhookNexuspayRouteImport
+    '/api/public/webhook-sigilopay': {
+      id: '/api/public/webhook-sigilopay'
+      path: '/api/public/webhook-sigilopay'
+      fullPath: '/api/public/webhook-sigilopay'
+      preLoaderRoute: typeof ApiPublicWebhookSigilopayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/internal/casa-dos-dados-worker': {
@@ -1009,8 +988,7 @@ const rootRouteChildren: RootRouteChildren = {
   CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
   CheckoutTokenRoute: CheckoutTokenRoute,
   ApiInternalCasaDosDadosWorkerRoute: ApiInternalCasaDosDadosWorkerRoute,
-  ApiPublicWebhookNexuspayRoute: ApiPublicWebhookNexuspayRoute,
-  ApiPublicWebhookUniaopayRoute: ApiPublicWebhookUniaopayRoute,
+  ApiPublicWebhookSigilopayRoute: ApiPublicWebhookSigilopayRoute,
   ApiPublicEmailAssetKeyRoute: ApiPublicEmailAssetKeyRoute,
   ApiPublicHooksAutoImportMeiRoute: ApiPublicHooksAutoImportMeiRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
