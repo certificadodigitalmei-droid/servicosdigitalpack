@@ -49,6 +49,7 @@ type Stats = {
   clickCertTotal: number;
   clickGuiaTotal: number;
   copyPixTotal: number;
+  copyPixAllTime: number;
   paid: number;
   paidAmount: number;
   byBrowser: Record<string, number>;
@@ -69,6 +70,7 @@ const EMPTY: Stats = {
   clickCertTotal: 0,
   clickGuiaTotal: 0,
   copyPixTotal: 0,
+  copyPixAllTime: 0,
   paid: 0,
   paidAmount: 0,
   byBrowser: {},
@@ -151,11 +153,12 @@ function DashboardPage() {
       if (range.from) ordersQ = ordersQ.gte('paid_at', range.from.toISOString());
       if (range.to) ordersQ = ordersQ.lte('paid_at', range.to.toISOString());
 
-      const [{ count: linksTotal }, evRes, linksRes, ordersRes] = await Promise.all([
+      const [{ count: linksTotal }, evRes, linksRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
         linksCountQ,
         evQ,
         supabase.from('company_links').select('token, cnpj'),
         ordersQ,
+        supabase.from('link_events').select('id', { count: 'exact', head: true }).eq('event_type', 'copy_pix'),
       ]);
 
       const events = (evRes.data ?? []) as EventRow[];
@@ -167,7 +170,7 @@ function DashboardPage() {
       const ALL_OS = ['Windows', 'Android', 'iOS', 'macOS', 'Linux', 'Outro'];
       const ALL_DEVICES = ['Desktop', 'Mobile', 'iOS', 'iPad', 'Android', 'Android Tablet'];
       const seed = (keys: string[]) => Object.fromEntries(keys.map(k => [k, 0]));
-      const s: Stats = { ...EMPTY, linksTotal: linksTotal ?? 0, byBrowser: seed(ALL_BROWSERS), byDevice: seed(ALL_DEVICES), byOS: seed(ALL_OS) };
+      const s: Stats = { ...EMPTY, linksTotal: linksTotal ?? 0, copyPixAllTime: copyPixAllTime ?? 0, byBrowser: seed(ALL_BROWSERS), byDevice: seed(ALL_DEVICES), byOS: seed(ALL_OS) };
       const uniq: Record<string, Set<string>> = {
         view_link: new Set(),
         view_checkout: new Set(),
@@ -377,9 +380,9 @@ function DashboardPage() {
           icon={<Copy className="h-5 w-5" />}
           label='Cópias do "PIX Copia e Cola"'
           value={stats.copyPix}
-          total={stats.copyPixTotal}
+          allTimeTotal={stats.copyPixAllTime}
           color="bg-teal-50 text-teal-600"
-          hint="Únicos por navegador/dispositivo · total inclui repetidos"
+          hint="Únicos por navegador/dispositivo no período"
         />
       </div>
 
@@ -560,7 +563,7 @@ function DashboardPage() {
   );
 }
 
-function MetricCard({ icon, label, value, total, color, hint }: { icon: React.ReactNode; label: string; value: number; total?: number; color: string; hint?: string }) {
+function MetricCard({ icon, label, value, total, allTimeTotal, color, hint }: { icon: React.ReactNode; label: string; value: number; total?: number; allTimeTotal?: number; color: string; hint?: string }) {
   return (
     <Card>
       <CardContent className="pt-6">
@@ -571,6 +574,11 @@ function MetricCard({ icon, label, value, total, color, hint }: { icon: React.Re
         {typeof total === 'number' && total !== value && (
           <div className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-400">
             Incluindo repetições do mesmo visitante: <span className="font-medium text-slate-600">{total.toLocaleString('pt-BR')}</span>
+          </div>
+        )}
+        {typeof allTimeTotal === 'number' && (
+          <div className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+            Cliques totais (todo o período): <span className="font-medium text-slate-600">{allTimeTotal.toLocaleString('pt-BR')}</span>
           </div>
         )}
       </CardContent>
