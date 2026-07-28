@@ -563,7 +563,7 @@ function DashboardPage() {
   );
 }
 
-function MetricCard({ icon, label, value, total, color, hint }: { icon: React.ReactNode; label: string; value: number; total?: number; color: string; hint?: string }) {
+function MetricCard({ icon, label, value, total, allTimeTotal, color, hint }: { icon: React.ReactNode; label: string; value: number; total?: number; allTimeTotal?: number; color: string; hint?: string }) {
   return (
     <Card>
       <CardContent className="pt-6">
@@ -574,6 +574,11 @@ function MetricCard({ icon, label, value, total, color, hint }: { icon: React.Re
         {typeof total === 'number' && total !== value && (
           <div className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-400">
             Incluindo repetições do mesmo visitante: <span className="font-medium text-slate-600">{total.toLocaleString('pt-BR')}</span>
+          </div>
+        )}
+        {typeof allTimeTotal === 'number' && (
+          <div className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+            Cliques totais (todo o período): <span className="font-medium text-slate-600">{allTimeTotal.toLocaleString('pt-BR')}</span>
           </div>
         )}
       </CardContent>
