@@ -16,6 +16,8 @@ import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 
 export const Route = createFileRoute('/c/$token')({
+  validateSearch: (s: Record<string, unknown>) => ({ issuing: s.issuing === 1 || s.issuing === '1' ? 1 : undefined }),
+
   loader: async ({ params }) => {
     const [row, payment, popup, display] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
