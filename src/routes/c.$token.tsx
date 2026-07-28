@@ -136,10 +136,10 @@ function TokenHomePage() {
 
   return (
     <Page>
-
-
+      {issuing && <IssuingOverlay cnpjFmt={cnpjFmt} />}
 
       <SiteHeader userName={nomeFmt !== '—' ? nomeFmt : undefined} userDoc={row.cnpj ?? undefined} />
+
       <Breadcrumb items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }]} />
 
 
