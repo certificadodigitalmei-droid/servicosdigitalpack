@@ -80,28 +80,59 @@ function ImportacaoAutomaticaPage() {
   const [periodCount, setPeriodCount] = useState<number | null>(null);
   const [countLoading, setCountLoading] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [periodRows, setPeriodRows] = useState<
+    Array<{ id: string; cnpj: string; nome: string | null; uf: string | null; municipio: string | null; created_at: string }>
+  >([]);
+  const [periodRowsLoading, setPeriodRowsLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
       setCountLoading(true);
+      setPeriodRowsLoading(true);
       try {
         const { from, to } = computeDateRange(preset, customFrom, customTo);
-        let q = supabase.from('companies').select('id', { count: 'exact', head: true });
-        if (from) q = q.gte('created_at', from.toISOString());
-        if (to) q = q.lte('created_at', to.toISOString());
-        const { count, error } = await q;
+        let cq = supabase.from('companies').select('id', { count: 'exact', head: true });
+        if (from) cq = cq.gte('created_at', from.toISOString());
+        if (to) cq = cq.lte('created_at', to.toISOString());
+        const { count, error } = await cq;
         if (!cancelled) {
           if (error) throw error;
           setPeriodCount(count ?? 0);
         }
+
+        let lq = supabase
+          .from('companies')
+          .select('id, cnpj, nome_titular_exibicao, razao_social_original, uf, municipio_descricao, created_at')
+          .order('created_at', { ascending: false })
+          .limit(500);
+        if (from) lq = lq.gte('created_at', from.toISOString());
+        if (to) lq = lq.lte('created_at', to.toISOString());
+        const { data: rows, error: rowsErr } = await lq;
+        if (!cancelled) {
+          if (rowsErr) throw rowsErr;
+          setPeriodRows(
+            (rows ?? []).map((r: any) => ({
+              id: r.id,
+              cnpj: r.cnpj,
+              nome: r.nome_titular_exibicao ?? r.razao_social_original ?? null,
+              uf: r.uf,
+              municipio: r.municipio_descricao,
+              created_at: r.created_at,
+            })),
+          );
+        }
       } catch (e: any) {
         if (!cancelled) {
           setPeriodCount(null);
+          setPeriodRows([]);
           console.error(e);
         }
       } finally {
-        if (!cancelled) setCountLoading(false);
+        if (!cancelled) {
+          setCountLoading(false);
+          setPeriodRowsLoading(false);
+        }
       }
     };
     void run();
@@ -222,6 +253,66 @@ function ImportacaoAutomaticaPage() {
           <span className="ml-auto text-xs text-slate-500">
             Contagem por data de importação (created_at) no banco.
           </span>
+        </CardContent>
+      </Card>
+
+      {/* Lista de empresas importadas no período selecionado */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Empresas importadas no período
+            <Badge variant="outline" className="ml-2">
+              {periodRowsLoading ? '…' : periodRows.length}
+              {periodCount != null && periodCount > periodRows.length
+                ? ` de ${periodCount.toLocaleString('pt-BR')}`
+                : ''}
+            </Badge>
+          </CardTitle>
+          <CardDescription>
+            Somente empresas cuja <strong>data de importação</strong> cai no filtro acima
+            (mais recentes primeiro, até 500).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {periodRowsLoading ? (
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
+            </div>
+          ) : periodRows.length === 0 ? (
+            <div className="rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50 py-8 text-center text-sm text-slate-500">
+              Nenhuma empresa importada nesse período.
+            </div>
+          ) : (
+            <ul className="max-h-[420px] divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200 bg-white">
+              {periodRows.map((r) => (
+                <li key={r.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-semibold text-slate-900 tabular-nums">
+                        {formatCNPJ(r.cnpj)}
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        {new Date(r.created_at).toLocaleString('pt-BR', {
+                          timeZone: 'America/Sao_Paulo',
+                        })}
+                      </span>
+                    </div>
+                    <div className="truncate text-sm text-slate-700">
+                      {r.nome || '—'}
+                      {(r.municipio || r.uf) && (
+                        <span className="ml-2 text-xs text-slate-500">
+                          · {[r.municipio, r.uf].filter(Boolean).join(' / ')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => copy(r.cnpj)}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
 
