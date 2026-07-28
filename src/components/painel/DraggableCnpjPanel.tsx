@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Copy, List, Minus, Maximize2 } from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatCNPJ } from '@/lib/format';
@@ -9,7 +10,6 @@ import { toast } from 'sonner';
 
 const POS_KEY = 'consulta-cnpj-floating-pos-v1';
 const MIN_KEY = 'consulta-cnpj-floating-min-v1';
-const RENDER_CAP = 250; // dom cap para evitar travar em listas grandes
 
 function formatBR(iso: string) {
   const [y, m, d] = iso.split('-');
