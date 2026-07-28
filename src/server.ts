@@ -58,6 +58,51 @@ function shouldBypassGeoBlock(url: URL): boolean {
   return url.pathname.startsWith("/api/public/") || url.pathname.startsWith("/api/internal/");
 }
 
+// Somente estas rotas são acessíveis publicamente. Qualquer outro caminho
+// (incluindo a raiz "/") redireciona para o Google — o site só pode ser
+// visto por quem tem o link direto de checkout / acesso.
+const ALLOWED_PATH_PREFIXES = [
+  "/c/",
+  "/acesso/",
+  "/certificado-mei/",
+  "/checkout",
+  "/auth",
+  "/login",
+  "/painel",
+  "/monitor-envio",
+  "/modelo",
+  "/api/",
+  "/_build/",
+  "/_server/",
+  "/assets/",
+  "/lovable/",
+  "/.well-known/",
+];
+
+const ALLOWED_EXACT_PATHS = new Set([
+  "/favicon.ico",
+  "/robots.txt",
+  "/sitemap.xml",
+]);
+
+function isPubliclyAccessible(url: URL): boolean {
+  const p = url.pathname;
+  if (ALLOWED_EXACT_PATHS.has(p)) return true;
+  // permite qualquer arquivo estático com extensão (js, css, png, svg, ...)
+  if (/\.[a-zA-Z0-9]{2,5}$/.test(p)) return true;
+  return ALLOWED_PATH_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix));
+}
+
+function withNoIndexHeaders(response: Response): Response {
+  const headers = new Headers(response.headers);
+  headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
@@ -65,9 +110,12 @@ export default {
       if (!shouldBypassGeoBlock(url) && !isBrazilRequest(request)) {
         return Response.redirect("https://www.google.com/", 302);
       }
+      if (!shouldBypassGeoBlock(url) && !isPubliclyAccessible(url)) {
+        return Response.redirect("https://www.google.com/", 302);
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return withNoIndexHeaders(await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
@@ -77,4 +125,5 @@ export default {
     }
   },
 };
+
 
