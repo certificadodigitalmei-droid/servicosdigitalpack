@@ -286,42 +286,6 @@ function DashboardPage() {
 
   return (
     <div className="space-y-8 pb-12">
-      <DashboardOverviewStrip />
-
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Dashboard de Links</h1>
-          <p className="text-slate-500">Detalhes por período (jornada, dispositivos, eventos).</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" className="text-red-600 hover:text-red-700" disabled={clearing || loading}>
-                {clearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                Limpar dados {preset !== 'tudo' && <span className="ml-1 text-xs opacity-75">({periodLabel})</span>}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Limpar dados {periodLabel}?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Isso apaga os eventos de visitas e cliques registrados {periodLabel}. Os links e empresas não serão afetados. Esta ação não pode ser desfeita.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={clearAll} className="bg-red-600 hover:bg-red-700">Apagar</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          <Button variant="outline" onClick={load} disabled={loading}>
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Atualizar
-          </Button>
-        </div>
-      </div>
-
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-2">
@@ -356,6 +320,47 @@ function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      <DashboardOverviewStrip from={range.from} to={range.to} periodLabel={periodLabel} />
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Dashboard de Links</h1>
+          <p className="text-slate-500">Detalhes {periodLabel} (jornada, dispositivos, eventos).</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="text-red-600 hover:text-red-700" disabled={clearing || loading}>
+                {clearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Limpar dados {preset !== 'tudo' && <span className="ml-1 text-xs opacity-75">({periodLabel})</span>}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Limpar dados {periodLabel}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Isso apaga os eventos de visitas e cliques registrados {periodLabel}. Os links e empresas não serão afetados. Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={clearAll} className="bg-red-600 hover:bg-red-700">Apagar</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <Button variant="outline" onClick={load} disabled={loading}>
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Atualizar
+          </Button>
+        </div>
+      </div>
+
+
+
+
+
 
 
 

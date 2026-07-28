@@ -1,10 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
+import { z } from 'zod';
 
 export type ModuleStatus = 'ok' | 'warn' | 'off';
 
 export type DashboardOverview = {
   updatedAt: string;
+  range: { from: string | null; to: string | null };
   status: {
     importacao: ModuleStatus;
     envio: ModuleStatus;
@@ -52,22 +54,32 @@ function startOfDayISO(): string {
   return d.toISOString();
 }
 
-function last24hISO(): string {
-  return new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-}
+const inputSchema = z
+  .object({
+    from: z.string().datetime().nullable().optional(),
+    to: z.string().datetime().nullable().optional(),
+  })
+  .optional();
 
 export const getDashboardOverview = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<DashboardOverview> => {
+  .inputValidator((data: unknown) => inputSchema.parse(data) ?? {})
+  .handler(async ({ context, data }): Promise<DashboardOverview> => {
     const { supabase } = context;
-    const todayStart = startOfDayISO();
-    const dayAgo = last24hISO();
+    const fromISO = data?.from ?? startOfDayISO();
+    const toISO = data?.to ?? null;
 
     // ------ Importação ------
+    const empresasHojeQ = supabase
+      .from('companies')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', fromISO);
+    const empresasHojeFinal = toISO ? empresasHojeQ.lte('created_at', toISO) : empresasHojeQ;
+
     const [{ count: filaPronta }, { data: ultimaEmpresa }, { count: empresasHoje }, { data: autos }] = await Promise.all([
       supabase.from('companies').select('id', { count: 'exact', head: true }).eq('status', 'encontrada'),
       supabase.from('companies').select('created_at').order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      supabase.from('companies').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
+      empresasHojeFinal,
       supabase.from('automatic_company_queries').select('enabled,next_run_at,status'),
     ]);
     const automacoesAtivas = (autos ?? []).filter((a: any) => a.enabled).length;
@@ -77,28 +89,58 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
       .sort()[0] ?? null;
 
     // ------ Envio ------
+    const enviadosPeriodoQ = supabase
+      .from('email_send_queue')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'sent')
+      .gte('updated_at', fromISO);
+    const enviadosPeriodoFinal = toISO ? enviadosPeriodoQ.lte('updated_at', toISO) : enviadosPeriodoQ;
+
+    const falhasPeriodoQ = supabase
+      .from('email_send_queue')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'failed')
+      .gte('updated_at', fromISO);
+    const falhasPeriodoFinal = toISO ? falhasPeriodoQ.lte('updated_at', toISO) : falhasPeriodoQ;
+
     const [{ count: enviadosHoje }, { count: filaEnvio }, { count: falhas24h }, { data: workers }, { data: proxRetry }] = await Promise.all([
-      supabase.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'sent').gte('updated_at', todayStart),
+      enviadosPeriodoFinal,
       supabase.from('email_send_queue').select('id', { count: 'exact', head: true }).in('status', ['queued', 'sending', 'retrying']),
-      supabase.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('updated_at', dayAgo),
+      falhasPeriodoFinal,
       supabase.from('email_workers').select('id,is_active,last_success_at'),
       supabase.from('email_send_queue').select('next_retry_at').not('next_retry_at', 'is', null).order('next_retry_at', { ascending: true }).limit(1).maybeSingle(),
     ]);
     const workersAtivos = (workers ?? []).filter((w: any) => w.is_active).length;
 
     // ------ Links + eventos ------
+    const linksHojeQ = supabase
+      .from('company_links')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', fromISO);
+    const linksHojeFinal = toISO ? linksHojeQ.lte('created_at', toISO) : linksHojeQ;
+
+    const eventosQ = supabase.from('link_events').select('event_type').gte('created_at', fromISO);
+    const eventosFinal = toISO ? eventosQ.lte('created_at', toISO) : eventosQ;
+
     const [{ count: linksTotal }, { count: linksHoje }, { data: eventos }] = await Promise.all([
       supabase.from('company_links').select('id', { count: 'exact', head: true }),
-      supabase.from('company_links').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
-      supabase.from('link_events').select('event_type').gte('created_at', todayStart),
+      linksHojeFinal,
+      eventosFinal,
     ]);
     const evCount = (ev: string) => (eventos ?? []).filter((e: any) => e.event_type === ev).length;
 
     // ------ Pagamentos ------
+    const ordersPeriodoQ = supabase
+      .from('orders')
+      .select('amount,paid_at,customer_name,id')
+      .eq('status', 'paid')
+      .gte('paid_at', fromISO);
+    const ordersPeriodoFinal = toISO ? ordersPeriodoQ.lte('paid_at', toISO) : ordersPeriodoQ;
+
     const [{ count: pixGerados }, { count: pagos }, { data: ordersHoje }, { data: ultimos }, { data: gateway }] = await Promise.all([
       supabase.from('orders').select('id', { count: 'exact', head: true }),
       supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'paid'),
-      supabase.from('orders').select('amount,paid_at,customer_name,id').eq('status', 'paid').gte('paid_at', todayStart),
+      ordersPeriodoFinal,
       supabase.from('orders').select('id,amount,paid_at,customer_name,reference_name').eq('status', 'paid').order('paid_at', { ascending: false }).limit(5),
       supabase.from('payment_gateways').select('name,is_active').eq('is_active', true).maybeSingle(),
     ]);
@@ -117,6 +159,7 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
 
     return {
       updatedAt: new Date().toISOString(),
+      range: { from: fromISO, to: toISO },
       status,
       importacao: {
         filaPronta: filaPronta ?? 0,
