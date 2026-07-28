@@ -236,9 +236,9 @@ const CnpjRow = memo(function CnpjRow(props: {
 }) {
   const { cnpj, nome, municipio, uf, firstSeenAt, isImported, onCopy } = props;
   return (
-    <li
+    <div
       className={cn(
-        'group flex items-start justify-between gap-3 px-4 py-3 transition',
+        'group flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3 transition',
         isImported ? 'bg-red-50/70' : 'hover:bg-white',
       )}
     >
@@ -276,6 +276,77 @@ const CnpjRow = memo(function CnpjRow(props: {
           <Copy className="h-3 w-3" />
         </Button>
       </div>
-    </li>
+    </div>
   );
 });
+
+type FoundItem = {
+  cnpj: string;
+  nome: string;
+  municipio: string | null;
+  uf: string | null;
+  firstSeenAt: string;
+};
+
+function VirtualCnpjList(props: {
+  items: FoundItem[];
+  importedSet: Set<string>;
+  onCopy: (v: string) => void | Promise<void>;
+}) {
+  const { items, importedSet, onCopy } = props;
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 84,
+    overscan: 12,
+    getItemKey: (i) => items[i]?.cnpj ?? i,
+  });
+
+  if (items.length === 0) {
+    return (
+      <div className="flex-1 overflow-y-auto bg-slate-50/40">
+        <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
+          <div className="grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-400">
+            <List className="h-5 w-5" />
+          </div>
+          <div className="text-sm font-medium text-slate-700">Nenhum CNPJ ainda</div>
+          <div className="text-xs text-slate-500">
+            Ligue o <strong>Modo automático</strong> — os CNPJs aparecem aqui em tempo real.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const virtualItems = rowVirtualizer.getVirtualItems();
+
+  return (
+    <div ref={parentRef} className="flex-1 overflow-y-auto bg-slate-50/40 contain-strict">
+      <div style={{ height: rowVirtualizer.getTotalSize(), width: '100%', position: 'relative' }}>
+        {virtualItems.map((v) => {
+          const it = items[v.index];
+          if (!it) return null;
+          return (
+            <div
+              key={v.key}
+              data-index={v.index}
+              ref={rowVirtualizer.measureElement}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${v.start}px)` }}
+            >
+              <CnpjRow
+                cnpj={it.cnpj}
+                nome={it.nome}
+                municipio={it.municipio}
+                uf={it.uf}
+                firstSeenAt={it.firstSeenAt}
+                isImported={importedSet.has(it.cnpj)}
+                onCopy={onCopy}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
