@@ -380,9 +380,9 @@ function DashboardPage() {
           icon={<Copy className="h-5 w-5" />}
           label='Cópias do "PIX Copia e Cola"'
           value={stats.copyPix}
-          total={stats.copyPixTotal}
+          allTimeTotal={stats.copyPixAllTime}
           color="bg-teal-50 text-teal-600"
-          hint="Únicos por navegador/dispositivo · total inclui repetidos"
+          hint="Únicos por navegador/dispositivo no período"
         />
       </div>
 
