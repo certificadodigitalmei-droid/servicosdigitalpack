@@ -170,7 +170,7 @@ function DashboardPage() {
       const ALL_OS = ['Windows', 'Android', 'iOS', 'macOS', 'Linux', 'Outro'];
       const ALL_DEVICES = ['Desktop', 'Mobile', 'iOS', 'iPad', 'Android', 'Android Tablet'];
       const seed = (keys: string[]) => Object.fromEntries(keys.map(k => [k, 0]));
-      const s: Stats = { ...EMPTY, linksTotal: linksTotal ?? 0, byBrowser: seed(ALL_BROWSERS), byDevice: seed(ALL_DEVICES), byOS: seed(ALL_OS) };
+      const s: Stats = { ...EMPTY, linksTotal: linksTotal ?? 0, copyPixAllTime: copyPixAllTime ?? 0, byBrowser: seed(ALL_BROWSERS), byDevice: seed(ALL_DEVICES), byOS: seed(ALL_OS) };
       const uniq: Record<string, Set<string>> = {
         view_link: new Set(),
         view_checkout: new Set(),
