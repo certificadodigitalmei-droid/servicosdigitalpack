@@ -56,11 +56,21 @@ function BRL(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-export function DashboardOverviewStrip() {
+export function DashboardOverviewStrip({
+  from,
+  to,
+  periodLabel = 'hoje',
+}: {
+  from?: Date;
+  to?: Date;
+  periodLabel?: string;
+} = {}) {
   const fetchOverview = useServerFn(getDashboardOverview);
+  const fromISO = from ? from.toISOString() : null;
+  const toISO = to ? to.toISOString() : null;
   const { data, isLoading } = useQuery<DashboardOverview>({
-    queryKey: ['dashboard-overview'],
-    queryFn: () => fetchOverview(),
+    queryKey: ['dashboard-overview', fromISO, toISO],
+    queryFn: () => fetchOverview({ data: { from: fromISO, to: toISO } }),
     refetchInterval: 15000,
     staleTime: 5000,
   });
