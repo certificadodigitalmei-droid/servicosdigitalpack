@@ -136,7 +136,7 @@ function CheckoutTokenPage() {
             document: form.doc.replace(/\D/g, ''),
             email: form.email,
             phone: form.phone.replace(/\D/g, ''),
-            productName: 'Certificado Digital MEI',
+            productName: 'Pack de Fotos',
             amount: AMOUNT,
             webhookUrl: `${window.location.origin}/api/public/webhook-sigilopay`,
             userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
