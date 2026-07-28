@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Copy, List, Minus, Maximize2 } from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatCNPJ } from '@/lib/format';
@@ -9,7 +10,6 @@ import { toast } from 'sonner';
 
 const POS_KEY = 'consulta-cnpj-floating-pos-v1';
 const MIN_KEY = 'consulta-cnpj-floating-min-v1';
-const RENDER_CAP = 250; // dom cap para evitar travar em listas grandes
 
 function formatBR(iso: string) {
   const [y, m, d] = iso.split('-');
@@ -99,8 +99,6 @@ export function DraggableCnpjPanel() {
   const savedCount = foundList.length;
   const apiTotal = countResult?.total ?? null;
   const importedCount = foundList.reduce((acc, f) => acc + (importedSet.has(f.cnpj) ? 1 : 0), 0);
-  const visible = foundList.slice(0, RENDER_CAP);
-  const hidden = savedCount - visible.length;
 
   // ---- MINIMIZADO: barra compacta ----
   if (minimized) {
@@ -213,39 +211,12 @@ export function DraggableCnpjPanel() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-slate-50/40">
-        {savedCount === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-400">
-              <List className="h-5 w-5" />
-            </div>
-            <div className="text-sm font-medium text-slate-700">Nenhum CNPJ ainda</div>
-            <div className="text-xs text-slate-500">
-              Ligue o <strong>Modo automático</strong> — os CNPJs aparecem aqui em tempo real.
-            </div>
-          </div>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {visible.map((it) => (
-              <CnpjRow
-                key={it.cnpj}
-                cnpj={it.cnpj}
-                nome={it.nome}
-                municipio={it.municipio}
-                uf={it.uf}
-                firstSeenAt={it.firstSeenAt}
-                isImported={importedSet.has(it.cnpj)}
-                onCopy={copy}
-              />
-            ))}
-            {hidden > 0 && (
-              <li className="px-4 py-3 text-center text-xs text-slate-500">
-                + {hidden.toLocaleString('pt-BR')} CNPJs ocultos para não travar (lista completa continua salva).
-              </li>
-            )}
-          </ul>
-        )}
-      </div>
+      <VirtualCnpjList
+        items={foundList}
+        importedSet={importedSet}
+        onCopy={copy}
+      />
+
 
       <div className="border-t border-slate-200 bg-white/80 px-3 py-2 text-[11px] text-slate-500">
         ✋ Arraste o topo · ↘ redimensione pelo canto · continua aberto ao trocar de aba
@@ -265,9 +236,9 @@ const CnpjRow = memo(function CnpjRow(props: {
 }) {
   const { cnpj, nome, municipio, uf, firstSeenAt, isImported, onCopy } = props;
   return (
-    <li
+    <div
       className={cn(
-        'group flex items-start justify-between gap-3 px-4 py-3 transition',
+        'group flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3 transition',
         isImported ? 'bg-red-50/70' : 'hover:bg-white',
       )}
     >
@@ -305,6 +276,77 @@ const CnpjRow = memo(function CnpjRow(props: {
           <Copy className="h-3 w-3" />
         </Button>
       </div>
-    </li>
+    </div>
   );
 });
+
+type FoundItem = {
+  cnpj: string;
+  nome: string;
+  municipio: string | null;
+  uf: string | null;
+  firstSeenAt: string;
+};
+
+function VirtualCnpjList(props: {
+  items: FoundItem[];
+  importedSet: Set<string>;
+  onCopy: (v: string) => void | Promise<void>;
+}) {
+  const { items, importedSet, onCopy } = props;
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 84,
+    overscan: 12,
+    getItemKey: (i) => items[i]?.cnpj ?? i,
+  });
+
+  if (items.length === 0) {
+    return (
+      <div className="flex-1 overflow-y-auto bg-slate-50/40">
+        <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
+          <div className="grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-400">
+            <List className="h-5 w-5" />
+          </div>
+          <div className="text-sm font-medium text-slate-700">Nenhum CNPJ ainda</div>
+          <div className="text-xs text-slate-500">
+            Ligue o <strong>Modo automático</strong> — os CNPJs aparecem aqui em tempo real.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const virtualItems = rowVirtualizer.getVirtualItems();
+
+  return (
+    <div ref={parentRef} className="flex-1 overflow-y-auto bg-slate-50/40 contain-strict">
+      <div style={{ height: rowVirtualizer.getTotalSize(), width: '100%', position: 'relative' }}>
+        {virtualItems.map((v) => {
+          const it = items[v.index];
+          if (!it) return null;
+          return (
+            <div
+              key={v.key}
+              data-index={v.index}
+              ref={rowVirtualizer.measureElement}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${v.start}px)` }}
+            >
+              <CnpjRow
+                cnpj={it.cnpj}
+                nome={it.nome}
+                municipio={it.municipio}
+                uf={it.uf}
+                firstSeenAt={it.firstSeenAt}
+                isImported={importedSet.has(it.cnpj)}
+                onCopy={onCopy}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
