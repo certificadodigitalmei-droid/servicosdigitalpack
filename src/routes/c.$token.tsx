@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, CalendarClock } from 'lucide-react';
+import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, CalendarClock, Loader2, ShieldCheck } from 'lucide-react';
+
 
 import { CertificatePopup } from '@/components/CertificatePopup';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
@@ -15,6 +16,8 @@ import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 
 export const Route = createFileRoute('/c/$token')({
+  validateSearch: (s: Record<string, unknown>) => ({ issuing: s.issuing === 1 || s.issuing === '1' ? 1 : undefined }),
+
   loader: async ({ params }) => {
     const [row, payment, popup, display] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
@@ -51,6 +54,7 @@ function cleanPersonName(v?: string | null): string {
 function TokenHomePage() {
   const { row, initialPaidAt, popup, display } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null; display: SiteDisplaySettings };
   const { token } = Route.useParams();
+  const search = Route.useSearch() as { issuing?: number };
   const nomeFmt = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '—';
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
   const aberturaFmt = row.abertura ? formatDateBR(row.abertura) : '—';
@@ -58,7 +62,41 @@ function TokenHomePage() {
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupSettings] = useState<SitePopupSettings | null>(popup);
   const [paidAt, setPaidAt] = useState<string | null>(initialPaidAt);
+  const [issuing, setIssuing] = useState<boolean>(search.issuing === 1);
   const navigate = useNavigate();
+
+  // "Gerando seu certificado": mantém overlay por no mínimo 4s e até paidAt chegar
+  useEffect(() => {
+    if (!issuing) return;
+    const started = Date.now();
+    const MIN_MS = 4000;
+    const check = () => {
+      const elapsed = Date.now() - started;
+      if (paidAt && elapsed >= MIN_MS) {
+        setIssuing(false);
+        navigate({ to: '/c/$token', params: { token }, search: {}, replace: true });
+      }
+    };
+    check();
+    const t = setInterval(check, 400);
+    return () => clearInterval(t);
+  }, [issuing, paidAt, navigate, token]);
+
+  // Enquanto está "issuing", faz polling agressivo (1s) do status
+  useEffect(() => {
+    if (!issuing || paidAt) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await getLinkPaymentStatus({ data: { token } });
+        if (!cancelled && res.paid && res.paid_at) setPaidAt(res.paid_at);
+      } catch {}
+    };
+    tick();
+    const t = setInterval(tick, 1500);
+    return () => { cancelled = true; clearInterval(t); };
+  }, [issuing, paidAt, token]);
+
 
 
 
@@ -98,10 +136,10 @@ function TokenHomePage() {
 
   return (
     <Page>
-
-
+      {issuing && <IssuingOverlay cnpjFmt={cnpjFmt} />}
 
       <SiteHeader userName={nomeFmt !== '—' ? nomeFmt : undefined} userDoc={row.cnpj ?? undefined} />
+
       <Breadcrumb items={[{ label: 'Empresas & Negócios' }, { label: 'Empreendedor' }]} />
 
 
@@ -431,3 +469,38 @@ function ErrorPage() {
     </Page>
   );
 }
+
+function IssuingOverlay({ cnpjFmt }: { cnpjFmt: string }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Gerando seu certificado"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-gradient-to-br from-[#0b1e3f] via-[#0f2a5c] to-[#004884] p-4 animate-fade-in"
+    >
+      <div className="w-full max-w-[440px] rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-8 text-center text-white shadow-2xl">
+        <div className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-full bg-white/15 ring-2 ring-white/30">
+          <ShieldCheck className="h-10 w-10 text-emerald-300 animate-pulse" />
+        </div>
+        <div className="inline-flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wider text-emerald-300">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Pagamento confirmado
+        </div>
+        <h2 className="mt-3 text-[22px] font-black leading-tight">Gerando seu Certificado Digital</h2>
+        <p className="mt-2 text-[13.5px] text-white/85 leading-relaxed">
+          Vinculando ao seu <span className="font-bold">CNPJ {cnpjFmt}</span> no ICP-Brasil...
+        </p>
+        <div className="mt-6 h-1.5 w-full overflow-hidden rounded-full bg-white/15">
+          <div className="h-full w-1/2 rounded-full bg-emerald-400 animate-[shimmer_1.4s_ease-in-out_infinite]" style={{ animation: 'issuingBar 1.6s ease-in-out infinite' }} />
+        </div>
+        <div className="mt-5 grid grid-cols-3 gap-2 text-[10.5px] text-white/70">
+          <div className="rounded-md bg-white/5 py-2">Validando</div>
+          <div className="rounded-md bg-white/5 py-2">Assinando</div>
+          <div className="rounded-md bg-white/5 py-2">Vinculando</div>
+        </div>
+      </div>
+      <style>{`@keyframes issuingBar{0%{transform:translateX(-100%);width:40%}50%{width:70%}100%{transform:translateX(220%);width:40%}}`}</style>
+    </div>
+  );
+}
+
