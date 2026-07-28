@@ -99,8 +99,6 @@ export function DraggableCnpjPanel() {
   const savedCount = foundList.length;
   const apiTotal = countResult?.total ?? null;
   const importedCount = foundList.reduce((acc, f) => acc + (importedSet.has(f.cnpj) ? 1 : 0), 0);
-  const visible = foundList.slice(0, RENDER_CAP);
-  const hidden = savedCount - visible.length;
 
   // ---- MINIMIZADO: barra compacta ----
   if (minimized) {
