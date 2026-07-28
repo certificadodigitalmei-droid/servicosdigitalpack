@@ -120,11 +120,11 @@ function CheckoutTokenPage() {
 
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
-    trackEvent(token, 'click_guia');
     if (!validate()) {
       toast.error('Preencha corretamente os campos destacados antes de gerar a guia.');
       return;
     }
+    trackEvent(token, 'click_guia');
     setSubmitting(true);
     setInfoOpen(true);
     setInfoLoading(true);
