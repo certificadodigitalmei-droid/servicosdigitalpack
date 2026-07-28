@@ -125,11 +125,15 @@ function LinksGeradosPage() {
       // Origem: manual = upload CSV (tem generation_id), automática = consulta (sem generation_id)
       if (origin === 'manual') q = q.not('generation_id', 'is', null);
       if (origin === 'auto') q = q.is('generation_id', null);
+      // Período filtra também a criação do link
+      if (range.gte) q = q.gte('created_at', range.gte);
+      if (range.lte) q = q.lte('created_at', range.lte);
       if (search.trim()) {
         const s = search.trim();
         q = q.or(`public_token.ilike.%${s}%`);
       }
       q = q.range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+
 
       const { data, error, count } = await q;
       if (error) throw error;
@@ -298,7 +302,7 @@ function LinksGeradosPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Links Gerados</h1>
-          <p className="text-sm text-slate-600">Todos os links já criados. O período abaixo filtra as métricas de <b>cliques e pagamentos</b> (não a criação do link).</p>
+          <p className="text-sm text-slate-600">O período filtra os links pela <b>data de criação</b> e também as métricas de cliques e pagamentos.</p>
         </div>
         <WipeAllButton
           label="Apagar todos os links"
