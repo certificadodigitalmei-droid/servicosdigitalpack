@@ -115,12 +115,24 @@ export function PixModal({ open, amount, orderId, pixData, cnpj, token, onClose 
   // Ao confirmar pagamento: redirect IMEDIATO para /c/$token com flag de emissão
   useEffect(() => {
     if (!paid) return;
-    if (token) {
-      navigate({ to: '/c/$token', params: { token }, search: { issuing: 1 } as never });
-    } else {
+    if (!token) {
       onClose();
+      return;
     }
+    setRedirectIn(4);
+    const iv = setInterval(() => {
+      setRedirectIn((s) => {
+        if (s <= 1) {
+          clearInterval(iv);
+          navigate({ to: '/c/$token', params: { token }, search: { issuing: 1 } as never });
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(iv);
   }, [paid, token, navigate, onClose]);
+
 
 
 
