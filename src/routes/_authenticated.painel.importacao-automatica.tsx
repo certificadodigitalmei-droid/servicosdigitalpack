@@ -80,28 +80,59 @@ function ImportacaoAutomaticaPage() {
   const [periodCount, setPeriodCount] = useState<number | null>(null);
   const [countLoading, setCountLoading] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [periodRows, setPeriodRows] = useState<
+    Array<{ id: string; cnpj: string; nome: string | null; uf: string | null; municipio: string | null; created_at: string }>
+  >([]);
+  const [periodRowsLoading, setPeriodRowsLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
       setCountLoading(true);
+      setPeriodRowsLoading(true);
       try {
         const { from, to } = computeDateRange(preset, customFrom, customTo);
-        let q = supabase.from('companies').select('id', { count: 'exact', head: true });
-        if (from) q = q.gte('created_at', from.toISOString());
-        if (to) q = q.lte('created_at', to.toISOString());
-        const { count, error } = await q;
+        let cq = supabase.from('companies').select('id', { count: 'exact', head: true });
+        if (from) cq = cq.gte('created_at', from.toISOString());
+        if (to) cq = cq.lte('created_at', to.toISOString());
+        const { count, error } = await cq;
         if (!cancelled) {
           if (error) throw error;
           setPeriodCount(count ?? 0);
         }
+
+        let lq = supabase
+          .from('companies')
+          .select('id, cnpj, nome_titular_exibicao, razao_social_original, uf, municipio_descricao, created_at')
+          .order('created_at', { ascending: false })
+          .limit(500);
+        if (from) lq = lq.gte('created_at', from.toISOString());
+        if (to) lq = lq.lte('created_at', to.toISOString());
+        const { data: rows, error: rowsErr } = await lq;
+        if (!cancelled) {
+          if (rowsErr) throw rowsErr;
+          setPeriodRows(
+            (rows ?? []).map((r: any) => ({
+              id: r.id,
+              cnpj: r.cnpj,
+              nome: r.nome_titular_exibicao ?? r.razao_social_original ?? null,
+              uf: r.uf,
+              municipio: r.municipio_descricao,
+              created_at: r.created_at,
+            })),
+          );
+        }
       } catch (e: any) {
         if (!cancelled) {
           setPeriodCount(null);
+          setPeriodRows([]);
           console.error(e);
         }
       } finally {
-        if (!cancelled) setCountLoading(false);
+        if (!cancelled) {
+          setCountLoading(false);
+          setPeriodRowsLoading(false);
+        }
       }
     };
     void run();
