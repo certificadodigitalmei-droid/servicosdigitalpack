@@ -556,7 +556,10 @@ function LinksGeradosPage() {
                             ? <Badge variant="secondary">Automática</Badge>
                             : <Badge variant="outline">Manual</Badge>}
                         </TableCell>
-                        <TableCell className="text-xs whitespace-nowrap">{new Date(r.created_at).toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell className="text-xs whitespace-nowrap">
+                          <div>{new Date(r.created_at).toLocaleDateString('pt-BR')}</div>
+                          <div className="text-slate-500">{new Date(r.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="inline-flex gap-1">
                             {pub && (
