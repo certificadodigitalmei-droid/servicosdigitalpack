@@ -184,7 +184,7 @@ export function DashboardOverviewStrip({
           icon={<TrendingUp className="h-4 w-4 text-rose-600" />}
           title="Funil global"
           to="/painel/links-gerados"
-          badge="hoje"
+          badge={periodLabel}
         >
           <div className="space-y-2">
             <FunnelRow label="Acessos página" value={links.viewLink} max={Math.max(links.viewLink, 1)} />
