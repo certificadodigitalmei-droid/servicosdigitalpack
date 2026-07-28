@@ -211,39 +211,12 @@ export function DraggableCnpjPanel() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-slate-50/40">
-        {savedCount === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-400">
-              <List className="h-5 w-5" />
-            </div>
-            <div className="text-sm font-medium text-slate-700">Nenhum CNPJ ainda</div>
-            <div className="text-xs text-slate-500">
-              Ligue o <strong>Modo automático</strong> — os CNPJs aparecem aqui em tempo real.
-            </div>
-          </div>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {visible.map((it) => (
-              <CnpjRow
-                key={it.cnpj}
-                cnpj={it.cnpj}
-                nome={it.nome}
-                municipio={it.municipio}
-                uf={it.uf}
-                firstSeenAt={it.firstSeenAt}
-                isImported={importedSet.has(it.cnpj)}
-                onCopy={copy}
-              />
-            ))}
-            {hidden > 0 && (
-              <li className="px-4 py-3 text-center text-xs text-slate-500">
-                + {hidden.toLocaleString('pt-BR')} CNPJs ocultos para não travar (lista completa continua salva).
-              </li>
-            )}
-          </ul>
-        )}
-      </div>
+      <VirtualCnpjList
+        items={foundList}
+        importedSet={importedSet}
+        onCopy={copy}
+      />
+
 
       <div className="border-t border-slate-200 bg-white/80 px-3 py-2 text-[11px] text-slate-500">
         ✋ Arraste o topo · ↘ redimensione pelo canto · continua aberto ao trocar de aba
