@@ -153,11 +153,12 @@ function DashboardPage() {
       if (range.from) ordersQ = ordersQ.gte('paid_at', range.from.toISOString());
       if (range.to) ordersQ = ordersQ.lte('paid_at', range.to.toISOString());
 
-      const [{ count: linksTotal }, evRes, linksRes, ordersRes] = await Promise.all([
+      const [{ count: linksTotal }, evRes, linksRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
         linksCountQ,
         evQ,
         supabase.from('company_links').select('token, cnpj'),
         ordersQ,
+        supabase.from('link_events').select('id', { count: 'exact', head: true }).eq('event_type', 'copy_pix'),
       ]);
 
       const events = (evRes.data ?? []) as EventRow[];
