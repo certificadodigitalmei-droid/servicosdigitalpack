@@ -256,6 +256,66 @@ function ImportacaoAutomaticaPage() {
         </CardContent>
       </Card>
 
+      {/* Lista de empresas importadas no período selecionado */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Empresas importadas no período
+            <Badge variant="outline" className="ml-2">
+              {periodRowsLoading ? '…' : periodRows.length}
+              {periodCount != null && periodCount > periodRows.length
+                ? ` de ${periodCount.toLocaleString('pt-BR')}`
+                : ''}
+            </Badge>
+          </CardTitle>
+          <CardDescription>
+            Somente empresas cuja <strong>data de importação</strong> cai no filtro acima
+            (mais recentes primeiro, até 500).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {periodRowsLoading ? (
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
+            </div>
+          ) : periodRows.length === 0 ? (
+            <div className="rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50 py-8 text-center text-sm text-slate-500">
+              Nenhuma empresa importada nesse período.
+            </div>
+          ) : (
+            <ul className="max-h-[420px] divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200 bg-white">
+              {periodRows.map((r) => (
+                <li key={r.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-semibold text-slate-900 tabular-nums">
+                        {formatCNPJ(r.cnpj)}
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        {new Date(r.created_at).toLocaleString('pt-BR', {
+                          timeZone: 'America/Sao_Paulo',
+                        })}
+                      </span>
+                    </div>
+                    <div className="truncate text-sm text-slate-700">
+                      {r.nome || '—'}
+                      {(r.municipio || r.uf) && (
+                        <span className="ml-2 text-xs text-slate-500">
+                          · {[r.municipio, r.uf].filter(Boolean).join(' / ')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => copy(r.cnpj)}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
 
       {/* Config atual (herdada da Consulta) */}
       <Card className="border-slate-200 bg-slate-50/60">
