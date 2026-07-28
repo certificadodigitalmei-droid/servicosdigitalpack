@@ -43,20 +43,16 @@ function EnviadosPage() {
   }, [sent, q, range.from, range.to]);
 
   const stats = useMemo(() => {
-    const startDay = new Date();
-    startDay.setHours(0, 0, 0, 0);
     const startHour = Date.now() - 60 * 60 * 1000;
-    let today = 0;
     let lastHour = 0;
     let test = 0;
-    for (const e of sent) {
+    for (const e of filtered) {
       const t = new Date(e.sentAt).getTime();
-      if (t >= startDay.getTime()) today++;
       if (t >= startHour) lastHour++;
       if (e.testMode) test++;
     }
-    return { total: sent.length, today, lastHour, test, inRange: filtered.length };
-  }, [sent, filtered.length]);
+    return { total: sent.length, lastHour, test, inRange: filtered.length };
+  }, [sent, filtered]);
 
   const exportCsv = () => {
     const header = ['data_envio', 'email', 'cnpj', 'empresa', 'assunto', 'modo_teste', 'link'];
