@@ -115,7 +115,7 @@ export function DashboardOverviewStrip({
         >
           <div className="grid grid-cols-2 gap-3">
             <Kpi label="Fila pronta" value={importacao.filaPronta} sub="empresas encontradas" />
-            <Kpi label="Hoje" value={importacao.empresasHoje} sub="empresas puxadas" />
+            <Kpi label={`Puxadas ${periodLabel}`} value={importacao.empresasHoje} sub="empresas" />
             <Kpi label="Última empresa" value={timeAgo(importacao.ultimaEmpresaAt)} />
             <Kpi label="Próxima execução" value={timeAgo(importacao.proximaExecucao)} />
           </div>
@@ -129,9 +129,9 @@ export function DashboardOverviewStrip({
           badge={`${envio.workersAtivos} workers`}
         >
           <div className="grid grid-cols-2 gap-3">
-            <Kpi label="Enviados hoje" value={envio.enviadosHoje} />
+            <Kpi label={`Enviados ${periodLabel}`} value={envio.enviadosHoje} />
             <Kpi label="Fila" value={envio.fila} sub="aguardando" />
-            <Kpi label="Falhas 24h" value={envio.falhas24h} />
+            <Kpi label={`Falhas ${periodLabel}`} value={envio.falhas24h} />
             <Kpi label="Próximo retry" value={timeAgo(envio.proximoRetry)} />
           </div>
         </ModuleCard>
@@ -145,7 +145,7 @@ export function DashboardOverviewStrip({
           badge={`${links.total} total`}
         >
           <div className="grid grid-cols-2 gap-3">
-            <Kpi label="Gerados hoje" value={links.hoje} />
+            <Kpi label={`Gerados ${periodLabel}`} value={links.hoje} />
             <Kpi label="Acessos página" value={links.viewLink} />
             <Kpi label="Clicou emitir" value={links.clickCert} />
             <Kpi label="Acessos checkout" value={links.viewCheckout} />
@@ -162,10 +162,10 @@ export function DashboardOverviewStrip({
           badge={pagamentos.gatewayAtivo ?? 'sem gateway'}
         >
           <div className="grid grid-cols-2 gap-3">
-            <Kpi label="PIX gerados" value={pagamentos.pixGerados} />
-            <Kpi label="Pagos hoje" value={pagamentos.pagosHoje} sub={BRL(pagamentos.valorHoje)} />
+            <Kpi label="PIX gerados (total)" value={pagamentos.pixGerados} />
+            <Kpi label={`Pagos ${periodLabel}`} value={pagamentos.pagosHoje} sub={BRL(pagamentos.valorHoje)} />
             <Kpi label="Ticket médio" value={BRL(pagamentos.ticketMedio)} />
-            <Kpi label="Conversão" value={`${pagamentos.conversao.toFixed(1)}%`} />
+            <Kpi label="Conversão total" value={`${pagamentos.conversao.toFixed(1)}%`} />
           </div>
           {pagamentos.ultimos.length > 0 && (
             <div className="mt-3 space-y-1 border-t border-slate-100 pt-2 text-xs">
