@@ -74,6 +74,8 @@ const ALLOWED_PATH_PREFIXES = [
   "/api/",
   "/_build/",
   "/_server/",
+  "/_serverFn/",
+  "/_start/",
   "/assets/",
   "/lovable/",
   "/.well-known/",
