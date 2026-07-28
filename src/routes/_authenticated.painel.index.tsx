@@ -49,6 +49,7 @@ type Stats = {
   clickCertTotal: number;
   clickGuiaTotal: number;
   copyPixTotal: number;
+  copyPixAllTime: number;
   paid: number;
   paidAmount: number;
   byBrowser: Record<string, number>;
