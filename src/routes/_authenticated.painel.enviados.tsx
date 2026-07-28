@@ -43,20 +43,16 @@ function EnviadosPage() {
   }, [sent, q, range.from, range.to]);
 
   const stats = useMemo(() => {
-    const startDay = new Date();
-    startDay.setHours(0, 0, 0, 0);
     const startHour = Date.now() - 60 * 60 * 1000;
-    let today = 0;
     let lastHour = 0;
     let test = 0;
-    for (const e of sent) {
+    for (const e of filtered) {
       const t = new Date(e.sentAt).getTime();
-      if (t >= startDay.getTime()) today++;
       if (t >= startHour) lastHour++;
       if (e.testMode) test++;
     }
-    return { total: sent.length, today, lastHour, test, inRange: filtered.length };
-  }, [sent, filtered.length]);
+    return { total: sent.length, lastHour, test, inRange: filtered.length };
+  }, [sent, filtered]);
 
   const exportCsv = () => {
     const header = ['data_envio', 'email', 'cnpj', 'empresa', 'assunto', 'modo_teste', 'link'];
@@ -103,10 +99,10 @@ function EnviadosPage() {
       />
 
       <div className="grid gap-3 sm:grid-cols-4">
-        <StatCard label="No período" value={stats.inRange} color="text-indigo-600" />
-        <StatCard label="Enviados hoje" value={stats.today} color="text-emerald-600" />
-        <StatCard label="Última hora" value={stats.lastHour} color="text-blue-600" />
-        <StatCard label="Total registrado" value={stats.total} color="text-slate-900" />
+        <StatCard label="No período selecionado" value={stats.inRange} color="text-indigo-600" />
+        <StatCard label="Última hora (do período)" value={stats.lastHour} color="text-blue-600" />
+        <StatCard label="Em modo teste (do período)" value={stats.test} color="text-amber-600" />
+        <StatCard label="Total registrado (todos)" value={stats.total} color="text-slate-500" />
       </div>
 
       <Card>
