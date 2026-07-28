@@ -469,3 +469,38 @@ function ErrorPage() {
     </Page>
   );
 }
+
+function IssuingOverlay({ cnpjFmt }: { cnpjFmt: string }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Gerando seu certificado"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-gradient-to-br from-[#0b1e3f] via-[#0f2a5c] to-[#004884] p-4 animate-fade-in"
+    >
+      <div className="w-full max-w-[440px] rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-8 text-center text-white shadow-2xl">
+        <div className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-full bg-white/15 ring-2 ring-white/30">
+          <ShieldCheck className="h-10 w-10 text-emerald-300 animate-pulse" />
+        </div>
+        <div className="inline-flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wider text-emerald-300">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Pagamento confirmado
+        </div>
+        <h2 className="mt-3 text-[22px] font-black leading-tight">Gerando seu Certificado Digital</h2>
+        <p className="mt-2 text-[13.5px] text-white/85 leading-relaxed">
+          Vinculando ao seu <span className="font-bold">CNPJ {cnpjFmt}</span> no ICP-Brasil...
+        </p>
+        <div className="mt-6 h-1.5 w-full overflow-hidden rounded-full bg-white/15">
+          <div className="h-full w-1/2 rounded-full bg-emerald-400 animate-[shimmer_1.4s_ease-in-out_infinite]" style={{ animation: 'issuingBar 1.6s ease-in-out infinite' }} />
+        </div>
+        <div className="mt-5 grid grid-cols-3 gap-2 text-[10.5px] text-white/70">
+          <div className="rounded-md bg-white/5 py-2">Validando</div>
+          <div className="rounded-md bg-white/5 py-2">Assinando</div>
+          <div className="rounded-md bg-white/5 py-2">Vinculando</div>
+        </div>
+      </div>
+      <style>{`@keyframes issuingBar{0%{transform:translateX(-100%);width:40%}50%{width:70%}100%{transform:translateX(220%);width:40%}}`}</style>
+    </div>
+  );
+}
+
