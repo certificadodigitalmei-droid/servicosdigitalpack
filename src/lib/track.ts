@@ -41,17 +41,36 @@ function parseUA(ua: string) {
 
 const sentViews = new Set<string>();
 
+// Cooldown (ms) para evitar contar múltiplos disparos do mesmo visitante em
+// eventos de clique — reduz inflação por repetição/reenvio no mesmo checkout.
+const CLICK_COOLDOWN_MS = 30 * 60 * 1000; // 30 min
+
+function shouldThrottleClick(token: string, event_type: TrackEvent, visitor_id: string): boolean {
+  try {
+    const key = `cmd_ev:${event_type}:${token}:${visitor_id}`;
+    const now = Date.now();
+    const prev = Number(localStorage.getItem(key) || '0');
+    if (prev && now - prev < CLICK_COOLDOWN_MS) return true;
+    localStorage.setItem(key, String(now));
+    return false;
+  } catch { return false; }
+}
+
 export async function trackEvent(token: string, event_type: TrackEvent) {
   try {
     if (typeof window === 'undefined' || !token) return;
     const visitor_id = getVisitorId();
 
-    // Only dedupe view events within the current page load (avoid StrictMode/rerender double-fire).
-    // Clicks are never deduped — every click counts toward Total.
+    // Dedupe views within page load (StrictMode/rerender).
     if (event_type === 'view_link' || event_type === 'view_checkout') {
       const key = `${token}:${event_type}`;
       if (sentViews.has(key)) return;
       sentViews.add(key);
+    }
+
+    // Throttle repeated clicks do mesmo visitante no mesmo link.
+    if (event_type === 'click_certificado' || event_type === 'click_guia' || event_type === 'copy_pix') {
+      if (shouldThrottleClick(token, event_type, visitor_id)) return;
     }
 
     const ua = navigator.userAgent || '';

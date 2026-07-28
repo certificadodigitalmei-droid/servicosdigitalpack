@@ -569,8 +569,8 @@ function MetricCard({ icon, label, value, total, color, hint }: { icon: React.Re
         <div className="text-sm font-medium text-slate-600">{label}</div>
         {hint && <div className="mt-1 text-[11px] text-slate-400">{hint}</div>}
         {typeof total === 'number' && total !== value && (
-          <div className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-500">
-            Cliques no período: <span className="font-semibold text-slate-900">{total.toLocaleString('pt-BR')}</span>
+          <div className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+            Incluindo repetições do mesmo visitante: <span className="font-medium text-slate-600">{total.toLocaleString('pt-BR')}</span>
           </div>
         )}
       </CardContent>
