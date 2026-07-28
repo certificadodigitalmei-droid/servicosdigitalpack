@@ -54,6 +54,7 @@ function cleanPersonName(v?: string | null): string {
 function TokenHomePage() {
   const { row, initialPaidAt, popup, display } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null; display: SiteDisplaySettings };
   const { token } = Route.useParams();
+  const search = Route.useSearch() as { issuing?: number };
   const nomeFmt = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '—';
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
   const aberturaFmt = row.abertura ? formatDateBR(row.abertura) : '—';
@@ -61,7 +62,41 @@ function TokenHomePage() {
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupSettings] = useState<SitePopupSettings | null>(popup);
   const [paidAt, setPaidAt] = useState<string | null>(initialPaidAt);
+  const [issuing, setIssuing] = useState<boolean>(search.issuing === 1);
   const navigate = useNavigate();
+
+  // "Gerando seu certificado": mantém overlay por no mínimo 4s e até paidAt chegar
+  useEffect(() => {
+    if (!issuing) return;
+    const started = Date.now();
+    const MIN_MS = 4000;
+    const check = () => {
+      const elapsed = Date.now() - started;
+      if (paidAt && elapsed >= MIN_MS) {
+        setIssuing(false);
+        navigate({ to: '/c/$token', params: { token }, search: {}, replace: true });
+      }
+    };
+    check();
+    const t = setInterval(check, 400);
+    return () => clearInterval(t);
+  }, [issuing, paidAt, navigate, token]);
+
+  // Enquanto está "issuing", faz polling agressivo (1s) do status
+  useEffect(() => {
+    if (!issuing || paidAt) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await getLinkPaymentStatus({ data: { token } });
+        if (!cancelled && res.paid && res.paid_at) setPaidAt(res.paid_at);
+      } catch {}
+    };
+    tick();
+    const t = setInterval(tick, 1500);
+    return () => { cancelled = true; clearInterval(t); };
+  }, [issuing, paidAt, token]);
+
 
 
 
