@@ -70,6 +70,7 @@ const EMPTY: Stats = {
   clickCertTotal: 0,
   clickGuiaTotal: 0,
   copyPixTotal: 0,
+  copyPixAllTime: 0,
   paid: 0,
   paidAmount: 0,
   byBrowser: {},
