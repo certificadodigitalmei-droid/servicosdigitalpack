@@ -125,11 +125,15 @@ function LinksGeradosPage() {
       // Origem: manual = upload CSV (tem generation_id), automática = consulta (sem generation_id)
       if (origin === 'manual') q = q.not('generation_id', 'is', null);
       if (origin === 'auto') q = q.is('generation_id', null);
+      // Período filtra também a criação do link
+      if (range.gte) q = q.gte('created_at', range.gte);
+      if (range.lte) q = q.lte('created_at', range.lte);
       if (search.trim()) {
         const s = search.trim();
         q = q.or(`public_token.ilike.%${s}%`);
       }
       q = q.range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+
 
       const { data, error, count } = await q;
       if (error) throw error;
