@@ -321,7 +321,10 @@ function EmpresasImportadasPage() {
                     <TableCell>{r.inicio_atividade ? formatDateBR(r.inicio_atividade) : 'Não informado'}</TableCell>
                     <TableCell>{r.uf || '—'}</TableCell>
                     <TableCell className="max-w-[180px] truncate">{r.email || 'Não informado'}</TableCell>
-                    <TableCell className="text-xs">{formatDateBR(r.created_at.slice(0, 10))}</TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      <div>{new Date(r.created_at).toLocaleDateString('pt-BR')}</div>
+                      <div className="text-slate-500">{new Date(r.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </TableCell>
                     <TableCell className="text-right">
                       <Button asChild size="sm" variant="outline">
                         <Link to="/painel/empresas-importadas/$companyId" params={{ companyId: r.id }}>
