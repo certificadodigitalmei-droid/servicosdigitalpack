@@ -399,13 +399,20 @@ function MensagemZapPage() {
                       </TableCell>
                       <TableCell>
                         {phone ? (
-                          <button
-                            className="inline-flex items-center gap-1 text-sm text-slate-700 hover:text-brand-navy"
-                            onClick={() => copyPhone(phone)}
-                            title="Copiar telefone"
+                          <a
+                            href={buildWhatsAppUrl(phone, renderTemplate(template, {
+                              empresa: empresa || 'sua empresa',
+                              cnpj: formatCNPJ(c?.cnpj),
+                              link,
+                            }))}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-green-700 hover:text-green-800 font-medium"
+                            title="Abrir WhatsApp com mensagem pronta"
+                            onClick={(e) => { e.stopPropagation(); void copyPhone(phone); }}
                           >
-                            <Phone className="h-3.5 w-3.5" /> {formatPhoneBR(phone)}
-                          </button>
+                            <MessageCircle className="h-3.5 w-3.5" /> {formatPhoneBR(phone)}
+                          </a>
                         ) : <span className="text-xs text-slate-400">sem telefone</span>}
                       </TableCell>
                       <TableCell>
