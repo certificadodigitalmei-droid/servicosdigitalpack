@@ -243,13 +243,6 @@ function MensagemZapPage() {
 
       if (onlyWithPhone) list = list.filter((r) => !!extractPhone(r.companies));
 
-      if (contactedFilter !== 'all') {
-        list = list.filter((r) => {
-          const isContacted = !!clickedMap[r.id];
-          return contactedFilter === 'contacted' ? isContacted : !isContacted;
-        });
-      }
-
       setRows(list);
       setStatsByToken(per);
       setPaidByLinkId(paidSet);
