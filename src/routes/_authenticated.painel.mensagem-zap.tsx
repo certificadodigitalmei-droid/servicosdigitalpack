@@ -49,6 +49,86 @@ Após a confirmação do pagamento, a ativação é feita automaticamente, diret
 
 *Esta é uma comunicação comercial referente à solicitação iniciada, que se encontra aberta e pendente no sistema.*`;
 
+const FORMAL_TEMPLATES: TemplateItem[] = [
+  {
+    id: 'formal-1',
+    name: 'Formal – Aviso de pendência',
+    enabled: true,
+    body: `Olá, *{{empresa}}*.
+
+Identificamos que o CNPJ *{{cnpj}}* está com a ativação do Certificado Digital pendente.
+
+O Certificado Digital é um documento essencial para a identificação eletrônica da sua empresa em portais governamentais, sistemas fiscais e em operações que exigem assinatura digital.
+
+*Riscos de não ativar:*
+- Impossibilidade de acessar serviços que exigem certificado digital;
+- Atraso em obrigações fiscais e acessórias;
+- Risco de multas, bloqueios ou suspensão de atividades que dependam de assinatura eletrônica.
+
+Regularize agora através do link abaixo:
+{{link}}
+
+Att.,
+Central de Ativação`,
+  },
+  {
+    id: 'formal-2',
+    name: 'Formal – Riscos e prazos',
+    enabled: true,
+    body: `*{{empresa}}* — Atenção: CNPJ *{{cnpj}}* pendente de ativação do Certificado Digital.
+
+O não ativamento pode comprometer o acesso a sistemas oficiais, a assinatura de documentos digitais e o cumprimento de obrigações junto a órgãos públicos.
+
+*Principais riscos:*
+- Perda de prazos fiscais e tributários;
+- Impossibilidade de assinar contratos e documentos eletronicamente;
+- Restrições em portais governamentais e bancários.
+
+Evite transtornos. Acesse o link e finalize a ativação:
+{{link}}
+
+Estamos à disposição.`,
+  },
+  {
+    id: 'formal-3',
+    name: 'Formal – Regularização necessária',
+    enabled: true,
+    body: `Prezado(a) responsável pela *{{empresa}}* (CNPJ *{{cnpj}}*).
+
+Informamos que a ativação do Certificado Digital de sua empresa ainda não foi concluída e permanece pendente em nosso sistema.
+
+Sem o certificado ativo, sua empresa pode enfrentar dificuldades em:
+- Acessar o e-CAC, Simples Nacional e outros portais federais;
+- Emitir notas fiscais e guias em sistemas que exigem identificação digital;
+- Assinar documentos eletrônicos com validade jurídica.
+
+*Não deixe para depois.* A inatividade pode gerar complicações legais e operacionais.
+
+Finalize pelo link:
+{{link}}
+
+Atenciosamente.`,
+  },
+  {
+    id: 'formal-4',
+    name: 'Formal – Comunicação oficial',
+    enabled: true,
+    body: `Olá, *{{empresa}}*.
+
+Constatamos que o CNPJ *{{cnpj}}* possui uma solicitação de Certificado Digital em aberto, aguardando ativação.
+
+O Certificado Digital garante segurança e validade jurídica nos processos digitais da sua empresa. Deixar essa pendência acumulada pode resultar em:
+- Bloqueios de acesso em sistemas oficiais;
+- Atraso em declarações e obrigações;
+- Impossibilidade de realizar operações que exijam identificação digital.
+
+Resolva de forma simples e segura pelo link:
+{{link}}
+
+Qualquer dúvida, estamos à disposição.`,
+  },
+];
+
 const LS_TEMPLATE = 'painel:mensagem-zap:template'; // legado (string única)
 const LS_TEMPLATES = 'painel:mensagem-zap:templates'; // novo: lista de variações
 const LS_CLICKED = 'painel:mensagem-zap:clicked';
@@ -212,6 +292,13 @@ function MensagemZapPage() {
       setActiveTplId(next[0]?.id ?? 'default');
       return next;
     });
+  };
+  const loadFormalTemplates = () => {
+    if (!confirm('Isso vai substituir todas as variações atuais por 4 modelos formais de pendência de ativação. Deseja continuar?')) return;
+    const fresh = FORMAL_TEMPLATES.map((t) => ({ ...t, id: makeTplId() }));
+    setTemplates(fresh);
+    setActiveTplId(fresh[0].id);
+    toast.success('Modelos formais carregados');
   };
 
   const range = useMemo(() => rangeFromPreset(preset, from, to), [preset, from, to]);
@@ -426,8 +513,9 @@ function MensagemZapPage() {
         <CardHeader>
           <CardTitle className="text-base flex items-center justify-between gap-2">
             <span>Modelos da mensagem ({templates.filter((t) => t.enabled).length} ativo{templates.filter((t) => t.enabled).length === 1 ? '' : 's'} de {templates.length})</span>
-            <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
               <Button size="sm" variant="outline" onClick={addTemplate}>+ Nova variação</Button>
+              <Button size="sm" variant="outline" onClick={loadFormalTemplates}>Carregar modelos formais</Button>
               <Button size="sm" variant="ghost" onClick={duplicateActive}>Duplicar</Button>
               <Button size="sm" variant="ghost" className="text-red-600" onClick={removeActive}>Excluir</Button>
             </div>
