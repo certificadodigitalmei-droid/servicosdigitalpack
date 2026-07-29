@@ -512,6 +512,7 @@ function MensagemZapPage() {
         const s = per[r.public_token] ?? { view_link: 0, view_checkout: 0, click_guia: 0, click_certificado: 0 };
         if (stage !== 'paid' && paidSet.has(r.id)) return false;
         if (stage === 'all') return true;
+        if (stage === 'not_visited') return (s.view_link ?? 0) === 0;
         if (stage === 'visited') return s.view_link > 0;
         if (stage === 'checkout') return s.view_checkout > 0;
         if (stage === 'guia') return s.click_guia > 0;
