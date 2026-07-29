@@ -293,6 +293,13 @@ function MensagemZapPage() {
       return next;
     });
   };
+  const loadFormalTemplates = () => {
+    if (!confirm('Isso vai substituir todas as variações atuais por 4 modelos formais de pendência de ativação. Deseja continuar?')) return;
+    const fresh = FORMAL_TEMPLATES.map((t) => ({ ...t, id: makeTplId() }));
+    setTemplates(fresh);
+    setActiveTplId(fresh[0].id);
+    toast.success('Modelos formais carregados');
+  };
 
   const range = useMemo(() => rangeFromPreset(preset, from, to), [preset, from, to]);
 
