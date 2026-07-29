@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
-import { formatCNPJ, formatDateBR } from '@/lib/format';
+import { formatCNPJ, formatDateBR, cleanCompanyName } from '@/lib/format';
 import { toast } from 'sonner';
 import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
 

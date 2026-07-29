@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
-import { formatCNPJ } from '@/lib/format';
+import { formatCNPJ, cleanCompanyName } from '@/lib/format';
 import { toast } from 'sonner';
 
 
