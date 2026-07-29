@@ -261,7 +261,7 @@ function MensagemZapPage() {
     }
   };
 
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [preset, from, to, stage, onlyWithPhone]);
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [preset, from, to, stage, onlyWithPhone, contactedFilter, clickedMap]);
 
   const preview = useMemo(() => renderTemplate(template, {
     empresa: 'Padaria Exemplo LTDA',
