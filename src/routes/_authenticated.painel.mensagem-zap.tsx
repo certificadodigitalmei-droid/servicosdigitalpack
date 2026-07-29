@@ -48,6 +48,15 @@ Após a confirmação do pagamento, a ativação é feita automaticamente, diret
 *Esta é uma comunicação comercial referente à solicitação iniciada, que se encontra aberta e pendente no sistema.*`;
 
 const LS_TEMPLATE = 'painel:mensagem-zap:template';
+const LS_CLICKED = 'painel:mensagem-zap:clicked';
+
+function loadClicked(): Record<string, number> {
+  if (typeof window === 'undefined') return {};
+  try { return JSON.parse(window.localStorage.getItem(LS_CLICKED) || '{}'); } catch { return {}; }
+}
+function saveClicked(map: Record<string, number>) {
+  try { window.localStorage.setItem(LS_CLICKED, JSON.stringify(map)); } catch { /* quota */ }
+}
 
 function isoStart(d: Date) { const nd = new Date(d); nd.setHours(0,0,0,0); return nd.toISOString(); }
 function isoEnd(d: Date) { const nd = new Date(d); nd.setHours(23,59,59,999); return nd.toISOString(); }
