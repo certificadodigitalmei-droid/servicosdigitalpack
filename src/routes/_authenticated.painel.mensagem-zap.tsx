@@ -123,6 +123,23 @@ function MensagemZapPage() {
   const [stage, setStage] = useState<Stage>('all');
   const [search, setSearch] = useState('');
   const [onlyWithPhone, setOnlyWithPhone] = useState(true);
+  const [contactedFilter, setContactedFilter] = useState<ContactedFilter>('all');
+  const [clickedMap, setClickedMap] = useState<Record<string, number>>(() => loadClicked());
+
+  const markClicked = (id: string) => {
+    setClickedMap((prev) => {
+      const next = { ...prev, [id]: Date.now() };
+      saveClicked(next);
+      return next;
+    });
+  };
+  const unmarkClicked = (id: string) => {
+    setClickedMap((prev) => {
+      const next = { ...prev }; delete next[id];
+      saveClicked(next);
+      return next;
+    });
+  };
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<any[]>([]);
   const [statsByToken, setStatsByToken] = useState<Record<string, { view_link: number; view_checkout: number; click_guia: number; click_certificado: number }>>({});
