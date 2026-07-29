@@ -20,7 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
 import { formatCNPJ } from '@/lib/format';
 import { toast } from 'sonner';
-import { useRealtimeRefresh } from '@/hooks/use-realtime-refresh';
+
 
 export const Route = createFileRoute('/_authenticated/painel/links-gerados')({
   head: () => ({ meta: [{ title: 'Links Gerados | Painel' }] }),
@@ -291,7 +291,8 @@ function LinksGeradosPage() {
 
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [page]);
   useEffect(() => { setPage(0); void load(); /* eslint-disable-next-line */ }, [preset, from, to, origin, status]);
-  useRealtimeRefresh(['company_links', 'link_events', 'orders'], () => void load(), []);
+  // Realtime desativado nesta tela: causava recarregamento constante ao chegar novos eventos.
+  // Use o botão "Atualizar" para recarregar sob demanda.
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -304,17 +305,23 @@ function LinksGeradosPage() {
           <h1 className="text-3xl font-bold text-slate-900">Links Gerados</h1>
           <p className="text-sm text-slate-600">O período filtra os links pela <b>data de criação</b> e também as métricas de cliques e pagamentos.</p>
         </div>
-        <WipeAllButton
-          label="Apagar todos os links"
-          title="Apagar todos os links gerados?"
-          description="Remove permanentemente todos os links públicos e de checkout, seus eventos e o histórico de gerações. Os links deixarão de funcionar. Não pode ser desfeito."
-          steps={[
-            { label: 'link_events', run: () => supabase.from('link_events').delete().neq('id', EMPTY_UUID) },
-            { label: 'company_links', run: () => supabase.from('company_links').delete().neq('id', EMPTY_UUID) },
-            { label: 'link_generations', run: () => supabase.from('link_generations').delete().neq('id', EMPTY_UUID) },
-          ]}
-          onDone={() => { setPage(0); load(); }}
-        />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          <WipeAllButton
+            label="Apagar todos os links"
+            title="Apagar todos os links gerados?"
+            description="Remove permanentemente todos os links públicos e de checkout, seus eventos e o histórico de gerações. Os links deixarão de funcionar. Não pode ser desfeito."
+            steps={[
+              { label: 'link_events', run: () => supabase.from('link_events').delete().neq('id', EMPTY_UUID) },
+              { label: 'company_links', run: () => supabase.from('company_links').delete().neq('id', EMPTY_UUID) },
+              { label: 'link_generations', run: () => supabase.from('link_generations').delete().neq('id', EMPTY_UUID) },
+            ]}
+            onDone={() => { setPage(0); load(); }}
+          />
+        </div>
       </div>
 
 
