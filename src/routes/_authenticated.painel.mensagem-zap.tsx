@@ -446,7 +446,8 @@ function MensagemZapPage() {
                 )}
                 {visibleRows.map((r) => {
                   const c = r.companies;
-                  const empresa = (c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia || '—').replace(/^\d+[.\-/\s]*/, '').trim();
+                  const rawName = (c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia || '—');
+                  const empresa = cleanCompanyName(rawName);
                   const phone = extractPhone(c);
                   const s = statsByToken[r.public_token] ?? { view_link: 0, view_checkout: 0, click_guia: 0, click_certificado: 0 };
                   const isPaid = paidByLinkId.has(r.id);
