@@ -99,48 +99,18 @@ export const enqueueWaMessages = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-    const skipH = data.skip_recent_hours ?? 24;
+    // REGRA: nunca enfileirar o mesmo telefone duas vezes para este dono, independente do status/tempo.
     let existing = new Set<string>();
     const phones = Array.from(new Set(data.items.map((i) => i.phone.replace(/\D/g, ''))));
-    // 1) sempre pular quem JÁ FOI ENVIADO alguma vez (status='sent'), independente da janela
     for (let i = 0; i < phones.length; i += 500) {
       const chunk = phones.slice(i, i + 500);
       const { data: rows } = await supabaseAdmin
         .from('whatsapp_queue')
         .select('phone')
         .eq('owner_user_id', context.userId)
-        .eq('status', 'sent')
         .in('phone', chunk);
       for (const r of (rows ?? []) as any[]) existing.add(String(r.phone));
     }
-    // 2) pular também quem foi enfileirado recentemente (pending/sending) na janela configurada
-    if (skipH > 0) {
-      const since = new Date(Date.now() - skipH * 3600_000).toISOString();
-      for (let i = 0; i < phones.length; i += 500) {
-        const chunk = phones.slice(i, i + 500);
-        const { data: rows } = await supabaseAdmin
-          .from('whatsapp_queue')
-          .select('phone')
-          .eq('owner_user_id', context.userId)
-          .in('status', ['pending', 'sending'])
-          .in('phone', chunk)
-          .gte('created_at', since);
-        for (const r of (rows ?? []) as any[]) existing.add(String(r.phone));
-      }
-    }
-    const rows = data.items
-      .map((i) => ({ ...i, phone: i.phone.replace(/\D/g, '') }))
-      .filter((i) => i.phone.length >= 10 && !existing.has(i.phone))
-      .map((i) => ({
-        owner_user_id: context.userId,
-        phone: i.phone,
-        message: i.message,
-        company_name: i.company_name ?? null,
-        cnpj: i.cnpj ?? null,
-        company_link_id: i.company_link_id ?? null,
-        batch_label: data.batch_label ?? null,
-        status: 'pending',
-      }));
     if (rows.length === 0) return { inserted: 0, skipped: data.items.length };
     // insert in chunks
     let inserted = 0;
