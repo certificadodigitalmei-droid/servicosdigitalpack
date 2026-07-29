@@ -252,6 +252,7 @@ function PanelLayout() {
         { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
+        { title: 'Mensagem para Zap', icon: MessageSquare, to: '/painel/mensagem-zap' },
         
       ],
     },
@@ -297,6 +298,7 @@ function PanelLayout() {
     if (path === '/painel/envio-massa') return 'Envio em Massa';
     if (path === '/painel/workspace-envio') return 'Envio Google Workspace';
     if (path === '/painel/enviados') return 'E-mails Enviados';
+    if (path === '/painel/mensagem-zap') return 'Mensagem para Zap';
     
     if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
     return 'Painel';

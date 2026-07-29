@@ -29,6 +29,7 @@ import { Route as AuthenticatedPainelPrecosRouteImport } from './routes/_authent
 import { Route as AuthenticatedPainelPopUpSiteRouteImport } from './routes/_authenticated.painel.pop-up-site'
 import { Route as AuthenticatedPainelPagamentosRouteImport } from './routes/_authenticated.painel.pagamentos'
 import { Route as AuthenticatedPainelModeloMensagemRouteImport } from './routes/_authenticated.painel.modelo-mensagem'
+import { Route as AuthenticatedPainelMensagemZapRouteImport } from './routes/_authenticated.painel.mensagem-zap'
 import { Route as AuthenticatedPainelLinksGeradosRouteImport } from './routes/_authenticated.painel.links-gerados'
 import { Route as AuthenticatedPainelImportarEmpresasRouteImport } from './routes/_authenticated.painel.importar-empresas'
 import { Route as AuthenticatedPainelImportacaoAutomaticaRouteImport } from './routes/_authenticated.painel.importacao-automatica'
@@ -158,6 +159,12 @@ const AuthenticatedPainelModeloMensagemRoute =
   AuthenticatedPainelModeloMensagemRouteImport.update({
     id: '/modelo-mensagem',
     path: '/modelo-mensagem',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
+const AuthenticatedPainelMensagemZapRoute =
+  AuthenticatedPainelMensagemZapRouteImport.update({
+    id: '/mensagem-zap',
+    path: '/mensagem-zap',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelLinksGeradosRoute =
@@ -316,6 +323,7 @@ export interface FileRoutesByFullPath {
   '/painel/importacao-automatica': typeof AuthenticatedPainelImportacaoAutomaticaRoute
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
+  '/painel/mensagem-zap': typeof AuthenticatedPainelMensagemZapRoute
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
@@ -357,6 +365,7 @@ export interface FileRoutesByTo {
   '/painel/importacao-automatica': typeof AuthenticatedPainelImportacaoAutomaticaRoute
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
+  '/painel/mensagem-zap': typeof AuthenticatedPainelMensagemZapRoute
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
@@ -402,6 +411,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/importacao-automatica': typeof AuthenticatedPainelImportacaoAutomaticaRoute
   '/_authenticated/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/_authenticated/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
+  '/_authenticated/painel/mensagem-zap': typeof AuthenticatedPainelMensagemZapRoute
   '/_authenticated/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
   '/_authenticated/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/_authenticated/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
@@ -447,6 +457,7 @@ export interface FileRouteTypes {
     | '/painel/importacao-automatica'
     | '/painel/importar-empresas'
     | '/painel/links-gerados'
+    | '/painel/mensagem-zap'
     | '/painel/modelo-mensagem'
     | '/painel/pagamentos'
     | '/painel/pop-up-site'
@@ -488,6 +499,7 @@ export interface FileRouteTypes {
     | '/painel/importacao-automatica'
     | '/painel/importar-empresas'
     | '/painel/links-gerados'
+    | '/painel/mensagem-zap'
     | '/painel/modelo-mensagem'
     | '/painel/pagamentos'
     | '/painel/pop-up-site'
@@ -532,6 +544,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/importacao-automatica'
     | '/_authenticated/painel/importar-empresas'
     | '/_authenticated/painel/links-gerados'
+    | '/_authenticated/painel/mensagem-zap'
     | '/_authenticated/painel/modelo-mensagem'
     | '/_authenticated/painel/pagamentos'
     | '/_authenticated/painel/pop-up-site'
@@ -710,6 +723,13 @@ declare module '@tanstack/react-router' {
       path: '/modelo-mensagem'
       fullPath: '/painel/modelo-mensagem'
       preLoaderRoute: typeof AuthenticatedPainelModeloMensagemRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/_authenticated/painel/mensagem-zap': {
+      id: '/_authenticated/painel/mensagem-zap'
+      path: '/mensagem-zap'
+      fullPath: '/painel/mensagem-zap'
+      preLoaderRoute: typeof AuthenticatedPainelMensagemZapRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/links-gerados': {
@@ -917,6 +937,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelImportacaoAutomaticaRoute: typeof AuthenticatedPainelImportacaoAutomaticaRoute
   AuthenticatedPainelImportarEmpresasRoute: typeof AuthenticatedPainelImportarEmpresasRoute
   AuthenticatedPainelLinksGeradosRoute: typeof AuthenticatedPainelLinksGeradosRoute
+  AuthenticatedPainelMensagemZapRoute: typeof AuthenticatedPainelMensagemZapRoute
   AuthenticatedPainelModeloMensagemRoute: typeof AuthenticatedPainelModeloMensagemRoute
   AuthenticatedPainelPagamentosRoute: typeof AuthenticatedPainelPagamentosRoute
   AuthenticatedPainelPopUpSiteRoute: typeof AuthenticatedPainelPopUpSiteRoute
@@ -949,6 +970,7 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelImportarEmpresasRoute:
     AuthenticatedPainelImportarEmpresasRoute,
   AuthenticatedPainelLinksGeradosRoute: AuthenticatedPainelLinksGeradosRoute,
+  AuthenticatedPainelMensagemZapRoute: AuthenticatedPainelMensagemZapRoute,
   AuthenticatedPainelModeloMensagemRoute:
     AuthenticatedPainelModeloMensagemRoute,
   AuthenticatedPainelPagamentosRoute: AuthenticatedPainelPagamentosRoute,
