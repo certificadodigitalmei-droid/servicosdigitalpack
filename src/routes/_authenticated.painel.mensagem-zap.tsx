@@ -121,7 +121,7 @@ function renderTemplate(tpl: string, ctx: { empresa: string; cnpj: string; link:
 function MensagemZapPage() {
   const [template, setTemplate] = useState<string>(() => {
     if (typeof window === 'undefined') return DEFAULT_TEMPLATE;
-    return window.localStorage.getItem(LS_TEMPLATE) || DEFAULT_TEMPLATE;
+    return normalizeEmoji(window.localStorage.getItem(LS_TEMPLATE) || DEFAULT_TEMPLATE);
   });
   const [preset, setPreset] = useState<DatePreset>('today');
   const [from, setFrom] = useState('');
