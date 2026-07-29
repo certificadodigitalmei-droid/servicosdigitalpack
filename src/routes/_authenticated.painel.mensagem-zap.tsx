@@ -424,32 +424,66 @@ function MensagemZapPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Modelo da mensagem</CardTitle>
+          <CardTitle className="text-base flex items-center justify-between gap-2">
+            <span>Modelos da mensagem ({templates.filter((t) => t.enabled).length} ativo{templates.filter((t) => t.enabled).length === 1 ? '' : 's'} de {templates.length})</span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={addTemplate}>+ Nova variação</Button>
+              <Button size="sm" variant="ghost" onClick={duplicateActive}>Duplicar</Button>
+              <Button size="sm" variant="ghost" className="text-red-600" onClick={removeActive}>Excluir</Button>
+            </div>
+          </CardTitle>
           <CardDescription>
-            Use as variáveis <code className="px-1 rounded bg-slate-100">{'{{empresa}}'}</code>,{' '}
-            <code className="px-1 rounded bg-slate-100">{'{{cnpj}}'}</code> e{' '}
-            <code className="px-1 rounded bg-slate-100">{'{{link}}'}</code>. Salvo automaticamente neste navegador.
+            Crie várias variações — o envio automático usa uma <b>aleatoriamente</b> para cada contato, evitando padrão repetido. Variáveis:{' '}
+            <code className="px-1 rounded bg-slate-100">{'{{empresa}}'}</code>,{' '}
+            <code className="px-1 rounded bg-slate-100">{'{{cnpj}}'}</code>,{' '}
+            <code className="px-1 rounded bg-slate-100">{'{{link}}'}</code>.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div>
-            <Label>Template</Label>
-            <Textarea
-              value={template}
-              onChange={(e) => setTemplate(normalizeEmoji(e.target.value))}
-              rows={10}
-              className="font-mono text-sm"
-            />
-            <div className="mt-2 flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setTemplate(DEFAULT_TEMPLATE)}>Restaurar padrão</Button>
-            </div>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2 border-b pb-3">
+            {templates.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTplId(t.id)}
+                className={`px-3 py-1.5 rounded-md text-sm border transition ${activeTplId === t.id ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 hover:bg-slate-50'} ${!t.enabled ? 'opacity-50 line-through' : ''}`}
+                title={t.enabled ? 'Ativa no sorteio' : 'Desativada (não é sorteada)'}
+              >
+                {t.name}
+              </button>
+            ))}
           </div>
-          <div>
-            <Label>Prévia</Label>
-            <div className="whitespace-pre-wrap rounded-md border bg-slate-50 p-3 text-sm text-slate-800 min-h-[220px]">
-              {preview}
+          {activeTpl && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <div className="grid gap-2 md:grid-cols-[1fr_auto] items-end">
+                  <div>
+                    <Label>Nome da variação</Label>
+                    <Input value={activeTpl.name} onChange={(e) => updateActive({ name: e.target.value })} />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-slate-700 pb-2">
+                    <input type="checkbox" checked={activeTpl.enabled} onChange={(e) => updateActive({ enabled: e.target.checked })} />
+                    Ativa no sorteio
+                  </label>
+                </div>
+                <Label>Texto</Label>
+                <Textarea
+                  value={activeTpl.body}
+                  onChange={(e) => updateActive({ body: e.target.value })}
+                  rows={12}
+                  className="font-mono text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => updateActive({ body: DEFAULT_TEMPLATE })}>Preencher com padrão</Button>
+                </div>
+              </div>
+              <div>
+                <Label>Prévia</Label>
+                <div className="whitespace-pre-wrap rounded-md border bg-slate-50 p-3 text-sm text-slate-800 min-h-[280px]">
+                  {preview}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
