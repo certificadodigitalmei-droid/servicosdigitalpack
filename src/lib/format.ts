@@ -52,11 +52,10 @@ export function isValidEmail(v: string): boolean {
 export function cleanCompanyName(name?: string | null): string {
   if (!name) return "—";
   return name
-    .replace(/^\d+[\.\-\/\s]*/, "")
     .replace(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g, "")
     .replace(/\d{14}/g, "")
-    .replace(/\d{2}\d{3}\d{3}\d{4}\d{2}/g, "")
+    .replace(/^[\d\.\-\/\s]+/, "")
     .replace(/[\-\/]/g, " ")
     .replace(/\s+/g, " ")
-    .trim();
+    .trim() || "—";
 }
