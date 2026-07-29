@@ -27,7 +27,7 @@ export const Route = createFileRoute('/_authenticated/painel/mensagem-zap')({
 });
 
 type DatePreset = 'all' | 'today' | 'yesterday' | '7d' | '15d' | '30d' | 'custom';
-type Stage = 'all' | 'visited' | 'checkout' | 'guia' | 'pending_pix' | 'paid';
+type Stage = 'all' | 'not_visited' | 'visited' | 'checkout' | 'guia' | 'pending_pix' | 'paid';
 type ContactedFilter = 'all' | 'pending' | 'contacted';
 
 const DEFAULT_TEMPLATE = `\u26A0\uFE0F *AVISO – CERTIFICADO DIGITAL PENDENTE*
