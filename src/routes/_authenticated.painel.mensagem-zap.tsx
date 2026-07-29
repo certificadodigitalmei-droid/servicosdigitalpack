@@ -112,10 +112,12 @@ function buildWhatsAppUrl(phoneDigits: string, message: string): string {
 }
 
 function renderTemplate(tpl: string, ctx: { empresa: string; cnpj: string; link: string }): string {
-  return tpl
-    .replaceAll('{{empresa}}', ctx.empresa)
-    .replaceAll('{{cnpj}}', ctx.cnpj)
-    .replaceAll('{{link}}', ctx.link);
+  return normalizeEmoji(
+    tpl
+      .replaceAll('{{empresa}}', ctx.empresa)
+      .replaceAll('{{cnpj}}', ctx.cnpj)
+      .replaceAll('{{link}}', ctx.link)
+  );
 }
 
 function MensagemZapPage() {
