@@ -111,8 +111,20 @@ export const enqueueWaMessages = createServerFn({ method: 'POST' })
         .in('phone', chunk);
       for (const r of (rows ?? []) as any[]) existing.add(String(r.phone));
     }
+    const rows = data.items
+      .map((i) => ({ ...i, phone: i.phone.replace(/\D/g, '') }))
+      .filter((i) => i.phone.length >= 10 && !existing.has(i.phone))
+      .map((i) => ({
+        owner_user_id: context.userId,
+        phone: i.phone,
+        message: i.message,
+        company_name: i.company_name ?? null,
+        cnpj: i.cnpj ?? null,
+        company_link_id: i.company_link_id ?? null,
+        batch_label: data.batch_label ?? null,
+        status: 'pending' as const,
+      }));
     if (rows.length === 0) return { inserted: 0, skipped: data.items.length };
-    // insert in chunks
     let inserted = 0;
     for (let i = 0; i < rows.length; i += 500) {
       const chunk = rows.slice(i, i + 500);
