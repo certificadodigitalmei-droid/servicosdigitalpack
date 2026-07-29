@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCNPJ, cleanCompanyName } from '@/lib/format';
 import { buildPublicUrl } from '@/lib/public-base-url';
 import { toast } from 'sonner';
+import { WhatsAppAutomationPanel } from '@/components/painel/WhatsAppAutomationPanel';
 
 export const Route = createFileRoute('/_authenticated/painel/mensagem-zap')({
   head: () => ({ meta: [{ title: 'Mensagem para Zap | Painel' }] }),
@@ -302,6 +303,26 @@ function MensagemZapPage() {
 
   const contactedCount = useMemo(() => rows.filter((r) => !!clickedMap[r.id]).length, [rows, clickedMap]);
 
+  const automationSelection = useMemo(() => {
+    const items: { phone: string; message: string; company_name?: string | null; cnpj?: string | null; company_link_id?: string | null }[] = [];
+    for (const r of visibleRows) {
+      const c = r.companies;
+      const phone = extractPhone(c);
+      if (!phone) continue;
+      const empresa = cleanCompanyName(c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia) || 'sua empresa';
+      const cnpj = formatCNPJ(c?.cnpj);
+      const link = buildPublicUrl(r.public_token);
+      items.push({
+        phone,
+        message: renderTemplate(template, { empresa, cnpj, link }),
+        company_name: empresa,
+        cnpj: c?.cnpj ?? null,
+        company_link_id: r.id,
+      });
+    }
+    return items;
+  }, [visibleRows, template]);
+
   const preview = useMemo(() => renderTemplate(template, {
     empresa: 'Padaria Exemplo LTDA',
     cnpj: '12.345.678/0001-90',
@@ -442,6 +463,8 @@ function MensagemZapPage() {
           </div>
         </CardContent>
       </Card>
+
+      <WhatsAppAutomationPanel selection={automationSelection} onEnqueued={() => { /* mantém marcação local */ }} />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2">

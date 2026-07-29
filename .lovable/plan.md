@@ -1,76 +1,126 @@
-# Painel Geral Sincronizado
+# Automação WhatsApp Web via Extensão Chrome
 
-Objetivo: um Dashboard mestre em `/painel` mostrando o estado de TODOS os módulos ao vivo, e cada aba lateral reformulada para exibir dados completos do seu módulo — tudo sincronizado via Supabase Realtime.
+Vamos criar uma **extensão de navegador** que roda dentro do WhatsApp Web (web.whatsapp.com) e se conecta ao painel. Você seleciona a lista (ex: "nunca visitaram", "geraram PIX pendente", etc.), aperta "Iniciar envio", e a extensão simula você enviando manualmente — com pausas aleatórias para ficar natural e reduzir risco de bloqueio ao mínimo.
 
-## 1. Dashboard mestre (`/painel/index`)
-
-Página única com 6 blocos, cada um com KPIs + mini-tabela viva:
+## Arquitetura
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│  STATUS GERAL (bolinhas verde/vermelho + últimos 60s)   │
-│  Importação • Envio • Antenas • Gateway PIX • Casa Dados│
-├──────────────────────┬──────────────────────────────────┤
-│ IMPORTAÇÃO           │ ENVIO                            │
-│ Fila pronta / meta   │ Enviados hoje / limite           │
-│ Última empresa +hora │ Perfil ativo • Restante hora     │
-│ Casa Dados: saldo    │ Falhas 24h • Próximo disparo     │
-├──────────────────────┼──────────────────────────────────┤
-│ LINKS                │ PAGAMENTOS                       │
-│ Gerados hoje/total   │ PIX gerados / Pagos hoje         │
-│ Cliques emitir/guia  │ Ticket médio • Conversão %       │
-│ Copy PIX / Acessos   │ Últimos 5 pagos (nome, valor)    │
-├──────────────────────┼──────────────────────────────────┤
-│ ANTENAS              │ AUTOMAÇÃO                        │
-│ N antenas online     │ Rodando / pausadas               │
-│ Jobs reservados/fila │ Última execução • Erros          │
-│ Envios por antena    │ Próximo ciclo em Xs              │
-└──────────────────────┴──────────────────────────────────┘
+[Painel Web]  <-->  [Fila no banco]  <-->  [Extensão Chrome]  -->  [WhatsApp Web]
+    |                     |                       |
+ escolhe                salva                   envia 1 msg
+ lista                pendentes              marca enviada
+ e ritmo                                     pega próxima
 ```
 
-Cada bloco tem link "ver tudo" para a aba correspondente.
+## Parte 1 - Banco de dados
 
-## 2. Sincronia (Supabase Realtime)
+Nova tabela `whatsapp_queue`:
+- `id`, `phone`, `message`, `company_name`, `cnpj`, `company_link_id`
+- `status`: pending | sending | sent | failed | skipped
+- `sent_at`, `error_message`, `attempts`
+- `batch_id` (agrupa envios do mesmo lote)
+- `owner_user_id`
 
-Um único hook `useRealtimeSync()` monta canais em `postgres_changes` para:
-`orders`, `company_links`, `link_events`, `email_send_queue`,
-`automatic_company_query_runs`, `satellite_jobs`, `email_workers`,
-`companies` (INSERT), `payment_gateways`.
+Nova tabela `whatsapp_batch_config`:
+- Guarda perfil ativo de envio (ritmo, pausas, limites)
+- Token único de autenticação da extensão (para não expor sessão)
 
-Cada mudança invalida a query TanStack correspondente
-(`queryClient.invalidateQueries({ queryKey: [...] })`). Fallback: refetch
-a cada 15s se o socket cair.
+## Parte 2 - Aba "Mensagem para Zap" (mudanças no painel)
 
-Migração ativa realtime nas tabelas listadas.
+Adicionar na aba existente:
 
-## 3. Reformulação por aba (mantém rotas atuais)
+**Bloco "Envio Automático via Extensão"**
+- Status da extensão: Conectada ✅ / Desconectada ❌ (heartbeat)
+- Botão "Baixar extensão" (baixa `.zip` de `/public/whatsapp-extension.zip`)
+- Botão "Como instalar" (modal com passo a passo)
+- Campo token único (copiar/colar na extensão uma vez)
 
-Cada aba passa a mostrar 3 seções fixas: **KPIs do módulo**, **Ao vivo** (últimos 20 eventos), **Ações/config**. Vou padronizar um layout com `<ModulePage title kpis liveFeed>`.
+**Perfis de ritmo (escolher um):**
+| Perfil | Envios/hora | Pausa entre msgs | Pausa longa |
+|---|---|---|---|
+| Ultra Seguro | 20 | 90-180s aleatório | 15min a cada 15 |
+| Seguro (recomendado) | 40 | 45-120s aleatório | 10min a cada 20 |
+| Moderado | 80 | 25-60s aleatório | 8min a cada 30 |
+| Rápido (mais risco) | 150 | 15-30s aleatório | 5min a cada 40 |
 
-- `painel/index` — Dashboard mestre novo (item 1)
-- `consulta-automatica` — saldo Casa Dados formatado, ciclos, últimas empresas puxadas, erros
-- `importacao-automatica` — fila pronta ao vivo, buffer, últimas importações
-- `envio-massa` — perfil, contador hora/dia, próximas 20 na fila, últimas 20 enviadas
-- `monitor-envio` — já é painel externo, garanto realtime igual
-- `links-gerados` — já reformulado; adiciono canal realtime para eventos
-- `pagamentos` — realtime de `orders`, filtro por gateway, últimos 20 pagos
-- `satelites` — heartbeat/última atividade por antena, jobs pendentes por antena
-- `campanhas-email` / `enviados` — status live de `email_send_queue`
-- `configuracoes-pagamento`, `precos`, `pop-up-site`, `exibicao-site`, `modelo-mensagem`, `api-casa-dos-dados`, `google-workspace` — mantém, adiciono cabeçalho de status ("Gateway ativo: X", "Preço atual: R$ Y") sincronizado
+Toda pausa usa **randomização** (ex: 45-120s = sorteia valor a cada msg) para não parecer bot.
 
-## 4. Detalhes técnicos
+**Limite diário:** configurável (padrão 200/dia). Extensão para sozinha ao atingir.
 
-- Hook central: `src/hooks/use-realtime-sync.ts` (monta canais no `_authenticated` layout, remove no unmount).
-- Cada aba usa `useQuery` com `staleTime: 15_000` + invalidação por realtime.
-- Server fn nova: `src/lib/dashboard/overview.functions.ts` retorna todos os KPIs do mestre em UMA chamada (evita 8 requests).
-- Migração: `ALTER PUBLICATION supabase_realtime ADD TABLE ...` para as 9 tabelas.
-- Cards reaproveitam `Card` shadcn já existente; sem novas libs.
-- Zero mudança de esquema de negócio — só leitura + realtime.
+**Botões de ação:**
+- "Adicionar seleção à fila" (usa filtros atuais + template atual da aba)
+- "Iniciar envio" / "Pausar" / "Zerar fila"
+- Progresso em tempo real: `Enviadas: 47 / Fila: 153 / Falhas: 2 / Próxima em: 34s`
 
-## 5. Fora de escopo (não mexo)
+**Tabela de fila** com status ao vivo (pending, sent com hora, failed com motivo).
 
-- Regras de envio, pricing, webhooks de pagamento, lógica das antenas, template de e-mail. Só leitura/visualização + realtime.
+## Parte 3 - Endpoints públicos (extensão consome)
 
-## Entrega
+Todos autenticados por `X-Extension-Token` (token único gerado no painel):
 
-Faço em 1 turno só, na ordem: migração realtime → hook → server fn overview → dashboard mestre → padroniza cada aba com KPIs + feed live.
+- `GET /api/public/whatsapp/next?token=...` - retorna próximo `{id, phone, message}` pendente
+- `POST /api/public/whatsapp/report` - `{id, status: sent|failed, error?}` marca resultado
+- `POST /api/public/whatsapp/heartbeat` - extensão bate a cada 30s pra painel mostrar "Conectada"
+- `GET /api/public/whatsapp/config?token=...` - retorna perfil de ritmo atual
+
+## Parte 4 - Extensão Chrome (arquivo baixável)
+
+Arquivos:
+- `manifest.json` (MV3, permissions: web.whatsapp.com, storage)
+- `background.js` - service worker: agenda próximo envio, gerencia delays, chama endpoints
+- `content.js` - injetado no WhatsApp Web: abre chat, digita mensagem, clica enviar
+- `popup.html` + `popup.js` - UI simples: campo token, botão ligar/desligar, status
+- `icon.png`
+
+**Fluxo da extensão:**
+1. Usuário abre WhatsApp Web e faz login normal (uma vez)
+2. Abre popup da extensão → cola token do painel → clica "Conectar"
+3. Extensão puxa config (perfil de ritmo)
+4. Loop:
+   - Chama `/next` → pega `{phone, message}`
+   - Content script abre `https://web.whatsapp.com/send?phone=X&text=Y`
+   - Aguarda 3-8s (carregar chat)
+   - Simula clique no botão enviar (busca por `[data-icon="send"]` ou `[aria-label="Enviar"]`)
+   - Aguarda confirmação (check verde)
+   - Reporta `sent` ou `failed`
+   - Aguarda delay aleatório (do perfil)
+   - Se atingiu lote (ex: 20 msgs), aguarda pausa longa
+   - Repete
+
+**Proteções anti-bloqueio:**
+- Delay aleatório entre 2 valores (nunca fixo)
+- "Digitação humana" simulada: pequena pausa antes de clicar enviar
+- Detecta captcha / bloqueio do WhatsApp e para automaticamente
+- Máximo 1 mensagem por número em 24h (dedupe local)
+- Para envio se >5 falhas seguidas
+
+## Parte 5 - Download da extensão
+
+- Build da extensão empacotada em `public/whatsapp-extension.zip`
+- Botão no painel usa `fetch + blob` (padrão exigido em preview do Lovable)
+- Modal de instruções: descompactar → chrome://extensions → dev mode → carregar sem compactação
+
+## Detalhes técnicos
+
+**Segurança:**
+- Token da extensão é aleatório 32 chars, salvo em `whatsapp_batch_config.extension_token`
+- Endpoints `/api/public/whatsapp/*` validam token antes de qualquer operação
+- Token não expira mas pode ser regenerado no painel (invalida extensões antigas)
+
+**Persistência:**
+- Fila fica no Supabase → se fechar navegador, retoma de onde parou ao reabrir WhatsApp Web
+- Extensão salva último ID processado em `chrome.storage.local` (evita reenvio)
+
+**Limitações honestas (aviso no painel):**
+- Precisa manter aba do WhatsApp Web aberta e logada
+- Não é oficial da Meta - risco existe mesmo com delay (recomendar número secundário)
+- Se WhatsApp mudar layout, seletores podem quebrar (fácil de ajustar)
+
+## O que fica pronto ao final
+
+1. Nova seção "Envio Automático" dentro da aba Mensagem para Zap
+2. Extensão `.zip` disponível pra download no painel
+3. Fila persistente com status em tempo real
+4. 4 perfis de ritmo com delays randomizados
+5. Heartbeat mostrando se extensão está online
+6. Instruções de instalação embutidas
