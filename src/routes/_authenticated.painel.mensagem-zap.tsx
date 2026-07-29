@@ -606,7 +606,7 @@ function MensagemZapPage() {
                       <TableCell>
                         {phone ? (
                           <a
-                            href={buildWhatsAppUrl(phone, renderTemplate(template, {
+                            href={buildWhatsAppUrl(phone, renderTemplate(activeTpl?.body ?? DEFAULT_TEMPLATE, {
                               empresa: empresa || 'sua empresa',
                               cnpj: formatCNPJ(c?.cnpj),
                               link,
@@ -643,7 +643,7 @@ function MensagemZapPage() {
                           </Button>
                           {phone && (
                             <a
-                              href={buildWhatsAppUrl(phone, renderTemplate(template, {
+                              href={buildWhatsAppUrl(phone, renderTemplate(activeTpl?.body ?? DEFAULT_TEMPLATE, {
                                 empresa: empresa || 'sua empresa',
                                 cnpj: formatCNPJ(c?.cnpj),
                                 link,
