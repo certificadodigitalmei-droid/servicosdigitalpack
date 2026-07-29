@@ -1777,6 +1777,117 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_batch_config: {
+        Row: {
+          active: boolean
+          batch_size: number
+          created_at: string
+          daily_limit: number
+          day_bucket: string
+          extension_token: string
+          id: string
+          last_heartbeat_at: string | null
+          long_pause_ms: number
+          max_delay_ms: number
+          min_delay_ms: number
+          owner_user_id: string
+          profile: string
+          running: boolean
+          sent_today: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          batch_size?: number
+          created_at?: string
+          daily_limit?: number
+          day_bucket?: string
+          extension_token: string
+          id?: string
+          last_heartbeat_at?: string | null
+          long_pause_ms?: number
+          max_delay_ms?: number
+          min_delay_ms?: number
+          owner_user_id: string
+          profile?: string
+          running?: boolean
+          sent_today?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          batch_size?: number
+          created_at?: string
+          daily_limit?: number
+          day_bucket?: string
+          extension_token?: string
+          id?: string
+          last_heartbeat_at?: string | null
+          long_pause_ms?: number
+          max_delay_ms?: number
+          min_delay_ms?: number
+          owner_user_id?: string
+          profile?: string
+          running?: boolean
+          sent_today?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_queue: {
+        Row: {
+          attempts: number
+          batch_label: string | null
+          claimed_at: string | null
+          cnpj: string | null
+          company_link_id: string | null
+          company_name: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          message: string
+          owner_user_id: string
+          phone: string
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          batch_label?: string | null
+          claimed_at?: string | null
+          cnpj?: string | null
+          company_link_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message: string
+          owner_user_id: string
+          phone: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          batch_label?: string | null
+          claimed_at?: string | null
+          cnpj?: string | null
+          company_link_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message?: string
+          owner_user_id?: string
+          phone?: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1824,6 +1935,32 @@ export type Database = {
           telefone: string
           uf: string
         }[]
+      }
+      wq_claim_next: {
+        Args: { _token: string }
+        Returns: {
+          cnpj: string
+          company_name: string
+          id: string
+          message: string
+          phone: string
+        }[]
+      }
+      wq_heartbeat: {
+        Args: { _token: string }
+        Returns: {
+          batch_size: number
+          daily_limit: number
+          long_pause_ms: number
+          max_delay_ms: number
+          min_delay_ms: number
+          running: boolean
+          sent_today: number
+        }[]
+      }
+      wq_report: {
+        Args: { _error: string; _id: string; _status: string; _token: string }
+        Returns: boolean
       }
     }
     Enums: {
