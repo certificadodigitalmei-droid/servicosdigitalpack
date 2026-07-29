@@ -325,7 +325,7 @@ function MensagemZapPage() {
             <Label>Template</Label>
             <Textarea
               value={template}
-              onChange={(e) => setTemplate(e.target.value)}
+              onChange={(e) => setTemplate(normalizeEmoji(e.target.value))}
               rows={10}
               className="font-mono text-sm"
             />
