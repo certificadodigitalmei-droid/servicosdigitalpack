@@ -367,29 +367,31 @@ function MensagemZapPage() {
       const empresa = cleanCompanyName(c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia) || 'sua empresa';
       const cnpj = formatCNPJ(c?.cnpj);
       const link = buildPublicUrl(r.public_token);
+      const tpl = pickRandomTemplate(templates); // rotação aleatória por destinatário
       items.push({
         phone,
-        message: renderTemplate(template, { empresa, cnpj, link }),
+        message: renderTemplate(tpl.body, { empresa, cnpj, link }),
         company_name: empresa,
         cnpj: c?.cnpj ?? null,
         company_link_id: r.id,
       });
     }
     return items;
-  }, [visibleRows, template]);
+  }, [visibleRows, templates]);
 
-  const preview = useMemo(() => renderTemplate(template, {
+  const preview = useMemo(() => renderTemplate(activeTpl?.body ?? DEFAULT_TEMPLATE, {
     empresa: 'Padaria Exemplo LTDA',
     cnpj: '12.345.678/0001-90',
     link: buildPublicUrl('token-exemplo'),
-  }), [template]);
+  }), [activeTpl]);
 
   const copyMessage = async (row: any) => {
     const c = row.companies;
     const empresa = cleanCompanyName(c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia) || 'sua empresa';
     const cnpj = formatCNPJ(c?.cnpj);
     const link = buildPublicUrl(row.public_token);
-    const msg = renderTemplate(template, { empresa, cnpj, link });
+    // usa o template atualmente aberto na aba (mais previsível para copiar manual)
+    const msg = renderTemplate(activeTpl?.body ?? DEFAULT_TEMPLATE, { empresa, cnpj, link });
     try {
       await navigator.clipboard.writeText(msg);
       toast.success('Mensagem copiada!');
