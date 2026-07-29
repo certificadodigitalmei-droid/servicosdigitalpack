@@ -101,15 +101,28 @@ export const enqueueWaMessages = createServerFn({ method: 'POST' })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const skipH = data.skip_recent_hours ?? 24;
     let existing = new Set<string>();
+    const phones = Array.from(new Set(data.items.map((i) => i.phone.replace(/\D/g, ''))));
+    // 1) sempre pular quem JÁ FOI ENVIADO alguma vez (status='sent'), independente da janela
+    for (let i = 0; i < phones.length; i += 500) {
+      const chunk = phones.slice(i, i + 500);
+      const { data: rows } = await supabaseAdmin
+        .from('whatsapp_queue')
+        .select('phone')
+        .eq('owner_user_id', context.userId)
+        .eq('status', 'sent')
+        .in('phone', chunk);
+      for (const r of (rows ?? []) as any[]) existing.add(String(r.phone));
+    }
+    // 2) pular também quem foi enfileirado recentemente (pending/sending) na janela configurada
     if (skipH > 0) {
       const since = new Date(Date.now() - skipH * 3600_000).toISOString();
-      const phones = Array.from(new Set(data.items.map((i) => i.phone.replace(/\D/g, ''))));
-      // fetch in chunks
       for (let i = 0; i < phones.length; i += 500) {
         const chunk = phones.slice(i, i + 500);
         const { data: rows } = await supabaseAdmin
           .from('whatsapp_queue')
           .select('phone')
+          .eq('owner_user_id', context.userId)
+          .in('status', ['pending', 'sending'])
           .in('phone', chunk)
           .gte('created_at', since);
         for (const r of (rows ?? []) as any[]) existing.add(String(r.phone));
