@@ -84,9 +84,19 @@ async function sendOne(item) {
 
 async function tick() {
   const st = await getState();
-  if (!st.running || !st.token) return schedule(30000);
+  if (!st.token) return schedule(30000);
   const cfg = await heartbeat();
-  if (!cfg) return schedule(60000);
+  if (!cfg) { console.warn('[wa] heartbeat falhou - token invalido ou painel offline'); return schedule(60000); }
+
+  // O painel manda: se cfg.running=false, a extensão pausa (mesmo se local estiver ligado).
+  // Se cfg.running=true e local estiver desligado, ligamos automaticamente.
+  if (!cfg.running) {
+    if (st.running) await setState({ running: false });
+    return schedule(30000);
+  }
+  if (cfg.running && !st.running) {
+    await setState({ running: true, consecFail: 0 });
+  }
 
   if (st.consecFail >= 5) {
     // pausa longa após muitas falhas seguidas
