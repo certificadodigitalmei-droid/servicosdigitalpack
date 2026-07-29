@@ -272,7 +272,7 @@ function MensagemZapPage() {
 
   const copyMessage = async (row: any) => {
     const c = row.companies;
-    const empresa = (c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia || '').trim() || 'sua empresa';
+    const empresa = cleanCompanyName(c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia) || 'sua empresa';
     const cnpj = formatCNPJ(c?.cnpj);
     const link = buildPublicUrl(row.public_token);
     const msg = renderTemplate(template, { empresa, cnpj, link });
