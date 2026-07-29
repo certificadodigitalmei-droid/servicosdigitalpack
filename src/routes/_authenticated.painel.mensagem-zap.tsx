@@ -49,8 +49,39 @@ Após a confirmação do pagamento, a ativação é feita automaticamente, diret
 
 *Esta é uma comunicação comercial referente à solicitação iniciada, que se encontra aberta e pendente no sistema.*`;
 
-const LS_TEMPLATE = 'painel:mensagem-zap:template';
+const LS_TEMPLATE = 'painel:mensagem-zap:template'; // legado (string única)
+const LS_TEMPLATES = 'painel:mensagem-zap:templates'; // novo: lista de variações
 const LS_CLICKED = 'painel:mensagem-zap:clicked';
+
+type TemplateItem = { id: string; name: string; body: string; enabled: boolean };
+
+function makeTplId() { return Math.random().toString(36).slice(2, 10); }
+
+function loadTemplates(): TemplateItem[] {
+  if (typeof window === 'undefined') return [{ id: 'default', name: 'Padrão', body: DEFAULT_TEMPLATE, enabled: true }];
+  try {
+    const raw = window.localStorage.getItem(LS_TEMPLATES);
+    if (raw) {
+      const arr = JSON.parse(raw) as TemplateItem[];
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr.map((t) => ({ ...t, body: normalizeEmoji(t.body) }));
+      }
+    }
+    // migração do template único
+    const legacy = window.localStorage.getItem(LS_TEMPLATE);
+    if (legacy) return [{ id: 'default', name: 'Padrão', body: normalizeEmoji(legacy), enabled: true }];
+  } catch { /* noop */ }
+  return [{ id: 'default', name: 'Padrão', body: DEFAULT_TEMPLATE, enabled: true }];
+}
+function saveTemplates(list: TemplateItem[]) {
+  try { window.localStorage.setItem(LS_TEMPLATES, JSON.stringify(list)); } catch { /* quota */ }
+}
+
+function pickRandomTemplate(list: TemplateItem[]): TemplateItem {
+  const enabled = list.filter((t) => t.enabled && t.body.trim().length > 0);
+  const pool = enabled.length > 0 ? enabled : list;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
 function normalizeEmoji(text: string): string {
   // garante variante emoji para o sinal de aviso, evitando � no WhatsApp
@@ -122,10 +153,12 @@ function renderTemplate(tpl: string, ctx: { empresa: string; cnpj: string; link:
 }
 
 function MensagemZapPage() {
-  const [template, setTemplate] = useState<string>(() => {
-    if (typeof window === 'undefined') return DEFAULT_TEMPLATE;
-    return normalizeEmoji(window.localStorage.getItem(LS_TEMPLATE) || DEFAULT_TEMPLATE);
+  const [templates, setTemplates] = useState<TemplateItem[]>(() => loadTemplates());
+  const [activeTplId, setActiveTplId] = useState<string>(() => {
+    const list = typeof window === 'undefined' ? [] : loadTemplates();
+    return list[0]?.id ?? 'default';
   });
+  const activeTpl = templates.find((t) => t.id === activeTplId) ?? templates[0];
   const [preset, setPreset] = useState<DatePreset>('today');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -155,9 +188,31 @@ function MensagemZapPage() {
   const [paidByLinkId, setPaidByLinkId] = useState<Set<string>>(new Set());
   const [pendingPixByLinkId, setPendingPixByLinkId] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    try { window.localStorage.setItem(LS_TEMPLATE, template); } catch { /* quota */ }
-  }, [template]);
+  useEffect(() => { saveTemplates(templates); }, [templates]);
+
+  const updateActive = (patch: Partial<TemplateItem>) => {
+    setTemplates((prev) => prev.map((t) => t.id === activeTplId ? { ...t, ...patch, body: patch.body != null ? normalizeEmoji(patch.body) : t.body } : t));
+  };
+  const addTemplate = () => {
+    const id = makeTplId();
+    setTemplates((prev) => [...prev, { id, name: `Variação ${prev.length + 1}`, body: activeTpl?.body ?? DEFAULT_TEMPLATE, enabled: true }]);
+    setActiveTplId(id);
+  };
+  const duplicateActive = () => {
+    if (!activeTpl) return;
+    const id = makeTplId();
+    setTemplates((prev) => [...prev, { id, name: activeTpl.name + ' (cópia)', body: activeTpl.body, enabled: activeTpl.enabled }]);
+    setActiveTplId(id);
+  };
+  const removeActive = () => {
+    if (templates.length <= 1) { toast.error('Mantenha pelo menos uma variação'); return; }
+    if (!confirm(`Remover "${activeTpl?.name}"?`)) return;
+    setTemplates((prev) => {
+      const next = prev.filter((t) => t.id !== activeTplId);
+      setActiveTplId(next[0]?.id ?? 'default');
+      return next;
+    });
+  };
 
   const range = useMemo(() => rangeFromPreset(preset, from, to), [preset, from, to]);
 
@@ -312,29 +367,31 @@ function MensagemZapPage() {
       const empresa = cleanCompanyName(c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia) || 'sua empresa';
       const cnpj = formatCNPJ(c?.cnpj);
       const link = buildPublicUrl(r.public_token);
+      const tpl = pickRandomTemplate(templates); // rotação aleatória por destinatário
       items.push({
         phone,
-        message: renderTemplate(template, { empresa, cnpj, link }),
+        message: renderTemplate(tpl.body, { empresa, cnpj, link }),
         company_name: empresa,
         cnpj: c?.cnpj ?? null,
         company_link_id: r.id,
       });
     }
     return items;
-  }, [visibleRows, template]);
+  }, [visibleRows, templates]);
 
-  const preview = useMemo(() => renderTemplate(template, {
+  const preview = useMemo(() => renderTemplate(activeTpl?.body ?? DEFAULT_TEMPLATE, {
     empresa: 'Padaria Exemplo LTDA',
     cnpj: '12.345.678/0001-90',
     link: buildPublicUrl('token-exemplo'),
-  }), [template]);
+  }), [activeTpl]);
 
   const copyMessage = async (row: any) => {
     const c = row.companies;
     const empresa = cleanCompanyName(c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia) || 'sua empresa';
     const cnpj = formatCNPJ(c?.cnpj);
     const link = buildPublicUrl(row.public_token);
-    const msg = renderTemplate(template, { empresa, cnpj, link });
+    // usa o template atualmente aberto na aba (mais previsível para copiar manual)
+    const msg = renderTemplate(activeTpl?.body ?? DEFAULT_TEMPLATE, { empresa, cnpj, link });
     try {
       await navigator.clipboard.writeText(msg);
       toast.success('Mensagem copiada!');
@@ -367,32 +424,66 @@ function MensagemZapPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Modelo da mensagem</CardTitle>
+          <CardTitle className="text-base flex items-center justify-between gap-2">
+            <span>Modelos da mensagem ({templates.filter((t) => t.enabled).length} ativo{templates.filter((t) => t.enabled).length === 1 ? '' : 's'} de {templates.length})</span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={addTemplate}>+ Nova variação</Button>
+              <Button size="sm" variant="ghost" onClick={duplicateActive}>Duplicar</Button>
+              <Button size="sm" variant="ghost" className="text-red-600" onClick={removeActive}>Excluir</Button>
+            </div>
+          </CardTitle>
           <CardDescription>
-            Use as variáveis <code className="px-1 rounded bg-slate-100">{'{{empresa}}'}</code>,{' '}
-            <code className="px-1 rounded bg-slate-100">{'{{cnpj}}'}</code> e{' '}
-            <code className="px-1 rounded bg-slate-100">{'{{link}}'}</code>. Salvo automaticamente neste navegador.
+            Crie várias variações — o envio automático usa uma <b>aleatoriamente</b> para cada contato, evitando padrão repetido. Variáveis:{' '}
+            <code className="px-1 rounded bg-slate-100">{'{{empresa}}'}</code>,{' '}
+            <code className="px-1 rounded bg-slate-100">{'{{cnpj}}'}</code>,{' '}
+            <code className="px-1 rounded bg-slate-100">{'{{link}}'}</code>.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div>
-            <Label>Template</Label>
-            <Textarea
-              value={template}
-              onChange={(e) => setTemplate(normalizeEmoji(e.target.value))}
-              rows={10}
-              className="font-mono text-sm"
-            />
-            <div className="mt-2 flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setTemplate(DEFAULT_TEMPLATE)}>Restaurar padrão</Button>
-            </div>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2 border-b pb-3">
+            {templates.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTplId(t.id)}
+                className={`px-3 py-1.5 rounded-md text-sm border transition ${activeTplId === t.id ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 hover:bg-slate-50'} ${!t.enabled ? 'opacity-50 line-through' : ''}`}
+                title={t.enabled ? 'Ativa no sorteio' : 'Desativada (não é sorteada)'}
+              >
+                {t.name}
+              </button>
+            ))}
           </div>
-          <div>
-            <Label>Prévia</Label>
-            <div className="whitespace-pre-wrap rounded-md border bg-slate-50 p-3 text-sm text-slate-800 min-h-[220px]">
-              {preview}
+          {activeTpl && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <div className="grid gap-2 md:grid-cols-[1fr_auto] items-end">
+                  <div>
+                    <Label>Nome da variação</Label>
+                    <Input value={activeTpl.name} onChange={(e) => updateActive({ name: e.target.value })} />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-slate-700 pb-2">
+                    <input type="checkbox" checked={activeTpl.enabled} onChange={(e) => updateActive({ enabled: e.target.checked })} />
+                    Ativa no sorteio
+                  </label>
+                </div>
+                <Label>Texto</Label>
+                <Textarea
+                  value={activeTpl.body}
+                  onChange={(e) => updateActive({ body: e.target.value })}
+                  rows={12}
+                  className="font-mono text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => updateActive({ body: DEFAULT_TEMPLATE })}>Preencher com padrão</Button>
+                </div>
+              </div>
+              <div>
+                <Label>Prévia</Label>
+                <div className="whitespace-pre-wrap rounded-md border bg-slate-50 p-3 text-sm text-slate-800 min-h-[280px]">
+                  {preview}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -515,7 +606,7 @@ function MensagemZapPage() {
                       <TableCell>
                         {phone ? (
                           <a
-                            href={buildWhatsAppUrl(phone, renderTemplate(template, {
+                            href={buildWhatsAppUrl(phone, renderTemplate(activeTpl?.body ?? DEFAULT_TEMPLATE, {
                               empresa: empresa || 'sua empresa',
                               cnpj: formatCNPJ(c?.cnpj),
                               link,
@@ -552,7 +643,7 @@ function MensagemZapPage() {
                           </Button>
                           {phone && (
                             <a
-                              href={buildWhatsAppUrl(phone, renderTemplate(template, {
+                              href={buildWhatsAppUrl(phone, renderTemplate(activeTpl?.body ?? DEFAULT_TEMPLATE, {
                                 empresa: empresa || 'sua empresa',
                                 cnpj: formatCNPJ(c?.cnpj),
                                 link,
