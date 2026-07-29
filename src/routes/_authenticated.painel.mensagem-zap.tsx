@@ -27,7 +27,7 @@ export const Route = createFileRoute('/_authenticated/painel/mensagem-zap')({
 });
 
 type DatePreset = 'all' | 'today' | 'yesterday' | '7d' | '15d' | '30d' | 'custom';
-type Stage = 'all' | 'visited' | 'checkout' | 'guia' | 'pending_pix' | 'paid';
+type Stage = 'all' | 'not_visited' | 'visited' | 'checkout' | 'guia' | 'pending_pix' | 'paid';
 type ContactedFilter = 'all' | 'pending' | 'contacted';
 
 const DEFAULT_TEMPLATE = `\u26A0\uFE0F *AVISO – CERTIFICADO DIGITAL PENDENTE*
@@ -512,6 +512,7 @@ function MensagemZapPage() {
         const s = per[r.public_token] ?? { view_link: 0, view_checkout: 0, click_guia: 0, click_certificado: 0 };
         if (stage !== 'paid' && paidSet.has(r.id)) return false;
         if (stage === 'all') return true;
+        if (stage === 'not_visited') return (s.view_link ?? 0) === 0;
         if (stage === 'visited') return s.view_link > 0;
         if (stage === 'checkout') return s.view_checkout > 0;
         if (stage === 'guia') return s.click_guia > 0;
@@ -718,6 +719,7 @@ function MensagemZapPage() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as empresas</SelectItem>
+                <SelectItem value="not_visited">Não visitaram o link</SelectItem>
                 <SelectItem value="visited">Visitaram o link</SelectItem>
                 <SelectItem value="checkout">Foram ao checkout</SelectItem>
                 <SelectItem value="guia">Clicaram em "Gerar Guia"</SelectItem>
