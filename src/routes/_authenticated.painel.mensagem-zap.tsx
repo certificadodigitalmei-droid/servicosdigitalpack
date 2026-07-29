@@ -29,7 +29,7 @@ type DatePreset = 'all' | 'today' | 'yesterday' | '7d' | '15d' | '30d' | 'custom
 type Stage = 'all' | 'visited' | 'checkout' | 'guia' | 'pending_pix' | 'paid';
 type ContactedFilter = 'all' | 'pending' | 'contacted';
 
-const DEFAULT_TEMPLATE = `⚠️ *AVISO – CERTIFICADO DIGITAL PENDENTE*
+const DEFAULT_TEMPLATE = `\u26A0\uFE0F *AVISO – CERTIFICADO DIGITAL PENDENTE*
 
 Olá, *{{empresa}}*.
 
@@ -50,6 +50,11 @@ Após a confirmação do pagamento, a ativação é feita automaticamente, diret
 
 const LS_TEMPLATE = 'painel:mensagem-zap:template';
 const LS_CLICKED = 'painel:mensagem-zap:clicked';
+
+function normalizeEmoji(text: string): string {
+  // garante variante emoji para o sinal de aviso, evitando � no WhatsApp
+  return text.replace(/\u26A0\uFE0E/g, '\u26A0\uFE0F').replace(/\u26A0(?!\uFE0F)/g, '\u26A0\uFE0F');
+}
 
 function loadClicked(): Record<string, number> {
   if (typeof window === 'undefined') return {};
@@ -107,16 +112,18 @@ function buildWhatsAppUrl(phoneDigits: string, message: string): string {
 }
 
 function renderTemplate(tpl: string, ctx: { empresa: string; cnpj: string; link: string }): string {
-  return tpl
-    .replaceAll('{{empresa}}', ctx.empresa)
-    .replaceAll('{{cnpj}}', ctx.cnpj)
-    .replaceAll('{{link}}', ctx.link);
+  return normalizeEmoji(
+    tpl
+      .replaceAll('{{empresa}}', ctx.empresa)
+      .replaceAll('{{cnpj}}', ctx.cnpj)
+      .replaceAll('{{link}}', ctx.link)
+  );
 }
 
 function MensagemZapPage() {
   const [template, setTemplate] = useState<string>(() => {
     if (typeof window === 'undefined') return DEFAULT_TEMPLATE;
-    return window.localStorage.getItem(LS_TEMPLATE) || DEFAULT_TEMPLATE;
+    return normalizeEmoji(window.localStorage.getItem(LS_TEMPLATE) || DEFAULT_TEMPLATE);
   });
   const [preset, setPreset] = useState<DatePreset>('today');
   const [from, setFrom] = useState('');
@@ -320,7 +327,7 @@ function MensagemZapPage() {
             <Label>Template</Label>
             <Textarea
               value={template}
-              onChange={(e) => setTemplate(e.target.value)}
+              onChange={(e) => setTemplate(normalizeEmoji(e.target.value))}
               rows={10}
               className="font-mono text-sm"
             />
