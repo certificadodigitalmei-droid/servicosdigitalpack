@@ -291,7 +291,8 @@ function LinksGeradosPage() {
 
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [page]);
   useEffect(() => { setPage(0); void load(); /* eslint-disable-next-line */ }, [preset, from, to, origin, status]);
-  useRealtimeRefresh(['company_links', 'link_events', 'orders'], () => void load(), []);
+  // Realtime desativado nesta tela: causava recarregamento constante ao chegar novos eventos.
+  // Use o botão "Atualizar" para recarregar sob demanda.
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
