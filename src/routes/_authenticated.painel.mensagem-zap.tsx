@@ -27,6 +27,7 @@ export const Route = createFileRoute('/_authenticated/painel/mensagem-zap')({
 
 type DatePreset = 'all' | 'today' | 'yesterday' | '7d' | '15d' | '30d' | 'custom';
 type Stage = 'all' | 'visited' | 'checkout' | 'guia' | 'pending_pix' | 'paid';
+type ContactedFilter = 'all' | 'pending' | 'contacted';
 
 const DEFAULT_TEMPLATE = `⚠️ *AVISO – CERTIFICADO DIGITAL PENDENTE*
 
@@ -48,6 +49,15 @@ Após a confirmação do pagamento, a ativação é feita automaticamente, diret
 *Esta é uma comunicação comercial referente à solicitação iniciada, que se encontra aberta e pendente no sistema.*`;
 
 const LS_TEMPLATE = 'painel:mensagem-zap:template';
+const LS_CLICKED = 'painel:mensagem-zap:clicked';
+
+function loadClicked(): Record<string, number> {
+  if (typeof window === 'undefined') return {};
+  try { return JSON.parse(window.localStorage.getItem(LS_CLICKED) || '{}'); } catch { return {}; }
+}
+function saveClicked(map: Record<string, number>) {
+  try { window.localStorage.setItem(LS_CLICKED, JSON.stringify(map)); } catch { /* quota */ }
+}
 
 function isoStart(d: Date) { const nd = new Date(d); nd.setHours(0,0,0,0); return nd.toISOString(); }
 function isoEnd(d: Date) { const nd = new Date(d); nd.setHours(23,59,59,999); return nd.toISOString(); }
@@ -113,6 +123,23 @@ function MensagemZapPage() {
   const [stage, setStage] = useState<Stage>('all');
   const [search, setSearch] = useState('');
   const [onlyWithPhone, setOnlyWithPhone] = useState(true);
+  const [contactedFilter, setContactedFilter] = useState<ContactedFilter>('all');
+  const [clickedMap, setClickedMap] = useState<Record<string, number>>(() => loadClicked());
+
+  const markClicked = (id: string) => {
+    setClickedMap((prev) => {
+      const next = { ...prev, [id]: Date.now() };
+      saveClicked(next);
+      return next;
+    });
+  };
+  const unmarkClicked = (id: string) => {
+    setClickedMap((prev) => {
+      const next = { ...prev }; delete next[id];
+      saveClicked(next);
+      return next;
+    });
+  };
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<any[]>([]);
   const [statsByToken, setStatsByToken] = useState<Record<string, { view_link: number; view_checkout: number; click_guia: number; click_certificado: number }>>({});
@@ -228,6 +255,13 @@ function MensagemZapPage() {
   };
 
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [preset, from, to, stage, onlyWithPhone]);
+
+  const visibleRows = useMemo(() => {
+    if (contactedFilter === 'all') return rows;
+    return rows.filter((r) => contactedFilter === 'contacted' ? !!clickedMap[r.id] : !clickedMap[r.id]);
+  }, [rows, contactedFilter, clickedMap]);
+
+  const contactedCount = useMemo(() => rows.filter((r) => !!clickedMap[r.id]).length, [rows, clickedMap]);
 
   const preview = useMemo(() => renderTemplate(template, {
     empresa: 'Padaria Exemplo LTDA',
@@ -356,14 +390,30 @@ function MensagemZapPage() {
             <input id="onlyphone" type="checkbox" checked={onlyWithPhone} onChange={(e) => setOnlyWithPhone(e.target.checked)} />
             <Label htmlFor="onlyphone" className="cursor-pointer">Apenas empresas com telefone</Label>
           </div>
+          <div>
+            <Label>Status de contato</Label>
+            <Select value={contactedFilter} onValueChange={(v) => setContactedFilter(v as ContactedFilter)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="pending">Não enviados ainda</SelectItem>
+                <SelectItem value="contacted">Já enviados no Zap</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle className="text-base">
-            {rows.length} empresa{rows.length === 1 ? '' : 's'} encontrada{rows.length === 1 ? '' : 's'}
+            {visibleRows.length} empresa{visibleRows.length === 1 ? '' : 's'} — {contactedCount} já contatada{contactedCount === 1 ? '' : 's'} no Zap
           </CardTitle>
+          {contactedCount > 0 && (
+            <Button size="sm" variant="ghost" onClick={() => { setClickedMap({}); saveClicked({}); toast.success('Marcações limpas'); }}>
+              Limpar marcações
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -380,10 +430,10 @@ function MensagemZapPage() {
                 {loading && (
                   <TableRow><TableCell colSpan={4} className="text-center py-8 text-slate-500">Carregando…</TableCell></TableRow>
                 )}
-                {!loading && rows.length === 0 && (
+                {!loading && visibleRows.length === 0 && (
                   <TableRow><TableCell colSpan={4} className="text-center py-8 text-slate-500">Nenhuma empresa neste filtro.</TableCell></TableRow>
                 )}
-                {rows.map((r) => {
+                {visibleRows.map((r) => {
                   const c = r.companies;
                   const empresa = (c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia || '—').replace(/^\d+[.\-/\s]*/, '').trim();
                   const phone = extractPhone(c);
@@ -391,8 +441,10 @@ function MensagemZapPage() {
                   const isPaid = paidByLinkId.has(r.id);
                   const isPending = pendingPixByLinkId.has(r.id) && !isPaid;
                   const link = buildPublicUrl(r.public_token);
+                  const contactedAt = clickedMap[r.id];
+                  const isContacted = !!contactedAt;
                   return (
-                    <TableRow key={r.id}>
+                    <TableRow key={r.id} className={isContacted ? 'bg-green-50/50' : ''}>
                       <TableCell>
                         <div className="font-medium text-slate-900">{empresa}</div>
                         <div className="text-xs text-slate-500 font-mono">{formatCNPJ(c?.cnpj)}</div>
@@ -409,7 +461,7 @@ function MensagemZapPage() {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-sm text-green-700 hover:text-green-800 font-medium"
                             title="Abrir WhatsApp com mensagem pronta"
-                            onClick={(e) => { e.stopPropagation(); void copyPhone(phone); }}
+                            onClick={(e) => { e.stopPropagation(); void copyPhone(phone); markClicked(r.id); }}
                           >
                             <MessageCircle className="h-3.5 w-3.5" /> {formatPhoneBR(phone)}
                           </a>
@@ -417,12 +469,17 @@ function MensagemZapPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
+                          {isContacted && (
+                            <Badge className="bg-emerald-600 hover:bg-emerald-600" title={new Date(contactedAt).toLocaleString('pt-BR')}>
+                              Já enviado
+                            </Badge>
+                          )}
                           {isPaid && <Badge className="bg-green-600 hover:bg-green-600">Pago</Badge>}
                           {isPending && <Badge className="bg-amber-500 hover:bg-amber-500">PIX pendente</Badge>}
                           {s.click_guia > 0 && <Badge variant="outline">Gerou guia</Badge>}
                           {s.view_checkout > 0 && <Badge variant="outline">Checkout</Badge>}
                           {s.view_link > 0 && <Badge variant="outline">Visitou</Badge>}
-                          {!isPaid && !isPending && s.view_link === 0 && <span className="text-xs text-slate-400">sem interação</span>}
+                          {!isPaid && !isPending && s.view_link === 0 && !isContacted && <span className="text-xs text-slate-400">sem interação</span>}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -431,15 +488,25 @@ function MensagemZapPage() {
                             <Copy className="h-3.5 w-3.5 mr-1" /> Copiar msg
                           </Button>
                           {phone && (
-                            <a href={buildWhatsAppUrl(phone, renderTemplate(template, {
-                              empresa: empresa || 'sua empresa',
-                              cnpj: formatCNPJ(c?.cnpj),
-                              link,
-                            }))} target="_blank" rel="noopener noreferrer">
+                            <a
+                              href={buildWhatsAppUrl(phone, renderTemplate(template, {
+                                empresa: empresa || 'sua empresa',
+                                cnpj: formatCNPJ(c?.cnpj),
+                                link,
+                              }))}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => markClicked(r.id)}
+                            >
                               <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
                                 <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
                               </Button>
                             </a>
+                          )}
+                          {isContacted && (
+                            <Button size="sm" variant="ghost" onClick={() => unmarkClicked(r.id)} title="Desmarcar como enviado">
+                              Desmarcar
+                            </Button>
                           )}
                           <a href={link} target="_blank" rel="noopener noreferrer">
                             <Button size="sm" variant="ghost"><ExternalLink className="h-3.5 w-3.5" /></Button>
