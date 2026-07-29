@@ -19,7 +19,7 @@ export const Route = createFileRoute('/api/public/whatsapp/report')({
         try { body = await request.json(); } catch { /* noop */ }
         const id = String(body?.id || '');
         const status = String(body?.status || '');
-        const err = body?.error ? String(body.error).slice(0, 500) : null;
+        const err: string = body?.error ? String(body.error).slice(0, 500) : '';
         if (!id || !['sent', 'failed', 'skipped'].includes(status)) {
           return new Response(JSON.stringify({ error: 'bad_request' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
         }
