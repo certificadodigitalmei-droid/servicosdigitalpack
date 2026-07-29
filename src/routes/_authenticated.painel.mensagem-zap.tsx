@@ -390,14 +390,30 @@ function MensagemZapPage() {
             <input id="onlyphone" type="checkbox" checked={onlyWithPhone} onChange={(e) => setOnlyWithPhone(e.target.checked)} />
             <Label htmlFor="onlyphone" className="cursor-pointer">Apenas empresas com telefone</Label>
           </div>
+          <div>
+            <Label>Status de contato</Label>
+            <Select value={contactedFilter} onValueChange={(v) => setContactedFilter(v as ContactedFilter)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="pending">Não enviados ainda</SelectItem>
+                <SelectItem value="contacted">Já enviados no Zap</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle className="text-base">
-            {rows.length} empresa{rows.length === 1 ? '' : 's'} encontrada{rows.length === 1 ? '' : 's'}
+            {visibleRows.length} empresa{visibleRows.length === 1 ? '' : 's'} — {contactedCount} já contatada{contactedCount === 1 ? '' : 's'} no Zap
           </CardTitle>
+          {contactedCount > 0 && (
+            <Button size="sm" variant="ghost" onClick={() => { setClickedMap({}); saveClicked({}); toast.success('Marcações limpas'); }}>
+              Limpar marcações
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
