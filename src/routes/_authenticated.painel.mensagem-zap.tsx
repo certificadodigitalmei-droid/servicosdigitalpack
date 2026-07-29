@@ -28,14 +28,24 @@ export const Route = createFileRoute('/_authenticated/painel/mensagem-zap')({
 type DatePreset = 'all' | 'today' | 'yesterday' | '7d' | '15d' | '30d' | 'custom';
 type Stage = 'all' | 'visited' | 'checkout' | 'guia' | 'pending_pix' | 'paid';
 
-const DEFAULT_TEMPLATE = `Olá! Aqui é do *Portal Certificado Digital MEI*.
+const DEFAULT_TEMPLATE = `⚠️ *AVISO – CERTIFICADO DIGITAL PENDENTE*
 
-Identificamos que o CNPJ *{{cnpj}}* ({{empresa}}) precisa emitir o Certificado Digital MEI obrigatório.
+Olá, *{{empresa}}*.
 
-Acesse seu link exclusivo para regularizar agora:
+Identificamos que a solicitação do Certificado Digital vinculada ao CNPJ *{{cnpj}}* foi iniciada, porém o pagamento ainda consta como *pendente*.
+
+O Certificado Digital é utilizado em diversos procedimentos empresariais, como assinatura eletrônica de documentos, acesso a sistemas e portais, emissão de documentos fiscais em determinadas situações e outras operações que exigem identificação digital da empresa.
+
+A ausência de um certificado válido pode impedir ou atrasar procedimentos que dependam dessa autenticação, conforme a atividade e as obrigações da empresa.
+
+*Valor: R$ 97,00 / Validade de 12 Meses*
+
+Após a confirmação do pagamento, a ativação é feita automaticamente, direto pelo portal, em poucos minutos, 100% seguro.
+
+*Verificar Situação:*
 {{link}}
 
-Qualquer dúvida estou à disposição.`;
+*Esta é uma comunicação comercial referente à solicitação iniciada, que se encontra aberta e pendente no sistema.*`;
 
 const LS_TEMPLATE = 'painel:mensagem-zap:template';
 
