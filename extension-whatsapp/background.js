@@ -65,14 +65,15 @@ async function findWhatsAppTab() {
 async function sendOne(item) {
   const tab = await findWhatsAppTab();
   if (!tab) return { ok: false, error: 'WhatsApp Web não está aberto' };
-  const url = `https://web.whatsapp.com/send?phone=${encodeURIComponent(item.phone)}&text=${encodeURIComponent(item.message)}`;
+  // Abrimos o chat SEM texto pré-preenchido — a extensão vai digitar letra por letra.
+  const url = `https://web.whatsapp.com/send?phone=${encodeURIComponent(item.phone)}`;
   await chrome.tabs.update(tab.id, { url });
-  // aguarda a página processar
-  await new Promise((r) => setTimeout(r, rand(6000, 10000)));
-  // pede ao content script para clicar em enviar
+  // aguarda a página processar (delay aleatório humano)
+  await new Promise((r) => setTimeout(r, rand(5500, 9000)));
+  // pede ao content script para digitar e enviar
   const result = await new Promise((resolve) => {
-    const timer = setTimeout(() => resolve({ ok: false, error: 'timeout content script' }), 25000);
-    chrome.tabs.sendMessage(tab.id, { type: 'SEND_CURRENT' }, (resp) => {
+    const timer = setTimeout(() => resolve({ ok: false, error: 'timeout content script' }), 180000);
+    chrome.tabs.sendMessage(tab.id, { type: 'SEND_CURRENT', message: item.message }, (resp) => {
       clearTimeout(timer);
       if (chrome.runtime.lastError) return resolve({ ok: false, error: chrome.runtime.lastError.message });
       resolve(resp || { ok: false, error: 'sem resposta' });
