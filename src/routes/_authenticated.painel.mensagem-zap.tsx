@@ -92,6 +92,17 @@ function extractPhone(company: any): string | null {
   return null;
 }
 
+function cleanCompanyName(name: string): string {
+  return name
+    .replace(/^\d+[\.\-\/\s]*/, '')
+    .replace(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g, '')
+    .replace(/\d{14}/g, '')
+    .replace(/\d{2}\d{3}\d{3}\d{4}\d{2}/g, '')
+    .replace(/[\-\/]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function formatPhoneBR(digits: string): string {
   const d = digits.replace(/\D/g, '');
   if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
