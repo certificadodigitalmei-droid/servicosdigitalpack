@@ -52,80 +52,188 @@ Após a confirmação do pagamento, a ativação é feita automaticamente, diret
 const FORMAL_TEMPLATES: TemplateItem[] = [
   {
     id: 'formal-1',
-    name: 'Formal – Aviso de pendência',
+    name: 'Formal 1 – Aviso formal',
     enabled: true,
-    body: `Olá, *{{empresa}}*.
+    body: `*AVISO – CERTIFICADO DIGITAL PENDENTE*
 
-Identificamos que o CNPJ *{{cnpj}}* está com a ativação do Certificado Digital pendente.
+Olá, *{{empresa}}*.
 
-O Certificado Digital é um documento essencial para a identificação eletrônica da sua empresa em portais governamentais, sistemas fiscais e em operações que exigem assinatura digital.
+Identificamos que a ativação do Certificado Digital vinculado ao CNPJ *{{cnpj}}* ainda se encontra pendente em nosso sistema.
 
-*Riscos de não ativar:*
-- Impossibilidade de acessar serviços que exigem certificado digital;
-- Atraso em obrigações fiscais e acessórias;
-- Risco de multas, bloqueios ou suspensão de atividades que dependam de assinatura eletrônica.
+A ausência de um certificado digital válido pode impedir ou atrasar procedimentos que dependam dessa autenticação, como assinatura eletrônica de documentos, acesso a determinados portais e realização de operações fiscais e empresariais.
 
-Regularize agora através do link abaixo:
+Para consultar a situação e dar continuidade ao processo, acesse:
+
+*Verificar Situação:*
 {{link}}
 
-Att.,
-Central de Ativação`,
+_Esta é uma comunicação comercial referente à solicitação iniciada e pendente no sistema._`,
   },
   {
     id: 'formal-2',
-    name: 'Formal – Riscos e prazos',
+    name: 'Formal 2 – Comunicado de pendência',
     enabled: true,
-    body: `*{{empresa}}* — Atenção: CNPJ *{{cnpj}}* pendente de ativação do Certificado Digital.
+    body: `*COMUNICADO – ATIVAÇÃO PENDENTE*
 
-O não ativamento pode comprometer o acesso a sistemas oficiais, a assinatura de documentos digitais e o cumprimento de obrigações junto a órgãos públicos.
+Prezado(a) responsável pela *{{empresa}}*,
 
-*Principais riscos:*
-- Perda de prazos fiscais e tributários;
-- Impossibilidade de assinar contratos e documentos eletronicamente;
-- Restrições em portais governamentais e bancários.
+Consta em nosso sistema uma solicitação de Certificado Digital vinculada ao CNPJ *{{cnpj}}* cuja ativação ainda não foi concluída.
 
-Evite transtornos. Acesse o link e finalize a ativação:
+Enquanto o certificado permanecer inativo, alguns procedimentos digitais da empresa que dependem dessa identificação eletrônica poderão ficar indisponíveis ou sofrer atrasos.
+
+Consulte a situação da solicitação através do endereço abaixo:
+
+*Consultar Solicitação:*
 {{link}}
 
-Estamos à disposição.`,
+_Comunicação referente a uma solicitação previamente iniciada em nosso sistema._`,
   },
   {
     id: 'formal-3',
-    name: 'Formal – Regularização necessária',
+    name: 'Formal 3 – Notificação de ativação',
     enabled: true,
-    body: `Prezado(a) responsável pela *{{empresa}}* (CNPJ *{{cnpj}}*).
+    body: `*NOTIFICAÇÃO – CERTIFICADO DIGITAL*
 
-Informamos que a ativação do Certificado Digital de sua empresa ainda não foi concluída e permanece pendente em nosso sistema.
+Olá, *{{empresa}}*.
 
-Sem o certificado ativo, sua empresa pode enfrentar dificuldades em:
-- Acessar o e-CAC, Simples Nacional e outros portais federais;
-- Emitir notas fiscais e guias em sistemas que exigem identificação digital;
-- Assinar documentos eletrônicos com validade jurídica.
+Verificamos que o processo de ativação do Certificado Digital referente ao CNPJ *{{cnpj}}* ainda está pendente.
 
-*Não deixe para depois.* A inatividade pode gerar complicações legais e operacionais.
+O Certificado Digital é utilizado para identificação e autenticação eletrônica da empresa. Caso não esteja ativo quando necessário, determinados acessos, assinaturas digitais, documentos fiscais ou procedimentos eletrônicos poderão não ser concluídos.
 
-Finalize pelo link:
+Para verificar a situação:
+
 {{link}}
 
-Atenciosamente.`,
+_Esta mensagem refere-se exclusivamente à solicitação de Certificado Digital registrada no sistema._`,
   },
   {
     id: 'formal-4',
-    name: 'Formal – Comunicação oficial',
+    name: 'Formal 4 – Pendência identificada',
     enabled: true,
-    body: `Olá, *{{empresa}}*.
+    body: `*AVISO DE PENDÊNCIA – CERTIFICADO DIGITAL*
 
-Constatamos que o CNPJ *{{cnpj}}* possui uma solicitação de Certificado Digital em aberto, aguardando ativação.
+Prezado(a),
 
-O Certificado Digital garante segurança e validade jurídica nos processos digitais da sua empresa. Deixar essa pendência acumulada pode resultar em:
-- Bloqueios de acesso em sistemas oficiais;
-- Atraso em declarações e obrigações;
-- Impossibilidade de realizar operações que exijam identificação digital.
+Foi identificada uma pendência na ativação do Certificado Digital da empresa *{{empresa}}*, CNPJ *{{cnpj}}*.
 
-Resolva de forma simples e segura pelo link:
+Recomendamos verificar a situação, pois a falta de um certificado válido pode afetar operações eletrônicas que exijam autenticação digital da empresa.
+
+A consulta pode ser realizada pelo link:
+
+*Verificar Pendência:*
 {{link}}
 
-Qualquer dúvida, estamos à disposição.`,
+_Mensagem comercial referente a processo iniciado anteriormente._`,
+  },
+  {
+    id: 'formal-5',
+    name: 'Formal 5 – Certificado ainda não ativado',
+    enabled: true,
+    body: `*IMPORTANTE – CERTIFICADO AINDA NÃO ATIVADO*
+
+Olá, *{{empresa}}*.
+
+O Certificado Digital relacionado ao CNPJ *{{cnpj}}* ainda consta como pendente de ativação.
+
+Empresas que necessitam utilizar serviços que exigem certificado digital podem encontrar impedimentos em determinados procedimentos enquanto não houver um certificado válido e ativo.
+
+Acesse o link para verificar o andamento:
+
+{{link}}
+
+_Este aviso refere-se a uma solicitação em aberto registrada no sistema._`,
+  },
+  {
+    id: 'formal-6',
+    name: 'Formal 6 – Regularização da ativação',
+    enabled: true,
+    body: `*AVISO – ATIVAÇÃO DO CERTIFICADO DIGITAL*
+
+Prezado(a) responsável,
+
+A solicitação de Certificado Digital da *{{empresa}}*, vinculada ao CNPJ *{{cnpj}}*, permanece com ativação pendente.
+
+Para evitar possíveis interrupções em procedimentos empresariais que dependam de autenticação digital, recomendamos consultar o status da solicitação.
+
+*Consultar Status:*
+{{link}}
+
+A não ativação poderá afetar somente os procedimentos e serviços que efetivamente exijam um certificado digital válido.
+
+_Comunicação comercial referente à solicitação registrada._`,
+  },
+  {
+    id: 'formal-7',
+    name: 'Formal 7 – Alerta de processo pendente',
+    enabled: true,
+    body: `*ALERTA – PROCESSO DE ATIVAÇÃO PENDENTE*
+
+Olá, *{{empresa}}*.
+
+Identificamos que o processo relacionado ao Certificado Digital do CNPJ *{{cnpj}}* ainda não foi finalizado.
+
+O certificado pode ser necessário para determinadas operações, incluindo assinatura digital, autenticação em sistemas, acesso a portais e procedimentos fiscais específicos.
+
+Caso precise utilizar algum desses serviços, a ausência de um certificado ativo poderá impedir a conclusão da operação.
+
+*Verificar Situação:*
+{{link}}
+
+_Este comunicado está relacionado a uma solicitação anteriormente iniciada._`,
+  },
+  {
+    id: 'formal-8',
+    name: 'Formal 8 – Comunicado ao responsável',
+    enabled: true,
+    body: `*COMUNICADO AO RESPONSÁVEL PELO CNPJ*
+
+Olá,
+
+Consta uma pendência referente à ativação do Certificado Digital da empresa *{{empresa}}*, CNPJ *{{cnpj}}*.
+
+Enquanto a ativação não for concluída, operações digitais que dependam obrigatoriamente do certificado poderão apresentar indisponibilidade ou não serem concluídas.
+
+Para consultar os detalhes da solicitação:
+
+{{link}}
+
+_Esta é uma comunicação comercial referente a processo pendente no sistema._`,
+  },
+  {
+    id: 'formal-9',
+    name: 'Formal 9 – Verificação necessária',
+    enabled: true,
+    body: `*AVISO – VERIFICAÇÃO NECESSÁRIA*
+
+Prezado(a) responsável pela *{{empresa}}*,
+
+A solicitação do Certificado Digital vinculada ao CNPJ *{{cnpj}}* permanece aberta, com ativação pendente.
+
+Um certificado digital válido pode ser necessário para determinadas obrigações e procedimentos eletrônicos da empresa. Quando exigido, a ausência do certificado pode impossibilitar a autenticação ou assinatura necessária para concluir a operação.
+
+Consulte a situação:
+{{link}}
+
+_Mensagem referente a uma solicitação previamente registrada._`,
+  },
+  {
+    id: 'formal-10',
+    name: 'Formal 10 – Solicitação em aberto',
+    enabled: true,
+    body: `*AVISO – SOLICITAÇÃO EM ABERTO*
+
+Olá, *{{empresa}}*.
+
+Informamos que a solicitação de Certificado Digital referente ao CNPJ *{{cnpj}}* ainda consta como aberta e pendente de ativação.
+
+Caso a empresa utilize sistemas ou serviços que dependam de Certificado Digital, é importante manter um certificado válido para evitar dificuldades na autenticação, assinatura de documentos e demais procedimentos eletrônicos que o exijam.
+
+Para verificar a situação da solicitação, acesse:
+
+*Verificar Certificado:*
+{{link}}
+
+_Esta é uma comunicação comercial relacionada exclusivamente à solicitação iniciada e registrada no sistema._`,
   },
 ];
 
