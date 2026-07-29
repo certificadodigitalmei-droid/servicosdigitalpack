@@ -99,17 +99,21 @@ async function clickSendButton(composer) {
 
 async function sendCurrent(message) {
   await sleep(rand(1200, 2500));
+  // dá tempo do WhatsApp abrir o modal de "não encontrado"
+  for (let i = 0; i < 8; i++) {
+    if (detectNotOnWhatsApp()) return { ok: false, notOnWhatsApp: true, error: 'WhatsApp não encontrado' };
+    if (document.querySelector('footer div[contenteditable="true"], footer [role="textbox"][contenteditable="true"]')) break;
+    await sleep(800);
+  }
+  if (detectNotOnWhatsApp()) return { ok: false, notOnWhatsApp: true, error: 'WhatsApp não encontrado' };
   await dismissDialogs();
-  if (isInvalidNumberDialog()) return { ok: false, error: 'número inválido no WhatsApp' };
 
-  // aguarda caixa de mensagem (footer com contenteditable)
   const composer = await waitFor('footer div[contenteditable="true"], footer [role="textbox"][contenteditable="true"]', 25000);
   if (!composer) {
-    if (isInvalidNumberDialog()) return { ok: false, error: 'número inválido no WhatsApp' };
+    if (detectNotOnWhatsApp()) return { ok: false, notOnWhatsApp: true, error: 'WhatsApp não encontrado' };
     return { ok: false, error: 'caixa de mensagem não carregou' };
   }
 
-  // se veio via ?text= no URL, o WhatsApp pode já ter preenchido — limpamos para digitar do zero
   try {
     composer.focus();
     document.execCommand('selectAll', false, undefined);
