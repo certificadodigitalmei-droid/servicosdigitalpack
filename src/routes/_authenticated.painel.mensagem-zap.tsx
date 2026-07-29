@@ -163,13 +163,44 @@ function MensagemZapPage() {
   const load = async () => {
     setLoading(true);
     try {
+      // Para os estágios "paid" e "pending_pix", filtramos pelos orders (pela data do pagamento/PIX)
+      // em vez da data de criação do link, já que o link pode ter sido criado em outro dia.
+      let onlyLinkIds: string[] | null = null;
+      if (stage === 'paid' || stage === 'pending_pix') {
+        let oq = supabase
+          .from('orders')
+          .select('public_link_id,status,pix_code,paid_at,created_at')
+          .not('public_link_id', 'is', null)
+          .limit(5000);
+        if (stage === 'paid') {
+          oq = oq.eq('status', 'paid');
+          if (range.gte) oq = oq.gte('paid_at', range.gte);
+          if (range.lte) oq = oq.lte('paid_at', range.lte);
+        } else {
+          oq = oq.in('status', ['pending', 'awaiting_payment']).not('pix_code', 'is', null);
+          if (range.gte) oq = oq.gte('created_at', range.gte);
+          if (range.lte) oq = oq.lte('created_at', range.lte);
+        }
+        const { data: ords, error: oerr } = await oq;
+        if (oerr) throw oerr;
+        onlyLinkIds = Array.from(new Set(((ords ?? []) as any[]).map((o) => o.public_link_id).filter(Boolean)));
+        if (onlyLinkIds.length === 0) {
+          setRows([]); setStatsByToken({}); setPaidByLinkId(new Set()); setPendingPixByLinkId(new Set());
+          return;
+        }
+      }
+
       let q = supabase
         .from('company_links')
         .select('id,public_token,active,created_at,companies(id,cnpj,razao_social_original,nome_titular_exibicao,nome_fantasia,ddd,telefones,possui_telefone)')
         .order('created_at', { ascending: false })
         .limit(5000);
-      if (range.gte) q = q.gte('created_at', range.gte);
-      if (range.lte) q = q.lte('created_at', range.lte);
+      if (onlyLinkIds) {
+        q = q.in('id', onlyLinkIds);
+      } else {
+        if (range.gte) q = q.gte('created_at', range.gte);
+        if (range.lte) q = q.lte('created_at', range.lte);
+      }
       const { data, error } = await q;
       if (error) throw error;
       let list = (data ?? []) as any[];
