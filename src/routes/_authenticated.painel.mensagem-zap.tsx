@@ -398,18 +398,19 @@ function MensagemZapPage() {
         }
       }
 
-      // Filtros de stage
-      if (stage !== 'all') {
-        list = list.filter((r) => {
-          const s = per[r.public_token] ?? { view_link: 0, view_checkout: 0, click_guia: 0, click_certificado: 0 };
-          if (stage === 'visited') return s.view_link > 0;
-          if (stage === 'checkout') return s.view_checkout > 0;
-          if (stage === 'guia') return s.click_guia > 0;
-          if (stage === 'paid') return paidSet.has(r.id);
-          if (stage === 'pending_pix') return pendingSet.has(r.id) && !paidSet.has(r.id);
-          return true;
-        });
-      }
+      // Filtros de stage — em qualquer filtro que NÃO seja "paid",
+      // excluímos empresas que já pagaram (não faz sentido reenviar msg).
+      list = list.filter((r) => {
+        const s = per[r.public_token] ?? { view_link: 0, view_checkout: 0, click_guia: 0, click_certificado: 0 };
+        if (stage !== 'paid' && paidSet.has(r.id)) return false;
+        if (stage === 'all') return true;
+        if (stage === 'visited') return s.view_link > 0;
+        if (stage === 'checkout') return s.view_checkout > 0;
+        if (stage === 'guia') return s.click_guia > 0;
+        if (stage === 'paid') return paidSet.has(r.id);
+        if (stage === 'pending_pix') return pendingSet.has(r.id) && !paidSet.has(r.id);
+        return true;
+      });
 
       if (search.trim()) {
         const s = search.trim().toLowerCase();
