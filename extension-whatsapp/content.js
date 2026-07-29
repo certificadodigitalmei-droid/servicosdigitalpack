@@ -12,17 +12,22 @@ async function waitFor(selector, timeout = 20000) {
   return null;
 }
 
-function isInvalidNumberDialog() {
+function detectNotOnWhatsApp() {
   const texts = [
     'número de telefone compartilhado', 'phone number shared',
-    'não faz parte do whatsapp', 'isn\'t on whatsapp', 'não está no whatsapp',
-    'número inválido', 'invalid',
+    'não faz parte do whatsapp', "isn't on whatsapp", 'is not on whatsapp',
+    'não está no whatsapp', 'não é um número válido do whatsapp',
+    'is not a valid whatsapp', 'invalid whatsapp',
+    'número inválido', 'invalid phone', 'phone number is invalid',
+    'url de telefone inválido', 'phone number shared via url is invalid',
   ];
   const dialogs = document.querySelectorAll('[role="dialog"], [role="alertdialog"]');
   for (const d of dialogs) {
     const t = (d.innerText || '').toLowerCase();
     if (texts.some((x) => t.includes(x))) return true;
   }
+  const body = (document.body?.innerText || '').toLowerCase().slice(0, 4000);
+  if (texts.some((x) => body.includes(x))) return true;
   return false;
 }
 
