@@ -51,6 +51,11 @@ Após a confirmação do pagamento, a ativação é feita automaticamente, diret
 const LS_TEMPLATE = 'painel:mensagem-zap:template';
 const LS_CLICKED = 'painel:mensagem-zap:clicked';
 
+function normalizeEmoji(text: string): string {
+  // garante variante emoji para o sinal de aviso, evitando � no WhatsApp
+  return text.replace(/\u26A0\uFE0E/g, '\u26A0\uFE0F').replace(/\u26A0(?!\uFE0F)/g, '\u26A0\uFE0F');
+}
+
 function loadClicked(): Record<string, number> {
   if (typeof window === 'undefined') return {};
   try { return JSON.parse(window.localStorage.getItem(LS_CLICKED) || '{}'); } catch { return {}; }
