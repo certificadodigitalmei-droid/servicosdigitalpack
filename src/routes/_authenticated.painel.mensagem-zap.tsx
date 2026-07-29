@@ -719,6 +719,7 @@ function MensagemZapPage() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as empresas</SelectItem>
+                <SelectItem value="not_visited">Não visitaram o link</SelectItem>
                 <SelectItem value="visited">Visitaram o link</SelectItem>
                 <SelectItem value="checkout">Foram ao checkout</SelectItem>
                 <SelectItem value="guia">Clicaram em "Gerar Guia"</SelectItem>
