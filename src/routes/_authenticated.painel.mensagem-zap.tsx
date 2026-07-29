@@ -49,8 +49,39 @@ Após a confirmação do pagamento, a ativação é feita automaticamente, diret
 
 *Esta é uma comunicação comercial referente à solicitação iniciada, que se encontra aberta e pendente no sistema.*`;
 
-const LS_TEMPLATE = 'painel:mensagem-zap:template';
+const LS_TEMPLATE = 'painel:mensagem-zap:template'; // legado (string única)
+const LS_TEMPLATES = 'painel:mensagem-zap:templates'; // novo: lista de variações
 const LS_CLICKED = 'painel:mensagem-zap:clicked';
+
+type TemplateItem = { id: string; name: string; body: string; enabled: boolean };
+
+function makeTplId() { return Math.random().toString(36).slice(2, 10); }
+
+function loadTemplates(): TemplateItem[] {
+  if (typeof window === 'undefined') return [{ id: 'default', name: 'Padrão', body: DEFAULT_TEMPLATE, enabled: true }];
+  try {
+    const raw = window.localStorage.getItem(LS_TEMPLATES);
+    if (raw) {
+      const arr = JSON.parse(raw) as TemplateItem[];
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr.map((t) => ({ ...t, body: normalizeEmoji(t.body) }));
+      }
+    }
+    // migração do template único
+    const legacy = window.localStorage.getItem(LS_TEMPLATE);
+    if (legacy) return [{ id: 'default', name: 'Padrão', body: normalizeEmoji(legacy), enabled: true }];
+  } catch { /* noop */ }
+  return [{ id: 'default', name: 'Padrão', body: DEFAULT_TEMPLATE, enabled: true }];
+}
+function saveTemplates(list: TemplateItem[]) {
+  try { window.localStorage.setItem(LS_TEMPLATES, JSON.stringify(list)); } catch { /* quota */ }
+}
+
+function pickRandomTemplate(list: TemplateItem[]): TemplateItem {
+  const enabled = list.filter((t) => t.enabled && t.body.trim().length > 0);
+  const pool = enabled.length > 0 ? enabled : list;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
 function normalizeEmoji(text: string): string {
   // garante variante emoji para o sinal de aviso, evitando � no WhatsApp
