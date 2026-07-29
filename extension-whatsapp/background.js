@@ -117,6 +117,14 @@ async function tick() {
       batchCount: (st.batchCount || 0) + 1,
       consecFail: 0,
     });
+  } else if (res.notOnWhatsApp) {
+    // número não tem WhatsApp — não conta como falha e não zera streak
+    await report(item.id, 'skipped', 'WhatsApp não encontrado');
+    await setState({
+      stats: st.stats,
+      batchCount: (st.batchCount || 0) + 1,
+      consecFail: 0,
+    });
   } else {
     await report(item.id, 'failed', res.error);
     await setState({
