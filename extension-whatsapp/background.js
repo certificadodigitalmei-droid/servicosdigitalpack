@@ -152,8 +152,6 @@ function schedule(ms) {
   chrome.alarms.create('wa-tick', { delayInMinutes: minutes });
 }
 
-chrome.alarms.onAlarm.addListener((a) => { if (a.name === 'wa-tick') tick(); });
-
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   (async () => {
     if (msg?.type === 'START') { await setState({ running: true, consecFail: 0 }); tick(); sendResponse({ ok: true }); }
@@ -165,6 +163,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return true;
 });
 
-// heartbeat leve a cada 1 min
-chrome.alarms.create('wa-hb', { periodInMinutes: 1 });
-chrome.alarms.onAlarm.addListener((a) => { if (a.name === 'wa-hb') heartbeat(); });
+// Loop principal a cada 1 min: sempre roda tick() para respeitar o botão do painel
+// (mesmo com a extensão "parada" localmente ela verifica se o painel foi ligado).
+chrome.alarms.create('wa-loop', { periodInMinutes: 1, delayInMinutes: 0.1 });
+chrome.alarms.onAlarm.addListener((a) => { if (a.name === 'wa-loop' || a.name === 'wa-tick') tick(); });
+chrome.runtime.onInstalled.addListener(() => { tick(); });
+chrome.runtime.onStartup.addListener(() => { tick(); });
