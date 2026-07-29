@@ -62,8 +62,7 @@ function QualityBadge({ status, isTest }: { status: string | null; isTest: boole
 const PAGE_SIZE = 10000;
 
 function niceName(r: Row): string {
-  const raw = r.nome_titular_exibicao || r.razao_social_original || '';
-  return raw.replace(/^\d+[.\-/\s]*/, '').trim() || 'Não informado';
+  return cleanCompanyName(r.nome_titular_exibicao || r.razao_social_original) || 'Não informado';
 }
 
 function EmpresasImportadasPage() {

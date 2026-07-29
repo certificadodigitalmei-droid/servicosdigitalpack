@@ -115,7 +115,7 @@ function DetalhesEmpresa() {
   }
 
   const cnpjFmt = formatCNPJ(company.cnpj);
-  const nome = (company.nome_titular_exibicao || company.razao_social_original || '').replace(/^\d+[.\-/\s]*/, '').trim() || '—';
+  const nome = cleanCompanyName(company.nome_titular_exibicao || company.razao_social_original) || '—';
   const phone = Array.isArray(company.telefones) && company.telefones.length > 0
     ? (company.telefones[0]?.numero || null)
     : null;
