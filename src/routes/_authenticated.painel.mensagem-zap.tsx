@@ -464,6 +464,8 @@ function MensagemZapPage() {
         </CardContent>
       </Card>
 
+      <WhatsAppAutomationPanel selection={automationSelection} onEnqueued={() => { /* mantém marcação local */ }} />
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle className="text-base">
