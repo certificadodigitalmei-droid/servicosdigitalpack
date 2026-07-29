@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
-import { formatCNPJ } from '@/lib/format';
+import { formatCNPJ, cleanCompanyName } from '@/lib/format';
 import { toast } from 'sonner';
 
 
@@ -514,7 +514,7 @@ function LinksGeradosPage() {
                   </TableCell></TableRow>
                 ) : rows.map((r) => {
                   const c = r.companies;
-                  const nome = c ? ((c.nome_titular_exibicao || c.razao_social_original || c.nome_fantasia || '').replace(/^\d+[.\-/\s]*/, '').trim() || '—') : '—';
+                  const nome = c ? (cleanCompanyName(c.nome_titular_exibicao || c.razao_social_original || c.nome_fantasia) || '—') : '—';
                   const pub = r.public_url || (r.public_token ? `/c/${r.public_token}` : null);
                   const chk = r.checkout_url || (r.public_token ? `/checkout/${r.public_token}` : null);
                   const s = statsByToken[r.public_token] ?? emptyStats();

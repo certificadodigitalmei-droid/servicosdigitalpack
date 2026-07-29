@@ -16,7 +16,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCNPJ } from '@/lib/format';
+import { formatCNPJ, cleanCompanyName } from '@/lib/format';
 import { buildPublicUrl } from '@/lib/public-base-url';
 import { toast } from 'sonner';
 
@@ -91,6 +91,7 @@ function extractPhone(company: any): string | null {
   if (company.ddd) return String(company.ddd).replace(/\D/g, '');
   return null;
 }
+
 
 function formatPhoneBR(digits: string): string {
   const d = digits.replace(/\D/g, '');
@@ -271,7 +272,7 @@ function MensagemZapPage() {
 
   const copyMessage = async (row: any) => {
     const c = row.companies;
-    const empresa = (c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia || '').trim() || 'sua empresa';
+    const empresa = cleanCompanyName(c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia) || 'sua empresa';
     const cnpj = formatCNPJ(c?.cnpj);
     const link = buildPublicUrl(row.public_token);
     const msg = renderTemplate(template, { empresa, cnpj, link });
@@ -435,7 +436,8 @@ function MensagemZapPage() {
                 )}
                 {visibleRows.map((r) => {
                   const c = r.companies;
-                  const empresa = (c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia || '—').replace(/^\d+[.\-/\s]*/, '').trim();
+                  const rawName = (c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia || '—');
+                  const empresa = cleanCompanyName(rawName);
                   const phone = extractPhone(c);
                   const s = statsByToken[r.public_token] ?? { view_link: 0, view_checkout: 0, click_guia: 0, click_certificado: 0 };
                   const isPaid = paidByLinkId.has(r.id);

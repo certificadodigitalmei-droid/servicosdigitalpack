@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
-import { formatCNPJ, formatDateBR } from '@/lib/format';
+import { formatCNPJ, formatDateBR, cleanCompanyName } from '@/lib/format';
 import { toast } from 'sonner';
 import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
 
@@ -62,8 +62,7 @@ function QualityBadge({ status, isTest }: { status: string | null; isTest: boole
 const PAGE_SIZE = 10000;
 
 function niceName(r: Row): string {
-  const raw = r.nome_titular_exibicao || r.razao_social_original || '';
-  return raw.replace(/^\d+[.\-/\s]*/, '').trim() || 'Não informado';
+  return cleanCompanyName(r.nome_titular_exibicao || r.razao_social_original) || 'Não informado';
 }
 
 function EmpresasImportadasPage() {

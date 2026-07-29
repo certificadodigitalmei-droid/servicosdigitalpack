@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCNPJ, formatDateBR } from '@/lib/format';
+import { formatCNPJ, formatDateBR, cleanCompanyName } from '@/lib/format';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -115,7 +115,7 @@ function DetalhesEmpresa() {
   }
 
   const cnpjFmt = formatCNPJ(company.cnpj);
-  const nome = (company.nome_titular_exibicao || company.razao_social_original || '').replace(/^\d+[.\-/\s]*/, '').trim() || '—';
+  const nome = cleanCompanyName(company.nome_titular_exibicao || company.razao_social_original) || '—';
   const phone = Array.isArray(company.telefones) && company.telefones.length > 0
     ? (company.telefones[0]?.numero || null)
     : null;
