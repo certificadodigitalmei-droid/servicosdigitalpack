@@ -153,10 +153,12 @@ function renderTemplate(tpl: string, ctx: { empresa: string; cnpj: string; link:
 }
 
 function MensagemZapPage() {
-  const [template, setTemplate] = useState<string>(() => {
-    if (typeof window === 'undefined') return DEFAULT_TEMPLATE;
-    return normalizeEmoji(window.localStorage.getItem(LS_TEMPLATE) || DEFAULT_TEMPLATE);
+  const [templates, setTemplates] = useState<TemplateItem[]>(() => loadTemplates());
+  const [activeTplId, setActiveTplId] = useState<string>(() => {
+    const list = typeof window === 'undefined' ? [] : loadTemplates();
+    return list[0]?.id ?? 'default';
   });
+  const activeTpl = templates.find((t) => t.id === activeTplId) ?? templates[0];
   const [preset, setPreset] = useState<DatePreset>('today');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -186,9 +188,31 @@ function MensagemZapPage() {
   const [paidByLinkId, setPaidByLinkId] = useState<Set<string>>(new Set());
   const [pendingPixByLinkId, setPendingPixByLinkId] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    try { window.localStorage.setItem(LS_TEMPLATE, template); } catch { /* quota */ }
-  }, [template]);
+  useEffect(() => { saveTemplates(templates); }, [templates]);
+
+  const updateActive = (patch: Partial<TemplateItem>) => {
+    setTemplates((prev) => prev.map((t) => t.id === activeTplId ? { ...t, ...patch, body: patch.body != null ? normalizeEmoji(patch.body) : t.body } : t));
+  };
+  const addTemplate = () => {
+    const id = makeTplId();
+    setTemplates((prev) => [...prev, { id, name: `Variação ${prev.length + 1}`, body: activeTpl?.body ?? DEFAULT_TEMPLATE, enabled: true }]);
+    setActiveTplId(id);
+  };
+  const duplicateActive = () => {
+    if (!activeTpl) return;
+    const id = makeTplId();
+    setTemplates((prev) => [...prev, { id, name: activeTpl.name + ' (cópia)', body: activeTpl.body, enabled: activeTpl.enabled }]);
+    setActiveTplId(id);
+  };
+  const removeActive = () => {
+    if (templates.length <= 1) { toast.error('Mantenha pelo menos uma variação'); return; }
+    if (!confirm(`Remover "${activeTpl?.name}"?`)) return;
+    setTemplates((prev) => {
+      const next = prev.filter((t) => t.id !== activeTplId);
+      setActiveTplId(next[0]?.id ?? 'default');
+      return next;
+    });
+  };
 
   const range = useMemo(() => rangeFromPreset(preset, from, to), [preset, from, to]);
 
