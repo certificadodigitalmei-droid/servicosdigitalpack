@@ -513,8 +513,9 @@ function MensagemZapPage() {
         <CardHeader>
           <CardTitle className="text-base flex items-center justify-between gap-2">
             <span>Modelos da mensagem ({templates.filter((t) => t.enabled).length} ativo{templates.filter((t) => t.enabled).length === 1 ? '' : 's'} de {templates.length})</span>
-            <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
               <Button size="sm" variant="outline" onClick={addTemplate}>+ Nova variação</Button>
+              <Button size="sm" variant="outline" onClick={loadFormalTemplates}>Carregar modelos formais</Button>
               <Button size="sm" variant="ghost" onClick={duplicateActive}>Duplicar</Button>
               <Button size="sm" variant="ghost" className="text-red-600" onClick={removeActive}>Excluir</Button>
             </div>
