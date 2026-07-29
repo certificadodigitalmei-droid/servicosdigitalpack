@@ -430,10 +430,10 @@ function MensagemZapPage() {
                 {loading && (
                   <TableRow><TableCell colSpan={4} className="text-center py-8 text-slate-500">Carregando…</TableCell></TableRow>
                 )}
-                {!loading && rows.length === 0 && (
+                {!loading && visibleRows.length === 0 && (
                   <TableRow><TableCell colSpan={4} className="text-center py-8 text-slate-500">Nenhuma empresa neste filtro.</TableCell></TableRow>
                 )}
-                {rows.map((r) => {
+                {visibleRows.map((r) => {
                   const c = r.companies;
                   const empresa = (c?.nome_titular_exibicao || c?.razao_social_original || c?.nome_fantasia || '—').replace(/^\d+[.\-/\s]*/, '').trim();
                   const phone = extractPhone(c);
@@ -441,8 +441,10 @@ function MensagemZapPage() {
                   const isPaid = paidByLinkId.has(r.id);
                   const isPending = pendingPixByLinkId.has(r.id) && !isPaid;
                   const link = buildPublicUrl(r.public_token);
+                  const contactedAt = clickedMap[r.id];
+                  const isContacted = !!contactedAt;
                   return (
-                    <TableRow key={r.id}>
+                    <TableRow key={r.id} className={isContacted ? 'bg-green-50/50' : ''}>
                       <TableCell>
                         <div className="font-medium text-slate-900">{empresa}</div>
                         <div className="text-xs text-slate-500 font-mono">{formatCNPJ(c?.cnpj)}</div>
@@ -459,7 +461,7 @@ function MensagemZapPage() {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-sm text-green-700 hover:text-green-800 font-medium"
                             title="Abrir WhatsApp com mensagem pronta"
-                            onClick={(e) => { e.stopPropagation(); void copyPhone(phone); }}
+                            onClick={(e) => { e.stopPropagation(); void copyPhone(phone); markClicked(r.id); }}
                           >
                             <MessageCircle className="h-3.5 w-3.5" /> {formatPhoneBR(phone)}
                           </a>
@@ -467,12 +469,17 @@ function MensagemZapPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
+                          {isContacted && (
+                            <Badge className="bg-emerald-600 hover:bg-emerald-600" title={new Date(contactedAt).toLocaleString('pt-BR')}>
+                              Já enviado
+                            </Badge>
+                          )}
                           {isPaid && <Badge className="bg-green-600 hover:bg-green-600">Pago</Badge>}
                           {isPending && <Badge className="bg-amber-500 hover:bg-amber-500">PIX pendente</Badge>}
                           {s.click_guia > 0 && <Badge variant="outline">Gerou guia</Badge>}
                           {s.view_checkout > 0 && <Badge variant="outline">Checkout</Badge>}
                           {s.view_link > 0 && <Badge variant="outline">Visitou</Badge>}
-                          {!isPaid && !isPending && s.view_link === 0 && <span className="text-xs text-slate-400">sem interação</span>}
+                          {!isPaid && !isPending && s.view_link === 0 && !isContacted && <span className="text-xs text-slate-400">sem interação</span>}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -481,15 +488,25 @@ function MensagemZapPage() {
                             <Copy className="h-3.5 w-3.5 mr-1" /> Copiar msg
                           </Button>
                           {phone && (
-                            <a href={buildWhatsAppUrl(phone, renderTemplate(template, {
-                              empresa: empresa || 'sua empresa',
-                              cnpj: formatCNPJ(c?.cnpj),
-                              link,
-                            }))} target="_blank" rel="noopener noreferrer">
+                            <a
+                              href={buildWhatsAppUrl(phone, renderTemplate(template, {
+                                empresa: empresa || 'sua empresa',
+                                cnpj: formatCNPJ(c?.cnpj),
+                                link,
+                              }))}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => markClicked(r.id)}
+                            >
                               <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
                                 <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
                               </Button>
                             </a>
+                          )}
+                          {isContacted && (
+                            <Button size="sm" variant="ghost" onClick={() => unmarkClicked(r.id)} title="Desmarcar como enviado">
+                              Desmarcar
+                            </Button>
                           )}
                           <a href={link} target="_blank" rel="noopener noreferrer">
                             <Button size="sm" variant="ghost"><ExternalLink className="h-3.5 w-3.5" /></Button>
