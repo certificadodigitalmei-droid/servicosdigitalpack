@@ -16,7 +16,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCNPJ } from '@/lib/format';
+import { formatCNPJ, cleanCompanyName } from '@/lib/format';
 import { buildPublicUrl } from '@/lib/public-base-url';
 import { toast } from 'sonner';
 
