@@ -48,3 +48,15 @@ export function formatDateBR(raw?: string | null): string {
 export function isValidEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
+
+export function cleanCompanyName(name?: string | null): string {
+  if (!name) return "—";
+  return name
+    .replace(/^\d+[\.\-\/\s]*/, "")
+    .replace(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g, "")
+    .replace(/\d{14}/g, "")
+    .replace(/\d{2}\d{3}\d{3}\d{4}\d{2}/g, "")
+    .replace(/[\-\/]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
