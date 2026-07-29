@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCNPJ, cleanCompanyName } from '@/lib/format';
 import { buildPublicUrl } from '@/lib/public-base-url';
 import { toast } from 'sonner';
+import { WhatsAppAutomationPanel } from '@/components/painel/WhatsAppAutomationPanel';
 
 export const Route = createFileRoute('/_authenticated/painel/mensagem-zap')({
   head: () => ({ meta: [{ title: 'Mensagem para Zap | Painel' }] }),
