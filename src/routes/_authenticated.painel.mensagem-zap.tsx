@@ -254,7 +254,14 @@ function MensagemZapPage() {
     }
   };
 
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [preset, from, to, stage, onlyWithPhone, contactedFilter, clickedMap]);
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [preset, from, to, stage, onlyWithPhone]);
+
+  const visibleRows = useMemo(() => {
+    if (contactedFilter === 'all') return rows;
+    return rows.filter((r) => contactedFilter === 'contacted' ? !!clickedMap[r.id] : !clickedMap[r.id]);
+  }, [rows, contactedFilter, clickedMap]);
+
+  const contactedCount = useMemo(() => rows.filter((r) => !!clickedMap[r.id]).length, [rows, clickedMap]);
 
   const preview = useMemo(() => renderTemplate(template, {
     empresa: 'Padaria Exemplo LTDA',
