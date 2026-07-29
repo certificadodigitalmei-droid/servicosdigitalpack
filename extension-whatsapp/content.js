@@ -12,17 +12,22 @@ async function waitFor(selector, timeout = 20000) {
   return null;
 }
 
-function isInvalidNumberDialog() {
+function detectNotOnWhatsApp() {
   const texts = [
     'número de telefone compartilhado', 'phone number shared',
-    'não faz parte do whatsapp', 'isn\'t on whatsapp', 'não está no whatsapp',
-    'número inválido', 'invalid',
+    'não faz parte do whatsapp', "isn't on whatsapp", 'is not on whatsapp',
+    'não está no whatsapp', 'não é um número válido do whatsapp',
+    'is not a valid whatsapp', 'invalid whatsapp',
+    'número inválido', 'invalid phone', 'phone number is invalid',
+    'url de telefone inválido', 'phone number shared via url is invalid',
   ];
   const dialogs = document.querySelectorAll('[role="dialog"], [role="alertdialog"]');
   for (const d of dialogs) {
     const t = (d.innerText || '').toLowerCase();
     if (texts.some((x) => t.includes(x))) return true;
   }
+  const body = (document.body?.innerText || '').toLowerCase().slice(0, 4000);
+  if (texts.some((x) => body.includes(x))) return true;
   return false;
 }
 
@@ -94,17 +99,21 @@ async function clickSendButton(composer) {
 
 async function sendCurrent(message) {
   await sleep(rand(1200, 2500));
+  // dá tempo do WhatsApp abrir o modal de "não encontrado"
+  for (let i = 0; i < 8; i++) {
+    if (detectNotOnWhatsApp()) return { ok: false, notOnWhatsApp: true, error: 'WhatsApp não encontrado' };
+    if (document.querySelector('footer div[contenteditable="true"], footer [role="textbox"][contenteditable="true"]')) break;
+    await sleep(800);
+  }
+  if (detectNotOnWhatsApp()) return { ok: false, notOnWhatsApp: true, error: 'WhatsApp não encontrado' };
   await dismissDialogs();
-  if (isInvalidNumberDialog()) return { ok: false, error: 'número inválido no WhatsApp' };
 
-  // aguarda caixa de mensagem (footer com contenteditable)
   const composer = await waitFor('footer div[contenteditable="true"], footer [role="textbox"][contenteditable="true"]', 25000);
   if (!composer) {
-    if (isInvalidNumberDialog()) return { ok: false, error: 'número inválido no WhatsApp' };
+    if (detectNotOnWhatsApp()) return { ok: false, notOnWhatsApp: true, error: 'WhatsApp não encontrado' };
     return { ok: false, error: 'caixa de mensagem não carregou' };
   }
 
-  // se veio via ?text= no URL, o WhatsApp pode já ter preenchido — limpamos para digitar do zero
   try {
     composer.focus();
     document.execCommand('selectAll', false, undefined);
