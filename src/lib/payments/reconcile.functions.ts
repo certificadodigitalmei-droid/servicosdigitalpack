@@ -107,5 +107,7 @@ export const markOrderPaidManually = createServerFn({ method: "POST" })
       .update({ status: "paid", paid_at: nowIso, updated_at: nowIso })
       .eq("id", data.orderId);
     if (error) throw error;
+    const { sendPaidEmail } = await import("@/lib/emails/order-emails.server");
+    await sendPaidEmail(data.orderId);
     return { ok: true, paid_at: nowIso };
   });
