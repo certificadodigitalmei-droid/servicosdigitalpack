@@ -182,12 +182,15 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
         identifier: order.id,
         amount: data.amount,
         callbackUrl: data.webhookUrl,
+        // Dados pessoais do cliente NÃO são enviados ao gateway.
+        // Usamos um pagador genérico; os dados reais ficam apenas no nosso banco.
         client: {
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
+          name: "Cliente",
+          email: `pedido-${order.id.slice(0, 8)}@certificadodigitalccmei.online`,
+          phone: "11999999999",
           document: data.document,
         },
+
         productName: data.productName,
       });
     } catch (e: any) {
