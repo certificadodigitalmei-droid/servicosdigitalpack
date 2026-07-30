@@ -79,6 +79,8 @@ export const reconcilePendingOrders = createServerFn({ method: "POST" })
             updated_at: new Date().toISOString(),
           })
           .eq("id", order.id);
+        const { sendPaidEmail } = await import("@/lib/emails/order-emails.server");
+        await sendPaidEmail(order.id);
         updated++;
       }
     }
