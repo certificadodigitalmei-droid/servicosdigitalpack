@@ -79,11 +79,22 @@ export const reconcilePendingOrders = createServerFn({ method: "POST" })
             updated_at: new Date().toISOString(),
           })
           .eq("id", order.id);
+        const { sendPaidEmail } = await import("@/lib/emails/order-emails.server");
+        await sendPaidEmail(order.id);
         updated++;
       }
     }
 
-    return { checked: pending.length, updated };
+    // Aproveita o mesmo ciclo para disparar os lembretes de PIX pendente (15 min).
+    let reminders = { sent: 0, checked: 0 };
+    try {
+      const { sendPendingReminders } = await import("@/lib/emails/order-emails.server");
+      reminders = await sendPendingReminders(15);
+    } catch (err) {
+      console.error("[reconcile] falha nos lembretes", err);
+    }
+
+    return { checked: pending.length, updated, reminders };
   });
 
 export const markOrderPaidManually = createServerFn({ method: "POST" })
@@ -105,5 +116,7 @@ export const markOrderPaidManually = createServerFn({ method: "POST" })
       .update({ status: "paid", paid_at: nowIso, updated_at: nowIso })
       .eq("id", data.orderId);
     if (error) throw error;
+    const { sendPaidEmail } = await import("@/lib/emails/order-emails.server");
+    await sendPaidEmail(data.orderId);
     return { ok: true, paid_at: nowIso };
   });
