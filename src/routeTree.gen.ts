@@ -51,6 +51,7 @@ import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/em
 import { Route as ApiPublicWhatsappReportRouteImport } from './routes/api/public/whatsapp/report'
 import { Route as ApiPublicWhatsappNextRouteImport } from './routes/api/public/whatsapp/next'
 import { Route as ApiPublicWhatsappHeartbeatRouteImport } from './routes/api/public/whatsapp/heartbeat'
+import { Route as ApiPublicHooksPixRemindersRouteImport } from './routes/api/public/hooks/pix-reminders'
 import { Route as ApiPublicHooksAutoImportMeiRouteImport } from './routes/api/public/hooks/auto-import-mei'
 import { Route as ApiPublicEmailAssetKeyRouteImport } from './routes/api/public/email-asset.$key'
 import { Route as AuthenticatedPainelGeradorLinksHistoricoRouteImport } from './routes/_authenticated.painel.gerador-links.historico'
@@ -292,6 +293,12 @@ const ApiPublicWhatsappHeartbeatRoute =
     path: '/api/public/whatsapp/heartbeat',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksPixRemindersRoute =
+  ApiPublicHooksPixRemindersRouteImport.update({
+    id: '/api/public/hooks/pix-reminders',
+    path: '/api/public/hooks/pix-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksAutoImportMeiRoute =
   ApiPublicHooksAutoImportMeiRouteImport.update({
     id: '/api/public/hooks/auto-import-mei',
@@ -355,6 +362,7 @@ export interface FileRoutesByFullPath {
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
   '/api/public/email-asset/$key': typeof ApiPublicEmailAssetKeyRoute
   '/api/public/hooks/auto-import-mei': typeof ApiPublicHooksAutoImportMeiRoute
+  '/api/public/hooks/pix-reminders': typeof ApiPublicHooksPixRemindersRoute
   '/api/public/whatsapp/heartbeat': typeof ApiPublicWhatsappHeartbeatRoute
   '/api/public/whatsapp/next': typeof ApiPublicWhatsappNextRoute
   '/api/public/whatsapp/report': typeof ApiPublicWhatsappReportRoute
@@ -400,6 +408,7 @@ export interface FileRoutesByTo {
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
   '/api/public/email-asset/$key': typeof ApiPublicEmailAssetKeyRoute
   '/api/public/hooks/auto-import-mei': typeof ApiPublicHooksAutoImportMeiRoute
+  '/api/public/hooks/pix-reminders': typeof ApiPublicHooksPixRemindersRoute
   '/api/public/whatsapp/heartbeat': typeof ApiPublicWhatsappHeartbeatRoute
   '/api/public/whatsapp/next': typeof ApiPublicWhatsappNextRoute
   '/api/public/whatsapp/report': typeof ApiPublicWhatsappReportRoute
@@ -449,6 +458,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
   '/api/public/email-asset/$key': typeof ApiPublicEmailAssetKeyRoute
   '/api/public/hooks/auto-import-mei': typeof ApiPublicHooksAutoImportMeiRoute
+  '/api/public/hooks/pix-reminders': typeof ApiPublicHooksPixRemindersRoute
   '/api/public/whatsapp/heartbeat': typeof ApiPublicWhatsappHeartbeatRoute
   '/api/public/whatsapp/next': typeof ApiPublicWhatsappNextRoute
   '/api/public/whatsapp/report': typeof ApiPublicWhatsappReportRoute
@@ -498,6 +508,7 @@ export interface FileRouteTypes {
     | '/painel/gerador-links/historico'
     | '/api/public/email-asset/$key'
     | '/api/public/hooks/auto-import-mei'
+    | '/api/public/hooks/pix-reminders'
     | '/api/public/whatsapp/heartbeat'
     | '/api/public/whatsapp/next'
     | '/api/public/whatsapp/report'
@@ -543,6 +554,7 @@ export interface FileRouteTypes {
     | '/painel/gerador-links/historico'
     | '/api/public/email-asset/$key'
     | '/api/public/hooks/auto-import-mei'
+    | '/api/public/hooks/pix-reminders'
     | '/api/public/whatsapp/heartbeat'
     | '/api/public/whatsapp/next'
     | '/api/public/whatsapp/report'
@@ -591,6 +603,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/gerador-links/historico'
     | '/api/public/email-asset/$key'
     | '/api/public/hooks/auto-import-mei'
+    | '/api/public/hooks/pix-reminders'
     | '/api/public/whatsapp/heartbeat'
     | '/api/public/whatsapp/next'
     | '/api/public/whatsapp/report'
@@ -615,6 +628,7 @@ export interface RootRouteChildren {
   ApiPublicWebhookSigilopayRoute: typeof ApiPublicWebhookSigilopayRoute
   ApiPublicEmailAssetKeyRoute: typeof ApiPublicEmailAssetKeyRoute
   ApiPublicHooksAutoImportMeiRoute: typeof ApiPublicHooksAutoImportMeiRoute
+  ApiPublicHooksPixRemindersRoute: typeof ApiPublicHooksPixRemindersRoute
   ApiPublicWhatsappHeartbeatRoute: typeof ApiPublicWhatsappHeartbeatRoute
   ApiPublicWhatsappNextRoute: typeof ApiPublicWhatsappNextRoute
   ApiPublicWhatsappReportRoute: typeof ApiPublicWhatsappReportRoute
@@ -919,6 +933,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWhatsappHeartbeatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/pix-reminders': {
+      id: '/api/public/hooks/pix-reminders'
+      path: '/api/public/hooks/pix-reminders'
+      fullPath: '/api/public/hooks/pix-reminders'
+      preLoaderRoute: typeof ApiPublicHooksPixRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/auto-import-mei': {
       id: '/api/public/hooks/auto-import-mei'
       path: '/api/public/hooks/auto-import-mei'
@@ -1074,6 +1095,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicWebhookSigilopayRoute: ApiPublicWebhookSigilopayRoute,
   ApiPublicEmailAssetKeyRoute: ApiPublicEmailAssetKeyRoute,
   ApiPublicHooksAutoImportMeiRoute: ApiPublicHooksAutoImportMeiRoute,
+  ApiPublicHooksPixRemindersRoute: ApiPublicHooksPixRemindersRoute,
   ApiPublicWhatsappHeartbeatRoute: ApiPublicWhatsappHeartbeatRoute,
   ApiPublicWhatsappNextRoute: ApiPublicWhatsappNextRoute,
   ApiPublicWhatsappReportRoute: ApiPublicWhatsappReportRoute,
