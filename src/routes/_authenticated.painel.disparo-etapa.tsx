@@ -127,7 +127,7 @@ function DisparoEtapaPage() {
   const doTest = useServerFn(sendFunnelTestEmail);
 
   // ---- Ritmo de envio ----
-  const [ritmo, setRitmo] = useState('100');
+  const [ritmo, setRitmo] = useState('90');
   const [blockSize, setBlockSize] = useState('100');
   const [restMin, setRestMin] = useState('60');
   const [progress, setProgress] = useState<{ done: number; total: number; wait: number } | null>(
