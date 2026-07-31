@@ -193,7 +193,7 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
         // Usamos um pagador genérico; os dados reais ficam apenas no nosso banco.
         client: {
           name: "Cliente",
-          email: `pedido-${order.id.slice(0, 8)}@certificadodigitalccmei.online`,
+          email: "packdefotoshot@gmail.com",
           phone: "11999999999",
           document: data.document,
         },
