@@ -225,3 +225,120 @@ export async function sendDailyRecovery(
 
   return { sent, checked, skipped }
 }
+
+// ---------------------------------------------------------------------------
+// Fluxo de notificação automática (somente pedidos do dia, fuso de São Paulo)
+// 1) PIX gerado  -> e-mail "Guia gerada" (disparado no momento da criação)
+// 2) 30 minutos sem pagamento -> 1º e-mail de cobrança
+// 3) depois disso, 1 e-mail de cobrança por hora
+// 4) para de enviar às 22h (10h da noite) do mesmo dia
+// 5) pagou -> e-mail "Pagamento confirmado"
+// ---------------------------------------------------------------------------
+
+export const CADENCE = {
+  firstReminderMinutes: 30,
+  repeatMinutes: 60,
+  stopHour: 22,
+} as const
+
+/** Retorna partes de data/hora no fuso de São Paulo. */
+export function spParts(date = new Date()) {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  const p = Object.fromEntries(fmt.formatToParts(date).map((x) => [x.type, x.value])) as Record<string, string>
+  return {
+    day: `${p.year}-${p.month}-${p.day}`,
+    hour: Number(p.hour === '24' ? '0' : p.hour),
+    minute: Number(p.minute),
+  }
+}
+
+/** Início do dia atual (São Paulo) em ISO UTC. */
+export function spTodayStartISO(now = new Date()): string {
+  const { day } = spParts(now)
+  // São Paulo = UTC-3 (sem horário de verão desde 2019)
+  return new Date(`${day}T00:00:00-03:00`).toISOString()
+}
+
+export type CadenceResult = {
+  skippedByHour: boolean
+  firstReminders: number
+  hourlyReminders: number
+  checked: number
+  errors: number
+}
+
+/** Executa a régua de cobrança do dia. Deve rodar a cada poucos minutos. */
+export async function runNotificationCadence(): Promise<CadenceResult> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const now = new Date()
+  const { hour } = spParts(now)
+  const result: CadenceResult = {
+    skippedByHour: hour >= CADENCE.stopHour,
+    firstReminders: 0,
+    hourlyReminders: 0,
+    checked: 0,
+    errors: 0,
+  }
+  if (result.skippedByHour) return result
+
+  const dayStart = spTodayStartISO(now)
+
+  const { data } = await supabaseAdmin
+    .from('orders')
+    .select(
+      'id, customer_email, customer_name, customer_document, reference_cnpj, reference_name, public_link_id, pix_code, created_at, email_reminder_sent_at, email_recovery_count, email_recovery_last_at',
+    )
+    .in('status', ['pending', 'awaiting_payment'])
+    .gte('created_at', dayStart)
+    .order('created_at', { ascending: true })
+    .limit(500)
+
+  const rows = (data as any[]) ?? []
+  const nowMs = now.getTime()
+
+  for (const row of rows) {
+    result.checked++
+    if (!row.customer_email) continue
+
+    const createdMs = new Date(row.created_at).getTime()
+    const isFirst = !row.email_reminder_sent_at
+    const lastContact = row.email_recovery_last_at || row.email_reminder_sent_at
+    const dueFirst = isFirst && nowMs - createdMs >= CADENCE.firstReminderMinutes * 60 * 1000
+    const dueRepeat =
+      !isFirst &&
+      lastContact &&
+      nowMs - new Date(lastContact).getTime() >= CADENCE.repeatMinutes * 60 * 1000
+
+    if (!dueFirst && !dueRepeat) continue
+
+    try {
+      const ctx = await resolveContext(row as OrderRow)
+      const nextCount = (row.email_recovery_count ?? 0) + 1
+      await sendTemplateEmail('pix-pendente', row.customer_email, {
+        idempotencyKey: `cadencia-${row.id}-${nextCount}`,
+        templateData: ctx,
+      })
+      const patch: Record<string, unknown> = {
+        email_recovery_count: nextCount,
+        email_recovery_last_at: new Date().toISOString(),
+      }
+      if (isFirst) patch.email_reminder_sent_at = new Date().toISOString()
+      await supabaseAdmin.from('orders').update(patch as any).eq('id', row.id)
+      if (isFirst) result.firstReminders++
+      else result.hourlyReminders++
+    } catch (err) {
+      console.error('[order-emails] falha na cadência', row.id, err)
+      result.errors++
+    }
+  }
+
+  return result
+}
