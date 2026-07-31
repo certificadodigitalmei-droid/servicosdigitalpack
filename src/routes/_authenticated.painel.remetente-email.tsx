@@ -25,7 +25,7 @@ function EmailSenderPage() {
     queryFn: () => getEmailSenderSettings(),
   });
 
-  const [form, setForm] = useState<EmailSenderSettings>({
+  const [form, setForm] = useState<{ from_email: string; from_name: string; reply_to: string }>({
     from_email: '',
     from_name: '',
     reply_to: '',
