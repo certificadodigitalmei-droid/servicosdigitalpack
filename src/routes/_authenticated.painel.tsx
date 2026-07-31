@@ -253,7 +253,7 @@ function PanelLayout() {
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
         { title: 'Mensagem para Zap', icon: MessageSquare, to: '/painel/mensagem-zap' },
-        
+        { title: 'Recuperação de Carrinho', icon: ShoppingCart, to: '/painel/recuperacao-carrinho' },
       ],
     },
     {
