@@ -97,7 +97,11 @@ function EmailSenderPage() {
         r.onerror = reject;
         r.readAsDataURL(file);
       });
-      const res = await uploadEmailAsset({ data: { dataUrl, filename: file.name } });
+      const flat = await flattenOnWhite(dataUrl);
+      const res = await uploadEmailAsset({
+        data: { dataUrl: flat, filename: file.name.replace(/\.\w+$/, '') + '.jpg' },
+      });
+
       setForm((f) => ({ ...f, logo_url: res.url }));
       toast.success('Foto enviada — clique em Salvar remetente');
     } catch (e: any) {
