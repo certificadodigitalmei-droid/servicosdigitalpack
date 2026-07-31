@@ -248,30 +248,30 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
 
   consultaStore.set({ isCounting: true });
   const pageSize = 20;
-  // Padrão: carrega TODAS as páginas da data/filtros escolhidos.
-  // Chamador pode limitar via `maxPages` se quiser paginar sob demanda.
-  const HARD_BACKSTOP_PAGES = Math.max(1, opts.maxPages ?? Number.POSITIVE_INFINITY);
+  // SEMPRE relê a partir da página 1 (a API devolve as aberturas mais
+  // recentes primeiro). Assim, quando chegam novas remessas no dia, elas
+  // entram automaticamente na lista — sem precisar reiniciar o modo
+  // automático. Páginas já conhecidas são deduplicadas por CNPJ.
+  const HARD_BACKSTOP_PAGES = Math.max(1, opts.maxPages ?? 500);
 
   const now = new Date().toISOString();
-  // Retoma a partir da próxima página se a lista dessa chave já tem itens.
-  const existingCount = consultaStore.get().foundList.length;
-  let page = Math.max(1, Math.floor(existingCount / pageSize) + 1);
-  const startPage = page;
+  let page = 1;
 
   let lastStatus: CountResult = { date, total: null, ok: true, status: 200 };
   let totalAdded = 0;
-
+  let knownStreak = 0;
+  const knownBefore = consultaStore.get().foundList.length;
 
   try {
-    while (page < startPage + HARD_BACKSTOP_PAGES) {
+    while (page <= HARD_BACKSTOP_PAGES) {
       const r: any = await listByDate({
         data: { date, filters, limit: pageSize, page },
       });
 
       lastStatus = { date: r.date, total: r.total, ok: r.ok, status: r.status };
       const items = r.items ?? [];
+      let addedThisPage = 0;
       if (items.length > 0) {
-        let addedThisPage = 0;
         consultaStore.set((cur) => {
           const seen = new Map(cur.foundList.map((it) => [it.cnpj, it]));
           for (const it of items) {
@@ -291,8 +291,18 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
       if (!r.ok) break;
       if (items.length < pageSize) break;
       if (r.total != null && page * pageSize >= r.total) break;
+
+      // Atalho de atualização: se a lista já estava carregada e as duas
+      // últimas páginas só trouxeram CNPJs conhecidos, os novos (topo) já
+      // foram capturados — não precisa varrer o histórico inteiro de novo.
+      if (knownBefore > 0) {
+        knownStreak = addedThisPage === 0 ? knownStreak + 1 : 0;
+        if (knownStreak >= 2) break;
+      }
       page += 1;
     }
+
+
 
     // Atualiza countResult / autoStats
     consultaStore.set((cur) => {
