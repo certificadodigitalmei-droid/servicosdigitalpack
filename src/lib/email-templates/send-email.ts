@@ -2,7 +2,7 @@ import * as React from 'react'
 import { render } from '@react-email/render'
 import { EmailAPIError, sendLovableEmail } from '@lovable.dev/email-js'
 import { TEMPLATES } from './registry'
-import { recordEmailAudit } from '@/lib/emails/email-audit.server'
+import { recordEmailAudit } from '@/lib/emails/email-audit'
 
 // Server-only: reads LOVABLE_API_KEY. Never import from client components.
 

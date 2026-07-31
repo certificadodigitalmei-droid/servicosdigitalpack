@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { EmailAPIError, sendLovableEmail } from '@lovable.dev/email-js';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { DEFAULT_DESIGN, renderHtml, renderText, type CampaignDesign, type Vars } from './template';
-import { recordEmailAudit } from '@/lib/emails/email-audit.server';
+import { recordEmailAudit } from '@/lib/emails/email-audit';
 
 const SENDER_DOMAIN = 'notify.seu-certificado-mei-digital.online';
 const FALLBACK_FROM_ADDRESS = 'certificado.mei.estadual@seu-certificado-mei-digital.online';
