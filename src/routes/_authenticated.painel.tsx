@@ -14,7 +14,6 @@ import {
   Database,
   LinkIcon,
   Send,
-  Palette,
   CheckCircle2,
   DollarSign,
   KeyRound,
