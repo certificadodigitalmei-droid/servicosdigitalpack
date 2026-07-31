@@ -146,3 +146,68 @@ export async function sendPendingReminders(minutes = 15): Promise<{ sent: number
 
   return { sent, checked: rows.length }
 }
+
+export type RecoveryResult = { sent: number; checked: number; skipped: number }
+
+/**
+ * Recuperação de carrinho: enquanto o pedido não for pago, envia 1 e-mail por
+ * dia (24h desde o último contato) até o limite de dias configurado.
+ */
+export async function sendDailyRecovery(
+  opts: { maxDays?: number; limit?: number } = {},
+): Promise<RecoveryResult> {
+  const maxDays = opts.maxDays ?? 15
+  const limit = opts.limit ?? 100
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+
+  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const floor = new Date(Date.now() - maxDays * 24 * 60 * 60 * 1000).toISOString()
+
+  const { data } = await supabaseAdmin
+    .from('orders')
+    .select(
+      'id, customer_email, customer_name, customer_document, reference_cnpj, reference_name, public_link_id, pix_code, created_at, email_recovery_count, email_recovery_last_at, email_reminder_sent_at',
+    )
+    .in('status', ['pending', 'awaiting_payment'])
+    .gte('created_at', floor)
+    .order('created_at', { ascending: true })
+    .limit(500)
+
+  const rows = (data as any[]) ?? []
+  let sent = 0
+  let skipped = 0
+  let checked = 0
+
+  for (const row of rows) {
+    if (sent >= limit) break
+    // Último contato: recuperação > lembrete de 15min > criação do pedido.
+    const last = row.email_recovery_last_at || row.email_reminder_sent_at || row.created_at
+    if (last && last > dayAgo) continue
+    checked++
+    if (!row.customer_email) {
+      skipped++
+      continue
+    }
+    try {
+      const ctx = await resolveContext(row as OrderRow)
+      const nextCount = (row.email_recovery_count ?? 0) + 1
+      await sendTemplateEmail('pix-pendente', row.customer_email, {
+        idempotencyKey: `recuperacao-${row.id}-${nextCount}`,
+        templateData: ctx,
+      })
+      await supabaseAdmin
+        .from('orders')
+        .update({
+          email_recovery_count: nextCount,
+          email_recovery_last_at: new Date().toISOString(),
+        } as any)
+        .eq('id', row.id)
+      sent++
+    } catch (err) {
+      console.error('[order-emails] falha na recuperação', row.id, err)
+      skipped++
+    }
+  }
+
+  return { sent, checked, skipped }
+}
