@@ -50,12 +50,13 @@ export const PRESETS: Preset[] = [
       subtitleSize: 12,
 
       showHero: true,
-      heroTitle: 'Emissão do Certificado Digital\npendente para o seu CNPJ',
+      heroTitle: 'Seu CNPJ está com\npendência de Certificado Digital',
       heroTitleColor: '#0e3a70',
       heroTitleSize: 20,
 
       intro:
-        'Prezado(a) *{{NOME_TITULAR}}*,\n\nConsta em nosso sistema que a inscrição abaixo permanece *sem Certificado Digital e-CNPJ ativo*. Confira os dados do cadastro:',
+        'Prezado(a) *{{NOME_TITULAR}}*,\n\nA inscrição abaixo consta em nosso sistema como *PENDENTE*, por estar *sem Certificado Digital e-CNPJ ativo*.\n\nRecomendamos *verificar agora* a situação do seu cadastro antes que novas restrições sejam aplicadas:',
+
       bodySize: 13.5,
 
       showCard: true,
