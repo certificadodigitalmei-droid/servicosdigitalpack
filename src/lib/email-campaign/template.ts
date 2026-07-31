@@ -301,15 +301,16 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   const align = D.align;
   const px = D.contentPaddingX;
 
-  // Auto-shrink do título para caber em UMA linha (nome do titular nunca quebra).
-  // Considera a maior linha do título já com variáveis substituídas.
+  // Título: no desktop encolhe um pouco para caber bem; no celular quebra em linhas
+  // (nunca corta com "..." e nunca estoura a largura da tela).
   const longestTitleLine = String(rawTitle || '')
     .split(/\r?\n/)
     .reduce((m, l) => (l.length > m.length ? l : m), '');
   const availableTitleWidth = Math.max(120, D.containerWidth - 2 * px);
   // Arial bold: ~0.58em por caractere. Deixa uma folga de 4px.
   const fitTitleSize = Math.floor((availableTitleWidth - 4) / Math.max(1, longestTitleLine.length * 0.58));
-  const effectiveTitleSize = Math.max(12, Math.min(D.titleSize, fitTitleSize));
+  const effectiveTitleSize = Math.max(15, Math.min(D.titleSize, fitTitleSize));
+  const mobileTitleSize = Math.max(15, Math.min(20, effectiveTitleSize));
 
 
   const rowsHtml = [
@@ -359,29 +360,37 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     .l-muted { color:${D.mutedColor} !important; }
     .l-btn { background:${D.buttonBg} !important; color:${D.buttonText} !important; }
   }
+  /* Celular: nada de texto cortado ou estourando a largura */
+  @media only screen and (max-width:600px) {
+    .l-title { font-size:${mobileTitleSize}px !important; line-height:1.3 !important; white-space:normal !important; }
+    .l-logo { font-size:11px !important; letter-spacing:1px !important; }
+    .l-sub { font-size:13px !important; }
+    .l-pad { padding-left:18px !important; padding-right:18px !important; }
+    .l-btn { display:block !important; width:auto !important; white-space:normal !important; font-size:15px !important; padding:14px 18px !important; }
+  }
 </style>
 </head>
-<body id="body" class="body l-page" style="margin:0;padding:0;background:${D.pageBg};font-family:Arial,Helvetica,sans-serif;color:${D.textColor};">
+<body id="body" class="body l-page" style="margin:0;padding:0;background:${D.pageBg};font-family:Arial,Helvetica,sans-serif;color:${D.textColor};word-break:break-word;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="l-page" bgcolor="${D.pageBg}" style="background:${D.pageBg};padding:40px 0;"><tr><td align="center">
   <table role="presentation" width="${D.containerWidth}" cellpadding="0" cellspacing="0" class="l-card" bgcolor="${D.bodyBg}" style="max-width:${D.containerWidth}px;width:100%;background:${D.bodyBg};box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
 
     ${D.showGovBar ? `
-    <tr><td style="background:${D.govBarBg};color:${D.govBarColor};padding:10px ${px}px;font-size:12px;letter-spacing:0.5px;font-family:Arial,sans-serif;">
+    <tr><td class="l-pad" style="background:${D.govBarBg};color:${D.govBarColor};padding:10px ${px}px;font-size:12px;letter-spacing:0.5px;font-family:Arial,sans-serif;">
       ${nl2br(S(D.govBarText || ''))}
     </td></tr>` : ''}
     <!-- Header -->
-    <tr><td style="background:${D.headerBg};color:${D.headerText};padding:${D.headerPadding}px ${px}px;text-align:left;">
-      ${D.showAvatar && D.avatarUrl ? `<div style="margin-bottom:16px;"><img src="${esc(D.avatarUrl)}" alt="" width="${D.avatarSize}" height="${D.avatarSize}" style="width:${D.avatarSize}px;height:${D.avatarSize}px;border-radius:50%;border:3px solid rgba(255,255,255,0.9);display:block;" /></div>` : ''}
-      <div style="font-size:${D.logoSize}px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;margin-bottom:14px;">${logo}</div>
-      <div style="font-size:${effectiveTitleSize}px;font-weight:800;line-height:1.2;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</div>
-      <div style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:12px;">${subtitle}</div>
+    <tr><td class="l-pad" style="background:${D.headerBg};color:${D.headerText};padding:${D.headerPadding}px ${px}px;text-align:left;">
+      ${D.showAvatar && D.avatarUrl ? `<div style="margin-bottom:16px;"><img src="${esc(D.avatarUrl)}" alt="" width="${D.avatarSize}" height="${D.avatarSize}" bgcolor="#ffffff" style="width:${D.avatarSize}px;height:${D.avatarSize}px;border-radius:50%;border:3px solid #ffffff;display:block;background:#ffffff;background-color:#ffffff;" /></div>` : ''}
+      <div class="l-logo" style="font-size:${D.logoSize}px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;margin-bottom:14px;">${logo}</div>
+      <div class="l-title" style="font-size:${effectiveTitleSize}px;font-weight:800;line-height:1.25;margin:0;white-space:normal;word-break:break-word;">${title}</div>
+      <div class="l-sub" style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:12px;">${subtitle}</div>
     </td></tr>
     ${D.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(D.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:${D.containerWidth}px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
 
     ${D.showStatusBar !== false ? `
     <tr><td style="padding:0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#fef2f2" style="background:#fef2f2;border-bottom:1px solid #fecaca;">
-        <tr><td style="padding:14px ${px}px;font-family:Arial,sans-serif;">
+        <tr><td class="l-pad" style="padding:14px ${px}px;font-family:Arial,sans-serif;">
           <div style="font-size:10px;letter-spacing:1.2px;color:#991b1b;font-weight:700;margin-bottom:6px;">${esc(S(D.statusLabel || 'SITUAÇÃO DO CADASTRO'))}</div>
           <div style="font-size:16px;font-weight:800;color:#dc2626;letter-spacing:0.5px;">
             <span style="display:inline-block;width:9px;height:9px;background:#dc2626;border-radius:50%;vertical-align:middle;margin-right:8px;"></span>${esc(S(D.statusValue || 'PENDENTE'))}
@@ -393,24 +402,24 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
 
     ${D.showHero ? `
-    <tr><td style="padding:44px ${px}px 20px ${px}px;text-align:center;">
+    <tr><td class="l-pad" style="padding:44px ${px}px 20px ${px}px;text-align:center;">
       <h2 style="font-size:${D.heroTitleSize}px;font-weight:800;color:${D.heroTitleColor};margin:0;line-height:1.25;">${heroTitle}</h2>
       <div style="width:48px;height:1px;background:#e5e7eb;margin:28px auto;"></div>
     </td></tr>` : ''}
 
-    <tr><td style="padding:0 ${px}px 24px ${px}px;text-align:${align};font-size:${D.bodySize}px;line-height:1.6;color:${D.textColor};font-weight:700;">
+    <tr><td class="l-pad" style="padding:0 ${px}px 24px ${px}px;text-align:${align};font-size:${D.bodySize}px;line-height:1.6;color:${D.textColor};font-weight:700;">
       ${intro}
     </td></tr>
 
     ${D.showCard ? `
-    <tr><td style="padding:0 ${px}px 28px ${px}px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.cardBg};border-radius:8px;padding:24px 26px;border:1px solid #e5e7eb;">
+    <tr><td class="l-pad" style="padding:0 ${px}px 28px ${px}px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.cardBg};border-radius:8px;padding:20px 18px;border:1px solid #e5e7eb;">
         ${rowsHtml}
       </table>
     </td></tr>` : ''}
 
     ${D.showWarning ? `
-    <tr><td style="padding:0 ${px}px 32px ${px}px;">
+    <tr><td class="l-pad" style="padding:0 ${px}px 32px ${px}px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.warningBg};border-left:4px solid ${D.warningBorder};padding:20px 22px;border-radius:4px;">
         <tr><td style="color:${D.warningTitleColor};font-size:${D.warningTitleSize || D.bodySize}px;font-weight:700;padding-bottom:10px;">${warningTitle}</td></tr>
         <tr><td style="color:${D.warningTextColor};font-size:${D.warningItemsSize || Math.max(13, D.bodySize - 2)}px;line-height:1.65;">${warningItems}</td></tr>
@@ -418,24 +427,24 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
       </table>
     </td></tr>` : ''}
 
-    <tr><td align="center" style="padding:0 ${px}px 44px ${px}px;">
-      <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);white-space:nowrap;mso-padding-alt:0;line-height:1.2;">${buttonLabel}</a>
+    <tr><td align="center" class="l-pad" style="padding:0 ${px}px 44px ${px}px;">
+      <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);white-space:normal;mso-padding-alt:0;line-height:1.2;">${buttonLabel}</a>
     </td></tr>
 
     ${D.showSignature ? `
-    <tr><td style="padding:0 ${px}px 36px ${px}px;color:${D.mutedColor};font-size:${D.signatureSize || Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
+    <tr><td class="l-pad" style="padding:0 ${px}px 36px ${px}px;color:${D.mutedColor};font-size:${D.signatureSize || Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
       ${signature}
     </td></tr>` : ''}
 
     ${D.showBadges && D.badgesText ? `
-    <tr><td style="padding:20px ${px}px 8px ${px}px;text-align:center;">
+    <tr><td class="l-pad" style="padding:20px ${px}px 8px ${px}px;text-align:center;">
       <div style="display:inline-block;font-size:11px;color:${D.mutedColor};letter-spacing:0.6px;text-transform:uppercase;font-weight:700;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:8px 16px;font-family:Arial,sans-serif;">
         <img src="${toAbsoluteUrl('/__l5e/assets-v1/6bf7fb2f-a72e-4a6e-8271-c7c1572cd687/gov-lock.png')}" alt="" width="14" height="14" style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;border:0;display:inline-block;" />${esc(S(D.badgesText))}
       </div>
     </td></tr>` : ''}
 
     ${D.showFooter ? `
-    <tr><td style="padding:24px 32px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
+    <tr><td class="l-pad" style="padding:24px 32px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
       <div style="color:${D.mutedColor};font-size:${D.disclaimerSize || 11}px;line-height:1.6;">
         ${disclaimer}
       </div>

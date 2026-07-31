@@ -34,6 +34,15 @@ function formatDateTimeBR(raw?: string | null): string | undefined {
   return d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })
 }
 
+function cleanPersonName(v?: string | null): string {
+  if (!v) return ''
+  return v
+    .replace(/\d+/g, '')
+    .replace(/[.\-/]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 async function resolveContext(order: OrderRow) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
 
@@ -48,7 +57,7 @@ async function resolveContext(order: OrderRow) {
   }
 
   return {
-    empresa: order.reference_name || order.customer_name || undefined,
+    empresa: cleanPersonName(order.reference_name) || cleanPersonName(order.customer_name) || undefined,
     cnpj: formatCnpj(order.reference_cnpj || order.customer_document),
     link,
     protocolo: protocoloFor(order.id),
