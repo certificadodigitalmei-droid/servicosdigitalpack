@@ -8,15 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { BellRing, CheckCircle2, Clock, Loader2, Mail, Play, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { Switch } from '@/components/ui/switch';
 import {
   listNotifyFlow,
   runNotifyFlowNow,
-  getRecoveryDiscount,
-  saveRecoveryDiscount,
   type NotifyFlowRow,
   type NotifyFlowStats,
 } from '@/lib/emails/notify-flow.functions';
+
 import { formatCNPJ } from '@/lib/format';
 
 
