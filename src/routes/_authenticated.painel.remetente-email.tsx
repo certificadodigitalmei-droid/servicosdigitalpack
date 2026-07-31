@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Loader2, Mail, Send, Reply } from 'lucide-react';
+import { Loader2, Mail, Send, Reply, ImageUp, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { uploadEmailAsset } from '@/lib/email-campaign/upload-asset.functions';
 import {
   getEmailSenderSettings,
   saveEmailSenderSettings,
@@ -20,15 +21,23 @@ export const Route = createFileRoute('/_authenticated/painel/remetente-email')({
 
 function EmailSenderPage() {
   const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ['email-sender-settings'],
     queryFn: () => getEmailSenderSettings(),
   });
 
-  const [form, setForm] = useState<{ from_email: string; from_name: string; reply_to: string }>({
+  const [form, setForm] = useState<{
+    from_email: string;
+    from_name: string;
+    reply_to: string;
+    logo_url: string;
+  }>({
     from_email: '',
     from_name: '',
     reply_to: '',
+    logo_url: '',
   });
 
   useEffect(() => {
@@ -37,6 +46,7 @@ function EmailSenderPage() {
         from_email: data.from_email,
         from_name: data.from_name,
         reply_to: data.reply_to || '',
+        logo_url: data.logo_url || '',
       });
     }
   }, [data]);
@@ -50,7 +60,31 @@ function EmailSenderPage() {
     onError: (e: any) => toast.error(e?.message || 'Erro ao salvar'),
   });
 
+  async function handleFile(file: File) {
+    if (file.size > 800 * 1024) {
+      toast.error('Imagem muito grande (máx. 800KB)');
+      return;
+    }
+    setUploading(true);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      const res = await uploadEmailAsset({ data: { dataUrl, filename: file.name } });
+      setForm((f) => ({ ...f, logo_url: res.url }));
+      toast.success('Foto enviada — clique em Salvar remetente');
+    } catch (e: any) {
+      toast.error(e?.message || 'Falha ao enviar a imagem');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   const previewFrom = `${form.from_name || 'Nome'} <${form.from_email || 'email@dominio.com'}>`;
+
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
