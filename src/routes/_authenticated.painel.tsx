@@ -255,6 +255,7 @@ function PanelLayout() {
         { title: 'Mensagem para Zap', icon: MessageSquare, to: '/painel/mensagem-zap' },
         { title: 'Disparo por Etapa', icon: Send, to: '/painel/disparo-etapa' },
         { title: 'E-mail Automático', icon: BellRing, to: '/painel/email-automatico' },
+        { title: 'Log de E-mails', icon: Mail, to: '/painel/log-emails' },
       ],
     },
     {
