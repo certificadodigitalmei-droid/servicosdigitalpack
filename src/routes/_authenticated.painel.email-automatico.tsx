@@ -72,7 +72,10 @@ const TIPOS = [
   { key: 'all', label: 'Todos' },
   { key: 'Guia gerada (PIX criado)', label: 'Guia gerada' },
   { key: 'Cobrança / recuperação', label: 'Cobrança' },
+  { key: 'Oferta com desconto', label: 'Oferta com desconto' },
   { key: 'Pagamento confirmado', label: 'Pagamento confirmado' },
+  { key: 'Modelo de mensagem (campanhas)', label: 'Campanhas' },
+
 ];
 
 function EmailAutomaticoPage() {
