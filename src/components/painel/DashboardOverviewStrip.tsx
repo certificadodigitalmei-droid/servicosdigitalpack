@@ -7,8 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   Activity,
   Database,
-  Send,
-  
   CreditCard,
   Link2,
   TrendingUp,
@@ -118,21 +116,6 @@ export function DashboardOverviewStrip({
             <Kpi label={`Puxadas ${periodLabel}`} value={importacao.empresasHoje} sub="empresas" />
             <Kpi label="Última empresa" value={timeAgo(importacao.ultimaEmpresaAt)} />
             <Kpi label="Próxima execução" value={timeAgo(importacao.proximaExecucao)} />
-          </div>
-        </ModuleCard>
-
-        {/* Envio */}
-        <ModuleCard
-          icon={<Send className="h-4 w-4 text-emerald-600" />}
-          title="Envio"
-          to="/painel/envio-massa"
-          badge={`${envio.workersAtivos} workers`}
-        >
-          <div className="grid grid-cols-2 gap-3">
-            <Kpi label={`Enviados ${periodLabel}`} value={envio.enviadosHoje} />
-            <Kpi label="Fila" value={envio.fila} sub="aguardando" />
-            <Kpi label={`Falhas ${periodLabel}`} value={envio.falhas24h} />
-            <Kpi label="Próximo retry" value={timeAgo(envio.proximoRetry)} />
           </div>
         </ModuleCard>
 
