@@ -26,7 +26,6 @@ import { Route as ApiPublicWebhookSigilopayRouteImport } from './routes/api/publ
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
 import { Route as AuthenticatedPainelWorkspaceEnvioRouteImport } from './routes/_authenticated.painel.workspace-envio'
 import { Route as AuthenticatedPainelRemetenteEmailRouteImport } from './routes/_authenticated.painel.remetente-email'
-import { Route as AuthenticatedPainelRecuperacaoCarrinhoRouteImport } from './routes/_authenticated.painel.recuperacao-carrinho'
 import { Route as AuthenticatedPainelPrecosRouteImport } from './routes/_authenticated.painel.precos'
 import { Route as AuthenticatedPainelPopUpSiteRouteImport } from './routes/_authenticated.painel.pop-up-site'
 import { Route as AuthenticatedPainelPagamentosRouteImport } from './routes/_authenticated.painel.pagamentos'
@@ -148,12 +147,6 @@ const AuthenticatedPainelRemetenteEmailRoute =
   AuthenticatedPainelRemetenteEmailRouteImport.update({
     id: '/remetente-email',
     path: '/remetente-email',
-    getParentRoute: () => AuthenticatedPainelRoute,
-  } as any)
-const AuthenticatedPainelRecuperacaoCarrinhoRoute =
-  AuthenticatedPainelRecuperacaoCarrinhoRouteImport.update({
-    id: '/recuperacao-carrinho',
-    path: '/recuperacao-carrinho',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelPrecosRoute =
@@ -376,7 +369,6 @@ export interface FileRoutesByFullPath {
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
-  '/painel/recuperacao-carrinho': typeof AuthenticatedPainelRecuperacaoCarrinhoRoute
   '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
@@ -425,7 +417,6 @@ export interface FileRoutesByTo {
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
-  '/painel/recuperacao-carrinho': typeof AuthenticatedPainelRecuperacaoCarrinhoRoute
   '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
@@ -478,7 +469,6 @@ export interface FileRoutesById {
   '/_authenticated/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/_authenticated/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/_authenticated/painel/precos': typeof AuthenticatedPainelPrecosRoute
-  '/_authenticated/painel/recuperacao-carrinho': typeof AuthenticatedPainelRecuperacaoCarrinhoRoute
   '/_authenticated/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/_authenticated/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
@@ -531,7 +521,6 @@ export interface FileRouteTypes {
     | '/painel/pagamentos'
     | '/painel/pop-up-site'
     | '/painel/precos'
-    | '/painel/recuperacao-carrinho'
     | '/painel/remetente-email'
     | '/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
@@ -580,7 +569,6 @@ export interface FileRouteTypes {
     | '/painel/pagamentos'
     | '/painel/pop-up-site'
     | '/painel/precos'
-    | '/painel/recuperacao-carrinho'
     | '/painel/remetente-email'
     | '/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
@@ -632,7 +620,6 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/pagamentos'
     | '/_authenticated/painel/pop-up-site'
     | '/_authenticated/painel/precos'
-    | '/_authenticated/painel/recuperacao-carrinho'
     | '/_authenticated/painel/remetente-email'
     | '/_authenticated/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
@@ -795,13 +782,6 @@ declare module '@tanstack/react-router' {
       path: '/remetente-email'
       fullPath: '/painel/remetente-email'
       preLoaderRoute: typeof AuthenticatedPainelRemetenteEmailRouteImport
-      parentRoute: typeof AuthenticatedPainelRoute
-    }
-    '/_authenticated/painel/recuperacao-carrinho': {
-      id: '/_authenticated/painel/recuperacao-carrinho'
-      path: '/recuperacao-carrinho'
-      fullPath: '/painel/recuperacao-carrinho'
-      preLoaderRoute: typeof AuthenticatedPainelRecuperacaoCarrinhoRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/precos': {
@@ -1085,7 +1065,6 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelPagamentosRoute: typeof AuthenticatedPainelPagamentosRoute
   AuthenticatedPainelPopUpSiteRoute: typeof AuthenticatedPainelPopUpSiteRoute
   AuthenticatedPainelPrecosRoute: typeof AuthenticatedPainelPrecosRoute
-  AuthenticatedPainelRecuperacaoCarrinhoRoute: typeof AuthenticatedPainelRecuperacaoCarrinhoRoute
   AuthenticatedPainelRemetenteEmailRoute: typeof AuthenticatedPainelRemetenteEmailRoute
   AuthenticatedPainelWorkspaceEnvioRoute: typeof AuthenticatedPainelWorkspaceEnvioRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
@@ -1121,8 +1100,6 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelPagamentosRoute: AuthenticatedPainelPagamentosRoute,
   AuthenticatedPainelPopUpSiteRoute: AuthenticatedPainelPopUpSiteRoute,
   AuthenticatedPainelPrecosRoute: AuthenticatedPainelPrecosRoute,
-  AuthenticatedPainelRecuperacaoCarrinhoRoute:
-    AuthenticatedPainelRecuperacaoCarrinhoRoute,
   AuthenticatedPainelRemetenteEmailRoute:
     AuthenticatedPainelRemetenteEmailRoute,
   AuthenticatedPainelWorkspaceEnvioRoute:

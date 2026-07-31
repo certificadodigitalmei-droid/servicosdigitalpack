@@ -18,7 +18,6 @@ import {
   DollarSign,
   KeyRound,
   MessageSquare,
-  ShoppingCart,
   Cloud,
   CloudDownload,
   
@@ -254,7 +253,6 @@ function PanelLayout() {
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
         { title: 'Mensagem para Zap', icon: MessageSquare, to: '/painel/mensagem-zap' },
         { title: 'Disparo por Etapa', icon: Send, to: '/painel/disparo-etapa' },
-        { title: 'Recuperação de Carrinho', icon: ShoppingCart, to: '/painel/recuperacao-carrinho' },
       ],
     },
     {
@@ -277,7 +275,6 @@ function PanelLayout() {
 
   const getBreadcrumbLabel = (path: string) => {
     if (path === '/painel') return 'Dashboard';
-    if (path === '/painel/recuperacao-carrinho') return 'Recuperação de Carrinho';
     if (path === '/painel/disparo-etapa') return 'Disparo por Etapa';
     if (path === '/painel/consulta-automatica') return 'Consulta Automática';
     if (path === '/painel/importacao-automatica') return 'Importação Automática';
