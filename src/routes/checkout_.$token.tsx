@@ -4,7 +4,7 @@ import { createOrderAndPixCharge } from '@/lib/payments/checkout.functions';
 import { PixModal } from '@/components/checkout/PixModal';
 import { PaymentInfoPopup } from '@/components/checkout/PaymentInfoPopup';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
-import { getPricing, DEFAULT_PRICING } from '@/lib/pricing.functions';
+import { getLinkPricing, DEFAULT_PRICING, type LinkPricing } from '@/lib/pricing.functions';
 
 
 // Loads company data by token and forwards to the existing /checkout page.
@@ -28,7 +28,12 @@ export const Route = createFileRoute('/checkout_/$token')({
     const [row, popup, pricing] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
       getSitePopup().catch(() => null),
-      getPricing().catch(() => DEFAULT_PRICING),
+      getLinkPricing({ data: { token: params.token } }).catch(() => ({
+        amount: DEFAULT_PRICING.product_amount,
+        originalAmount: DEFAULT_PRICING.product_amount,
+        discounted: false,
+        discountExpiresAt: null,
+      })),
     ]);
     if (!row) throw notFound();
     return { row, popup, pricing };
@@ -71,7 +76,7 @@ function CheckoutTokenPage() {
   const { row, popup, pricing } = Route.useLoaderData() as {
     row: ResolvedCompany;
     popup: SitePopupSettings | null;
-    pricing: { product_amount: number };
+    pricing: LinkPricing;
   };
   const { token } = Route.useParams();
   const navigate = useNavigate();
@@ -79,7 +84,7 @@ function CheckoutTokenPage() {
   const headerName = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '';
   // O valor é sempre o configurado em Configurações > Preços — aplica-se a
   // todos os links (novos e já enviados). PIX gerado usa esse valor.
-  const AMOUNT = pricing?.product_amount ?? DEFAULT_PRICING.product_amount;
+  const AMOUNT = pricing?.amount ?? DEFAULT_PRICING.product_amount;
 
 
 
@@ -273,6 +278,17 @@ function CheckoutTokenPage() {
                 {/* RIGHT column — sticky summary */}
                 <aside className="lg:sticky lg:top-6 space-y-4">
                   <Card title="Resumo do Pagamento">
+                    {pricing?.discounted ? (
+                      <div className="mx-3 mt-3 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 sm:mx-4">
+                        <p className="text-[12px] font-bold text-emerald-800">
+                          Desconto aplicado a este CNPJ
+                        </p>
+                        <p className="text-[11px] text-emerald-700">
+                          De <span className="line-through">{brl(pricing.originalAmount)}</span> por{' '}
+                          <strong>{brl(AMOUNT)}</strong> — condição válida por tempo limitado.
+                        </p>
+                      </div>
+                    ) : null}
                     <div className="divide-y divide-border">
                       <SummaryRow label="Subtotal" value={brl(AMOUNT)} />
                       <SummaryRow label="Tarifa de processamento" value="R$ 0,00" />

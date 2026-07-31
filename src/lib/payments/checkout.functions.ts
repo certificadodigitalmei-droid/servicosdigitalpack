@@ -117,10 +117,11 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
     // Resolve link → company
     let companyId: string | null = null;
     let publicLinkId: string | null = null;
+    let amount = data.amount;
     if (data.token) {
       const { data: link, error: linkErr } = await supabaseAdmin
         .from("company_links")
-        .select("id, company_id")
+        .select("id, company_id, discount_amount_cents, discount_expires_at")
         .eq("public_token", data.token)
         .eq("active", true)
         .or("expires_at.is.null,expires_at.gt.now()")
@@ -129,6 +130,12 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       if (link) {
         publicLinkId = link.id;
         companyId = link.company_id;
+        // Desconto de campanha: o valor é definido no servidor, nunca no cliente.
+        const cents = (link as any).discount_amount_cents as number | null;
+        const exp = (link as any).discount_expires_at as string | null;
+        if (cents && cents > 0 && (!exp || new Date(exp).getTime() > Date.now())) {
+          amount = cents / 100;
+        }
       }
     }
 
@@ -156,7 +163,7 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
         reference_cnpj: data.document.replace(/\D/g, "").length === 14 ? data.document.replace(/\D/g, "") : null,
         reference_name: data.name,
         product_name: data.productName,
-        amount: data.amount,
+        amount,
         status: "pending",
         customer_name: data.name,
         customer_document: data.document.replace(/\D/g, ""),
@@ -180,7 +187,7 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
     try {
       pix = await callSigiloPay(apiKey, baseUrl, {
         identifier: order.id,
-        amount: data.amount,
+        amount,
         callbackUrl: data.webhookUrl,
         // Dados pessoais do cliente NÃO são enviados ao gateway.
         // Usamos um pagador genérico; os dados reais ficam apenas no nosso banco.

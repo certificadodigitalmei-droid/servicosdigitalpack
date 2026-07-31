@@ -652,6 +652,8 @@ export type Database = {
           company_id: string | null
           created_at: string
           data_quality_status: string
+          discount_amount_cents: number | null
+          discount_expires_at: string | null
           expires_at: string | null
           first_access_at: string | null
           generation_id: string | null
@@ -659,6 +661,8 @@ export type Database = {
           is_test_record: boolean
           last_access_at: string | null
           loader_shown_at: string | null
+          promo_email_count: number
+          promo_email_sent_at: string | null
           public_token: string
           public_url: string | null
           status: string | null
@@ -674,6 +678,8 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           data_quality_status?: string
+          discount_amount_cents?: number | null
+          discount_expires_at?: string | null
           expires_at?: string | null
           first_access_at?: string | null
           generation_id?: string | null
@@ -681,6 +687,8 @@ export type Database = {
           is_test_record?: boolean
           last_access_at?: string | null
           loader_shown_at?: string | null
+          promo_email_count?: number
+          promo_email_sent_at?: string | null
           public_token: string
           public_url?: string | null
           status?: string | null
@@ -696,6 +704,8 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           data_quality_status?: string
+          discount_amount_cents?: number | null
+          discount_expires_at?: string | null
           expires_at?: string | null
           first_access_at?: string | null
           generation_id?: string | null
@@ -703,6 +713,8 @@ export type Database = {
           is_test_record?: boolean
           last_access_at?: string | null
           loader_shown_at?: string | null
+          promo_email_count?: number
+          promo_email_sent_at?: string | null
           public_token?: string
           public_url?: string | null
           status?: string | null

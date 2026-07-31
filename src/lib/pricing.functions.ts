@@ -71,3 +71,49 @@ export const savePricing = createServerFn({ method: 'POST' })
     }
     return { ok: true };
   });
+
+export type LinkPricing = {
+  amount: number;
+  originalAmount: number;
+  discounted: boolean;
+  discountExpiresAt: string | null;
+};
+
+/**
+ * Preço efetivo de um link público: aplica o desconto promocional da campanha
+ * quando ele existir e ainda estiver válido.
+ */
+export const getLinkPricing = createServerFn({ method: 'GET' })
+  .inputValidator((input) => z.object({ token: z.string().max(200) }).parse(input))
+  .handler(async ({ data }): Promise<LinkPricing> => {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+
+    const { data: settings } = await supabaseAdmin
+      .from('site_settings')
+      .select('product_amount')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const raw = (settings as any)?.product_amount;
+    const base =
+      raw != null && Number.isFinite(Number(raw)) && Number(raw) > 0
+        ? Number(raw)
+        : DEFAULT_PRICING.product_amount;
+
+    const { data: link } = await supabaseAdmin
+      .from('company_links')
+      .select('discount_amount_cents, discount_expires_at')
+      .eq('public_token', data.token)
+      .maybeSingle();
+
+    const cents = (link as any)?.discount_amount_cents as number | null | undefined;
+    const exp = (link as any)?.discount_expires_at as string | null | undefined;
+    const valid = !!cents && cents > 0 && (!exp || new Date(exp).getTime() > Date.now());
+
+    return {
+      amount: valid ? cents! / 100 : base,
+      originalAmount: base,
+      discounted: valid,
+      discountExpiresAt: valid ? (exp ?? null) : null,
+    };
+  });
