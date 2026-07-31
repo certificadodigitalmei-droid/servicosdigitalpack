@@ -162,13 +162,19 @@ export const listNotifyFlow = createServerFn({ method: 'POST' })
       if (k.startsWith('pagamento-confirmado-')) return 'Pagamento confirmado';
       if (k.startsWith('pix-pendente-') || k.startsWith('recuperacao-') || k.startsWith('cadencia-'))
         return 'Cobrança / recuperação';
+      if (k.includes('oferta-desconto')) return 'Oferta com desconto';
+      if (k.startsWith('campanha-') || k.startsWith('manual-') || k.startsWith('campaign-'))
+        return 'Modelo de mensagem (campanhas)';
+      if (k.startsWith('teste-') || k.startsWith('test-')) return 'Teste';
       const s = (subject || '').toLowerCase();
       if (s.includes('confirmad') || s.includes('emitido')) return 'Pagamento confirmado';
+      if (s.includes('desconto')) return 'Oferta com desconto';
       if (s.includes('guia') || s.includes('pix')) return 'Guia gerada (PIX criado)';
       if (s.includes('pendente') || s.includes('regulariz') || s.includes('lembrete'))
         return 'Cobrança / recuperação';
-      return null;
+      return 'Modelo de mensagem (campanhas)';
     };
+
 
     const orderIdFromKey = (key: string): string | null => {
       const m = (key || '').match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);

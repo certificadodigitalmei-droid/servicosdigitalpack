@@ -89,6 +89,8 @@ export async function sendTemplateEmail(
       ? template.subject(templateData)
       : template.subject
 
+  const idempotencyKey = options.idempotencyKey || crypto.randomUUID()
+
   try {
     await sendLovableEmail(
       {
@@ -100,17 +102,68 @@ export async function sendTemplateEmail(
         text,
         purpose: 'transactional',
         label: templateName,
-        idempotency_key: options.idempotencyKey || crypto.randomUUID(),
+        idempotency_key: idempotencyKey,
         reply_to: options.replyTo ?? sender.reply_to ?? undefined,
       },
       { apiKey, sendUrl: process.env.LOVABLE_SEND_URL }
     )
   } catch (error) {
     if (error instanceof EmailAPIError && error.code === 'recipient_suppressed') {
+      await recordSend({
+        to: recipient,
+        subject,
+        idempotencyKey,
+        status: 'failed',
+        error: 'recipient_suppressed',
+      })
       return { sent: false, reason: 'recipient_suppressed' }
     }
+    await recordSend({
+      to: recipient,
+      subject,
+      idempotencyKey,
+      status: 'failed',
+      error: (error as Error)?.message ?? 'erro desconhecido',
+    })
     throw error
   }
 
+  await recordSend({ to: recipient, subject, idempotencyKey, status: 'sent', error: null })
+
   return { sent: true }
 }
+
+/**
+ * Registra o envio na tabela `email_send_queue` para que as abas
+ * "Log de E-mails" e "E-mail Automático" mostrem o histórico real.
+ * Nunca quebra o envio caso a gravação falhe.
+ */
+async function recordSend(entry: {
+  to: string
+  subject: string
+  idempotencyKey: string
+  status: 'sent' | 'failed'
+  error: string | null
+}): Promise<void> {
+  try {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+    const nowIso = new Date().toISOString()
+    await supabaseAdmin.from('email_send_queue').upsert(
+      {
+        to_email: entry.to,
+        subject: entry.subject,
+        idempotency_key: entry.idempotencyKey,
+        status: entry.status,
+        attempts: 1,
+        last_error: entry.error ? entry.error.slice(0, 500) : null,
+        last_status_code: entry.status === 'sent' ? 200 : null,
+        next_retry_at: null,
+        updated_at: nowIso,
+      } as any,
+      { onConflict: 'idempotency_key' }
+    )
+  } catch (e) {
+    console.error('[send-email] falha ao registrar log do e-mail', e)
+  }
+}
+
