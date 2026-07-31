@@ -30,6 +30,7 @@ import { Route as AuthenticatedPainelRecuperacaoCarrinhoRouteImport } from './ro
 import { Route as AuthenticatedPainelPrecosRouteImport } from './routes/_authenticated.painel.precos'
 import { Route as AuthenticatedPainelPopUpSiteRouteImport } from './routes/_authenticated.painel.pop-up-site'
 import { Route as AuthenticatedPainelPagamentosRouteImport } from './routes/_authenticated.painel.pagamentos'
+import { Route as AuthenticatedPainelModelosEmailRouteImport } from './routes/_authenticated.painel.modelos-email'
 import { Route as AuthenticatedPainelModeloMensagemRouteImport } from './routes/_authenticated.painel.modelo-mensagem'
 import { Route as AuthenticatedPainelMensagemZapRouteImport } from './routes/_authenticated.painel.mensagem-zap'
 import { Route as AuthenticatedPainelLinksGeradosRouteImport } from './routes/_authenticated.painel.links-gerados'
@@ -172,6 +173,12 @@ const AuthenticatedPainelPagamentosRoute =
   AuthenticatedPainelPagamentosRouteImport.update({
     id: '/pagamentos',
     path: '/pagamentos',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
+const AuthenticatedPainelModelosEmailRoute =
+  AuthenticatedPainelModelosEmailRouteImport.update({
+    id: '/modelos-email',
+    path: '/modelos-email',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelModeloMensagemRoute =
@@ -373,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/painel/mensagem-zap': typeof AuthenticatedPainelMensagemZapRoute
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
+  '/painel/modelos-email': typeof AuthenticatedPainelModelosEmailRoute
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
@@ -422,6 +430,7 @@ export interface FileRoutesByTo {
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/painel/mensagem-zap': typeof AuthenticatedPainelMensagemZapRoute
   '/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
+  '/painel/modelos-email': typeof AuthenticatedPainelModelosEmailRoute
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
@@ -475,6 +484,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/_authenticated/painel/mensagem-zap': typeof AuthenticatedPainelMensagemZapRoute
   '/_authenticated/painel/modelo-mensagem': typeof AuthenticatedPainelModeloMensagemRoute
+  '/_authenticated/painel/modelos-email': typeof AuthenticatedPainelModelosEmailRoute
   '/_authenticated/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/_authenticated/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/_authenticated/painel/precos': typeof AuthenticatedPainelPrecosRoute
@@ -528,6 +538,7 @@ export interface FileRouteTypes {
     | '/painel/links-gerados'
     | '/painel/mensagem-zap'
     | '/painel/modelo-mensagem'
+    | '/painel/modelos-email'
     | '/painel/pagamentos'
     | '/painel/pop-up-site'
     | '/painel/precos'
@@ -577,6 +588,7 @@ export interface FileRouteTypes {
     | '/painel/links-gerados'
     | '/painel/mensagem-zap'
     | '/painel/modelo-mensagem'
+    | '/painel/modelos-email'
     | '/painel/pagamentos'
     | '/painel/pop-up-site'
     | '/painel/precos'
@@ -629,6 +641,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/links-gerados'
     | '/_authenticated/painel/mensagem-zap'
     | '/_authenticated/painel/modelo-mensagem'
+    | '/_authenticated/painel/modelos-email'
     | '/_authenticated/painel/pagamentos'
     | '/_authenticated/painel/pop-up-site'
     | '/_authenticated/painel/precos'
@@ -823,6 +836,13 @@ declare module '@tanstack/react-router' {
       path: '/pagamentos'
       fullPath: '/painel/pagamentos'
       preLoaderRoute: typeof AuthenticatedPainelPagamentosRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/_authenticated/painel/modelos-email': {
+      id: '/_authenticated/painel/modelos-email'
+      path: '/modelos-email'
+      fullPath: '/painel/modelos-email'
+      preLoaderRoute: typeof AuthenticatedPainelModelosEmailRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/modelo-mensagem': {
@@ -1082,6 +1102,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelLinksGeradosRoute: typeof AuthenticatedPainelLinksGeradosRoute
   AuthenticatedPainelMensagemZapRoute: typeof AuthenticatedPainelMensagemZapRoute
   AuthenticatedPainelModeloMensagemRoute: typeof AuthenticatedPainelModeloMensagemRoute
+  AuthenticatedPainelModelosEmailRoute: typeof AuthenticatedPainelModelosEmailRoute
   AuthenticatedPainelPagamentosRoute: typeof AuthenticatedPainelPagamentosRoute
   AuthenticatedPainelPopUpSiteRoute: typeof AuthenticatedPainelPopUpSiteRoute
   AuthenticatedPainelPrecosRoute: typeof AuthenticatedPainelPrecosRoute
@@ -1119,6 +1140,7 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelMensagemZapRoute: AuthenticatedPainelMensagemZapRoute,
   AuthenticatedPainelModeloMensagemRoute:
     AuthenticatedPainelModeloMensagemRoute,
+  AuthenticatedPainelModelosEmailRoute: AuthenticatedPainelModelosEmailRoute,
   AuthenticatedPainelPagamentosRoute: AuthenticatedPainelPagamentosRoute,
   AuthenticatedPainelPopUpSiteRoute: AuthenticatedPainelPopUpSiteRoute,
   AuthenticatedPainelPrecosRoute: AuthenticatedPainelPrecosRoute,
@@ -1174,3 +1196,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

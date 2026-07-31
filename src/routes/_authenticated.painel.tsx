@@ -268,7 +268,7 @@ function PanelLayout() {
         { title: 'Exibição do Site', icon: LayoutDashboard, to: '/painel/exibicao-site' },
         { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
         { title: 'API Casa dos Dados', icon: KeyRound, to: '/painel/api-casa-dos-dados' },
-        { title: 'Modelo de Mensagem', icon: Palette, to: '/painel/modelo-mensagem' },
+        { title: 'Modelos de E-mail', icon: Mail, to: '/painel/modelos-email' },
         { title: 'Remetente de E-mail', icon: Send, to: '/painel/remetente-email' },
       ],
     },
@@ -298,7 +298,7 @@ function PanelLayout() {
     if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
     if (path === '/painel/gerador-links') return 'Gerador de Links';
     if (path === '/painel/campanhas-email') return 'Campanhas de E-mail';
-    if (path === '/painel/modelo-mensagem') return 'Modelo de Mensagem';
+    if (path === '/painel/modelos-email') return 'Modelos de E-mail';
     if (path === '/painel/remetente-email') return 'Remetente de E-mail';
 
     if (path === '/painel/envio-massa') return 'Envio em Massa';
