@@ -22,6 +22,84 @@ const base = DEFAULT_DESIGN;
 
 export const PRESETS: Preset[] = [
   {
+    id: 'protocolo-oficial',
+    name: 'Protocolo Oficial (recomendado)',
+    description:
+      'Mesmo padrão visual dos e-mails automáticos: faixa dourada, cabeçalho azul institucional, protocolo, quadro de dados e selos.',
+    accent: '#0e3a70',
+    subject: 'Certificado Digital e-CNPJ — pendência de emissão ({{CNPJ}})',
+    preheader:
+      'Prezado(a) {{NOME_TITULAR}}, a emissão do Certificado Digital do CNPJ {{CNPJ}} está pendente.',
+    design: {
+      ...base,
+      // faixa dourada superior + linha de protocolo
+      showGovBar: true,
+      govBarBg: '#f2c200',
+      govBarColor: '#4a3800',
+      govBarText: 'CENTRAL DE EMISSÃO  ›  MICROEMPREENDEDOR INDIVIDUAL  ›  PROTOCOLO {{REFERENCIA}}',
+
+      headerBg: '#0e3a70',
+      headerText: '#ffffff',
+      headerPadding: 28,
+      showAvatar: true,
+      avatarUrl: AVATAR,
+      avatarSize: 58,
+      logoText: 'PORTAL CERTIFICADO DIGITAL MEI',
+      logoSize: 13,
+      title: 'Solicitação de emissão — e-CNPJ',
+      subtitle: 'Central de Emissão · Microempreendedor Individual',
+      titleSize: 24,
+      subtitleSize: 12,
+
+      showHero: true,
+      heroTitle: 'Emissão do Certificado Digital\npendente para o seu CNPJ',
+      heroTitleColor: '#0e3a70',
+      heroTitleSize: 25,
+
+      intro:
+        'Prezado(a) *{{NOME_TITULAR}}*,\n\nConsta em nosso sistema que a inscrição abaixo permanece *sem Certificado Digital e-CNPJ ativo*. Confira os dados do cadastro:',
+      bodySize: 15,
+
+      showCard: true,
+      cardBg: '#f4f7f5',
+      cardTitle: 'DADOS DO REQUERENTE',
+      cardTitleSize: 11,
+      cardBodySize: 13,
+
+      showWarning: true,
+      warningTitle: 'SITUAÇÃO: EMISSÃO PENDENTE',
+      warningItems:
+        'Impedimento para emissão de Nota Fiscal Eletrônica (NF-e)\nBloqueio para assinatura de contratos e propostas digitais\nRestrições cadastrais junto à Receita Federal',
+      warningBg: '#fff8e1',
+      warningBorder: '#f2c200',
+      warningTitleColor: '#7a5c00',
+      warningTextColor: '#5b5138',
+      warningTitleSize: 13,
+      warningItemsSize: 13,
+
+      buttonBg: '#1a4a8a',
+      buttonText: '#ffffff',
+      buttonRadius: 6,
+      buttonPaddingY: 14,
+      buttonPaddingX: 30,
+      buttonSize: 15,
+      buttonLabel: 'Acessar guia de emissão',
+
+      showSignature: true,
+      signature:
+        'Após a confirmação do pagamento, o Certificado Digital é *emitido e vinculado automaticamente ao CNPJ*, sem necessidade de comparecimento presencial.\n\nAtenciosamente,\n*Central de Emissão*\nPortal Certificado Digital MEI',
+      signatureSize: 13,
+
+      showBadges: true,
+      badgesText: 'Site Seguro (SSL 256-bits)  ·  Dados Protegidos (LGPD)  ·  Validade 12 meses',
+
+      showFooter: true,
+      disclaimer:
+        'Portal Certificado Digital MEI — Microempreendedor Individual. Serviço privado de apoio ao MEI. Este e-mail foi enviado automaticamente; não responda.',
+      disclaimerSize: 11,
+    },
+  },
+  {
     id: 'gov-institucional',
     name: 'Gov Institucional',
     description: 'Cabeçalho azul-marinho estilo Portal gov.br com faixa superior e selos de confiança.',
