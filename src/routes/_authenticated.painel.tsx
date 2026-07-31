@@ -426,8 +426,15 @@ function PanelLayout() {
           </div>
 
           <div className="mx-auto max-w-7xl px-6 py-8 md:px-8">
-            <Outlet />
+            {hydrated ? (
+              <Outlet />
+            ) : (
+              <div className="flex items-center justify-center py-24 text-sm text-muted-foreground">
+                Carregando configurações…
+              </div>
+            )}
           </div>
+
         </main>
         <GlobalFloatingPanels />
       </div>
