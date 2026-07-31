@@ -37,7 +37,14 @@ const Email = ({
   validade,
 }: Props) => (
   <Html lang="pt-BR" dir="ltr">
-    <Head />
+    <Head>
+      <style>{`
+        @media only screen and (max-width:600px) {
+          .rowKey, .rowVal { display:block !important; width:100% !important; padding:6px 12px !important; }
+          .rowKey { padding-bottom:0 !important; }
+        }
+      `}</style>
+    </Head>
     <Preview>Condição especial para regularizar o Certificado Digital do seu CNPJ</Preview>
     <Body style={main}>
       <Container style={outer}>
@@ -84,20 +91,20 @@ const Email = ({
           <Section style={dataBox}>
             <Text style={dataTitle}>DADOS DA SOLICITAÇÃO</Text>
             <Row style={dataRow}>
-              <Column style={dataKey}>Razão Social</Column>
-              <Column style={dataVal}>{empresa || '—'}</Column>
+              <Column className="rowKey" style={dataKey}>Razão Social</Column>
+              <Column className="rowVal" style={dataVal}>{empresa || '—'}</Column>
             </Row>
             <Row style={dataRow}>
-              <Column style={dataKey}>CNPJ</Column>
-              <Column style={dataVal}>{cnpj || '—'}</Column>
+              <Column className="rowKey" style={dataKey}>CNPJ</Column>
+              <Column className="rowVal" style={dataVal}>{cnpj || '—'}</Column>
             </Row>
             <Row style={dataRow}>
-              <Column style={dataKey}>Protocolo</Column>
-              <Column style={dataVal}>{protocolo || '—'}</Column>
+              <Column className="rowKey" style={dataKey}>Protocolo</Column>
+              <Column className="rowVal" style={dataVal}>{protocolo || '—'}</Column>
             </Row>
             <Row style={dataRowLast}>
-              <Column style={dataKey}>Situação</Column>
-              <Column style={dataValAlert}>Pendente de emissão</Column>
+              <Column className="rowKey" style={dataKey}>Situação</Column>
+              <Column className="rowVal" style={dataValAlert}>Pendente de emissão</Column>
             </Row>
           </Section>
 
