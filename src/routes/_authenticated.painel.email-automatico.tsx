@@ -238,6 +238,8 @@ function EmailAutomaticoPage() {
                       <td className="p-3 text-center">
                         {o.status === 'paid' ? (
                           <Badge className="bg-emerald-600 hover:bg-emerald-600">pago</Badge>
+                        ) : o.superseded ? (
+                          <Badge variant="outline">substituída</Badge>
                         ) : o.finished ? (
                           <Badge variant="secondary">encerrado</Badge>
                         ) : (
