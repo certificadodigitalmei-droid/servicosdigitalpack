@@ -72,8 +72,9 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
     const html = renderHtml(design, vars);
     const text = renderText(design, vars);
 
-    const fromName = data.fromName ?? DEFAULT_FROM_NAME;
-    const fromAddress = data.fromAddress ?? DEFAULT_FROM_ADDRESS;
+    const senderDefaults = await loadSenderSettings(context.supabase);
+    const fromName = data.fromName ?? senderDefaults.name;
+    const fromAddress = data.fromAddress ?? senderDefaults.email;
 
     const testOverride = (data.testRecipient || process.env[TEST_RECIPIENT_ENV] || '').trim();
     const recipient = data.testMode && testOverride ? testOverride : data.recipient;
