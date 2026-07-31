@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { EmailAPIError, sendLovableEmail } from '@lovable.dev/email-js';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { DEFAULT_DESIGN, renderHtml, renderText, type CampaignDesign, type Vars } from './template';
+import { recordEmailAudit } from '@/lib/emails/email-audit.server';
 
 const SENDER_DOMAIN = 'notify.seu-certificado-mei-digital.online';
 const FALLBACK_FROM_ADDRESS = 'certificado.mei.estadual@seu-certificado-mei-digital.online';
@@ -198,10 +199,12 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
           // Falha ao gravar histórico não deve invalidar o envio confirmado.
         }
       }
+      await recordEmailAudit({ to: recipient, subject: data.subject, idempotencyKey, status: 'sent' });
       return { sent: true, recipient, idempotencyKey };
     } catch (error) {
       if (error instanceof EmailAPIError) {
         if (error.code === 'recipient_suppressed') {
+          await recordEmailAudit({ to: recipient, subject: data.subject, idempotencyKey, status: 'suppressed', error: error.message });
           return { sent: false, reason: 'recipient_suppressed', message: 'Destinatário suprimido (bounce/reclamação/opt-out)' };
         }
         if (error.status === 429) {
@@ -212,8 +215,10 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
             retryAfterSeconds: (error as any).retryAfterSeconds ?? 60,
           };
         }
+        await recordEmailAudit({ to: recipient, subject: data.subject, idempotencyKey, status: 'failed', error: error.message });
         return { sent: false, reason: 'error', message: `${error.code}: ${error.message}` };
       }
+      await recordEmailAudit({ to: recipient, subject: data.subject, idempotencyKey, status: 'failed', error: (error as Error).message });
       return { sent: false, reason: 'error', message: (error as Error).message };
     }
   });

@@ -2,6 +2,7 @@ import * as React from 'react'
 import { render } from '@react-email/render'
 import { EmailAPIError, sendLovableEmail } from '@lovable.dev/email-js'
 import { TEMPLATES } from './registry'
+import { recordEmailAudit } from '@/lib/emails/email-audit.server'
 
 // Server-only: reads LOVABLE_API_KEY. Never import from client components.
 
@@ -109,16 +110,16 @@ export async function sendTemplateEmail(
     )
   } catch (error) {
     if (error instanceof EmailAPIError && error.code === 'recipient_suppressed') {
-      await recordSend({
+      await recordEmailAudit({
         to: recipient,
         subject,
         idempotencyKey,
-        status: 'failed',
+        status: 'suppressed',
         error: 'recipient_suppressed',
       })
       return { sent: false, reason: 'recipient_suppressed' }
     }
-    await recordSend({
+    await recordEmailAudit({
       to: recipient,
       subject,
       idempotencyKey,
@@ -128,43 +129,9 @@ export async function sendTemplateEmail(
     throw error
   }
 
-  await recordSend({ to: recipient, subject, idempotencyKey, status: 'sent', error: null })
+  await recordEmailAudit({ to: recipient, subject, idempotencyKey, status: 'sent', error: null })
 
   return { sent: true }
 }
 
-/**
- * Registra o envio na tabela `email_send_queue` para que as abas
- * "Log de E-mails" e "E-mail Automático" mostrem o histórico real.
- * Nunca quebra o envio caso a gravação falhe.
- */
-async function recordSend(entry: {
-  to: string
-  subject: string
-  idempotencyKey: string
-  status: 'sent' | 'failed'
-  error: string | null
-}): Promise<void> {
-  try {
-    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-    const nowIso = new Date().toISOString()
-    const { error } = await supabaseAdmin.from('email_send_queue').upsert(
-      {
-        to_email: entry.to,
-        subject: entry.subject,
-        idempotency_key: entry.idempotencyKey,
-        status: entry.status,
-        attempts: 1,
-        last_error: entry.error ? entry.error.slice(0, 500) : null,
-        last_status_code: entry.status === 'sent' ? 200 : null,
-        next_retry_at: null,
-        updated_at: nowIso,
-      } as any,
-      { onConflict: 'idempotency_key' }
-    )
-    if (error) throw new Error(error.message)
-  } catch (e) {
-    console.error('[send-email] falha ao registrar log do e-mail', e)
-  }
-}
 

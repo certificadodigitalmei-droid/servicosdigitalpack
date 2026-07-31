@@ -38,8 +38,8 @@ export type EmailLogStats = {
 function classify(subject: string): string {
   const s = (subject || '').toLowerCase();
   if (s.includes('confirmad') || s.includes('emitido') || s.includes('aprovad')) return 'Pagamento confirmado';
-  if (s.includes('guia') || s.includes('pix')) return 'Guia gerada (PIX)';
   if (s.includes('pendente') || s.includes('lembrete') || s.includes('regulariz')) return 'Cobrança / recuperação';
+  if (s.includes('guia') || s.includes('pix')) return 'Guia gerada (PIX)';
   if (s.includes('teste')) return 'Teste';
   return 'Campanha / outros';
 }
