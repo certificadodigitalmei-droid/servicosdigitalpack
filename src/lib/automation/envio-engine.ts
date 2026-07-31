@@ -18,16 +18,12 @@ import {
 } from '@/lib/email-campaign/template';
 
 /** Lê o design salvo pela aba "Modelo de Mensagem" para aplicar no envio real. */
+/**
+ * O design das campanhas é fixo (DEFAULT_DESIGN, padrão institucional).
+ * O editor foi removido, então designs antigos salvos localmente são ignorados.
+ */
 export function loadSavedDesign(): Partial<CampaignDesign> {
-  if (typeof window === 'undefined') return {};
-  try {
-    const raw = window.localStorage.getItem('campanha:design:v1');
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
+  return {};
 }
 export function loadSavedSubject(): string | null {
   if (typeof window === 'undefined') return null;
