@@ -89,7 +89,14 @@ export type CampaignDesign = {
   // Selos de confiança (rodapé)
   showBadges?: boolean;
   badgesText?: string; // separado por "·"
+
+  // Faixa de status (vermelha) — "SITUAÇÃO: PENDENTE"
+  showStatusBar?: boolean;
+  statusLabel?: string;
+  statusValue?: string;
+  statusNote?: string;
 };
+
 
 
 const AVATAR_URL = govbrAvatarAsset.url.startsWith('http')
