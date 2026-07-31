@@ -71,6 +71,11 @@ function CheckoutPage() {
     const loadFromToken = async () => {
       if (!token) return;
       try {
+        const paid = await getLinkPaymentStatus({ data: { token } }).catch(() => ({ paid: false }));
+        if (paid.paid) {
+          navigate({ to: '/c/$token', params: { token }, replace: true });
+          return;
+        }
         const data = await resolveCompanyLink({ data: { token } });
         if (data) {
           setForm({
@@ -88,6 +93,7 @@ function CheckoutPage() {
     };
     loadFromToken();
   }, [token]);
+
 
   function validate() {
     const e: Record<string, string> = {};
