@@ -390,7 +390,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     ${D.showStatusBar !== false ? `
     <tr><td style="padding:0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#fef2f2" style="background:#fef2f2;border-bottom:1px solid #fecaca;">
-        <tr><td style="padding:14px ${px}px;font-family:Arial,sans-serif;">
+        <tr><td class="l-pad" style="padding:14px ${px}px;font-family:Arial,sans-serif;">
           <div style="font-size:10px;letter-spacing:1.2px;color:#991b1b;font-weight:700;margin-bottom:6px;">${esc(S(D.statusLabel || 'SITUAÇÃO DO CADASTRO'))}</div>
           <div style="font-size:16px;font-weight:800;color:#dc2626;letter-spacing:0.5px;">
             <span style="display:inline-block;width:9px;height:9px;background:#dc2626;border-radius:50%;vertical-align:middle;margin-right:8px;"></span>${esc(S(D.statusValue || 'PENDENTE'))}
@@ -402,24 +402,24 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
 
     ${D.showHero ? `
-    <tr><td style="padding:44px ${px}px 20px ${px}px;text-align:center;">
+    <tr><td class="l-pad" style="padding:44px ${px}px 20px ${px}px;text-align:center;">
       <h2 style="font-size:${D.heroTitleSize}px;font-weight:800;color:${D.heroTitleColor};margin:0;line-height:1.25;">${heroTitle}</h2>
       <div style="width:48px;height:1px;background:#e5e7eb;margin:28px auto;"></div>
     </td></tr>` : ''}
 
-    <tr><td style="padding:0 ${px}px 24px ${px}px;text-align:${align};font-size:${D.bodySize}px;line-height:1.6;color:${D.textColor};font-weight:700;">
+    <tr><td class="l-pad" style="padding:0 ${px}px 24px ${px}px;text-align:${align};font-size:${D.bodySize}px;line-height:1.6;color:${D.textColor};font-weight:700;">
       ${intro}
     </td></tr>
 
     ${D.showCard ? `
-    <tr><td style="padding:0 ${px}px 28px ${px}px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.cardBg};border-radius:8px;padding:24px 26px;border:1px solid #e5e7eb;">
+    <tr><td class="l-pad" style="padding:0 ${px}px 28px ${px}px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.cardBg};border-radius:8px;padding:20px 18px;border:1px solid #e5e7eb;">
         ${rowsHtml}
       </table>
     </td></tr>` : ''}
 
     ${D.showWarning ? `
-    <tr><td style="padding:0 ${px}px 32px ${px}px;">
+    <tr><td class="l-pad" style="padding:0 ${px}px 32px ${px}px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.warningBg};border-left:4px solid ${D.warningBorder};padding:20px 22px;border-radius:4px;">
         <tr><td style="color:${D.warningTitleColor};font-size:${D.warningTitleSize || D.bodySize}px;font-weight:700;padding-bottom:10px;">${warningTitle}</td></tr>
         <tr><td style="color:${D.warningTextColor};font-size:${D.warningItemsSize || Math.max(13, D.bodySize - 2)}px;line-height:1.65;">${warningItems}</td></tr>
@@ -427,24 +427,24 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
       </table>
     </td></tr>` : ''}
 
-    <tr><td align="center" style="padding:0 ${px}px 44px ${px}px;">
-      <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);white-space:nowrap;mso-padding-alt:0;line-height:1.2;">${buttonLabel}</a>
+    <tr><td align="center" class="l-pad" style="padding:0 ${px}px 44px ${px}px;">
+      <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);white-space:normal;mso-padding-alt:0;line-height:1.2;">${buttonLabel}</a>
     </td></tr>
 
     ${D.showSignature ? `
-    <tr><td style="padding:0 ${px}px 36px ${px}px;color:${D.mutedColor};font-size:${D.signatureSize || Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
+    <tr><td class="l-pad" style="padding:0 ${px}px 36px ${px}px;color:${D.mutedColor};font-size:${D.signatureSize || Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
       ${signature}
     </td></tr>` : ''}
 
     ${D.showBadges && D.badgesText ? `
-    <tr><td style="padding:20px ${px}px 8px ${px}px;text-align:center;">
+    <tr><td class="l-pad" style="padding:20px ${px}px 8px ${px}px;text-align:center;">
       <div style="display:inline-block;font-size:11px;color:${D.mutedColor};letter-spacing:0.6px;text-transform:uppercase;font-weight:700;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:8px 16px;font-family:Arial,sans-serif;">
         <img src="${toAbsoluteUrl('/__l5e/assets-v1/6bf7fb2f-a72e-4a6e-8271-c7c1572cd687/gov-lock.png')}" alt="" width="14" height="14" style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;border:0;display:inline-block;" />${esc(S(D.badgesText))}
       </div>
     </td></tr>` : ''}
 
     ${D.showFooter ? `
-    <tr><td style="padding:24px 32px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
+    <tr><td class="l-pad" style="padding:24px 32px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
       <div style="color:${D.mutedColor};font-size:${D.disclaimerSize || 11}px;line-height:1.6;">
         ${disclaimer}
       </div>
