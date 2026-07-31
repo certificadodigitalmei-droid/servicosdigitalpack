@@ -301,15 +301,16 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   const align = D.align;
   const px = D.contentPaddingX;
 
-  // Auto-shrink do título para caber em UMA linha (nome do titular nunca quebra).
-  // Considera a maior linha do título já com variáveis substituídas.
+  // Título: no desktop encolhe um pouco para caber bem; no celular quebra em linhas
+  // (nunca corta com "..." e nunca estoura a largura da tela).
   const longestTitleLine = String(rawTitle || '')
     .split(/\r?\n/)
     .reduce((m, l) => (l.length > m.length ? l : m), '');
   const availableTitleWidth = Math.max(120, D.containerWidth - 2 * px);
   // Arial bold: ~0.58em por caractere. Deixa uma folga de 4px.
   const fitTitleSize = Math.floor((availableTitleWidth - 4) / Math.max(1, longestTitleLine.length * 0.58));
-  const effectiveTitleSize = Math.max(12, Math.min(D.titleSize, fitTitleSize));
+  const effectiveTitleSize = Math.max(15, Math.min(D.titleSize, fitTitleSize));
+  const mobileTitleSize = Math.max(15, Math.min(20, effectiveTitleSize));
 
 
   const rowsHtml = [
