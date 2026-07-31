@@ -4,9 +4,22 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { DEFAULT_DESIGN, renderHtml, renderText, type CampaignDesign, type Vars } from './template';
 
 const SENDER_DOMAIN = 'notify.seu-certificado-mei-digital.online';
-const DEFAULT_FROM_ADDRESS = 'certificado.mei.estadual@seu-certificado-mei-digital.online';
-const DEFAULT_FROM_NAME = 'Certificado Digital MEI';
+const FALLBACK_FROM_ADDRESS = 'certificado.mei.estadual@seu-certificado-mei-digital.online';
+const FALLBACK_FROM_NAME = 'Certificado Digital MEI';
 const TEST_RECIPIENT_ENV = 'CAMPAIGN_TEST_RECIPIENT';
+
+async function loadSenderSettings(supabase: any): Promise<{ name: string; email: string }> {
+  const { data } = await supabase
+    .from('site_settings')
+    .select('from_name, from_email')
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return {
+    name: data?.from_name?.trim() || FALLBACK_FROM_NAME,
+    email: data?.from_email?.trim() || FALLBACK_FROM_ADDRESS,
+  };
+}
 
 export type CampaignSendInput = {
   recipient: string;
