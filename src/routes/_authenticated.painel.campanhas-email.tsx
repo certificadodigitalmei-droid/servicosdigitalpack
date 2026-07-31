@@ -142,12 +142,18 @@ function CampanhasEmail() {
   }, []);
 
   const fetchSettings = async () => {
-    const { data } = await supabase.from('email_settings').select('*').single();
+    // Fonte da verdade global: site_settings (configurada em Remetente de E-mail).
+    const { data } = await supabase
+      .from('site_settings')
+      .select('from_name, from_email, reply_to')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
     if (data) {
       setEmailSettings(data);
-      setFromName(data.from_name || fromName);
-      setFromEmail(data.from_email || fromEmail);
-      setReplyTo(data.reply_to || replyTo);
+      if (data.from_name) setFromName(data.from_name);
+      if (data.from_email) setFromEmail(data.from_email);
+      if (data.reply_to) setReplyTo(data.reply_to);
     }
   };
 
