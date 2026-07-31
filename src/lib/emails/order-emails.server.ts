@@ -388,6 +388,7 @@ export async function runNotificationCadence(): Promise<CadenceResult> {
 
   const rows = (data as any[]) ?? []
   const nowMs = now.getTime()
+  const cfg = await loadRecoveryDiscount()
 
   for (const row of rows) {
     result.checked++
@@ -407,10 +408,13 @@ export async function runNotificationCadence(): Promise<CadenceResult> {
     try {
       const ctx = await resolveContext(row as OrderRow)
       const nextCount = (row.email_recovery_count ?? 0) + 1
-      await sendTemplateEmail('pix-pendente', row.customer_email, {
+      // Toda cobrança sai com o link já no valor promocional.
+      const promo = await applyRecoveryDiscount(row as OrderRow, cfg)
+      await sendTemplateEmail(promo ? 'oferta-desconto' : 'pix-pendente', row.customer_email, {
         idempotencyKey: `cadencia-${row.id}-${nextCount}`,
-        templateData: ctx,
+        templateData: { ...ctx, ...(promo ?? {}) },
       })
+
       const patch: Record<string, unknown> = {
         email_recovery_count: nextCount,
         email_recovery_last_at: new Date().toISOString(),
