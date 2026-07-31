@@ -60,7 +60,31 @@ function EmailSenderPage() {
     onError: (e: any) => toast.error(e?.message || 'Erro ao salvar'),
   });
 
+  /** Achata a imagem sobre fundo branco (evita PNG transparente virar preto no e-mail). */
+  async function flattenOnWhite(dataUrl: string): Promise<string> {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = dataUrl;
+    });
+    const size = Math.min(512, Math.max(img.width, img.height)) || 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return dataUrl;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    const scale = Math.min(size / img.width, size / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+    return canvas.toDataURL('image/jpeg', 0.92);
+  }
+
   async function handleFile(file: File) {
+
     if (file.size > 800 * 1024) {
       toast.error('Imagem muito grande (máx. 800KB)');
       return;
@@ -73,7 +97,11 @@ function EmailSenderPage() {
         r.onerror = reject;
         r.readAsDataURL(file);
       });
-      const res = await uploadEmailAsset({ data: { dataUrl, filename: file.name } });
+      const flat = await flattenOnWhite(dataUrl);
+      const res = await uploadEmailAsset({
+        data: { dataUrl: flat, filename: file.name.replace(/\.\w+$/, '') + '.jpg' },
+      });
+
       setForm((f) => ({ ...f, logo_url: res.url }));
       toast.success('Foto enviada — clique em Salvar remetente');
     } catch (e: any) {
@@ -180,7 +208,7 @@ function EmailSenderPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap items-center gap-4">
-                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white">
                   {form.logo_url ? (
                     <img src={form.logo_url} alt="Logo do remetente" className="h-full w-full object-cover" />
                   ) : (
