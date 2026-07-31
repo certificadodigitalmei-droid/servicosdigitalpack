@@ -64,6 +64,7 @@ import {
   mergedDesign,
   loadSavedSubject,
   syncFromMessageModel,
+  syncSenderFromServer,
   ensureDailyWindow,
 } from '@/lib/automation/envio-engine';
 
