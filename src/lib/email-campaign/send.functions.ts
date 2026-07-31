@@ -68,17 +68,9 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
     if (!apiKey) throw new Error('LOVABLE_API_KEY não configurada');
 
     const design: CampaignDesign = { ...DEFAULT_DESIGN, ...(data.design ?? {}) };
-    // Usa a foto de perfil configurada em "Remetente de E-mail" quando o design não define outra.
-    try {
-      const { getEmailSenderSettings } = await import('@/lib/email-sender.functions');
-      const senderCfg = await getEmailSenderSettings();
-      if (senderCfg.logo_url && !data.design?.avatarUrl) {
-        design.avatarUrl = senderCfg.logo_url;
-        design.showAvatar = true;
-      }
-    } catch {
-      // mantém o avatar padrão do design
-    }
+    // Sem logo no cabeçalho: a imagem fica somente na foto de perfil do remetente.
+    design.showAvatar = false;
+
     const vars = data.vars ?? {};
     const html = renderHtml(design, vars);
     const text = renderText(design, vars);
