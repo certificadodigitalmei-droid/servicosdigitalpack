@@ -71,6 +71,8 @@ function Kpi({
 function EmailAutomaticoPage() {
   const [day, setDay] = useState('');
   const [rows, setRows] = useState<NotifyFlowRow[]>([]);
+  const [events, setEvents] = useState<NotifyFlowEvent[]>([]);
+  const [tipoFiltro, setTipoFiltro] = useState<string>('all');
   const [stats, setStats] = useState<NotifyFlowStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
