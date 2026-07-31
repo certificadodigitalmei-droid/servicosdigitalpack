@@ -21,13 +21,12 @@ export const Route = createFileRoute('/api/public/hooks/pix-reminders')({
           });
         }
 
-        const { sendPendingReminders, sendDailyRecovery } = await import(
+        const { runNotificationCadence } = await import(
           '@/lib/emails/order-emails.server'
         );
-        const reminders = await sendPendingReminders(15);
-        const recovery = await sendDailyRecovery({ maxDays: 15 });
+        const cadence = await runNotificationCadence();
 
-        return new Response(JSON.stringify({ reminders, recovery }), {
+        return new Response(JSON.stringify({ cadence }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });
