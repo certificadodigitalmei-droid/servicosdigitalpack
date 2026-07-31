@@ -25,6 +25,7 @@ import {
   type CampaignDesign,
 } from '@/lib/email-campaign/template';
 import { InteractivePreview } from '@/components/email-editor/InteractivePreview';
+import { AutoEmailsPreview } from '@/components/email-editor/AutoEmailsPreview';
 import { uploadEmailAsset } from '@/lib/email-campaign/upload-asset.functions';
 import { loadMessageTemplate, saveMessageTemplate } from '@/lib/email-campaign/template-store.functions';
 import { getEmailSenderSettings } from '@/lib/email-sender.functions';
@@ -434,6 +435,9 @@ function ModeloMensagem() {
             <TabsContent value="html"><Textarea readOnly value={html} className="h-64 font-mono text-[11px]" /></TabsContent>
             <TabsContent value="text"><Textarea readOnly value={text} className="h-64 font-mono text-[11px]" /></TabsContent>
           </Tabs>
+
+          <AutoEmailsPreview />
+
         </div>
 
         {/* Right rail — properties + variables */}
