@@ -141,9 +141,10 @@ function PanelLayout() {
     }
   };
 
-  // AUTO-RESTORE no mount: se a nuvem tem snapshot mais recente que o
-  // último sincronizado neste navegador, aplica silenciosamente antes de
-  // renderizar as sub-rotas. Assim o painel deixa de depender do navegador.
+  // Lê apenas a data do último backup no mount. O snapshot não é aplicado
+  // automaticamente: alterar localStorage durante a inicialização fazia as
+  // sub-rotas remontarem e dava a impressão de F5 repetido. A restauração
+  // continua disponível somente pelo botão "Restaurar".
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -151,21 +152,6 @@ function PanelLayout() {
         const r = await doLoad();
         if (cancelled) return;
         if (r.updatedAt) setLastSavedAt(r.updatedAt);
-        if (r.snapshot && r.updatedAt) {
-          const localSyncedAt = (() => {
-            try { return window.localStorage.getItem('painel:cloudSyncedAt'); } catch { return null; }
-          })();
-          const cloudMs = new Date(r.updatedAt).getTime();
-          const localMs = localSyncedAt ? new Date(localSyncedAt).getTime() : 0;
-          if (!localSyncedAt || cloudMs > localMs) {
-            applyLocalSnapshot(r.snapshot as Record<string, string>);
-            try { window.localStorage.setItem('painel:cloudSyncedAt', r.updatedAt); } catch {}
-            // Sem window.location.reload(): as sub-rotas só renderizam após
-            // `hydrated`, então já leem o estado restaurado. O reload causava
-            // recarregamentos repetidos ao entrar no painel.
-          }
-
-        }
       } catch { /* silencioso */ }
       if (!cancelled) setHydrated(true);
     })();
