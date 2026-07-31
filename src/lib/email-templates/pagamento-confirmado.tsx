@@ -140,7 +140,7 @@ const protoLabel = { color: '#9fbad8', fontSize: '9px', margin: '0', letterSpaci
 const protoValue = { color: '#ffffff', fontSize: '13px', fontWeight: 'bold' as const, margin: '2px 0 0' }
 const card = { padding: '22px', border: '1px solid #e2e6e4', borderTop: 'none' }
 const statusStrip = {
-  backgroundColor: '#e8f6ef',
+  backgroundColor: '#e8f0f8',
   borderLeft: `4px solid ${BRAND}`,
   padding: '9px 12px',
   margin: '0 0 18px',

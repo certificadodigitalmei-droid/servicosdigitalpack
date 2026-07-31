@@ -176,12 +176,12 @@ const priceBox = {
   borderRadius: '8px',
   padding: '16px',
   margin: '0 0 20px',
-  backgroundColor: '#f3faf6',
+  backgroundColor: '#f3f7fb',
 }
 const priceLabel = { fontSize: '10px', letterSpacing: '1px', color: BRAND, fontWeight: 'bold' as const, margin: '0 0 4px' }
 const priceValue = { fontSize: '30px', color: BRAND_DARK, fontWeight: 'bold' as const, margin: '0 0 4px' }
 const priceOld = { fontSize: '13px', color: '#8a8f98', margin: '0 0 8px', textDecoration: 'line-through' }
-const priceNote = { fontSize: '12.5px', color: '#33574a', lineHeight: '1.55', margin: '0' }
+const priceNote = { fontSize: '12.5px', color: '#334a70', lineHeight: '1.55', margin: '0' }
 const dataBox = { border: '1px solid #e2e6e4', borderRadius: '6px', padding: '0', margin: '0 0 20px' }
 const dataTitle = {
   fontSize: '10px',
