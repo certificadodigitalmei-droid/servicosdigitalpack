@@ -203,7 +203,7 @@ export const sendFunnelCampaign = createServerFn({ method: 'POST' })
     z
       .object({
         linkIds: z.array(z.string().uuid()).min(1).max(500),
-        template: z.enum(['oferta-desconto', 'pix-pendente']),
+        template: z.enum(['oferta-desconto', 'pix-pendente', 'pix-gerado', 'pagamento-confirmado']),
         discountAmount: z.number().positive().max(100000).optional(),
         discountHours: z.number().min(1).max(720).default(24),
         ofertaLabel: z.string().max(60).optional(),
@@ -321,7 +321,7 @@ export const sendFunnelTestEmail = createServerFn({ method: 'POST' })
     z
       .object({
         email: z.string().email().max(200),
-        template: z.enum(['oferta-desconto', 'pix-pendente']),
+        template: z.enum(['oferta-desconto', 'pix-pendente', 'pix-gerado', 'pagamento-confirmado']),
         discountAmount: z.number().positive().max(100000).optional(),
         ofertaLabel: z.string().max(60).optional(),
         linkId: z.string().uuid().optional(),
@@ -386,4 +386,68 @@ export const sendFunnelTestEmail = createServerFn({ method: 'POST' })
     });
 
     return { ok: true };
+  });
+
+
+/** Envia o modelo de e-mail escolhido para uma lista de endereços digitados manualmente. */
+export const sendManualEmails = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        emails: z.array(z.string().email().max(200)).min(1).max(500),
+        template: z.enum(['oferta-desconto', 'pix-pendente', 'pix-gerado', 'pagamento-confirmado']),
+        empresa: z.string().max(200).optional(),
+        cnpj: z.string().max(30).optional(),
+        link: z.string().max(500).optional(),
+        discountAmount: z.number().positive().max(100000).optional(),
+        ofertaLabel: z.string().max(60).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { sendTemplateEmail } = await import('@/lib/email-templates/send-email');
+    const { PUBLIC_BASE_URL } = await import('@/lib/public-base-url');
+
+    const { data: pricing } = await supabaseAdmin
+      .from('site_settings')
+      .select('product_amount')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const fullAmount = Number((pricing as any)?.product_amount ?? 97);
+    const brl = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`;
+
+    const unique = Array.from(new Set(data.emails.map((e) => e.trim().toLowerCase()))).filter(Boolean);
+    let sent = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    for (const email of unique) {
+      try {
+        const r = await sendTemplateEmail(data.template, email, {
+          idempotencyKey: `manual-${data.template}-${email}-${Date.now()}`,
+          templateData: {
+            empresa: data.empresa || undefined,
+            cnpj: data.cnpj || undefined,
+            link: data.link || PUBLIC_BASE_URL,
+            protocolo: `CD-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+            validade: '12 meses',
+            dataSolicitacao: new Date().toLocaleDateString('pt-BR'),
+            valorPromocional: data.discountAmount ? brl(data.discountAmount) : undefined,
+            valorOriginal: data.discountAmount ? brl(fullAmount) : undefined,
+            validadeOferta: data.ofertaLabel || 'apenas hoje',
+          },
+        });
+        if (r.sent) sent++;
+        else skipped++;
+      } catch (e: any) {
+        skipped++;
+        if (errors.length < 5) errors.push(`${email}: ${e?.message ?? 'erro'}`);
+      }
+    }
+
+    return { sent, skipped, errors };
   });
