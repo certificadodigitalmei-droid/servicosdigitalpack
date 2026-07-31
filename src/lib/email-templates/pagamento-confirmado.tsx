@@ -57,12 +57,11 @@ const Email = ({
             <Text style={statusText}>SITUAÇÃO: CERTIFICADO ATIVO E VINCULADO</Text>
           </Section>
 
-          <Heading style={h1}>Certificado Digital emitido com sucesso</Heading>
+          <Heading style={h1}>Certificado emitido com sucesso</Heading>
 
           <Text style={text}>
-            Confirmamos o recebimento do pagamento. O <strong>Certificado Digital e-CNPJ</strong>
-            {empresa ? <> de <strong>{empresa}</strong></> : null} foi
-            <strong> emitido e vinculado automaticamente</strong>
+            Pagamento confirmado. O <strong>Certificado e-CNPJ</strong> foi
+            <strong> vinculado automaticamente</strong>
             {cnpj ? ` ao CNPJ ${cnpj}` : ' ao CNPJ informado'}.
           </Text>
 
@@ -104,16 +103,15 @@ const Email = ({
 
           <Hr style={hr} />
           <Text style={note}>
-            Guarde este e-mail como comprovante. A situação do certificado pode ser consultada a
-            qualquer momento pelo link acima.
+            Guarde este e-mail como comprovante.
           </Text>
         </Section>
 
         <Section style={footerBox}>
           <Text style={footer}>
-            Portal Certificado Digital MEI — Microempreendedor Individual.
+            Portal Certificado Digital MEI.
             <br />
-            Serviço privado de apoio ao MEI. Este e-mail foi enviado automaticamente; não responda.
+            E-mail automático; não responda.
           </Text>
         </Section>
       </Container>

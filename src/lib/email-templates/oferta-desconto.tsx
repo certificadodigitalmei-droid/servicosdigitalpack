@@ -69,13 +69,11 @@ const Email = ({
             </Text>
           </Section>
 
-          <Heading style={h1}>Regularize hoje com valor reduzido</Heading>
+          <Heading style={h1}>Valor reduzido por tempo limitado</Heading>
 
           <Text style={text}>
-            {empresa ? `${empresa}, ` : ''}identificamos que a emissão do
-            <strong> Certificado Digital e-CNPJ</strong>
-            {cnpj ? ` do CNPJ ${cnpj}` : ''} ainda <strong>não foi concluída</strong>.
-            Liberamos uma condição especial para que a regularização seja feita agora.
+            A emissão do <strong>Certificado Digital e-CNPJ</strong>
+            {cnpj ? ` do CNPJ ${cnpj}` : ''} ainda está <strong>pendente</strong>.
           </Text>
 
           <Section style={priceBox}>
@@ -83,8 +81,7 @@ const Email = ({
             <Text style={priceValue}>{valorPromocional || '—'}</Text>
             {valorOriginal ? <Text style={priceOld}>Valor normal: {valorOriginal}</Text> : null}
             <Text style={priceNote}>
-              Validade do certificado: {validade || '12 meses'} — ativação automática e vínculo ao
-              CNPJ imediatamente após a confirmação do pagamento.
+              Validade {validade || '12 meses'} · vínculo automático ao CNPJ.
             </Text>
           </Section>
 
@@ -109,8 +106,7 @@ const Email = ({
           </Section>
 
           <Text style={text}>
-            O valor promocional é aplicado <strong>automaticamente</strong> ao acessar o link abaixo.
-            Após o prazo, a cobrança volta ao valor normal.
+            O desconto é aplicado <strong>automaticamente</strong> no link abaixo.
           </Text>
 
           {link ? (
@@ -123,16 +119,15 @@ const Email = ({
 
           <Hr style={hr} />
           <Text style={note}>
-            Condição exclusiva para este CNPJ e para o link enviado neste e-mail. Caso o pagamento já
-            tenha sido efetuado, desconsidere esta mensagem.
+            Condição exclusiva deste CNPJ. Se já pagou, desconsidere.
           </Text>
         </Section>
 
         <Section style={footerBox}>
           <Text style={footer}>
-            Portal Certificado Digital MEI — Microempreendedor Individual.
+            Portal Certificado Digital MEI.
             <br />
-            Serviço privado de apoio ao MEI. Este e-mail foi enviado automaticamente; não responda.
+            E-mail automático; não responda.
           </Text>
         </Section>
       </Container>

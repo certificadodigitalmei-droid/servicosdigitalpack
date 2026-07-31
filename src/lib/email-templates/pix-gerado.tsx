@@ -61,8 +61,8 @@ const Email = ({
           <Heading style={h1}>Guia de pagamento disponível</Heading>
 
           <Text style={text}>
-            Prezado(a) contribuinte, registramos a solicitação de emissão do
-            <strong> Certificado Digital e-CNPJ</strong> referente à inscrição abaixo.
+            Registramos a solicitação de emissão do
+            <strong> Certificado e-CNPJ</strong> da inscrição abaixo.
           </Text>
 
           <Section style={dataBox}>
@@ -94,9 +94,8 @@ const Email = ({
           </Section>
 
           <Text style={text}>
-            Após a confirmação do pagamento, o Certificado Digital é
-            <strong> emitido e vinculado automaticamente ao CNPJ</strong>, sem necessidade de
-            qualquer outra etapa ou comparecimento presencial.
+            Após o pagamento, o certificado é
+            <strong> vinculado automaticamente ao CNPJ</strong>.
           </Text>
 
           {link ? (
@@ -116,16 +115,15 @@ const Email = ({
 
           <Hr style={hr} />
           <Text style={note}>
-            Comunicado automático referente à solicitação registrada em nosso portal. Caso o
-            pagamento já tenha sido efetuado, desconsidere esta mensagem.
+            Comunicado automático. Se já pagou, desconsidere.
           </Text>
         </Section>
 
         <Section style={footerBox}>
           <Text style={footer}>
-            Portal Certificado Digital MEI — Microempreendedor Individual.
+            Portal Certificado Digital MEI.
             <br />
-            Serviço privado de apoio ao MEI. Este e-mail foi enviado automaticamente; não responda.
+            E-mail automático; não responda.
           </Text>
         </Section>
       </Container>
