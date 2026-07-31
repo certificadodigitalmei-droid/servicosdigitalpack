@@ -65,6 +65,25 @@ export function syncFromMessageModel() {
   }));
 }
 
+/** Carrega remetente padrão do servidor (site_settings) e aplica na engine,
+ *  respeitando overrides salvos no navegador pelo Modelo de Mensagem. */
+export async function syncSenderFromServer() {
+  try {
+    const { getEmailSenderSettings } = await import('@/lib/email-sender.functions');
+    const server = await getEmailSenderSettings();
+    const localName = loadSavedFromName();
+    const localAddress = loadSavedFromAddress();
+    envioStore.set((s) => ({
+      ...s,
+      fromName: localName || server.from_name || s.fromName,
+      fromAddress: localAddress || server.from_email || s.fromAddress,
+      replyTo: s.replyTo || server.reply_to || '',
+    }));
+  } catch {
+    // mantém defaults já carregados
+  }
+}
+
 
 export type QueueItem = {
 
