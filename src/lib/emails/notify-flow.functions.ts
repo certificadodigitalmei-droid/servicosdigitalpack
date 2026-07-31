@@ -181,7 +181,7 @@ export const listNotifyFlow = createServerFn({ method: 'POST' })
       return m ? m[0] : null;
     };
 
-    const events: NotifyFlowEvent[] = ((qrows as any[]) ?? [])
+    const auditedEvents: NotifyFlowEvent[] = ((qrows as any[]) ?? [])
       .map((r) => {
         const tipo = tipoFromKey(r.idempotency_key ?? '', r.subject ?? '');
         if (!tipo) return null;
@@ -205,6 +205,47 @@ export const listNotifyFlow = createServerFn({ method: 'POST' })
         } as NotifyFlowEvent;
       })
       .filter(Boolean) as NotifyFlowEvent[];
+
+    // Recupera o histórico anterior à implantação da auditoria. Os horários
+    // abaixo são os marcadores reais gravados no pedido após cada envio.
+    const auditedKinds = new Set(
+      auditedEvents.map((event) => `${event.orderId ?? ''}:${event.tipo}`),
+    );
+    const recoveredEvents: NotifyFlowEvent[] = [];
+    const addRecovered = (
+      order: NotifyFlowRow,
+      sentAt: string | null,
+      tipo: string,
+      subject: string,
+      suffix: string,
+    ) => {
+      if (!sentAt || auditedKinds.has(`${order.id}:${tipo}`)) return;
+      recoveredEvents.push({
+        id: `recovered-${order.id}-${suffix}`,
+        createdAt: sentAt,
+        sentAt,
+        to: order.email ?? '—',
+        subject,
+        status: 'sent',
+        attempts: 1,
+        error: null,
+        tipo,
+        orderId: order.id,
+        empresa: order.empresa,
+        cnpj: order.cnpj,
+      });
+    };
+    for (const order of list) {
+      addRecovered(order, order.guiaSentAt, 'Guia gerada (PIX criado)', 'Guia de pagamento PIX gerada', 'pix');
+      addRecovered(order, order.firstReminderAt, 'Cobrança / recuperação', 'Pagamento PIX pendente', 'first-reminder');
+      if (order.lastReminderAt && order.lastReminderAt !== order.firstReminderAt) {
+        addRecovered(order, order.lastReminderAt, 'Cobrança / recuperação', 'Pagamento PIX pendente', 'last-reminder');
+      }
+      addRecovered(order, order.paidEmailAt, 'Pagamento confirmado', 'Pagamento confirmado', 'paid');
+    }
+    const events = [...auditedEvents, ...recoveredEvents].sort(
+      (a, b) => new Date(b.sentAt ?? b.createdAt).getTime() - new Date(a.sentAt ?? a.createdAt).getTime(),
+    );
 
     return { orders: list, stats, day, events };
   });

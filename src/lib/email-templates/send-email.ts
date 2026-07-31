@@ -148,7 +148,7 @@ async function recordSend(entry: {
   try {
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const nowIso = new Date().toISOString()
-    await supabaseAdmin.from('email_send_queue').upsert(
+    const { error } = await supabaseAdmin.from('email_send_queue').upsert(
       {
         to_email: entry.to,
         subject: entry.subject,
@@ -162,6 +162,7 @@ async function recordSend(entry: {
       } as any,
       { onConflict: 'idempotency_key' }
     )
+    if (error) throw new Error(error.message)
   } catch (e) {
     console.error('[send-email] falha ao registrar log do e-mail', e)
   }

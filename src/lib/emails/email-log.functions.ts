@@ -71,7 +71,7 @@ export const listEmailLog = createServerFn({ method: 'POST' })
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
 
-    const list: EmailLogRow[] = ((rows as any[]) ?? []).map((r) => ({
+    const auditedList: EmailLogRow[] = ((rows as any[]) ?? []).map((r) => ({
       id: r.id,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
@@ -85,6 +85,67 @@ export const listEmailLog = createServerFn({ method: 'POST' })
       messageId: r.sent_message_id ?? null,
       tipo: classify(r.subject),
     }));
+
+    // E-mails automáticos antigos foram enviados antes da tabela de auditoria
+    // ser alimentada. Usa os marcadores reais dos pedidos para exibi-los.
+    let ordersQuery = supabaseAdmin
+      .from('orders')
+      .select(
+        'id, customer_email, email_pix_sent_at, email_reminder_sent_at, email_recovery_last_at, email_paid_sent_at',
+      )
+      .order('created_at', { ascending: false })
+      .limit(1000);
+    if (data.from) ordersQuery = ordersQuery.gte('created_at', data.from);
+    if (data.to) ordersQuery = ordersQuery.lte('created_at', data.to);
+    const { data: orderRows } = await ordersQuery;
+
+    const auditedKeys = new Set(
+      auditedList.map((row) => `${row.to.toLowerCase()}:${row.tipo}:${row.updatedAt}`),
+    );
+    const recovered: EmailLogRow[] = [];
+    const addRecovered = (
+      order: any,
+      sentAt: string | null,
+      subject: string,
+      suffix: string,
+    ) => {
+      if (!sentAt || !order.customer_email) return;
+      const tipo = classify(subject);
+      const status = 'sent';
+      if (data.status && data.status !== 'all' && data.status !== status) return;
+      if (data.search) {
+        const needle = data.search.toLowerCase();
+        if (!String(order.customer_email).toLowerCase().includes(needle) && !subject.toLowerCase().includes(needle)) return;
+      }
+      const key = `${String(order.customer_email).toLowerCase()}:${tipo}:${sentAt}`;
+      if (auditedKeys.has(key)) return;
+      recovered.push({
+        id: `recovered-${order.id}-${suffix}`,
+        createdAt: sentAt,
+        updatedAt: sentAt,
+        to: order.customer_email,
+        subject,
+        status,
+        attempts: 1,
+        lastError: null,
+        lastStatusCode: 200,
+        nextRetryAt: null,
+        messageId: null,
+        tipo,
+      });
+    };
+    for (const order of (orderRows as any[]) ?? []) {
+      addRecovered(order, order.email_pix_sent_at, 'Guia de pagamento PIX gerada', 'pix');
+      addRecovered(order, order.email_reminder_sent_at, 'Pagamento PIX pendente', 'first-reminder');
+      if (order.email_recovery_last_at && order.email_recovery_last_at !== order.email_reminder_sent_at) {
+        addRecovered(order, order.email_recovery_last_at, 'Pagamento PIX pendente', 'last-reminder');
+      }
+      addRecovered(order, order.email_paid_sent_at, 'Pagamento confirmado', 'paid');
+    }
+
+    const list = [...auditedList, ...recovered]
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, Math.min(data.limit ?? 300, 1000));
 
     const hourAgo = Date.now() - 60 * 60 * 1000;
     const sentRows = list.filter((r) => r.status === 'sent');
