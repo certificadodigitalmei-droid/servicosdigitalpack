@@ -87,6 +87,7 @@ function EmailAutomaticoPage() {
     try {
       const r = await doList({ data: day ? { day } : {} });
       setRows(r.orders);
+      setEvents(r.events ?? []);
       setStats(r.stats);
       if (!day) setDay(r.day);
     } catch (e: any) {
