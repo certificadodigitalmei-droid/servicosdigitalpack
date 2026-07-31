@@ -83,7 +83,7 @@ function ModelosEmailPage() {
   });
 
   const campanha = useMemo(() => {
-    const design: CampaignDesign = { ...DEFAULT_DESIGN, ...((saved?.design as any) ?? {}) };
+    const design: CampaignDesign = { ...DEFAULT_DESIGN };
     return {
       html: renderHtml(design, PREVIEW_VARS),
       subject: substitute(saved?.subject || DEFAULT_SUBJECT, PREVIEW_VARS),
