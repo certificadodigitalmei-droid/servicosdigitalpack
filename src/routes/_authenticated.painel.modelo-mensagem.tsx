@@ -434,6 +434,9 @@ function ModeloMensagem() {
             <TabsContent value="html"><Textarea readOnly value={html} className="h-64 font-mono text-[11px]" /></TabsContent>
             <TabsContent value="text"><Textarea readOnly value={text} className="h-64 font-mono text-[11px]" /></TabsContent>
           </Tabs>
+
+          <AutoEmailsPreview />
+
         </div>
 
         {/* Right rail — properties + variables */}
