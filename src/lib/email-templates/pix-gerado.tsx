@@ -7,7 +7,6 @@ import {
   Heading,
   Hr,
   Html,
-  Img,
   Link,
   Preview,
   Row,
@@ -17,7 +16,6 @@ import {
 import type { TemplateEntry } from './registry'
 
 interface Props {
-  logoUrl?: string
   empresa?: string
   cnpj?: string
   link?: string
@@ -28,7 +26,7 @@ interface Props {
 }
 
 const Email = ({
-  logoUrl, empresa, cnpj, link, pixCode, protocolo, dataSolicitacao, validade }: Props) => (
+  empresa, cnpj, link, pixCode, protocolo, dataSolicitacao, validade }: Props) => (
   <Html lang="pt-BR" dir="ltr">
     <Head />
     <Preview>Guia de pagamento emitida — Certificado Digital e-CNPJ (MEI)</Preview>
@@ -38,9 +36,6 @@ const Email = ({
         <Section style={header}>
           <Row>
             <Column>
-              {logoUrl ? (
-                <Img src={logoUrl} width="46" height="46" alt="" style={brandLogo} />
-              ) : null}
               <Text style={org}>PORTAL CERTIFICADO DIGITAL MEI</Text>
               <Text style={orgSub}>Central de Emissão — Microempreendedor Individual</Text>
             </Column>
@@ -152,19 +147,11 @@ const BRAND_DARK = '#0e3a70'
 const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, Helvetica, sans-serif', margin: '0' }
 const outer = { maxWidth: '620px', padding: '0', margin: '0 auto' }
 const topBar = { height: '5px', backgroundColor: '#f2c200', lineHeight: '5px', fontSize: '1px' }
-const brandLogo = {
-  display: 'block',
-  width: '46px',
-  height: '46px',
-  borderRadius: '50%',
-  border: '2px solid rgba(255,255,255,0.85)',
-  margin: '0 0 10px',
-}
 const header = { backgroundColor: BRAND_DARK, padding: '18px 22px' }
-const org = { color: '#ffffff', fontSize: '15px', fontWeight: 'bold' as const, margin: '0', letterSpacing: '0.4px' }
-const orgSub = { color: '#c9d8ec', fontSize: '11px', margin: '4px 0 0' }
+const org = { color: '#ffffff', fontSize: '13.5px', fontWeight: 'bold' as const, margin: '0', letterSpacing: '0.4px' }
+const orgSub = { color: '#c9d8ec', fontSize: '10px', margin: '4px 0 0' }
 const protoLabel = { color: '#9fbad8', fontSize: '9px', margin: '0', letterSpacing: '1px' }
-const protoValue = { color: '#ffffff', fontSize: '13px', fontWeight: 'bold' as const, margin: '2px 0 0' }
+const protoValue = { color: '#ffffff', fontSize: '11.5px', fontWeight: 'bold' as const, margin: '2px 0 0' }
 const card = { padding: '22px', border: '1px solid #e2e6e4', borderTop: 'none' }
 const statusStrip = {
   backgroundColor: '#fff8e1',
@@ -172,9 +159,9 @@ const statusStrip = {
   padding: '9px 12px',
   margin: '0 0 18px',
 }
-const statusText = { fontSize: '12px', color: '#7a5c00', fontWeight: 'bold' as const, margin: '0', letterSpacing: '0.4px' }
-const h1 = { fontSize: '21px', fontWeight: 'bold' as const, color: '#111111', margin: '0 0 14px' }
-const text = { fontSize: '14.5px', color: '#333333', lineHeight: '1.65', margin: '0 0 16px' }
+const statusText = { fontSize: '11px', color: '#7a5c00', fontWeight: 'bold' as const, margin: '0', letterSpacing: '0.4px' }
+const h1 = { fontSize: '17px', fontWeight: 'bold' as const, color: '#111111', margin: '0 0 14px' }
+const text = { fontSize: '13px', color: '#333333', lineHeight: '1.65', margin: '0 0 16px' }
 const dataBox = { border: '1px solid #e2e6e4', borderRadius: '6px', padding: '0', margin: '0 0 20px' }
 const dataTitle = {
   fontSize: '10px',
@@ -189,18 +176,18 @@ const dataTitle = {
 const dataRow = { borderBottom: '1px solid #eef1ef' }
 const dataRowLast = {}
 const dataKey = {
-  fontSize: '12px',
+  fontSize: '11px',
   color: '#6b7671',
   padding: '9px 14px',
   width: '38%',
   verticalAlign: 'top' as const,
 }
-const dataVal = { fontSize: '13px', color: '#111111', padding: '9px 14px', fontWeight: 'bold' as const }
-const dataValWarn = { fontSize: '13px', color: '#a05a00', padding: '9px 14px', fontWeight: 'bold' as const }
+const dataVal = { fontSize: '11.5px', color: '#111111', padding: '9px 14px', fontWeight: 'bold' as const }
+const dataValWarn = { fontSize: '11.5px', color: '#a05a00', padding: '9px 14px', fontWeight: 'bold' as const }
 const button = {
   backgroundColor: BRAND,
   color: '#ffffff',
-  fontSize: '15px',
+  fontSize: '13.5px',
   borderRadius: '6px',
   padding: '13px 24px',
   textDecoration: 'none',
@@ -209,10 +196,10 @@ const button = {
 }
 const pixBox = { backgroundColor: '#f4f7f5', borderRadius: '6px', padding: '13px 15px', margin: '0 0 18px' }
 const pixLabel = { fontSize: '10px', color: '#5b6b64', margin: '0 0 6px', fontWeight: 'bold' as const, letterSpacing: '1px' }
-const pixValue = { fontSize: '12px', color: '#111111', margin: '0', wordBreak: 'break-all' as const, fontFamily: 'Courier New, monospace' }
+const pixValue = { fontSize: '11px', color: '#111111', margin: '0', wordBreak: 'break-all' as const, fontFamily: 'Courier New, monospace' }
 const hr = { borderColor: '#e5e7eb', margin: '22px 0 14px' }
-const note = { fontSize: '11.5px', color: '#8a8f98', lineHeight: '1.55', margin: '0' }
+const note = { fontSize: '10.5px', color: '#8a8f98', lineHeight: '1.55', margin: '0' }
 const footerBox = { backgroundColor: '#f4f7f5', padding: '16px 22px', borderRadius: '0 0 4px 4px' }
-const footer = { fontSize: '11px', color: '#6b7671', lineHeight: '1.6', margin: '0' }
+const footer = { fontSize: '10px', color: '#6b7671', lineHeight: '1.6', margin: '0' }
 
 export default Email
