@@ -25,4 +25,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'pix-gerado': pixGeradoTemplate,
   'pagamento-confirmado': pagamentoConfirmadoTemplate,
   'pix-pendente': pixPendenteTemplate,
+  'oferta-desconto': ofertaDescontoTemplate,
 }
