@@ -50,7 +50,9 @@ export const listNotifyFlow = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-    const { CADENCE, spParts, spTodayStartISO } = await import('@/lib/emails/order-emails.server');
+    const { CADENCE, spParts, spTodayStartISO, recipientKey, pickActiveOrders } = await import(
+      '@/lib/emails/order-emails.server'
+    );
 
     const now = new Date();
     const parts = spParts(now);
@@ -71,11 +73,24 @@ export const listNotifyFlow = createServerFn({ method: 'POST' })
 
     const janelaAberta = parts.hour < CADENCE.stopHour;
 
-    const list: NotifyFlowRow[] = ((rows as any[]) ?? []).map((r) => {
+    const all = ((rows as any[]) ?? []);
+    const paidKeys = new Set<string>();
+    for (const r of all) {
+      if (r.status === 'paid') {
+        const k = recipientKey(r);
+        if (k) paidKeys.add(k);
+      }
+    }
+    const unpaid = all.filter((r) => r.status !== 'paid');
+    const { active } = pickActiveOrders(unpaid as any[], paidKeys, recipientKey as any);
+    const activeIds = new Set(active.map((r: any) => r.id));
+
+    const list: NotifyFlowRow[] = all.map((r) => {
       const paid = r.status === 'paid';
+      const superseded = !paid && !activeIds.has(r.id);
       const last = r.email_recovery_last_at || r.email_reminder_sent_at || null;
       let nextSendAt: string | null = null;
-      if (!paid) {
+      if (!paid && !superseded && janelaAberta) {
         const base = last
           ? new Date(last).getTime() + CADENCE.repeatMinutes * 60 * 1000
           : new Date(r.created_at).getTime() + CADENCE.firstReminderMinutes * 60 * 1000;
@@ -95,7 +110,8 @@ export const listNotifyFlow = createServerFn({ method: 'POST' })
         reminderCount: r.email_recovery_count ?? 0,
         lastReminderAt: r.email_recovery_last_at ?? null,
         nextSendAt,
-        finished: paid || !janelaAberta,
+        finished: paid || superseded || !janelaAberta,
+        superseded,
       };
     });
 
@@ -106,6 +122,8 @@ export const listNotifyFlow = createServerFn({ method: 'POST' })
       pagos: list.filter((o) => o.status === 'paid').length,
       aguardando: list.filter((o) => o.status !== 'paid').length,
       semEmail: list.filter((o) => !o.email).length,
+      emCobranca: list.filter((o) => o.status !== 'paid' && !o.superseded).length,
+      duplicadas: list.filter((o) => o.superseded).length,
       janelaAberta,
       horaAtual: parts.hour,
     };
