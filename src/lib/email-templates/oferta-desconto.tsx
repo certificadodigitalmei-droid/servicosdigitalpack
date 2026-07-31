@@ -149,8 +149,8 @@ export const template = {
   },
 } satisfies TemplateEntry
 
-const BRAND = '#0b5d3b'
-const BRAND_DARK = '#083f28'
+const BRAND = '#1a4a8a'
+const BRAND_DARK = '#0e3a70'
 const ALERT = '#a11a1a'
 
 const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, Helvetica, sans-serif', margin: '0' }
@@ -158,8 +158,8 @@ const outer = { maxWidth: '620px', padding: '0', margin: '0 auto' }
 const topBar = { height: '5px', backgroundColor: '#f2c200', lineHeight: '5px', fontSize: '1px' }
 const header = { backgroundColor: BRAND_DARK, padding: '18px 22px' }
 const org = { color: '#ffffff', fontSize: '15px', fontWeight: 'bold' as const, margin: '0', letterSpacing: '0.4px' }
-const orgSub = { color: '#c9e3d6', fontSize: '11px', margin: '4px 0 0' }
-const protoLabel = { color: '#9fc7b3', fontSize: '9px', margin: '0', letterSpacing: '1px' }
+const orgSub = { color: '#c9d8ec', fontSize: '11px', margin: '4px 0 0' }
+const protoLabel = { color: '#9fbad8', fontSize: '9px', margin: '0', letterSpacing: '1px' }
 const protoValue = { color: '#ffffff', fontSize: '13px', fontWeight: 'bold' as const, margin: '2px 0 0' }
 const card = { padding: '22px', border: '1px solid #e2e6e4', borderTop: 'none' }
 const statusStrip = {
@@ -176,12 +176,12 @@ const priceBox = {
   borderRadius: '8px',
   padding: '16px',
   margin: '0 0 20px',
-  backgroundColor: '#f3faf6',
+  backgroundColor: '#f3f7fb',
 }
 const priceLabel = { fontSize: '10px', letterSpacing: '1px', color: BRAND, fontWeight: 'bold' as const, margin: '0 0 4px' }
 const priceValue = { fontSize: '30px', color: BRAND_DARK, fontWeight: 'bold' as const, margin: '0 0 4px' }
 const priceOld = { fontSize: '13px', color: '#8a8f98', margin: '0 0 8px', textDecoration: 'line-through' }
-const priceNote = { fontSize: '12.5px', color: '#33574a', lineHeight: '1.55', margin: '0' }
+const priceNote = { fontSize: '12.5px', color: '#334a70', lineHeight: '1.55', margin: '0' }
 const dataBox = { border: '1px solid #e2e6e4', borderRadius: '6px', padding: '0', margin: '0 0 20px' }
 const dataTitle = {
   fontSize: '10px',
