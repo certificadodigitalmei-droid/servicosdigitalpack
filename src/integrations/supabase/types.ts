@@ -1335,6 +1335,8 @@ export type Database = {
           customer_phone: string | null
           email_paid_sent_at: string | null
           email_pix_sent_at: string | null
+          email_recovery_count: number
+          email_recovery_last_at: string | null
           email_reminder_sent_at: string | null
           external_transaction_id: string | null
           id: string
@@ -1361,6 +1363,8 @@ export type Database = {
           customer_phone?: string | null
           email_paid_sent_at?: string | null
           email_pix_sent_at?: string | null
+          email_recovery_count?: number
+          email_recovery_last_at?: string | null
           email_reminder_sent_at?: string | null
           external_transaction_id?: string | null
           id?: string
@@ -1387,6 +1391,8 @@ export type Database = {
           customer_phone?: string | null
           email_paid_sent_at?: string | null
           email_pix_sent_at?: string | null
+          email_recovery_count?: number
+          email_recovery_last_at?: string | null
           email_reminder_sent_at?: string | null
           external_transaction_id?: string | null
           id?: string
