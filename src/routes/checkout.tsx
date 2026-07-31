@@ -9,7 +9,7 @@ import {
   maskPhone,
   isValidEmail,
 } from "@/lib/format";
-import { resolveCompanyLink } from "@/lib/company-links.functions";
+import { resolveCompanyLink, getLinkPaymentStatus } from "@/lib/company-links.functions";
 import { createOrderAndPixCharge } from "@/lib/payments/checkout.functions";
 import { PixModal } from "@/components/checkout/PixModal";
 import { PaymentInfoPopup } from "@/components/checkout/PaymentInfoPopup";
