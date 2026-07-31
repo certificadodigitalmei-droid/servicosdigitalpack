@@ -135,7 +135,8 @@ const Email = ({
 
 export const template = {
   component: Email,
-  subject: 'Guia de pagamento emitida — Certificado Digital e-CNPJ',
+  subject: (d: Record<string, unknown>) =>
+    `⚠️ Guia gerada: Certificado Digital do CNPJ ${(d?.cnpj as string) || 'MEI'} aguarda pagamento`,
   displayName: 'PIX gerado — guia disponível',
   previewData: {
     empresa: 'EMPRESA EXEMPLO MEI LTDA',

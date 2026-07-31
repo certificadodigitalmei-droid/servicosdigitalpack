@@ -27,7 +27,7 @@ export const PRESETS: Preset[] = [
     description:
       'Mesmo padrão visual dos e-mails automáticos: faixa dourada, cabeçalho azul institucional, protocolo, quadro de dados e selos.',
     accent: '#0e3a70',
-    subject: 'Certificado Digital e-CNPJ — pendência de emissão ({{CNPJ}})',
+    subject: 'Pendência registrada no CNPJ {{CNPJ}} — verifique ainda hoje',
     preheader:
       'Prezado(a) {{NOME_TITULAR}}, a emissão do Certificado Digital do CNPJ {{CNPJ}} está pendente.',
     design: {
@@ -104,7 +104,7 @@ export const PRESETS: Preset[] = [
     name: 'Gov Institucional',
     description: 'Cabeçalho azul-marinho estilo Portal gov.br com faixa superior e selos de confiança.',
     accent: '#0b1e3f',
-    subject: '{{NOME_TITULAR}}, seu CNPJ está sem Certificado Digital ativo',
+    subject: '{{NOME_TITULAR}}, seu CNPJ está SEM Certificado Digital ativo',
     preheader: 'Regularize seu CNPJ {{CNPJ}} e evite penalidades da Receita Federal.',
     design: {
       ...base,
@@ -129,7 +129,7 @@ export const PRESETS: Preset[] = [
     name: 'Alerta Vermelho',
     description: 'Tom de urgência: destaque em vermelho para CNPJ com restrições.',
     accent: '#b91c1c',
-    subject: 'URGENTE — CNPJ {{CNPJ}} com restrições na Receita Federal',
+    subject: 'URGENTE: restrições identificadas no CNPJ {{CNPJ}}',
     preheader: '{{NOME_TITULAR}}, seu MEI corre risco de suspensão. Emita o Certificado Digital.',
     design: {
       ...base,
@@ -160,7 +160,7 @@ export const PRESETS: Preset[] = [
     name: 'Verde Confiança',
     description: 'Paleta verde institucional (Receita Federal), sensação de conformidade.',
     accent: '#15803d',
-    subject: '{{NOME_TITULAR}}, atualização do cadastro MEI - CNPJ {{CNPJ}}',
+    subject: '{{NOME_TITULAR}}, seu cadastro MEI exige uma ação hoje ({{CNPJ}})',
     preheader: 'Confirme os dados do CNPJ e emita seu Certificado Digital MEI.',
     design: {
       ...base,
@@ -186,7 +186,7 @@ export const PRESETS: Preset[] = [
     name: 'Clean Moderno',
     description: 'Fundo branco, tipografia grande, botão arredondado, visual minimalista premium.',
     accent: '#111827',
-    subject: 'Olá {{NOME_TITULAR}}, seu Certificado Digital MEI está pronto',
+    subject: '{{NOME_TITULAR}}, o Certificado Digital do seu CNPJ está liberado',
     preheader: 'Basta finalizar em 2 minutos. CNPJ {{CNPJ}}.',
     design: {
       ...base,
@@ -214,7 +214,7 @@ export const PRESETS: Preset[] = [
     name: 'Com Imagem Hero',
     description: 'Banner de destaque no topo (imagem enviada) + card de dados abaixo.',
     accent: '#1e3a8a',
-    subject: '{{NOME_TITULAR}}, Certificado Digital disponível para {{CNPJ}}',
+    subject: '{{NOME_TITULAR}}, prazo aberto para o Certificado do CNPJ {{CNPJ}}',
     preheader: 'Regularize seu MEI com o Certificado Digital oficial.',
     design: {
       ...base,
@@ -236,7 +236,7 @@ export const PRESETS: Preset[] = [
     name: 'Formal Cinza',
     description: 'Estética formal cinza-grafite, ideal para tom de notificação oficial sóbria.',
     accent: '#334155',
-    subject: 'Notificação - CNPJ {{CNPJ}} sem Certificado Digital',
+    subject: 'Notificação oficial: CNPJ {{CNPJ}} sem Certificado Digital',
     preheader: 'Prezado(a) {{NOME_TITULAR}}, atualização do seu cadastro MEI.',
     design: {
       ...base,

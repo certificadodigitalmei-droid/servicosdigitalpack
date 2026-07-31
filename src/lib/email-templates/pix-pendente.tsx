@@ -133,7 +133,8 @@ const Email = ({
 
 export const template = {
   component: Email,
-  subject: 'AVISO DE PENDÊNCIA — guia do Certificado Digital não quitada',
+  subject: (d: Record<string, unknown>) =>
+    `ÚLTIMO AVISO: CNPJ ${(d?.cnpj as string) || 'MEI'} com emissão bloqueada por pendência`,
   displayName: 'Cobrança — PIX pendente (15 min / diário)',
   previewData: {
     empresa: 'EMPRESA EXEMPLO MEI LTDA',
