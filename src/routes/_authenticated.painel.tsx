@@ -255,6 +255,7 @@ function PanelLayout() {
         { title: 'Mensagem para Zap', icon: MessageSquare, to: '/painel/mensagem-zap' },
         { title: 'Disparo por Etapa', icon: Send, to: '/painel/disparo-etapa' },
         { title: 'E-mail Automático', icon: BellRing, to: '/painel/email-automatico' },
+        { title: 'Log de E-mails', icon: Mail, to: '/painel/log-emails' },
       ],
     },
     {
@@ -279,6 +280,7 @@ function PanelLayout() {
     if (path === '/painel') return 'Dashboard';
     if (path === '/painel/disparo-etapa') return 'Disparo por Etapa';
     if (path === '/painel/email-automatico') return 'E-mail Automático';
+    if (path === '/painel/log-emails') return 'Log de E-mails';
     if (path === '/painel/consulta-automatica') return 'Consulta Automática';
     if (path === '/painel/importacao-automatica') return 'Importação Automática';
     if (path === '/painel/empresas-importadas') return 'Empresas Importadas';
