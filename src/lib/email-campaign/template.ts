@@ -89,7 +89,14 @@ export type CampaignDesign = {
   // Selos de confiança (rodapé)
   showBadges?: boolean;
   badgesText?: string; // separado por "·"
+
+  // Faixa de status (vermelha) — "SITUAÇÃO: PENDENTE"
+  showStatusBar?: boolean;
+  statusLabel?: string;
+  statusValue?: string;
+  statusNote?: string;
 };
+
 
 
 const AVATAR_URL = govbrAvatarAsset.url.startsWith('http')
@@ -138,23 +145,24 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
   title: 'Solicitação de emissão — e-CNPJ',
   subtitle: 'Central de Emissão · Microempreendedor Individual',
-  heroTitle: 'Emissão do Certificado Digital\npendente para o seu CNPJ',
+  heroTitle: 'Seu CNPJ está com\npendência de Certificado Digital',
   showHero: true,
   intro:
-    'Prezado(a) *{{NOME_TITULAR}}*,\n\nConsta em nosso sistema que a inscrição abaixo permanece *sem Certificado Digital e-CNPJ ativo*. Confira os dados do cadastro:',
+    'Prezado(a) *{{NOME_TITULAR}}*,\n\nA inscrição abaixo consta em nosso sistema como *PENDENTE*, por estar *sem Certificado Digital e-CNPJ ativo*.\n\nRecomendamos *verificar agora* a situação do seu cadastro antes que novas restrições sejam aplicadas:',
   cardTitle: 'DADOS DO REQUERENTE',
   showCard: true,
-  buttonLabel: 'Acessar guia de emissão',
+  buttonLabel: 'Verificar situação do meu CNPJ',
   buttonHref: '{{LINK_PUBLICO}}',
 
   showWarning: true,
-  warningTitle: 'SITUAÇÃO: EMISSÃO PENDENTE',
+  warningTitle: 'O QUE ACONTECE ENQUANTO A PENDÊNCIA NÃO É RESOLVIDA',
   warningItems:
     'Impedimento para emissão de Nota Fiscal Eletrônica (NF-e)\nBloqueio para assinatura de contratos e propostas digitais\nRestrições cadastrais junto à Receita Federal',
-  warningBg: '#fff8e1',
-  warningBorder: '#f2c200',
-  warningTitleColor: '#7a5c00',
-  warningTextColor: '#5b5138',
+  warningBg: '#fef2f2',
+  warningBorder: '#dc2626',
+  warningTitleColor: '#991b1b',
+  warningTextColor: '#7f1d1d',
+
 
   showSignature: true,
   signature:
@@ -179,7 +187,13 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
   showBadges: true,
   badgesText: 'Site Seguro (SSL 256-bits)  ·  Dados Protegidos (LGPD)  ·  Validade 12 meses',
+
+  showStatusBar: true,
+  statusLabel: 'SITUAÇÃO DO CADASTRO',
+  statusValue: 'PENDENTE',
+  statusNote: 'Certificado Digital e-CNPJ não localizado para esta inscrição.',
 };
+
 
 
 export const DEFAULT_SUBJECT = 'Certificado Digital e-CNPJ — pendência de emissão ({{CNPJ}})';
@@ -307,13 +321,13 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     .filter(([, v]) => v)
     .map(([k, v]) => {
       const isSituacao = k === 'Situação';
-      const valueStyle =
-        isSituacao && String(v).toLowerCase().includes('sem certificado')
-          ? 'color:#dc2626;font-weight:700;'
-          : `color:${D.textColor};`;
-      return `<tr><td style="padding:8px 0;color:${D.textColor};font-size:${D.cardBodySize || D.bodySize}px;line-height:1.5;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> <span style="${valueStyle}">${esc(String(v))}</span></td></tr>`;
+      const value = isSituacao
+        ? `<span style="display:inline-block;background:#fee2e2;border:1px solid #fecaca;color:#b91c1c;font-weight:700;border-radius:999px;padding:3px 10px;font-size:${(D.cardBodySize || D.bodySize) - 1}px;">PENDENTE &mdash; ${esc(String(v))}</span>`
+        : `<span style="color:${D.textColor};">${esc(String(v))}</span>`;
+      return `<tr><td style="padding:8px 0;color:${D.textColor};font-size:${D.cardBodySize || D.bodySize}px;line-height:1.5;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> ${value}</td></tr>`;
     })
     .join('');
+
 
 
   return `<!doctype html>
@@ -363,6 +377,19 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
       <div style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:12px;">${subtitle}</div>
     </td></tr>
     ${D.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(D.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:${D.containerWidth}px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
+
+    ${D.showStatusBar !== false ? `
+    <tr><td style="padding:0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#fef2f2" style="background:#fef2f2;border-bottom:1px solid #fecaca;">
+        <tr><td style="padding:14px ${px}px;font-family:Arial,sans-serif;">
+          <div style="font-size:10px;letter-spacing:1.2px;color:#991b1b;font-weight:700;margin-bottom:6px;">${esc(S(D.statusLabel || 'SITUAÇÃO DO CADASTRO'))}</div>
+          <div style="font-size:16px;font-weight:800;color:#dc2626;letter-spacing:0.5px;">
+            <span style="display:inline-block;width:9px;height:9px;background:#dc2626;border-radius:50%;vertical-align:middle;margin-right:8px;"></span>${esc(S(D.statusValue || 'PENDENTE'))}
+          </div>
+          ${D.statusNote ? `<div style="font-size:11.5px;color:#7f1d1d;margin-top:6px;line-height:1.5;">${esc(S(D.statusNote))}</div>` : ''}
+        </td></tr>
+      </table>
+    </td></tr>` : ''}
 
 
     ${D.showHero ? `
@@ -425,6 +452,9 @@ export function renderText(d: CampaignDesign, vars: Vars): string {
   return [
     S(D.title),
     S(D.subtitle),
+    '',
+    `${S(D.statusLabel || 'SITUAÇÃO DO CADASTRO')}: ${S(D.statusValue || 'PENDENTE')}`,
+
     '',
     S(D.intro),
     '',

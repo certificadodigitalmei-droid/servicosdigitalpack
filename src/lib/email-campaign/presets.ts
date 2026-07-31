@@ -50,12 +50,13 @@ export const PRESETS: Preset[] = [
       subtitleSize: 12,
 
       showHero: true,
-      heroTitle: 'Emissão do Certificado Digital\npendente para o seu CNPJ',
+      heroTitle: 'Seu CNPJ está com\npendência de Certificado Digital',
       heroTitleColor: '#0e3a70',
       heroTitleSize: 20,
 
       intro:
-        'Prezado(a) *{{NOME_TITULAR}}*,\n\nConsta em nosso sistema que a inscrição abaixo permanece *sem Certificado Digital e-CNPJ ativo*. Confira os dados do cadastro:',
+        'Prezado(a) *{{NOME_TITULAR}}*,\n\nA inscrição abaixo consta em nosso sistema como *PENDENTE*, por estar *sem Certificado Digital e-CNPJ ativo*.\n\nRecomendamos *verificar agora* a situação do seu cadastro antes que novas restrições sejam aplicadas:',
+
       bodySize: 13.5,
 
       showCard: true,
@@ -65,15 +66,16 @@ export const PRESETS: Preset[] = [
       cardBodySize: 12,
 
       showWarning: true,
-      warningTitle: 'SITUAÇÃO: EMISSÃO PENDENTE',
+      warningTitle: 'O QUE ACONTECE ENQUANTO A PENDÊNCIA NÃO É RESOLVIDA',
       warningItems:
         'Impedimento para emissão de Nota Fiscal Eletrônica (NF-e)\nBloqueio para assinatura de contratos e propostas digitais\nRestrições cadastrais junto à Receita Federal',
-      warningBg: '#fff8e1',
-      warningBorder: '#f2c200',
-      warningTitleColor: '#7a5c00',
-      warningTextColor: '#5b5138',
+      warningBg: '#fef2f2',
+      warningBorder: '#dc2626',
+      warningTitleColor: '#991b1b',
+      warningTextColor: '#7f1d1d',
       warningTitleSize: 12,
       warningItemsSize: 12,
+
 
       buttonBg: '#1a4a8a',
       buttonText: '#ffffff',
@@ -81,7 +83,7 @@ export const PRESETS: Preset[] = [
       buttonPaddingY: 14,
       buttonPaddingX: 30,
       buttonSize: 14,
-      buttonLabel: 'Acessar guia de emissão',
+      buttonLabel: 'Verificar situação do meu CNPJ',
 
       showSignature: true,
       signature:
