@@ -19,6 +19,7 @@ import {
   DollarSign,
   KeyRound,
   MessageSquare,
+  ShoppingCart,
   Cloud,
   CloudDownload,
   
@@ -253,7 +254,7 @@ function PanelLayout() {
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
         { title: 'Mensagem para Zap', icon: MessageSquare, to: '/painel/mensagem-zap' },
-        
+        { title: 'Recuperação de Carrinho', icon: ShoppingCart, to: '/painel/recuperacao-carrinho' },
       ],
     },
     {
@@ -267,6 +268,7 @@ function PanelLayout() {
         { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
         { title: 'API Casa dos Dados', icon: KeyRound, to: '/painel/api-casa-dos-dados' },
         { title: 'Modelo de Mensagem', icon: Palette, to: '/painel/modelo-mensagem' },
+        { title: 'Modelos de E-mail', icon: Mail, to: '/painel/modelos-email' },
       ],
     },
   ];
@@ -275,6 +277,8 @@ function PanelLayout() {
 
   const getBreadcrumbLabel = (path: string) => {
     if (path === '/painel') return 'Dashboard';
+    if (path === '/painel/recuperacao-carrinho') return 'Recuperação de Carrinho';
+    if (path === '/painel/modelos-email') return 'Modelos de E-mail';
     if (path === '/painel/consulta-automatica') return 'Consulta Automática';
     if (path === '/painel/importacao-automatica') return 'Importação Automática';
     if (path === '/painel/empresas-importadas') return 'Empresas Importadas';
