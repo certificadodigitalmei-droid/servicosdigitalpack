@@ -21,11 +21,9 @@ import {
   sendFunnelCampaign,
   clearFunnelDiscount,
   sendFunnelTestEmail,
-  sendManualEmails,
   type FunnelStage,
   type FunnelTarget,
 } from '@/lib/emails/funnel-campaign.functions';
-import { Textarea } from '@/components/ui/textarea';
 import { formatCNPJ } from '@/lib/format';
 
 export const Route = createFileRoute('/_authenticated/painel/disparo-etapa')({
@@ -126,26 +124,6 @@ function DisparoEtapaPage() {
   const doSend = useServerFn(sendFunnelCampaign);
   const doClear = useServerFn(clearFunnelDiscount);
   const doTest = useServerFn(sendFunnelTestEmail);
-  const doManual = useServerFn(sendManualEmails);
-
-  const [manualList, setManualList] = useState('');
-  const [manualEmpresa, setManualEmpresa] = useState('');
-  const [manualCnpj, setManualCnpj] = useState('');
-  const [manualLink, setManualLink] = useState('');
-  const [manualSending, setManualSending] = useState(false);
-
-  const manualEmails = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          manualList
-            .split(/[\s,;]+/)
-            .map((e) => e.trim().toLowerCase())
-            .filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)),
-        ),
-      ),
-    [manualList],
-  );
 
   // ---- Ritmo de envio ----
   const [ritmo, setRitmo] = useState('100');
@@ -307,44 +285,6 @@ function DisparoEtapaPage() {
       toast.error('Falha no teste: ' + (e?.message ?? 'erro'));
     } finally {
       setTesting(false);
-    }
-  };
-
-  const sendManual = async () => {
-    if (!manualEmails.length) {
-      toast.error('Cole ao menos um e-mail válido.');
-      return;
-    }
-    if (!confirm(`Enviar o modelo selecionado para ${manualEmails.length} e-mail(s)?`)) return;
-    setManualSending(true);
-    try {
-      const { ok, fail, stopped } = await runPaced(manualEmails, async (chunk) => {
-        let sent = 0;
-        let skipped = 0;
-        for (let i = 0; i < chunk.length; i += 200) {
-          const r = await doManual({
-            data: {
-              emails: chunk.slice(i, i + 200),
-              template,
-              empresa: manualEmpresa.trim() || undefined,
-              cnpj: manualCnpj.trim() || undefined,
-              link: manualLink.trim() || undefined,
-              discountAmount: useDiscount && parsedDiscount > 0 ? parsedDiscount : undefined,
-              ofertaLabel: label || undefined,
-            },
-          });
-          sent += r.sent;
-          skipped += r.skipped;
-        }
-        return { sent, skipped };
-      });
-      toast.success(
-        `${ok} e-mail(s) enviado(s). ${fail ? `${fail} ignorado(s). ` : ''}${stopped ? 'Envio interrompido.' : ''}`,
-      );
-    } catch (e: any) {
-      toast.error('Falha no envio: ' + (e?.message ?? 'erro'));
-    } finally {
-      setManualSending(false);
     }
   };
 
@@ -540,54 +480,6 @@ function DisparoEtapaPage() {
             O modelo escolhido é usado tanto no disparo por etapa quanto na lista de e-mails
             digitados manualmente.
           </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Send className="h-4 w-4" /> Enviar para e-mails digitados
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>E-mails (um por linha, ou separados por vírgula)</Label>
-            <Textarea
-              rows={5}
-              placeholder={'cliente1@email.com\ncliente2@email.com'}
-              value={manualList}
-              onChange={(e) => setManualList(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              {manualEmails.length} e-mail(s) válido(s) detectado(s).
-            </p>
-          </div>
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label>Nome da empresa (opcional)</Label>
-              <Input value={manualEmpresa} onChange={(e) => setManualEmpresa(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>CNPJ (opcional)</Label>
-              <Input value={manualCnpj} onChange={(e) => setManualCnpj(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Link do e-mail (opcional)</Label>
-              <Input
-                placeholder="https://..."
-                value={manualLink}
-                onChange={(e) => setManualLink(e.target.value)}
-              />
-            </div>
-          </div>
-          <Button onClick={sendManual} disabled={manualSending || !manualEmails.length}>
-            {manualSending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Mail className="h-4 w-4 mr-2" />
-            )}
-            Enviar para {manualEmails.length} e-mail(s)
-          </Button>
         </CardContent>
       </Card>
 
