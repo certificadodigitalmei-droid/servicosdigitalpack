@@ -160,15 +160,11 @@ function PanelLayout() {
           if (!localSyncedAt || cloudMs > localMs) {
             applyLocalSnapshot(r.snapshot as Record<string, string>);
             try { window.localStorage.setItem('painel:cloudSyncedAt', r.updatedAt); } catch {}
-            // Recarrega uma vez para as telas lerem o estado restaurado do zero.
-            const key = 'painel:cloudReloaded:' + r.updatedAt;
-            const already = (() => { try { return window.sessionStorage.getItem(key); } catch { return null; } })();
-            if (!already) {
-              try { window.sessionStorage.setItem(key, '1'); } catch {}
-              window.location.reload();
-              return;
-            }
+            // Sem window.location.reload(): as sub-rotas só renderizam após
+            // `hydrated`, então já leem o estado restaurado. O reload causava
+            // recarregamentos repetidos ao entrar no painel.
           }
+
         }
       } catch { /* silencioso */ }
       if (!cancelled) setHydrated(true);
