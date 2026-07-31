@@ -1620,6 +1620,9 @@ export type Database = {
           product_amount: number | null
           product_description: string | null
           product_name: string | null
+          recovery_discount_amount: number
+          recovery_discount_enabled: boolean
+          recovery_discount_hours: number
           reply_to: string | null
           support_email: string | null
           support_phone: string | null
@@ -1635,6 +1638,9 @@ export type Database = {
           product_amount?: number | null
           product_description?: string | null
           product_name?: string | null
+          recovery_discount_amount?: number
+          recovery_discount_enabled?: boolean
+          recovery_discount_hours?: number
           reply_to?: string | null
           support_email?: string | null
           support_phone?: string | null
@@ -1650,6 +1656,9 @@ export type Database = {
           product_amount?: number | null
           product_description?: string | null
           product_name?: string | null
+          recovery_discount_amount?: number
+          recovery_discount_enabled?: boolean
+          recovery_discount_hours?: number
           reply_to?: string | null
           support_email?: string | null
           support_phone?: string | null
