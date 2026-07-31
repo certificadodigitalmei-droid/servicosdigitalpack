@@ -159,14 +159,81 @@ function EmailSenderPage() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ImageUp className="h-4 w-4 text-brand-blue" />
+                Foto de perfil (logo do remetente)
+              </CardTitle>
+              <CardDescription>
+                Essa imagem aparece no cabeçalho de todos os e-mails enviados (PIX gerado, lembrete,
+                pagamento confirmado, ofertas e campanhas). Use PNG/JPG quadrado, até 800KB.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+                  {form.logo_url ? (
+                    <img src={form.logo_url} alt="Logo do remetente" className="h-full w-full object-cover" />
+                  ) : (
+                    <ImageUp className="h-6 w-6 text-slate-400" />
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleFile(f);
+                      e.target.value = '';
+                    }}
+                  />
+                  <Button variant="outline" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                    {uploading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <ImageUp className="mr-2 h-4 w-4" />
+                    )}
+                    {form.logo_url ? 'Trocar foto' : 'Enviar foto'}
+                  </Button>
+                  {form.logo_url && (
+                    <Button
+                      variant="ghost"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => setForm({ ...form, logo_url: '' })}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Remover
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-dashed bg-slate-50/50">
             <CardHeader>
               <CardTitle className="text-sm text-slate-600">Pré-visualização</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-sm">
-                <div className="text-xs uppercase tracking-wide text-slate-400">De</div>
-                <div className="mt-1 font-medium text-slate-800">{previewFrom}</div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-navy text-xs font-bold text-white">
+                    {form.logo_url ? (
+                      <img src={form.logo_url} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      (form.from_name || 'C').slice(0, 1).toUpperCase()
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-slate-400">De</div>
+                    <div className="mt-0.5 font-medium text-slate-800">{previewFrom}</div>
+                  </div>
+                </div>
+
                 {form.reply_to && (
                   <>
                     <div className="mt-2 text-xs uppercase tracking-wide text-slate-400">Responder para</div>
