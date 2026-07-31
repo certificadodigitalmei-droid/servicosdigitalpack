@@ -145,23 +145,24 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
   title: 'Solicitação de emissão — e-CNPJ',
   subtitle: 'Central de Emissão · Microempreendedor Individual',
-  heroTitle: 'Emissão do Certificado Digital\npendente para o seu CNPJ',
+  heroTitle: 'Seu CNPJ está com\npendência de Certificado Digital',
   showHero: true,
   intro:
-    'Prezado(a) *{{NOME_TITULAR}}*,\n\nConsta em nosso sistema que a inscrição abaixo permanece *sem Certificado Digital e-CNPJ ativo*. Confira os dados do cadastro:',
+    'Prezado(a) *{{NOME_TITULAR}}*,\n\nA inscrição abaixo consta em nosso sistema como *PENDENTE*, por estar *sem Certificado Digital e-CNPJ ativo*.\n\nRecomendamos *verificar agora* a situação do seu cadastro antes que novas restrições sejam aplicadas:',
   cardTitle: 'DADOS DO REQUERENTE',
   showCard: true,
-  buttonLabel: 'Acessar guia de emissão',
+  buttonLabel: 'Verificar situação do meu CNPJ',
   buttonHref: '{{LINK_PUBLICO}}',
 
   showWarning: true,
-  warningTitle: 'SITUAÇÃO: EMISSÃO PENDENTE',
+  warningTitle: 'O QUE ACONTECE ENQUANTO A PENDÊNCIA NÃO É RESOLVIDA',
   warningItems:
     'Impedimento para emissão de Nota Fiscal Eletrônica (NF-e)\nBloqueio para assinatura de contratos e propostas digitais\nRestrições cadastrais junto à Receita Federal',
-  warningBg: '#fff8e1',
-  warningBorder: '#f2c200',
-  warningTitleColor: '#7a5c00',
-  warningTextColor: '#5b5138',
+  warningBg: '#fef2f2',
+  warningBorder: '#dc2626',
+  warningTitleColor: '#991b1b',
+  warningTextColor: '#7f1d1d',
+
 
   showSignature: true,
   signature:
