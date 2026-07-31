@@ -453,6 +453,9 @@ export function renderText(d: CampaignDesign, vars: Vars): string {
     S(D.title),
     S(D.subtitle),
     '',
+    `${S(D.statusLabel || 'SITUAÇÃO DO CADASTRO')}: ${S(D.statusValue || 'PENDENTE')}`,
+
+    '',
     S(D.intro),
     '',
     S(D.cardTitle),
