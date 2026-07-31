@@ -54,6 +54,7 @@ type Preset = 'today' | 'yesterday' | '7d' | '30d' | 'all' | 'custom';
 const RITMOS: { value: string; label: string; block: number; rest: number }[] = [
   { value: 'off', label: 'Sem limite (enviar tudo de uma vez)', block: 0, rest: 0 },
   { value: '60', label: 'Seguro — 60 por hora', block: 60, rest: 60 },
+  { value: '90', label: 'Recomendado — 90 por hora', block: 90, rest: 60 },
   { value: '100', label: 'Moderado — 100 por hora', block: 100, rest: 60 },
   { value: '200', label: 'Rápido — 200 por hora', block: 200, rest: 60 },
   { value: '400', label: 'Alto volume — 400 por hora', block: 400, rest: 60 },
