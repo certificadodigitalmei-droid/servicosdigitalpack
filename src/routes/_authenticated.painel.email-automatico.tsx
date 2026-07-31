@@ -130,52 +130,15 @@ function EmailAutomaticoPage() {
         <p className="text-muted-foreground text-sm">
           Fluxo automático para as empresas do dia: ao gerar o PIX recebe a{' '}
           <strong>Guia gerada</strong>; após 30 minutos sem pagamento recebe a{' '}
-          <strong>Cobrança com desconto</strong>; depois disso a cobrança se repete a cada 1 hora até
-          as <strong>22h</strong>, sempre com o link no valor promocional. Ao confirmar o pagamento é
-          enviado o e-mail de <strong>Pagamento confirmado</strong>.
+          <strong>Cobrança</strong>; depois disso a cobrança se repete a cada 1 hora até as{' '}
+          <strong>22h</strong>. Ao confirmar o pagamento é enviado o e-mail de{' '}
+          <strong>Pagamento confirmado</strong>. A régua <strong>nunca cria desconto</strong>: se a
+          empresa já recebeu um e-mail promocional antes e o link dela está com desconto ativo, as
+          cobranças saem com esse mesmo valor promocional.
         </p>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Desconto automático das cobranças</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between gap-4 rounded-md border p-3">
-            <div>
-              <p className="text-sm font-medium">Enviar cobranças com desconto</p>
-              <p className="text-xs text-muted-foreground">
-                O link enviado no e-mail já abre o checkout com o valor promocional aplicado.
-              </p>
-            </div>
-            <Switch checked={discEnabled} onCheckedChange={setDiscEnabled} />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label>Valor promocional (R$)</Label>
-              <Input value={discAmount} onChange={(e) => setDiscAmount(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Validade do desconto (horas)</Label>
-              <Input
-                type="number"
-                min={1}
-                max={720}
-                value={discHours}
-                onChange={(e) => setDiscHours(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Valor normal</Label>
-              <Input value={`R$ ${discBase.toFixed(2).replace('.', ',')}`} disabled />
-            </div>
-          </div>
-          <Button onClick={saveDiscount} disabled={savingDisc}>
-            {savingDisc ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-            Salvar desconto
-          </Button>
-        </CardContent>
-      </Card>
+
 
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
