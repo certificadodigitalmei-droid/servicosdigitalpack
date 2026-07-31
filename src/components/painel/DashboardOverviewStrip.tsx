@@ -7,8 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   Activity,
   Database,
-  Send,
-  
   CreditCard,
   Link2,
   TrendingUp,
