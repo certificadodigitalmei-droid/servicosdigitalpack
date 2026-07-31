@@ -403,8 +403,8 @@ export async function runNotificationCadence(): Promise<CadenceResult> {
     try {
       const ctx = await resolveContext(row as OrderRow)
       const nextCount = (row.email_recovery_count ?? 0) + 1
-      // Toda cobrança sai com o link já no valor promocional.
-      const promo = await applyRecoveryDiscount(row as OrderRow, cfg)
+      // Mantém o desconto que a empresa já recebeu por campanha (se houver).
+      const promo = await readLinkDiscount(row as OrderRow, baseAmount)
       await sendTemplateEmail(promo ? 'oferta-desconto' : 'pix-pendente', row.customer_email, {
         idempotencyKey: `cadencia-${row.id}-${nextCount}`,
         templateData: { ...ctx, ...(promo ?? {}) },
