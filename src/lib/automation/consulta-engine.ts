@@ -465,7 +465,10 @@ function restartListLoop() {
 }
 
 
+let envioJaRodou = false;
+
 function restartImportLoop() {
+
   if (importIntervalId != null) {
     clearInterval(importIntervalId);
     importIntervalId = null;
