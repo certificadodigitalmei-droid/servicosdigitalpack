@@ -384,7 +384,7 @@ function EnvioMassa() {
             <CardTitle>Configuração</CardTitle>
             <p className="text-xs text-slate-500">
               Preenchido automaticamente pelo{' '}
-              <Link to="/painel/modelo-mensagem" className="text-blue-600 hover:underline font-medium">
+              <Link to="/painel/modelos-email" className="text-blue-600 hover:underline font-medium">
                 Modelo de Mensagem
               </Link>
               .
