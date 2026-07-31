@@ -75,9 +75,17 @@ function EmailAutomaticoPage() {
   const [stats, setStats] = useState<NotifyFlowStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
+  const [discEnabled, setDiscEnabled] = useState(true);
+  const [discAmount, setDiscAmount] = useState('56,99');
+  const [discHours, setDiscHours] = useState('24');
+  const [discBase, setDiscBase] = useState(97);
+  const [savingDisc, setSavingDisc] = useState(false);
 
   const doList = useServerFn(listNotifyFlow);
   const doRun = useServerFn(runNotifyFlowNow);
+  const doGetDisc = useServerFn(getRecoveryDiscount);
+  const doSaveDisc = useServerFn(saveRecoveryDiscount);
+
 
   const load = useCallback(async () => {
     setLoading(true);
