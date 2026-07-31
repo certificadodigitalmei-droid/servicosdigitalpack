@@ -30,6 +30,21 @@ export type NotifyFlowRow = {
   superseded: boolean;
 };
 
+export type NotifyFlowEvent = {
+  id: string;
+  createdAt: string;
+  sentAt: string | null;
+  to: string;
+  subject: string;
+  status: string;
+  attempts: number;
+  error: string | null;
+  tipo: string;
+  orderId: string | null;
+  empresa: string | null;
+  cnpj: string | null;
+};
+
 export type NotifyFlowStats = {
   pedidosHoje: number;
   guiaEnviada: number;
