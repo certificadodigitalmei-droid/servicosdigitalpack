@@ -7,6 +7,7 @@ import {
   Heading,
   Hr,
   Html,
+  Img,
   Link,
   Preview,
   Row,
@@ -16,6 +17,7 @@ import {
 import type { TemplateEntry } from './registry'
 
 interface Props {
+  logoUrl?: string
   empresa?: string
   cnpj?: string
   link?: string
@@ -27,6 +29,7 @@ interface Props {
 }
 
 const Email = ({
+  logoUrl,
   empresa,
   cnpj,
   link,
@@ -45,6 +48,9 @@ const Email = ({
         <Section style={header}>
           <Row>
             <Column>
+              {logoUrl ? (
+                <Img src={logoUrl} width="46" height="46" alt="" style={brandLogo} />
+              ) : null}
               <Text style={org}>PORTAL CERTIFICADO DIGITAL MEI</Text>
               <Text style={orgSub}>Central de Emissão — Microempreendedor Individual</Text>
             </Column>
@@ -156,6 +162,14 @@ const ALERT = '#a11a1a'
 const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, Helvetica, sans-serif', margin: '0' }
 const outer = { maxWidth: '620px', padding: '0', margin: '0 auto' }
 const topBar = { height: '5px', backgroundColor: '#f2c200', lineHeight: '5px', fontSize: '1px' }
+const brandLogo = {
+  display: 'block',
+  width: '46px',
+  height: '46px',
+  borderRadius: '50%',
+  border: '2px solid rgba(255,255,255,0.85)',
+  margin: '0 0 10px',
+}
 const header = { backgroundColor: BRAND_DARK, padding: '18px 22px' }
 const org = { color: '#ffffff', fontSize: '15px', fontWeight: 'bold' as const, margin: '0', letterSpacing: '0.4px' }
 const orgSub = { color: '#c9d8ec', fontSize: '11px', margin: '4px 0 0' }
