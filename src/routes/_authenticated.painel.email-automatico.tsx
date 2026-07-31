@@ -68,6 +68,13 @@ function Kpi({
   );
 }
 
+const TIPOS = [
+  { key: 'all', label: 'Todos' },
+  { key: 'Guia gerada (PIX criado)', label: 'Guia gerada' },
+  { key: 'Cobrança / recuperação', label: 'Cobrança' },
+  { key: 'Pagamento confirmado', label: 'Pagamento confirmado' },
+];
+
 function EmailAutomaticoPage() {
   const [day, setDay] = useState('');
   const [rows, setRows] = useState<NotifyFlowRow[]>([]);
