@@ -107,6 +107,38 @@ function EmailAutomaticoPage() {
     return () => clearInterval(t);
   }, [load]);
 
+  useEffect(() => {
+    void (async () => {
+      try {
+        const c = await doGetDisc();
+        setDiscEnabled(c.enabled);
+        setDiscAmount(c.amount.toFixed(2).replace('.', ','));
+        setDiscHours(String(c.hours));
+        setDiscBase(c.baseAmount);
+      } catch {
+        /* silencioso */
+      }
+    })();
+  }, [doGetDisc]);
+
+  const saveDiscount = async () => {
+    const amount = Number(discAmount.replace(/\./g, '').replace(',', '.'));
+    const hours = Number(discHours);
+    if (!(amount > 0)) {
+      toast.error('Informe um valor promocional válido.');
+      return;
+    }
+    setSavingDisc(true);
+    try {
+      await doSaveDisc({ data: { enabled: discEnabled, amount, hours } });
+      toast.success('Desconto das cobranças salvo.');
+    } catch (e: any) {
+      toast.error('Falha ao salvar: ' + (e?.message ?? 'erro'));
+    } finally {
+      setSavingDisc(false);
+    }
+  };
+
   const runNow = async () => {
     setRunning(true);
     try {
@@ -135,11 +167,53 @@ function EmailAutomaticoPage() {
         <p className="text-muted-foreground text-sm">
           Fluxo automático para as empresas do dia: ao gerar o PIX recebe a{' '}
           <strong>Guia gerada</strong>; após 30 minutos sem pagamento recebe a{' '}
-          <strong>Cobrança</strong>; depois disso a cobrança se repete a cada 1 hora até as{' '}
-          <strong>22h</strong>. Ao confirmar o pagamento é enviado o e-mail de{' '}
-          <strong>Pagamento confirmado</strong>.
+          <strong>Cobrança com desconto</strong>; depois disso a cobrança se repete a cada 1 hora até
+          as <strong>22h</strong>, sempre com o link no valor promocional. Ao confirmar o pagamento é
+          enviado o e-mail de <strong>Pagamento confirmado</strong>.
         </p>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Desconto automático das cobranças</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-4 rounded-md border p-3">
+            <div>
+              <p className="text-sm font-medium">Enviar cobranças com desconto</p>
+              <p className="text-xs text-muted-foreground">
+                O link enviado no e-mail já abre o checkout com o valor promocional aplicado.
+              </p>
+            </div>
+            <Switch checked={discEnabled} onCheckedChange={setDiscEnabled} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label>Valor promocional (R$)</Label>
+              <Input value={discAmount} onChange={(e) => setDiscAmount(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Validade do desconto (horas)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={720}
+                value={discHours}
+                onChange={(e) => setDiscHours(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Valor normal</Label>
+              <Input value={`R$ ${discBase.toFixed(2).replace('.', ',')}`} disabled />
+            </div>
+          </div>
+          <Button onClick={saveDiscount} disabled={savingDisc}>
+            {savingDisc ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Salvar desconto
+          </Button>
+        </CardContent>
+      </Card>
+
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Kpi icon={Mail} label="Guias geradas hoje" value={stats?.pedidosHoje ?? 0} />
