@@ -143,21 +143,21 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   signatureSize: 12,
   disclaimerSize: 11,
 
-  title: 'Solicitação de emissão — e-CNPJ',
-  subtitle: 'Central de Emissão · Microempreendedor Individual',
-  heroTitle: 'Seu CNPJ está com\npendência de Certificado Digital',
+  title: 'Emissão e-CNPJ',
+  subtitle: 'Central de Emissão · MEI',
+  heroTitle: 'Certificado Digital pendente',
   showHero: true,
   intro:
-    'Prezado(a) *{{NOME_TITULAR}}*,\n\nA inscrição abaixo consta em nosso sistema como *PENDENTE*, por estar *sem Certificado Digital e-CNPJ ativo*.\n\nRecomendamos *verificar agora* a situação do seu cadastro antes que novas restrições sejam aplicadas:',
+    'Prezado(a) *{{NOME_TITULAR}}*,\n\nSeu CNPJ consta como *PENDENTE*: sem Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
   cardTitle: 'DADOS DO REQUERENTE',
   showCard: true,
-  buttonLabel: 'Verificar situação do meu CNPJ',
+  buttonLabel: 'Verificar meu CNPJ',
   buttonHref: '{{LINK_PUBLICO}}',
 
   showWarning: true,
-  warningTitle: 'O QUE ACONTECE ENQUANTO A PENDÊNCIA NÃO É RESOLVIDA',
+  warningTitle: 'ENQUANTO A PENDÊNCIA CONTINUAR',
   warningItems:
-    'Impedimento para emissão de Nota Fiscal Eletrônica (NF-e)\nBloqueio para assinatura de contratos e propostas digitais\nRestrições cadastrais junto à Receita Federal',
+    'Sem emissão de Nota Fiscal (NF-e)\nSem assinatura de contratos digitais\nRestrições na Receita Federal',
   warningBg: '#fef2f2',
   warningBorder: '#dc2626',
   warningTitleColor: '#991b1b',
@@ -166,11 +166,11 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
   showSignature: true,
   signature:
-    'Após a confirmação do pagamento, o Certificado Digital é *emitido e vinculado automaticamente ao CNPJ*, sem necessidade de comparecimento presencial.\n\nAtenciosamente,\n*Central de Emissão*\nPortal Certificado Digital MEI',
+    'Após o pagamento, o certificado é *vinculado automaticamente ao CNPJ*.\n\nAtenciosamente,\n*Central de Emissão*',
 
-  footer: 'Atenciosamente,\nCentral de Emissão\nPortal Certificado Digital MEI',
+  footer: 'Atenciosamente,\nCentral de Emissão',
   disclaimer:
-    'Portal Certificado Digital MEI — Microempreendedor Individual. Serviço privado de apoio ao MEI. Este e-mail foi enviado automaticamente; não responda.',
+    'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nE-mail automático; não responda.',
   showFooter: true,
   unsubText: '',
   unsubHref: '#',
@@ -181,17 +181,18 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   avatarSize: 58,
 
   showGovBar: true,
-  govBarText: 'CENTRAL DE EMISSÃO  ›  MICROEMPREENDEDOR INDIVIDUAL  ›  PROTOCOLO {{REFERENCIA}}',
+  govBarText: 'CENTRAL DE EMISSÃO · PROTOCOLO {{REFERENCIA}}',
   govBarBg: '#f2c200',
   govBarColor: '#4a3800',
 
   showBadges: true,
-  badgesText: 'Site Seguro (SSL 256-bits)  ·  Dados Protegidos (LGPD)  ·  Validade 12 meses',
+  badgesText: 'SSL 256-bits · LGPD · Validade 12 meses',
 
   showStatusBar: true,
   statusLabel: 'SITUAÇÃO DO CADASTRO',
   statusValue: 'PENDENTE',
-  statusNote: 'Certificado Digital e-CNPJ não localizado para esta inscrição.',
+  statusNote: 'Certificado e-CNPJ não localizado.',
+
 };
 
 
