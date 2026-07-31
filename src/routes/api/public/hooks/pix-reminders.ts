@@ -26,7 +26,16 @@ export const Route = createFileRoute('/api/public/hooks/pix-reminders')({
         );
         const cadence = await runNotificationCadence();
 
-        return new Response(JSON.stringify({ cadence }), {
+        // Processa automaticamente a fila do Google Workspace (sem ação manual).
+        let queue: { processed: number; sent: number; failed: number } | { error: string };
+        try {
+          const { processQueueInternal } = await import('@/lib/gmail/queue.server');
+          queue = await processQueueInternal(25);
+        } catch (e) {
+          queue = { error: (e as Error).message };
+        }
+
+        return new Response(JSON.stringify({ cadence, queue }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });
