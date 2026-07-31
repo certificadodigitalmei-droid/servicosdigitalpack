@@ -268,6 +268,7 @@ function PanelLayout() {
         { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
         { title: 'API Casa dos Dados', icon: KeyRound, to: '/painel/api-casa-dos-dados' },
         { title: 'Modelo de Mensagem', icon: Palette, to: '/painel/modelo-mensagem' },
+        { title: 'Modelos de E-mail', icon: Mail, to: '/painel/modelos-email' },
       ],
     },
   ];
