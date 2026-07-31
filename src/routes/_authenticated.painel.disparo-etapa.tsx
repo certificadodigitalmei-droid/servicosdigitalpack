@@ -14,12 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Mail, RefreshCw, Send, Tag, X } from 'lucide-react';
+import { FlaskConical, Loader2, Mail, RefreshCw, Send, Tag, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   listFunnelTargets,
   sendFunnelCampaign,
   clearFunnelDiscount,
+  sendFunnelTestEmail,
   type FunnelStage,
   type FunnelTarget,
 } from '@/lib/emails/funnel-campaign.functions';
@@ -95,10 +96,13 @@ function DisparoEtapaPage() {
   const [discount, setDiscount] = useState('56,99');
   const [hours, setHours] = useState('24');
   const [label, setLabel] = useState('apenas hoje');
+  const [testEmail, setTestEmail] = useState('');
+  const [testing, setTesting] = useState(false);
 
   const doList = useServerFn(listFunnelTargets);
   const doSend = useServerFn(sendFunnelCampaign);
   const doClear = useServerFn(clearFunnelDiscount);
+  const doTest = useServerFn(sendFunnelTestEmail);
 
   const range = useMemo(() => rangeFrom(preset, from, to), [preset, from, to]);
 
@@ -173,6 +177,32 @@ function DisparoEtapaPage() {
       toast.error('Falha no envio: ' + (e?.message ?? 'erro'));
     } finally {
       setSending(false);
+    }
+  };
+
+  const sendTest = async () => {
+    const email = testEmail.trim();
+    if (!email) {
+      toast.error('Informe o e-mail de teste.');
+      return;
+    }
+    setTesting(true);
+    try {
+      const firstSelected = targets.find((t) => selected.has(t.linkId));
+      await doTest({
+        data: {
+          email,
+          template: useDiscount ? 'oferta-desconto' : 'pix-pendente',
+          discountAmount: useDiscount && parsedDiscount > 0 ? parsedDiscount : undefined,
+          ofertaLabel: label || undefined,
+          linkId: firstSelected?.linkId,
+        },
+      });
+      toast.success(`E-mail de teste enviado para ${email}.`);
+    } catch (e: any) {
+      toast.error('Falha no teste: ' + (e?.message ?? 'erro'));
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -295,6 +325,33 @@ function DisparoEtapaPage() {
               valor.
             </p>
           )}
+          <div className="rounded-lg border border-dashed bg-muted/30 p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <FlaskConical className="h-4 w-4" /> Testar antes de enviar
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Envia uma prévia real do e-mail selecionado (com o desconto configurado) para o seu
+              endereço. Nada é alterado no banco e nenhum cliente recebe.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                type="email"
+                placeholder="seu@email.com"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                className="sm:max-w-xs"
+              />
+              <Button variant="secondary" onClick={sendTest} disabled={testing}>
+                {testing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FlaskConical className="h-4 w-4 mr-2" />
+                )}
+                Enviar teste
+              </Button>
+            </div>
+          </div>
+
           <div className="flex flex-wrap gap-2">
             <Button onClick={send} disabled={sending || !selected.size}>
               {sending ? (

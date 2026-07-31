@@ -268,3 +268,81 @@ export const clearFunnelDiscount = createServerFn({ method: 'POST' })
       .in('id', data.linkIds);
     return { ok: true };
   });
+
+/**
+ * Envia um e-mail de TESTE para um endereço escolhido.
+ * Não aplica desconto e não altera nada no banco.
+ * Se um linkId for informado, usa os dados reais daquela empresa; senão usa dados fictícios.
+ */
+export const sendFunnelTestEmail = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        email: z.string().email().max(200),
+        template: z.enum(['oferta-desconto', 'pix-pendente']),
+        discountAmount: z.number().positive().max(100000).optional(),
+        ofertaLabel: z.string().max(60).optional(),
+        linkId: z.string().uuid().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { sendTemplateEmail } = await import('@/lib/email-templates/send-email');
+    const { PUBLIC_BASE_URL } = await import('@/lib/public-base-url');
+
+    const { data: pricing } = await supabaseAdmin
+      .from('site_settings')
+      .select('product_amount')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const fullAmount = Number((pricing as any)?.product_amount ?? 97);
+
+    let empresa = 'EMPRESA DEMONSTRACAO MEI LTDA';
+    let cnpj = '12.345.678/0001-90';
+    let token = 'exemplo-teste';
+    let protocolo = 'CD-TESTE001';
+
+    if (data.linkId) {
+      const { data: row } = await supabaseAdmin
+        .from('company_links')
+        .select(
+          'id, public_token, companies(cnpj, razao_social_original, nome_titular_exibicao, nome_fantasia)',
+        )
+        .eq('id', data.linkId)
+        .maybeSingle();
+      const c = (row as any)?.companies ?? {};
+      if (row) {
+        empresa =
+          c.nome_titular_exibicao || c.razao_social_original || c.nome_fantasia || empresa;
+        const d = String(c.cnpj || '').replace(/\D/g, '');
+        if (d.length === 14) {
+          cnpj = d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+        }
+        token = (row as any).public_token;
+        protocolo = `CD-${String((row as any).id).replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+      }
+    }
+
+    const brl = (n: number) => `R$ ${n.toFixed(2).replace('.', ',')}`;
+
+    await sendTemplateEmail(data.template, data.email, {
+      idempotencyKey: `teste-${data.template}-${Date.now()}`,
+      templateData: {
+        empresa,
+        cnpj,
+        link: `${PUBLIC_BASE_URL}/c/${token}`,
+        protocolo,
+        validade: '12 meses',
+        dataSolicitacao: new Date().toLocaleDateString('pt-BR'),
+        valorPromocional: data.discountAmount ? brl(data.discountAmount) : undefined,
+        valorOriginal: data.discountAmount ? brl(fullAmount) : undefined,
+        validadeOferta: data.ofertaLabel || 'apenas hoje',
+      },
+    });
+
+    return { ok: true };
+  });
