@@ -16,10 +16,13 @@ export const Route = createFileRoute('/api/public/hooks/pix-reminders')({
           });
         }
 
-        const { sendPendingReminders } = await import('@/lib/emails/order-emails.server');
-        const result = await sendPendingReminders(15);
+        const { sendPendingReminders, sendDailyRecovery } = await import(
+          '@/lib/emails/order-emails.server'
+        );
+        const reminders = await sendPendingReminders(15);
+        const recovery = await sendDailyRecovery({ maxDays: 15 });
 
-        return new Response(JSON.stringify(result), {
+        return new Response(JSON.stringify({ reminders, recovery }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });
