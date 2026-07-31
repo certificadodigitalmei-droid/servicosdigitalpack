@@ -489,9 +489,16 @@ function restartImportLoop() {
     }
 
     // Gate: envio em massa precisa estar rodando em modo REAL.
+    // Se o disparo em massa foi parado/pausado, a importação automática
+    // é DESLIGADA — nada de continuar importando empresas sem envio.
     const env = envioStore.get();
     const envioAtivo = isEnvioRunning() && env.running && !env.paused && !env.testMode;
-    if (!envioAtivo) return;
+    if (!envioAtivo) {
+      setAutoImport(false);
+      toast.info('Disparo em massa parado — importação automática desligada.');
+      return;
+    }
+
 
     // Conta empresas prontas para envio na fila do mestre.
     const pendingLocal = env.queue.filter(
