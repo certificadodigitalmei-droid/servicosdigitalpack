@@ -20,6 +20,18 @@ type OrderRow = {
   reference_name: string | null
   public_link_id: string | null
   pix_code: string | null
+  created_at?: string | null
+}
+
+function protocoloFor(id: string): string {
+  return `CD-${id.replace(/-/g, '').slice(0, 8).toUpperCase()}`
+}
+
+function formatDateTimeBR(raw?: string | null): string | undefined {
+  if (!raw) return undefined
+  const d = new Date(raw)
+  if (isNaN(d.getTime())) return undefined
+  return d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })
 }
 
 async function resolveContext(order: OrderRow) {
@@ -39,6 +51,8 @@ async function resolveContext(order: OrderRow) {
     empresa: order.reference_name || order.customer_name || undefined,
     cnpj: formatCnpj(order.reference_cnpj || order.customer_document),
     link,
+    protocolo: protocoloFor(order.id),
+    dataSolicitacao: formatDateTimeBR(order.created_at),
   }
 }
 
@@ -47,7 +61,7 @@ async function loadOrder(orderId: string): Promise<OrderRow | null> {
   const { data } = await supabaseAdmin
     .from('orders')
     .select(
-      'id, customer_email, customer_name, customer_document, reference_cnpj, reference_name, public_link_id, pix_code',
+      'id, customer_email, customer_name, customer_document, reference_cnpj, reference_name, public_link_id, pix_code, created_at',
     )
     .eq('id', orderId)
     .maybeSingle()
@@ -96,7 +110,7 @@ export async function sendPaidEmail(orderId: string): Promise<void> {
     const ctx = await resolveContext(order)
     await sendTemplateEmail('pagamento-confirmado', order.customer_email, {
       idempotencyKey: `pagamento-confirmado-${order.id}`,
-      templateData: { ...ctx, validade: VALIDADE_PADRAO },
+      templateData: { ...ctx, validade: VALIDADE_PADRAO, dataEmissao: formatDateTimeBR(new Date().toISOString()) },
     })
     await markEmail(order.id, 'email_paid_sent_at')
   } catch (err) {
@@ -116,7 +130,7 @@ export async function sendPendingReminders(minutes = 15): Promise<{ sent: number
   const { data: pending } = await supabaseAdmin
     .from('orders')
     .select(
-      'id, customer_email, customer_name, customer_document, reference_cnpj, reference_name, public_link_id, pix_code',
+      'id, customer_email, customer_name, customer_document, reference_cnpj, reference_name, public_link_id, pix_code, created_at',
     )
     .eq('status', 'awaiting_payment')
     .is('email_reminder_sent_at', null)
