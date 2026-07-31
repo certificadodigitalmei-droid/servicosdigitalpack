@@ -270,6 +270,7 @@ function PanelLayout() {
         { title: 'API Casa dos Dados', icon: KeyRound, to: '/painel/api-casa-dos-dados' },
         { title: 'Modelo de Mensagem', icon: Palette, to: '/painel/modelo-mensagem' },
         { title: 'Modelos de E-mail', icon: Mail, to: '/painel/modelos-email' },
+        { title: 'Remetente de E-mail', icon: Send, to: '/painel/remetente-email' },
       ],
     },
   ];
@@ -300,6 +301,7 @@ function PanelLayout() {
     if (path === '/painel/gerador-links') return 'Gerador de Links';
     if (path === '/painel/campanhas-email') return 'Campanhas de E-mail';
     if (path === '/painel/modelo-mensagem') return 'Modelo de Mensagem';
+    if (path === '/painel/remetente-email') return 'Remetente de E-mail';
 
     if (path === '/painel/envio-massa') return 'Envio em Massa';
     if (path === '/painel/workspace-envio') return 'Envio Google Workspace';

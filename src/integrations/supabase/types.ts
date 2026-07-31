@@ -1612,36 +1612,45 @@ export type Database = {
       site_settings: {
         Row: {
           company_name: string | null
+          from_email: string | null
+          from_name: string | null
           id: string
           logo_url: string | null
           private_service_notice: string | null
           product_amount: number | null
           product_description: string | null
           product_name: string | null
+          reply_to: string | null
           support_email: string | null
           support_phone: string | null
           updated_at: string
         }
         Insert: {
           company_name?: string | null
+          from_email?: string | null
+          from_name?: string | null
           id?: string
           logo_url?: string | null
           private_service_notice?: string | null
           product_amount?: number | null
           product_description?: string | null
           product_name?: string | null
+          reply_to?: string | null
           support_email?: string | null
           support_phone?: string | null
           updated_at?: string
         }
         Update: {
           company_name?: string | null
+          from_email?: string | null
+          from_name?: string | null
           id?: string
           logo_url?: string | null
           private_service_notice?: string | null
           product_amount?: number | null
           product_description?: string | null
           product_name?: string | null
+          reply_to?: string | null
           support_email?: string | null
           support_phone?: string | null
           updated_at?: string

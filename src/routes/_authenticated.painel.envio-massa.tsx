@@ -64,6 +64,7 @@ import {
   mergedDesign,
   loadSavedSubject,
   syncFromMessageModel,
+  syncSenderFromServer,
   ensureDailyWindow,
 } from '@/lib/automation/envio-engine';
 
@@ -173,6 +174,7 @@ function EnvioMassa() {
     ensureDailyWindow();
     const id = setInterval(ensureDailyWindow, 30_000);
     syncFromMessageModel();
+    void syncSenderFromServer();
     void refreshStats();
     // Limpeza única: remove pendências antigas herdadas do modo em lote.
     try {
