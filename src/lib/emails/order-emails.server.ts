@@ -352,7 +352,53 @@ export type CadenceResult = {
   firstReminders: number
   hourlyReminders: number
   checked: number
+  skippedDuplicates: number
   errors: number
+}
+
+/** Chave do destinatário: e-mail (preferencial) ou CNPJ. */
+export function recipientKey(row: {
+  customer_email?: string | null
+  reference_cnpj?: string | null
+  customer_document?: string | null
+}): string {
+  const email = (row.customer_email || '').trim().toLowerCase()
+  if (email) return `e:${email}`
+  const doc = (row.reference_cnpj || row.customer_document || '').replace(/\D/g, '')
+  return doc ? `d:${doc}` : ''
+}
+
+/**
+ * Mantém apenas o pedido mais recente por destinatário e descarta os
+ * destinatários que já pagaram hoje. Assim, mesmo que a empresa gere várias
+ * guias, a cobrança considera só a última guia não paga.
+ */
+export function pickActiveOrders<T extends { id: string; created_at: string }>(
+  unpaid: T[],
+  paidKeys: Set<string>,
+  keyOf: (row: T) => string,
+): { active: T[]; duplicates: T[] } {
+  const latest = new Map<string, T>()
+  const duplicates: T[] = []
+  for (const row of unpaid) {
+    const key = keyOf(row)
+    if (!key || paidKeys.has(key)) {
+      duplicates.push(row)
+      continue
+    }
+    const current = latest.get(key)
+    if (!current) {
+      latest.set(key, row)
+      continue
+    }
+    if (new Date(row.created_at).getTime() > new Date(current.created_at).getTime()) {
+      latest.set(key, row)
+      duplicates.push(current)
+    } else {
+      duplicates.push(row)
+    }
+  }
+  return { active: [...latest.values()], duplicates }
 }
 
 /** Executa a régua de cobrança do dia. Deve rodar a cada poucos minutos. */
@@ -365,6 +411,7 @@ export async function runNotificationCadence(): Promise<CadenceResult> {
     firstReminders: 0,
     hourlyReminders: 0,
     checked: 0,
+    skippedDuplicates: 0,
     errors: 0,
   }
   if (result.skippedByHour) return result
@@ -374,18 +421,29 @@ export async function runNotificationCadence(): Promise<CadenceResult> {
   const { data } = await supabaseAdmin
     .from('orders')
     .select(
-      'id, customer_email, customer_name, customer_document, reference_cnpj, reference_name, public_link_id, pix_code, created_at, email_reminder_sent_at, email_recovery_count, email_recovery_last_at',
+      'id, customer_email, customer_name, customer_document, reference_cnpj, reference_name, public_link_id, pix_code, created_at, status, email_reminder_sent_at, email_recovery_count, email_recovery_last_at',
     )
-    .in('status', ['pending', 'awaiting_payment'])
     .gte('created_at', dayStart)
     .order('created_at', { ascending: true })
     .limit(500)
 
-  const rows = (data as any[]) ?? []
+  const all = (data as any[]) ?? []
+  const paidKeys = new Set<string>()
+  for (const row of all) {
+    if (row.status === 'paid') {
+      const key = recipientKey(row)
+      if (key) paidKeys.add(key)
+    }
+  }
+
+  const unpaid = all.filter((r) => r.status === 'pending' || r.status === 'awaiting_payment')
+  const { active, duplicates } = pickActiveOrders(unpaid, paidKeys, recipientKey)
+  result.skippedDuplicates = duplicates.length
+
   const nowMs = now.getTime()
   const baseAmount = await loadBaseAmount()
 
-  for (const row of rows) {
+  for (const row of active) {
     result.checked++
     if (!row.customer_email) continue
 
@@ -410,11 +468,12 @@ export async function runNotificationCadence(): Promise<CadenceResult> {
         templateData: { ...ctx, ...(promo ?? {}) },
       })
 
+      const stamp = new Date().toISOString()
       const patch: Record<string, unknown> = {
         email_recovery_count: nextCount,
-        email_recovery_last_at: new Date().toISOString(),
+        email_recovery_last_at: stamp,
       }
-      if (isFirst) patch.email_reminder_sent_at = new Date().toISOString()
+      if (isFirst) patch.email_reminder_sent_at = stamp
       await supabaseAdmin.from('orders').update(patch as any).eq('id', row.id)
       if (isFirst) result.firstReminders++
       else result.hourlyReminders++

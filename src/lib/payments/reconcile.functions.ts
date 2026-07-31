@@ -85,13 +85,18 @@ export const reconcilePendingOrders = createServerFn({ method: "POST" })
       }
     }
 
-    // Aproveita o mesmo ciclo para disparar os lembretes de PIX pendente (15 min).
-    let reminders = { sent: 0, checked: 0 };
+    // Aproveita o mesmo ciclo para rodar a régua oficial de cobrança
+    // (30 min + 1x por hora até as 22h, 1 e-mail por empresa).
+    let reminders: { sent: number; checked: number } = { sent: 0, checked: 0 };
     try {
-      const { sendPendingReminders } = await import("@/lib/emails/order-emails.server");
-      reminders = await sendPendingReminders(15);
+      const { runNotificationCadence } = await import("@/lib/emails/order-emails.server");
+      const cadence = await runNotificationCadence();
+      reminders = {
+        sent: cadence.firstReminders + cadence.hourlyReminders,
+        checked: cadence.checked,
+      };
     } catch (err) {
-      console.error("[reconcile] falha nos lembretes", err);
+      console.error("[reconcile] falha na régua de cobrança", err);
     }
 
     return { checked: pending.length, updated, reminders };
