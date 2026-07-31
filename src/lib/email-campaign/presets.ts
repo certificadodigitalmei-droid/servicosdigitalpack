@@ -83,7 +83,7 @@ export const PRESETS: Preset[] = [
       buttonPaddingY: 14,
       buttonPaddingX: 30,
       buttonSize: 14,
-      buttonLabel: 'Acessar guia de emissão',
+      buttonLabel: 'Verificar situação do meu CNPJ',
 
       showSignature: true,
       signature:
