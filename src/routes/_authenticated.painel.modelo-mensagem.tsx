@@ -152,7 +152,17 @@ function ModeloMensagem() {
     let cancelled = false;
     (async () => {
       try {
-        const cloud = await loadMessageTemplate();
+        const [cloud, sender] = await Promise.all([
+          loadMessageTemplate(),
+          getEmailSenderSettings().catch(() => null),
+        ]);
+        if (!cancelled) {
+          if (sender) {
+            if (sender.from_name) setFromName(sender.from_name);
+            if (sender.from_email) setFromAddress(sender.from_email);
+            if (sender.reply_to) setReplyTo(sender.reply_to);
+          }
+        }
         if (cancelled || !cloud) return;
         if (cloud.design && typeof cloud.design === 'object') {
           setDesign({ ...DEFAULT_DESIGN, ...(cloud.design as any) });
