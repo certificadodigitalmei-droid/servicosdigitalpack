@@ -143,7 +143,64 @@ export const listNotifyFlow = createServerFn({ method: 'POST' })
       horaAtual: parts.hour,
     };
 
-    return { orders: list, stats, day };
+    // ---- Detalhamento: cada e-mail do fluxo automático enviado no dia ----
+    const byOrderId = new Map(list.map((o) => [o.id, o]));
+    const byEmail = new Map<string, NotifyFlowRow>();
+    for (const o of list) if (o.email) byEmail.set(o.email.toLowerCase(), o);
+
+    const { data: qrows } = await supabaseAdmin
+      .from('email_send_queue')
+      .select('id, created_at, updated_at, to_email, subject, status, attempts, last_error, idempotency_key')
+      .gte('created_at', start)
+      .lte('created_at', end)
+      .order('created_at', { ascending: false })
+      .limit(1000);
+
+    const tipoFromKey = (key: string, subject: string): string | null => {
+      const k = (key || '').toLowerCase();
+      if (k.startsWith('pix-gerado-')) return 'Guia gerada (PIX criado)';
+      if (k.startsWith('pagamento-confirmado-')) return 'Pagamento confirmado';
+      if (k.startsWith('pix-pendente-') || k.startsWith('recuperacao-') || k.startsWith('cadencia-'))
+        return 'Cobrança / recuperação';
+      const s = (subject || '').toLowerCase();
+      if (s.includes('confirmad') || s.includes('emitido')) return 'Pagamento confirmado';
+      if (s.includes('guia') || s.includes('pix')) return 'Guia gerada (PIX criado)';
+      if (s.includes('pendente') || s.includes('regulariz') || s.includes('lembrete'))
+        return 'Cobrança / recuperação';
+      return null;
+    };
+
+    const orderIdFromKey = (key: string): string | null => {
+      const m = (key || '').match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+      return m ? m[0] : null;
+    };
+
+    const events: NotifyFlowEvent[] = ((qrows as any[]) ?? [])
+      .map((r) => {
+        const tipo = tipoFromKey(r.idempotency_key ?? '', r.subject ?? '');
+        if (!tipo) return null;
+        const orderId = orderIdFromKey(r.idempotency_key ?? '');
+        const ord =
+          (orderId ? byOrderId.get(orderId) : undefined) ??
+          byEmail.get(String(r.to_email ?? '').toLowerCase());
+        return {
+          id: r.id,
+          createdAt: r.created_at,
+          sentAt: r.status === 'sent' ? r.updated_at : null,
+          to: r.to_email,
+          subject: r.subject,
+          status: r.status,
+          attempts: r.attempts ?? 0,
+          error: r.last_error ?? null,
+          tipo,
+          orderId: orderId ?? ord?.id ?? null,
+          empresa: ord?.empresa ?? null,
+          cnpj: ord?.cnpj ?? null,
+        } as NotifyFlowEvent;
+      })
+      .filter(Boolean) as NotifyFlowEvent[];
+
+    return { orders: list, stats, day, events };
   });
 
 /** Executa a régua agora (mesma lógica do robô agendado). */
