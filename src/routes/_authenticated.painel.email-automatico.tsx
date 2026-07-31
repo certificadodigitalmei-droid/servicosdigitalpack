@@ -141,7 +141,7 @@ function EmailAutomaticoPage() {
 
 
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <Kpi icon={Mail} label="Guias geradas hoje" value={stats?.pedidosHoje ?? 0} />
         <Kpi
           icon={Mail}
@@ -149,7 +149,18 @@ function EmailAutomaticoPage() {
           value={stats?.guiaEnviada ?? 0}
           hint={stats?.semEmail ? `${stats.semEmail} sem e-mail` : undefined}
         />
-        <Kpi icon={Clock} label="Cobranças enviadas" value={stats?.cobrancasEnviadas ?? 0} />
+        <Kpi
+          icon={Clock}
+          label="Cobranças enviadas"
+          value={stats?.cobrancasEnviadas ?? 0}
+          hint={stats ? `${stats.emCobranca} empresa(s) em cobrança` : undefined}
+        />
+        <Kpi
+          icon={Clock}
+          label="Guias substituídas"
+          value={stats?.duplicadas ?? 0}
+          hint="não recebem cobrança"
+        />
         <Kpi icon={CheckCircle2} label="Pagos" value={stats?.pagos ?? 0} />
         <Kpi
           icon={BellRing}
