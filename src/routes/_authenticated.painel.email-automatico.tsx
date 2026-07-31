@@ -87,7 +87,8 @@ function EmailAutomaticoPage() {
   const doList = useServerFn(listNotifyFlow);
   const doRun = useServerFn(runNotifyFlowNow);
 
-
+  const filteredEvents =
+    tipoFiltro === 'all' ? events : events.filter((ev) => ev.tipo === tipoFiltro);
 
   const load = useCallback(async () => {
     setLoading(true);
