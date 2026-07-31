@@ -13,6 +13,7 @@ import {
   runNotifyFlowNow,
   type NotifyFlowRow,
   type NotifyFlowStats,
+  type NotifyFlowEvent,
 } from '@/lib/emails/notify-flow.functions';
 
 import { formatCNPJ } from '@/lib/format';
