@@ -383,7 +383,7 @@ export async function runNotificationCadence(): Promise<CadenceResult> {
 
   const rows = (data as any[]) ?? []
   const nowMs = now.getTime()
-  const cfg = await loadRecoveryDiscount()
+  const baseAmount = await loadBaseAmount()
 
   for (const row of rows) {
     result.checked++
