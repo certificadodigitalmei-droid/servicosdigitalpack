@@ -99,7 +99,7 @@ export const PRESETS: Preset[] = [
       disclaimerSize: 11,
     },
   },
-
+  {
     id: 'gov-institucional',
     name: 'Gov Institucional',
     description: 'Cabeçalho azul-marinho estilo Portal gov.br com faixa superior e selos de confiança.',
