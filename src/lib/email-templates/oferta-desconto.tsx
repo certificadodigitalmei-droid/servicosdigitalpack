@@ -142,7 +142,8 @@ const Email = ({
 
 export const template = {
   component: Email,
-  subject: 'Condição especial: regularize hoje o Certificado Digital do seu CNPJ',
+  subject: (d: Record<string, unknown>) =>
+    `Só hoje: regularize o Certificado Digital do CNPJ ${(d?.cnpj as string) || 'MEI'} com desconto`,
   displayName: 'Oferta com desconto (campanha)',
   previewData: {
     empresa: 'EMPRESA EXEMPLO MEI LTDA',
