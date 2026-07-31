@@ -215,7 +215,7 @@ export async function sendPendingReminders(minutes = 15): Promise<{ sent: number
     .limit(50)
 
   const rows = (pending as OrderRow[]) ?? []
-  const cfg = await loadRecoveryDiscount()
+  const baseAmount = await loadBaseAmount()
   let sent = 0
   for (const order of rows) {
     if (!order.customer_email) {
@@ -224,7 +224,8 @@ export async function sendPendingReminders(minutes = 15): Promise<{ sent: number
     }
     try {
       const ctx = await resolveContext(order)
-      const promo = await applyRecoveryDiscount(order, cfg)
+      const promo = await readLinkDiscount(order, baseAmount)
+
       await sendTemplateEmail(promo ? 'oferta-desconto' : 'pix-pendente', order.customer_email, {
         idempotencyKey: `pix-pendente-${order.id}`,
         templateData: { ...ctx, ...(promo ?? {}) },
