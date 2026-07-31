@@ -130,6 +130,19 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       if (link) {
         publicLinkId = link.id;
         companyId = link.company_id;
+        // Empresa que já pagou não gera nova guia.
+        const { data: paidOrder } = await supabaseAdmin
+          .from("orders")
+          .select("id")
+          .eq("public_link_id", link.id)
+          .eq("status", "paid")
+          .limit(1)
+          .maybeSingle();
+        if (paidOrder) {
+          throw new Error(
+            "Você já realizou o pagamento deste CNPJ. O certificado digital já está ativo e vinculado."
+          );
+        }
         // Desconto de campanha: o valor é definido no servidor, nunca no cliente.
         const cents = (link as any).discount_amount_cents as number | null;
         const exp = (link as any).discount_expires_at as string | null;
@@ -137,6 +150,7 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
           amount = cents / 100;
         }
       }
+
     }
 
     // Cria cliente
