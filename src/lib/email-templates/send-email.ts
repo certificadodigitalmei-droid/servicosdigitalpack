@@ -12,10 +12,10 @@ const SENDER_DOMAIN = "notify.seu-certificado-mei-digital.online"
 const DEFAULT_FROM_NAME = "Certificado Digital MEI"
 const DEFAULT_FROM_EMAIL = "certificado.mei.estadual@seu-certificado-mei-digital.online"
 
-let cachedSender: { name: string; email: string; reply_to?: string | null } | null = null;
+let cachedSender: { name: string; email: string; reply_to?: string | null; logo_url?: string | null } | null = null;
 let cachedSenderAt = 0;
 
-async function resolveSender(): Promise<{ name: string; email: string; reply_to?: string | null }> {
+async function resolveSender(): Promise<{ name: string; email: string; reply_to?: string | null; logo_url?: string | null }> {
   const now = Date.now();
   if (cachedSender && now - cachedSenderAt < 60_000) return cachedSender;
   try {
@@ -25,6 +25,7 @@ async function resolveSender(): Promise<{ name: string; email: string; reply_to?
       name: s.from_name?.trim() || DEFAULT_FROM_NAME,
       email: s.from_email?.trim() || DEFAULT_FROM_EMAIL,
       reply_to: s.reply_to,
+      logo_url: s.logo_url,
     };
   } catch {
     cachedSender = { name: DEFAULT_FROM_NAME, email: DEFAULT_FROM_EMAIL };
@@ -77,7 +78,10 @@ export async function sendTemplateEmail(
   }
 
   const templateData = options.templateData ?? {}
-  const element = React.createElement(template.component, templateData)
+  const element = React.createElement(template.component, {
+    logoUrl: sender.logo_url || undefined,
+    ...templateData,
+  })
   const html = await render(element)
   const text = await render(element, { plainText: true })
   const subject =

@@ -6,12 +6,14 @@ export type EmailSenderSettings = {
   from_email: string;
   from_name: string;
   reply_to: string | null;
+  logo_url: string | null;
 };
 
 const DEFAULTS: EmailSenderSettings = {
   from_email: 'certificado.mei.estadual@seu-certificado-mei-digital.online',
   from_name: 'Certificado Digital MEI',
   reply_to: null,
+  logo_url: null,
 };
 
 export const getEmailSenderSettings = createServerFn({ method: 'GET' }).handler(
@@ -19,7 +21,7 @@ export const getEmailSenderSettings = createServerFn({ method: 'GET' }).handler(
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const { data } = await supabaseAdmin
       .from('site_settings')
-      .select('from_email, from_name, reply_to')
+      .select('from_email, from_name, reply_to, logo_url')
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -28,6 +30,7 @@ export const getEmailSenderSettings = createServerFn({ method: 'GET' }).handler(
       from_email: data?.from_email || DEFAULTS.from_email,
       from_name: data?.from_name || DEFAULTS.from_name,
       reply_to: data?.reply_to || DEFAULTS.reply_to,
+      logo_url: data?.logo_url || DEFAULTS.logo_url,
     };
   },
 );
@@ -47,6 +50,7 @@ const saveSchema = z.object({
   from_email: z.string().email('E-mail remetente inválido').max(200),
   from_name: z.string().min(1, 'Nome do remetente é obrigatório').max(200),
   reply_to: z.string().email('E-mail de resposta inválido').max(200).optional().nullable(),
+  logo_url: z.string().max(600).optional().nullable(),
 });
 
 export const saveEmailSenderSettings = createServerFn({ method: 'POST' })
@@ -67,6 +71,7 @@ export const saveEmailSenderSettings = createServerFn({ method: 'POST' })
       from_email: data.from_email.trim().toLowerCase(),
       from_name: data.from_name.trim(),
       reply_to: data.reply_to?.trim().toLowerCase() || null,
+      logo_url: data.logo_url?.trim() || null,
       updated_at: new Date().toISOString(),
     };
 
