@@ -248,30 +248,30 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
 
   consultaStore.set({ isCounting: true });
   const pageSize = 20;
-  // Padrão: carrega TODAS as páginas da data/filtros escolhidos.
-  // Chamador pode limitar via `maxPages` se quiser paginar sob demanda.
-  const HARD_BACKSTOP_PAGES = Math.max(1, opts.maxPages ?? Number.POSITIVE_INFINITY);
+  // SEMPRE relê a partir da página 1 (a API devolve as aberturas mais
+  // recentes primeiro). Assim, quando chegam novas remessas no dia, elas
+  // entram automaticamente na lista — sem precisar reiniciar o modo
+  // automático. Páginas já conhecidas são deduplicadas por CNPJ.
+  const HARD_BACKSTOP_PAGES = Math.max(1, opts.maxPages ?? 500);
 
   const now = new Date().toISOString();
-  // Retoma a partir da próxima página se a lista dessa chave já tem itens.
-  const existingCount = consultaStore.get().foundList.length;
-  let page = Math.max(1, Math.floor(existingCount / pageSize) + 1);
-  const startPage = page;
+  let page = 1;
 
   let lastStatus: CountResult = { date, total: null, ok: true, status: 200 };
   let totalAdded = 0;
-
+  let knownStreak = 0;
+  const knownBefore = consultaStore.get().foundList.length;
 
   try {
-    while (page < startPage + HARD_BACKSTOP_PAGES) {
+    while (page <= HARD_BACKSTOP_PAGES) {
       const r: any = await listByDate({
         data: { date, filters, limit: pageSize, page },
       });
 
       lastStatus = { date: r.date, total: r.total, ok: r.ok, status: r.status };
       const items = r.items ?? [];
+      let addedThisPage = 0;
       if (items.length > 0) {
-        let addedThisPage = 0;
         consultaStore.set((cur) => {
           const seen = new Map(cur.foundList.map((it) => [it.cnpj, it]));
           for (const it of items) {
@@ -291,8 +291,18 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
       if (!r.ok) break;
       if (items.length < pageSize) break;
       if (r.total != null && page * pageSize >= r.total) break;
+
+      // Atalho de atualização: se a lista já estava carregada e as duas
+      // últimas páginas só trouxeram CNPJs conhecidos, os novos (topo) já
+      // foram capturados — não precisa varrer o histórico inteiro de novo.
+      if (knownBefore > 0) {
+        knownStreak = addedThisPage === 0 ? knownStreak + 1 : 0;
+        if (knownStreak >= 2) break;
+      }
       page += 1;
     }
+
+
 
     // Atualiza countResult / autoStats
     consultaStore.set((cur) => {
@@ -443,24 +453,22 @@ function restartListLoop() {
     if (cur.isCounting) return;
     // 1) Conta rápido (1 request)
     await runCountOnce({ silent: true });
-    // 2) Se a chave (data/filtros) mudou OU há mais itens no servidor do
-    // que temos localmente, pagina as novas remessas automaticamente —
-    // sem precisar ligar/desligar o Modo automático.
-    const after = consultaStore.get();
-    const date = effectiveDate();
-    const key = `${date}|${JSON.stringify(after.filters)}`;
-    const total = after.countResult?.total ?? null;
-    const localCount = key === after.foundListKey ? after.foundList.length : 0;
-    if (key !== after.foundListKey || (total != null && total > localCount)) {
-      await runListOnce({ silent: true });
-    }
+    // 2) Relê SEMPRE a partir da página 1 — a lista acompanha automaticamente
+    // as novas remessas do dia, sem precisar clicar em "listar" nem
+    // ligar/desligar o modo automático. A varredura para cedo quando as
+    // páginas do topo já são conhecidas, então o custo é baixo.
+    await runListOnce({ silent: true });
   };
+
   void tick();
   listIntervalId = window.setInterval(tick, Math.max(5, s.autoIntervalSec) * 1000);
 }
 
 
+let envioJaRodou = false;
+
 function restartImportLoop() {
+
   if (importIntervalId != null) {
     clearInterval(importIntervalId);
     importIntervalId = null;
@@ -484,9 +492,23 @@ function restartImportLoop() {
     }
 
     // Gate: envio em massa precisa estar rodando em modo REAL.
+    // Se o disparo em massa estiver pausado, apenas espera. Se ele PAROU
+    // depois de ter rodado, a importação automática é desligada — não pode
+    // ficar importando empresa sem ninguém enviar.
     const env = envioStore.get();
-    const envioAtivo = isEnvioRunning() && env.running && !env.paused && !env.testMode;
-    if (!envioAtivo) return;
+    const envioAtivo = isEnvioRunning() && env.running && !env.testMode;
+    if (!envioAtivo) {
+      if (envioJaRodou) {
+        envioJaRodou = false;
+        setAutoImport(false);
+        toast.info('Disparo em massa parado — importação automática desligada.');
+      }
+      return;
+    }
+    envioJaRodou = true;
+    if (env.paused) return;
+
+
 
     // Conta empresas prontas para envio na fila do mestre.
     const pendingLocal = env.queue.filter(
