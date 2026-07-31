@@ -99,37 +99,8 @@ function EmailAutomaticoPage() {
     return () => clearInterval(t);
   }, [load]);
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const c = await doGetDisc();
-        setDiscEnabled(c.enabled);
-        setDiscAmount(c.amount.toFixed(2).replace('.', ','));
-        setDiscHours(String(c.hours));
-        setDiscBase(c.baseAmount);
-      } catch {
-        /* silencioso */
-      }
-    })();
-  }, [doGetDisc]);
 
-  const saveDiscount = async () => {
-    const amount = Number(discAmount.replace(/\./g, '').replace(',', '.'));
-    const hours = Number(discHours);
-    if (!(amount > 0)) {
-      toast.error('Informe um valor promocional válido.');
-      return;
-    }
-    setSavingDisc(true);
-    try {
-      await doSaveDisc({ data: { enabled: discEnabled, amount, hours } });
-      toast.success('Desconto das cobranças salvo.');
-    } catch (e: any) {
-      toast.error('Falha ao salvar: ' + (e?.message ?? 'erro'));
-    } finally {
-      setSavingDisc(false);
-    }
-  };
+
 
   const runNow = async () => {
     setRunning(true);
