@@ -31,6 +31,7 @@ import { Route as AuthenticatedPainelPopUpSiteRouteImport } from './routes/_auth
 import { Route as AuthenticatedPainelPagamentosRouteImport } from './routes/_authenticated.painel.pagamentos'
 import { Route as AuthenticatedPainelModelosEmailRouteImport } from './routes/_authenticated.painel.modelos-email'
 import { Route as AuthenticatedPainelMensagemZapRouteImport } from './routes/_authenticated.painel.mensagem-zap'
+import { Route as AuthenticatedPainelLogEmailsRouteImport } from './routes/_authenticated.painel.log-emails'
 import { Route as AuthenticatedPainelLinksGeradosRouteImport } from './routes/_authenticated.painel.links-gerados'
 import { Route as AuthenticatedPainelImportarEmpresasRouteImport } from './routes/_authenticated.painel.importar-empresas'
 import { Route as AuthenticatedPainelImportacaoAutomaticaRouteImport } from './routes/_authenticated.painel.importacao-automatica'
@@ -178,6 +179,12 @@ const AuthenticatedPainelMensagemZapRoute =
   AuthenticatedPainelMensagemZapRouteImport.update({
     id: '/mensagem-zap',
     path: '/mensagem-zap',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
+const AuthenticatedPainelLogEmailsRoute =
+  AuthenticatedPainelLogEmailsRouteImport.update({
+    id: '/log-emails',
+    path: '/log-emails',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelLinksGeradosRoute =
@@ -372,6 +379,7 @@ export interface FileRoutesByFullPath {
   '/painel/importacao-automatica': typeof AuthenticatedPainelImportacaoAutomaticaRoute
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
+  '/painel/log-emails': typeof AuthenticatedPainelLogEmailsRoute
   '/painel/mensagem-zap': typeof AuthenticatedPainelMensagemZapRoute
   '/painel/modelos-email': typeof AuthenticatedPainelModelosEmailRoute
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
@@ -421,6 +429,7 @@ export interface FileRoutesByTo {
   '/painel/importacao-automatica': typeof AuthenticatedPainelImportacaoAutomaticaRoute
   '/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
+  '/painel/log-emails': typeof AuthenticatedPainelLogEmailsRoute
   '/painel/mensagem-zap': typeof AuthenticatedPainelMensagemZapRoute
   '/painel/modelos-email': typeof AuthenticatedPainelModelosEmailRoute
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
@@ -474,6 +483,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/importacao-automatica': typeof AuthenticatedPainelImportacaoAutomaticaRoute
   '/_authenticated/painel/importar-empresas': typeof AuthenticatedPainelImportarEmpresasRoute
   '/_authenticated/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
+  '/_authenticated/painel/log-emails': typeof AuthenticatedPainelLogEmailsRoute
   '/_authenticated/painel/mensagem-zap': typeof AuthenticatedPainelMensagemZapRoute
   '/_authenticated/painel/modelos-email': typeof AuthenticatedPainelModelosEmailRoute
   '/_authenticated/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
@@ -527,6 +537,7 @@ export interface FileRouteTypes {
     | '/painel/importacao-automatica'
     | '/painel/importar-empresas'
     | '/painel/links-gerados'
+    | '/painel/log-emails'
     | '/painel/mensagem-zap'
     | '/painel/modelos-email'
     | '/painel/pagamentos'
@@ -576,6 +587,7 @@ export interface FileRouteTypes {
     | '/painel/importacao-automatica'
     | '/painel/importar-empresas'
     | '/painel/links-gerados'
+    | '/painel/log-emails'
     | '/painel/mensagem-zap'
     | '/painel/modelos-email'
     | '/painel/pagamentos'
@@ -628,6 +640,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/importacao-automatica'
     | '/_authenticated/painel/importar-empresas'
     | '/_authenticated/painel/links-gerados'
+    | '/_authenticated/painel/log-emails'
     | '/_authenticated/painel/mensagem-zap'
     | '/_authenticated/painel/modelos-email'
     | '/_authenticated/painel/pagamentos'
@@ -830,6 +843,13 @@ declare module '@tanstack/react-router' {
       path: '/mensagem-zap'
       fullPath: '/painel/mensagem-zap'
       preLoaderRoute: typeof AuthenticatedPainelMensagemZapRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/_authenticated/painel/log-emails': {
+      id: '/_authenticated/painel/log-emails'
+      path: '/log-emails'
+      fullPath: '/painel/log-emails'
+      preLoaderRoute: typeof AuthenticatedPainelLogEmailsRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/links-gerados': {
@@ -1081,6 +1101,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelImportacaoAutomaticaRoute: typeof AuthenticatedPainelImportacaoAutomaticaRoute
   AuthenticatedPainelImportarEmpresasRoute: typeof AuthenticatedPainelImportarEmpresasRoute
   AuthenticatedPainelLinksGeradosRoute: typeof AuthenticatedPainelLinksGeradosRoute
+  AuthenticatedPainelLogEmailsRoute: typeof AuthenticatedPainelLogEmailsRoute
   AuthenticatedPainelMensagemZapRoute: typeof AuthenticatedPainelMensagemZapRoute
   AuthenticatedPainelModelosEmailRoute: typeof AuthenticatedPainelModelosEmailRoute
   AuthenticatedPainelPagamentosRoute: typeof AuthenticatedPainelPagamentosRoute
@@ -1118,6 +1139,7 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelImportarEmpresasRoute:
     AuthenticatedPainelImportarEmpresasRoute,
   AuthenticatedPainelLinksGeradosRoute: AuthenticatedPainelLinksGeradosRoute,
+  AuthenticatedPainelLogEmailsRoute: AuthenticatedPainelLogEmailsRoute,
   AuthenticatedPainelMensagemZapRoute: AuthenticatedPainelMensagemZapRoute,
   AuthenticatedPainelModelosEmailRoute: AuthenticatedPainelModelosEmailRoute,
   AuthenticatedPainelPagamentosRoute: AuthenticatedPainelPagamentosRoute,
@@ -1173,13 +1195,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
