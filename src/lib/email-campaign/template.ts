@@ -313,19 +313,28 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   const mobileTitleSize = Math.max(15, Math.min(20, effectiveTitleSize));
 
 
-  const rowsHtml = [
-    ['Nome', vars.NOME_TITULAR || vars.NOME_EMPRESARIAL],
+  const cardRows: Array<[string, string]> = ([
+    ['Razão Social', vars.NOME_EMPRESARIAL || vars.NOME_TITULAR],
     ['CNPJ', formatCnpj(vars.CNPJ || '')],
+    ['Protocolo', vars.REFERENCIA],
     ['Data de Abertura', vars.DATA_ABERTURA],
-    ['Situação', vars.SITUACAO || 'CNPJ sem certificado ativo'],
-  ]
-    .filter(([, v]) => v)
-    .map(([k, v]) => {
+    ['Validade', '12 meses'],
+    ['Situação', vars.SITUACAO || 'Certificado Digital não localizado'],
+  ] as Array<[string, string]>).filter(([, v]) => !!v);
+
+  const keySize = (D.cardBodySize || D.bodySize) - 0.5;
+  const rowsHtml = cardRows
+    .map(([k, v], i) => {
+      const last = i === cardRows.length - 1;
+      const border = last ? '' : 'border-bottom:1px solid #e6eaef;';
       const isSituacao = k === 'Situação';
-      const value = isSituacao
-        ? `<span style="display:inline-block;background:#fee2e2;border:1px solid #fecaca;color:#b91c1c;font-weight:700;border-radius:999px;padding:3px 10px;font-size:${(D.cardBodySize || D.bodySize) - 1}px;">PENDENTE &mdash; ${esc(String(v))}</span>`
-        : `<span style="color:${D.textColor};">${esc(String(v))}</span>`;
-      return `<tr><td style="padding:8px 0;color:${D.textColor};font-size:${D.cardBodySize || D.bodySize}px;line-height:1.5;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> ${value}</td></tr>`;
+      const valStyle = isSituacao
+        ? 'color:#b91c1c;font-weight:700;'
+        : `color:${D.textColor};font-weight:700;`;
+      return `<tr>
+        <td class="rowKey" style="${border}padding:10px 16px;width:38%;font-family:Arial,sans-serif;font-size:${keySize}px;color:#64748b;vertical-align:top;line-height:1.45;">${esc(String(k))}</td>
+        <td class="rowVal" style="${border}padding:10px 16px;font-family:Arial,sans-serif;font-size:${D.cardBodySize || D.bodySize}px;${valStyle}line-height:1.45;">${esc(String(v))}</td>
+      </tr>`;
     })
     .join('');
 
@@ -366,6 +375,9 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     .l-logo { font-size:11px !important; letter-spacing:1px !important; }
     .l-sub { font-size:13px !important; }
     .l-pad { padding-left:18px !important; padding-right:18px !important; }
+    .rowKey, .rowVal { display:block !important; width:auto !important; }
+    .rowKey { padding:10px 14px 0 14px !important; border-bottom:0 !important; }
+    .rowVal { padding:2px 14px 10px 14px !important; }
     .l-btn { display:block !important; width:auto !important; white-space:normal !important; font-size:15px !important; padding:14px 18px !important; }
   }
 </style>
@@ -381,9 +393,18 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     <!-- Header -->
     <tr><td class="l-pad" style="background:${D.headerBg};color:${D.headerText};padding:${D.headerPadding}px ${px}px;text-align:left;">
       ${D.showAvatar && D.avatarUrl ? `<div style="margin-bottom:16px;"><img src="${esc(D.avatarUrl)}" alt="" width="${D.avatarSize}" height="${D.avatarSize}" bgcolor="#ffffff" style="width:${D.avatarSize}px;height:${D.avatarSize}px;border-radius:50%;border:3px solid #ffffff;display:block;background:#ffffff;background-color:#ffffff;" /></div>` : ''}
-      <div class="l-logo" style="font-size:${D.logoSize}px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;margin-bottom:14px;">${logo}</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td style="font-family:Arial,sans-serif;vertical-align:top;">
+          <div class="l-logo" style="font-size:${D.logoSize}px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;">${logo}</div>
+        </td>
+        ${vars.REFERENCIA ? `<td align="right" style="font-family:Arial,sans-serif;vertical-align:top;white-space:nowrap;">
+          <div style="font-size:9px;letter-spacing:1.2px;color:#9fbad8;">PROTOCOLO</div>
+          <div style="font-size:11.5px;font-weight:700;color:#ffffff;margin-top:2px;">${esc(String(vars.REFERENCIA))}</div>
+        </td>` : ''}
+      </tr></table>
+      <div style="height:1px;background:rgba(255,255,255,0.18);margin:14px 0;line-height:1px;font-size:1px;">&nbsp;</div>
       <div class="l-title" style="font-size:${effectiveTitleSize}px;font-weight:800;line-height:1.25;margin:0;white-space:normal;word-break:break-word;">${title}</div>
-      <div class="l-sub" style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:12px;">${subtitle}</div>
+      <div class="l-sub" style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:10px;">${subtitle}</div>
     </td></tr>
     ${D.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(D.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:${D.containerWidth}px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
 
@@ -413,7 +434,8 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
     ${D.showCard ? `
     <tr><td class="l-pad" style="padding:0 ${px}px 28px ${px}px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.cardBg};border-radius:8px;padding:20px 18px;border:1px solid #e5e7eb;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background:#ffffff;border:1px solid #dfe4ea;border-radius:6px;border-collapse:separate;">
+        <tr><td colspan="2" bgcolor="#f4f7f9" style="background:#f4f7f9;border-bottom:1px solid #dfe4ea;padding:9px 16px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.2px;font-weight:700;color:#5b6b7b;border-radius:6px 6px 0 0;">${cardTitle}</td></tr>
         ${rowsHtml}
       </table>
     </td></tr>` : ''}
