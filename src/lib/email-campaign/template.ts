@@ -321,13 +321,13 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     .filter(([, v]) => v)
     .map(([k, v]) => {
       const isSituacao = k === 'Situação';
-      const valueStyle =
-        isSituacao && String(v).toLowerCase().includes('sem certificado')
-          ? 'color:#dc2626;font-weight:700;'
-          : `color:${D.textColor};`;
-      return `<tr><td style="padding:8px 0;color:${D.textColor};font-size:${D.cardBodySize || D.bodySize}px;line-height:1.5;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> <span style="${valueStyle}">${esc(String(v))}</span></td></tr>`;
+      const value = isSituacao
+        ? `<span style="display:inline-block;background:#fee2e2;border:1px solid #fecaca;color:#b91c1c;font-weight:700;border-radius:999px;padding:3px 10px;font-size:${(D.cardBodySize || D.bodySize) - 1}px;">PENDENTE &mdash; ${esc(String(v))}</span>`
+        : `<span style="color:${D.textColor};">${esc(String(v))}</span>`;
+      return `<tr><td style="padding:8px 0;color:${D.textColor};font-size:${D.cardBodySize || D.bodySize}px;line-height:1.5;font-family:Arial,sans-serif;"><strong>&bull; ${esc(String(k))}:</strong> ${value}</td></tr>`;
     })
     .join('');
+
 
 
   return `<!doctype html>
