@@ -59,8 +59,8 @@ const Email = ({
           <Heading style={h1}>Guia de pagamento pendente</Heading>
 
           <Text style={text}>
-            Prezado(a) contribuinte, identificamos que a guia gerada para a inscrição abaixo
-            <strong> permanece com situação PENDENTE</strong> em nosso sistema.
+            A guia da inscrição abaixo
+            <strong> permanece PENDENTE</strong> em nosso sistema.
           </Text>
 
           <Section style={dataBox}>
@@ -88,20 +88,19 @@ const Email = ({
           </Section>
 
           <Text style={text}>
-            Enquanto a pendência não for regularizada, a emissão do Certificado Digital permanece
+            Enquanto pendente, a emissão fica
             <strong> bloqueada</strong>, o que pode acarretar:
           </Text>
 
           <Section style={listBox}>
-            <Text style={listItem}>• Impossibilidade de acesso a serviços do e-CAC e do Gov.br</Text>
-            <Text style={listItem}>• Restrições na emissão de notas fiscais e documentos oficiais</Text>
-            <Text style={listItem}>• Atraso no cumprimento de obrigações vinculadas ao CNPJ</Text>
-            <Text style={listItemLast}>• Cancelamento automático da solicitação por falta de pagamento</Text>
+            <Text style={listItem}>• Sem acesso ao e-CAC e ao Gov.br</Text>
+            <Text style={listItem}>• Restrições na emissão de notas fiscais</Text>
+            <Text style={listItem}>• Atraso em obrigações do CNPJ</Text>
+            <Text style={listItemLast}>• Cancelamento automático da solicitação</Text>
           </Section>
 
           <Text style={text}>
-            Regularize a guia para que o certificado seja emitido e vinculado automaticamente ao
-            CNPJ.
+            Regularize a guia para vincular o certificado ao CNPJ.
           </Text>
 
           {link ? (
@@ -114,16 +113,15 @@ const Email = ({
 
           <Hr style={hr} />
           <Text style={note}>
-            Caso o pagamento tenha sido efetuado nos últimos minutos, desconsidere este aviso — a
-            compensação pode levar alguns instantes.
+            Se pagou nos últimos minutos, desconsidere este aviso.
           </Text>
         </Section>
 
         <Section style={footerBox}>
           <Text style={footer}>
-            Portal Certificado Digital MEI — Microempreendedor Individual.
+            Portal Certificado Digital MEI.
             <br />
-            Serviço privado de apoio ao MEI. Este e-mail foi enviado automaticamente; não responda.
+            E-mail automático; não responda.
           </Text>
         </Section>
       </Container>
