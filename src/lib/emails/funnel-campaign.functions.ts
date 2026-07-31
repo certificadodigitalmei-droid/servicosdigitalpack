@@ -63,20 +63,60 @@ export const listFunnelTargets = createServerFn({ method: 'POST' })
     await assertAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
-    let q = supabaseAdmin
-      .from('company_links')
-      .select(
-        'id, public_token, created_at, discount_amount_cents, discount_expires_at, promo_email_count, promo_email_sent_at, companies(cnpj, razao_social_original, nome_titular_exibicao, nome_fantasia, email)',
-      )
-      .eq('active', true)
-      .order('created_at', { ascending: false })
-      .limit(data.limit);
-    if (data.from) q = q.gte('created_at', data.from);
-    if (data.to) q = q.lte('created_at', data.to);
+    const linkSelect =
+      'id, public_token, created_at, discount_amount_cents, discount_expires_at, promo_email_count, promo_email_sent_at, companies(cnpj, razao_social_original, nome_titular_exibicao, nome_fantasia, email)';
 
-    const { data: links, error } = await q;
-    if (error) throw error;
-    const rows = (links as any[]) ?? [];
+    // Conjunto de links vindos de pedidos (usado na etapa "geraram PIX e não pagaram").
+    let orderLinkIds: string[] | null = null;
+    const paidFromOrders = new Set<string>();
+    const pendingFromOrders = new Set<string>();
+
+    if (data.stage === 'pending_pix') {
+      // A base é a tabela de pedidos (mesma da aba Pagamentos), filtrada pela data do pedido.
+      let oq = supabaseAdmin
+        .from('orders')
+        .select('public_link_id, status, paid_at, created_at')
+        .not('public_link_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(5000);
+      if (data.from) oq = oq.gte('created_at', data.from);
+      if (data.to) oq = oq.lte('created_at', data.to);
+      const { data: ords, error: oErr } = await oq;
+      if (oErr) throw oErr;
+      for (const o of ((ords as any[]) ?? [])) {
+        if (!o.public_link_id) continue;
+        if (o.status === 'paid' || o.paid_at) paidFromOrders.add(o.public_link_id);
+        else pendingFromOrders.add(o.public_link_id);
+      }
+      orderLinkIds = [...pendingFromOrders].filter((id) => !paidFromOrders.has(id));
+      if (!orderLinkIds.length) return { targets: [] };
+      orderLinkIds = orderLinkIds.slice(0, data.limit);
+    }
+
+    let rows: any[] = [];
+    if (orderLinkIds) {
+      for (const c of chunk(orderLinkIds, 200)) {
+        const { data: part, error } = await supabaseAdmin
+          .from('company_links')
+          .select(linkSelect)
+          .in('id', c);
+        if (error) throw error;
+        rows.push(...(((part as any[]) ?? [])));
+      }
+      rows.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    } else {
+      let q = supabaseAdmin
+        .from('company_links')
+        .select(linkSelect)
+        .eq('active', true)
+        .order('created_at', { ascending: false })
+        .limit(data.limit);
+      if (data.from) q = q.gte('created_at', data.from);
+      if (data.to) q = q.lte('created_at', data.to);
+      const { data: links, error } = await q;
+      if (error) throw error;
+      rows = (links as any[]) ?? [];
+    }
     if (!rows.length) return { targets: [] };
 
     // Eventos por token
@@ -103,21 +143,22 @@ export const listFunnelTargets = createServerFn({ method: 'POST' })
     }
 
     // Pedidos por link
-    const paid = new Set<string>();
-    const pending = new Set<string>();
-    for (const c of chunk(rows.map((r) => r.id), 200)) {
-      const { data: orders } = await supabaseAdmin
-        .from('orders')
-        .select('public_link_id, status, pix_code')
-        .in('public_link_id', c);
-      for (const o of (orders as any[]) ?? []) {
-        if (!o.public_link_id) continue;
-        if (o.status === 'paid') paid.add(o.public_link_id);
-        else if (o.pix_code && (o.status === 'pending' || o.status === 'awaiting_payment')) {
-          pending.add(o.public_link_id);
+    const paid = new Set<string>(paidFromOrders);
+    const pending = new Set<string>(pendingFromOrders);
+    if (!orderLinkIds) {
+      for (const c of chunk(rows.map((r) => r.id), 200)) {
+        const { data: orders } = await supabaseAdmin
+          .from('orders')
+          .select('public_link_id, status, paid_at')
+          .in('public_link_id', c);
+        for (const o of (orders as any[]) ?? []) {
+          if (!o.public_link_id) continue;
+          if (o.status === 'paid' || o.paid_at) paid.add(o.public_link_id);
+          else pending.add(o.public_link_id);
         }
       }
     }
+
 
     const targets: FunnelTarget[] = [];
     for (const r of rows) {
