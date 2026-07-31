@@ -85,6 +85,79 @@ async function markEmail(orderId: string, column: string) {
     .eq('id', orderId)
 }
 
+// ---------------------------------------------------------------------------
+// Desconto automático das cobranças: todo e-mail de recuperação leva o link
+// já com o valor promocional aplicado (o checkout lê o desconto do link).
+// ---------------------------------------------------------------------------
+
+export type RecoveryDiscountConfig = {
+  enabled: boolean
+  amount: number
+  hours: number
+  baseAmount: number
+}
+
+const DEFAULT_BASE_AMOUNT = 97
+
+function brl(v: number): string {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+export async function loadRecoveryDiscount(): Promise<RecoveryDiscountConfig> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const { data } = await supabaseAdmin
+    .from('site_settings')
+    .select('product_amount, recovery_discount_enabled, recovery_discount_amount, recovery_discount_hours')
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const row = (data as any) ?? {}
+  const base = Number(row.product_amount)
+  const amount = Number(row.recovery_discount_amount)
+  const hours = Number(row.recovery_discount_hours)
+  return {
+    enabled: row.recovery_discount_enabled !== false,
+    amount: Number.isFinite(amount) && amount > 0 ? amount : 56.99,
+    hours: Number.isFinite(hours) && hours > 0 ? hours : 24,
+    baseAmount: Number.isFinite(base) && base > 0 ? base : DEFAULT_BASE_AMOUNT,
+  }
+}
+
+/**
+ * Grava o desconto no link público do pedido e devolve os dados do e-mail
+ * promocional. Retorna null quando o desconto está desligado ou inválido.
+ */
+async function applyRecoveryDiscount(
+  order: OrderRow,
+  cfg: RecoveryDiscountConfig,
+): Promise<{ valorPromocional: string; valorOriginal: string; validadeOferta: string } | null> {
+  if (!cfg.enabled || !order.public_link_id) return null
+  if (!(cfg.amount > 0) || cfg.amount >= cfg.baseAmount) return null
+
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const expiresAt = new Date(Date.now() + cfg.hours * 60 * 60 * 1000).toISOString()
+
+  const { error } = await supabaseAdmin
+    .from('company_links')
+    .update({
+      discount_amount_cents: Math.round(cfg.amount * 100),
+      discount_expires_at: expiresAt,
+    } as any)
+    .eq('id', order.public_link_id)
+  if (error) {
+    console.error('[order-emails] falha ao aplicar desconto no link', order.public_link_id, error)
+    return null
+  }
+
+  return {
+    valorPromocional: brl(cfg.amount),
+    valorOriginal: brl(cfg.baseAmount),
+    validadeOferta: cfg.hours <= 24 ? 'apenas hoje' : `por ${Math.round(cfg.hours / 24)} dias`,
+  }
+}
+
+
 /** E-mail imediato: "sua guia de pagamento está disponível". */
 export async function sendPixCreatedEmail(orderId: string): Promise<void> {
   try {
