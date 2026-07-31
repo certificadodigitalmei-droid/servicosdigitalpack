@@ -57,7 +57,7 @@ async function resolveContext(order: OrderRow) {
   }
 
   return {
-    empresa: order.reference_name || order.customer_name || undefined,
+    empresa: cleanPersonName(order.reference_name) || cleanPersonName(order.customer_name) || undefined,
     cnpj: formatCnpj(order.reference_cnpj || order.customer_document),
     link,
     protocolo: protocoloFor(order.id),
