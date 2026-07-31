@@ -13,6 +13,7 @@ import {
   runNotifyFlowNow,
   type NotifyFlowRow,
   type NotifyFlowStats,
+  type NotifyFlowEvent,
 } from '@/lib/emails/notify-flow.functions';
 
 import { formatCNPJ } from '@/lib/format';
@@ -67,9 +68,18 @@ function Kpi({
   );
 }
 
+const TIPOS = [
+  { key: 'all', label: 'Todos' },
+  { key: 'Guia gerada (PIX criado)', label: 'Guia gerada' },
+  { key: 'Cobrança / recuperação', label: 'Cobrança' },
+  { key: 'Pagamento confirmado', label: 'Pagamento confirmado' },
+];
+
 function EmailAutomaticoPage() {
   const [day, setDay] = useState('');
   const [rows, setRows] = useState<NotifyFlowRow[]>([]);
+  const [events, setEvents] = useState<NotifyFlowEvent[]>([]);
+  const [tipoFiltro, setTipoFiltro] = useState<string>('all');
   const [stats, setStats] = useState<NotifyFlowStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
@@ -77,13 +87,15 @@ function EmailAutomaticoPage() {
   const doList = useServerFn(listNotifyFlow);
   const doRun = useServerFn(runNotifyFlowNow);
 
-
+  const filteredEvents =
+    tipoFiltro === 'all' ? events : events.filter((ev) => ev.tipo === tipoFiltro);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const r = await doList({ data: day ? { day } : {} });
       setRows(r.orders);
+      setEvents(r.events ?? []);
       setStats(r.stats);
       if (!day) setDay(r.day);
     } catch (e: any) {
@@ -244,6 +256,79 @@ function EmailAutomaticoPage() {
                           <Badge variant="secondary">encerrado</Badge>
                         ) : (
                           <Badge variant="destructive">pendente</Badge>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2 flex flex-row items-center justify-between gap-3 flex-wrap">
+          <CardTitle className="text-base">
+            Detalhes dos e-mails enviados ({filteredEvents.length})
+          </CardTitle>
+          <div className="flex flex-wrap gap-2">
+            {TIPOS.map((t) => (
+              <Button
+                key={t.key}
+                size="sm"
+                variant={tipoFiltro === t.key ? 'default' : 'outline'}
+                onClick={() => setTipoFiltro(t.key)}
+              >
+                {t.label}
+              </Button>
+            ))}
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {filteredEvents.length === 0 ? (
+            <p className="p-8 text-center text-sm text-muted-foreground">
+              Nenhum e-mail automático neste dia.
+            </p>
+          ) : (
+            <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs text-muted-foreground sticky top-0">
+                  <tr>
+                    <th className="text-left p-3">Horário</th>
+                    <th className="text-left p-3">Tipo de e-mail</th>
+                    <th className="text-left p-3">Empresa</th>
+                    <th className="text-left p-3">CNPJ</th>
+                    <th className="text-left p-3">Destinatário</th>
+                    <th className="text-left p-3">Assunto</th>
+                    <th className="text-center p-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEvents.map((ev) => (
+                    <tr key={ev.id} className="border-t align-top">
+                      <td className="p-3 whitespace-nowrap">
+                        {fmtHora(ev.sentAt ?? ev.createdAt)}
+                        {ev.sentAt ? null : (
+                          <div className="text-[11px] text-muted-foreground">criado</div>
+                        )}
+                      </td>
+                      <td className="p-3 whitespace-nowrap">
+                        <Badge variant="outline">{ev.tipo}</Badge>
+                      </td>
+                      <td className="p-3 max-w-[220px] truncate">{ev.empresa ?? '—'}</td>
+                      <td className="p-3 whitespace-nowrap">{ev.cnpj ? formatCNPJ(ev.cnpj) : '—'}</td>
+                      <td className="p-3 max-w-[200px] truncate">{ev.to}</td>
+                      <td className="p-3 max-w-[260px] truncate">{ev.subject}</td>
+                      <td className="p-3 text-center">
+                        {ev.status === 'sent' ? (
+                          <Badge className="bg-emerald-600 hover:bg-emerald-600">enviado</Badge>
+                        ) : ev.status === 'failed' ? (
+                          <Badge variant="destructive" title={ev.error ?? undefined}>
+                            falhou
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">{ev.status}</Badge>
                         )}
                       </td>
                     </tr>
