@@ -477,9 +477,9 @@ function DisparoEtapaPage() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            O modelo escolhido é usado tanto no disparo por etapa quanto na lista de e-mails
-            digitados manualmente.
+            O modelo escolhido é o e-mail enviado para as empresas selecionadas abaixo.
           </p>
+
         </CardContent>
       </Card>
 
