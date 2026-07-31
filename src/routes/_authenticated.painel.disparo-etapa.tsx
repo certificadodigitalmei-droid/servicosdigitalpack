@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FlaskConical, Loader2, Mail, RefreshCw, Send, Tag, X } from 'lucide-react';
+import { FlaskConical, Loader2, Mail, RefreshCw, Send, Tag, Timer, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   listFunnelTargets,
@@ -51,6 +51,17 @@ const TEMPLATES: { value: TemplateName; label: string; hint: string }[] = [
 ];
 
 type Preset = 'today' | 'yesterday' | '7d' | '30d' | 'all' | 'custom';
+
+/** Perfis de ritmo de envio (quantos e-mails por hora). */
+const RITMOS: { value: string; label: string; block: number; rest: number }[] = [
+  { value: 'off', label: 'Sem limite (enviar tudo de uma vez)', block: 0, rest: 0 },
+  { value: '60', label: 'Seguro — 60 por hora', block: 60, rest: 60 },
+  { value: '100', label: 'Moderado — 100 por hora', block: 100, rest: 60 },
+  { value: '200', label: 'Rápido — 200 por hora', block: 200, rest: 60 },
+  { value: '400', label: 'Alto volume — 400 por hora', block: 400, rest: 60 },
+  { value: '500', label: 'Máximo — 500 por hora', block: 500, rest: 60 },
+  { value: 'custom', label: 'Personalizado', block: 100, rest: 60 },
+];
 
 const STAGES: { value: FunnelStage; label: string }[] = [
   { value: 'all', label: 'Todas (não pagas)' },
@@ -136,6 +147,62 @@ function DisparoEtapaPage() {
     [manualList],
   );
 
+  // ---- Ritmo de envio ----
+  const [ritmo, setRitmo] = useState('100');
+  const [blockSize, setBlockSize] = useState('100');
+  const [restMin, setRestMin] = useState('60');
+  const [progress, setProgress] = useState<{ done: number; total: number; wait: number } | null>(
+    null,
+  );
+  const stopRef = useRef(false);
+
+  const ritmoCfg = useMemo(() => {
+    const p = RITMOS.find((r) => r.value === ritmo) ?? RITMOS[0];
+    if (ritmo === 'custom') {
+      return {
+        block: Math.max(1, Number(blockSize) || 100),
+        rest: Math.max(0, Number(restMin) || 0),
+      };
+    }
+    return { block: p.block, rest: p.rest };
+  }, [ritmo, blockSize, restMin]);
+
+  const sleepWithCountdown = useCallback(async (seconds: number, done: number, total: number) => {
+    for (let s = seconds; s > 0; s--) {
+      if (stopRef.current) return;
+      setProgress({ done, total, wait: s });
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }, []);
+
+  /** Percorre a lista em blocos, respeitando o descanso configurado. */
+  const runPaced = useCallback(
+    async <T,>(items: T[], sendChunk: (chunk: T[]) => Promise<{ sent: number; skipped: number }>) => {
+      stopRef.current = false;
+      const size = ritmoCfg.block > 0 ? ritmoCfg.block : items.length;
+      let ok = 0;
+      let fail = 0;
+      let done = 0;
+      for (let i = 0; i < items.length; i += size) {
+        if (stopRef.current) break;
+        const chunk = items.slice(i, i + size);
+        setProgress({ done, total: items.length, wait: 0 });
+        const r = await sendChunk(chunk);
+        ok += r.sent;
+        fail += r.skipped;
+        done += chunk.length;
+        setProgress({ done, total: items.length, wait: 0 });
+        const hasMore = i + size < items.length;
+        if (hasMore && ritmoCfg.rest > 0) {
+          await sleepWithCountdown(ritmoCfg.rest * 60, done, items.length);
+        }
+      }
+      setProgress(null);
+      return { ok, fail, stopped: stopRef.current };
+    },
+    [ritmoCfg, sleepWithCountdown],
+  );
+
   const range = useMemo(() => rangeFrom(preset, from, to), [preset, from, to]);
 
   const load = useCallback(async () => {
@@ -188,22 +255,27 @@ function DisparoEtapaPage() {
 
     setSending(true);
     try {
-      let ok = 0;
-      let fail = 0;
-      for (let i = 0; i < ids.length; i += 200) {
-        const r = await doSend({
-          data: {
-            linkIds: ids.slice(i, i + 200),
-            template,
-            discountAmount: useDiscount ? parsedDiscount : undefined,
-            discountHours: Number(hours) || 24,
-            ofertaLabel: label || undefined,
-          },
-        });
-        ok += r.sent;
-        fail += r.skipped;
-      }
-      toast.success(`${ok} e-mail(s) enviado(s). ${fail ? `${fail} ignorado(s).` : ''}`);
+      const { ok, fail, stopped } = await runPaced(ids, async (chunk) => {
+        let sent = 0;
+        let skipped = 0;
+        for (let i = 0; i < chunk.length; i += 200) {
+          const r = await doSend({
+            data: {
+              linkIds: chunk.slice(i, i + 200),
+              template,
+              discountAmount: useDiscount ? parsedDiscount : undefined,
+              discountHours: Number(hours) || 24,
+              ofertaLabel: label || undefined,
+            },
+          });
+          sent += r.sent;
+          skipped += r.skipped;
+        }
+        return { sent, skipped };
+      });
+      toast.success(
+        `${ok} e-mail(s) enviado(s). ${fail ? `${fail} ignorado(s). ` : ''}${stopped ? 'Envio interrompido.' : ''}`,
+      );
       void load();
     } catch (e: any) {
       toast.error('Falha no envio: ' + (e?.message ?? 'erro'));
@@ -246,24 +318,29 @@ function DisparoEtapaPage() {
     if (!confirm(`Enviar o modelo selecionado para ${manualEmails.length} e-mail(s)?`)) return;
     setManualSending(true);
     try {
-      let ok = 0;
-      let fail = 0;
-      for (let i = 0; i < manualEmails.length; i += 200) {
-        const r = await doManual({
-          data: {
-            emails: manualEmails.slice(i, i + 200),
-            template,
-            empresa: manualEmpresa.trim() || undefined,
-            cnpj: manualCnpj.trim() || undefined,
-            link: manualLink.trim() || undefined,
-            discountAmount: useDiscount && parsedDiscount > 0 ? parsedDiscount : undefined,
-            ofertaLabel: label || undefined,
-          },
-        });
-        ok += r.sent;
-        fail += r.skipped;
-      }
-      toast.success(`${ok} e-mail(s) enviado(s). ${fail ? `${fail} ignorado(s).` : ''}`);
+      const { ok, fail, stopped } = await runPaced(manualEmails, async (chunk) => {
+        let sent = 0;
+        let skipped = 0;
+        for (let i = 0; i < chunk.length; i += 200) {
+          const r = await doManual({
+            data: {
+              emails: chunk.slice(i, i + 200),
+              template,
+              empresa: manualEmpresa.trim() || undefined,
+              cnpj: manualCnpj.trim() || undefined,
+              link: manualLink.trim() || undefined,
+              discountAmount: useDiscount && parsedDiscount > 0 ? parsedDiscount : undefined,
+              ofertaLabel: label || undefined,
+            },
+          });
+          sent += r.sent;
+          skipped += r.skipped;
+        }
+        return { sent, skipped };
+      });
+      toast.success(
+        `${ok} e-mail(s) enviado(s). ${fail ? `${fail} ignorado(s). ` : ''}${stopped ? 'Envio interrompido.' : ''}`,
+      );
     } catch (e: any) {
       toast.error('Falha no envio: ' + (e?.message ?? 'erro'));
     } finally {
@@ -355,6 +432,83 @@ function DisparoEtapaPage() {
               </Button>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Timer className="h-4 w-4" /> Ritmo de envio
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-1.5 md:col-span-1">
+              <Label>Perfil</Label>
+              <Select value={ritmo} onValueChange={setRitmo}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RITMOS.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>
+                      {r.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {ritmo === 'custom' ? (
+              <>
+                <div className="space-y-1.5">
+                  <Label>E-mails por bloco</Label>
+                  <Input value={blockSize} onChange={(e) => setBlockSize(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Descanso após o bloco (minutos)</Label>
+                  <Input value={restMin} onChange={(e) => setRestMin(e.target.value)} />
+                </div>
+              </>
+            ) : (
+              <div className="md:col-span-2 flex items-end text-sm text-muted-foreground">
+                {ritmoCfg.block > 0
+                  ? `Envia ${ritmoCfg.block} e-mail(s), descansa ${ritmoCfg.rest} minuto(s) e continua automaticamente.`
+                  : 'Todos os e-mails são enviados de uma só vez.'}
+              </div>
+            )}
+          </div>
+
+          {progress ? (
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span>
+                  Enviados {progress.done} de {progress.total}
+                  {progress.wait > 0
+                    ? ` — descansando ${Math.floor(progress.wait / 60)}m ${progress.wait % 60}s`
+                    : ' — enviando…'}
+                </span>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => {
+                    stopRef.current = true;
+                    toast.info('Envio será interrompido.');
+                  }}
+                >
+                  Parar
+                </Button>
+              </div>
+              <div className="h-2 w-full rounded bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${Math.round((progress.done / Math.max(1, progress.total)) * 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Mantenha esta aba aberta até o fim do disparo.
+              </p>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
