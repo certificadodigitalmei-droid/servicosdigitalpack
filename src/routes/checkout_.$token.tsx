@@ -25,6 +25,15 @@ import type { ResolvedCompany } from '@/lib/company-links.functions';
 
 export const Route = createFileRoute('/checkout_/$token')({
   loader: async ({ params }) => {
+    const paidStatus = await getLinkPaymentStatus({ data: { token: params.token } }).catch(() => ({
+      paid: false,
+      paid_at: null,
+    }));
+    // Empresa que já pagou não acessa o checkout: vai direto para a página
+    // do CNPJ, onde vê o certificado ativo e vinculado.
+    if (paidStatus.paid) {
+      throw redirect({ to: '/c/$token', params: { token: params.token } });
+    }
     const [row, popup, pricing] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
       getSitePopup().catch(() => null),
@@ -38,6 +47,7 @@ export const Route = createFileRoute('/checkout_/$token')({
     if (!row) throw notFound();
     return { row, popup, pricing };
   },
+
 
   head: () => ({
     meta: [{ title: 'Pagamento — Central MEI Digital' }],
