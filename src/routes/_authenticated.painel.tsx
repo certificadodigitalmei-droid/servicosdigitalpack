@@ -18,7 +18,6 @@ import {
   DollarSign,
   KeyRound,
   MessageSquare,
-  ShoppingCart,
   Cloud,
   CloudDownload,
   
