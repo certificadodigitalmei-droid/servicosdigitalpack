@@ -208,7 +208,7 @@ function EmailSenderPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap items-center gap-4">
-                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white">
                   {form.logo_url ? (
                     <img src={form.logo_url} alt="Logo do remetente" className="h-full w-full object-cover" />
                   ) : (
