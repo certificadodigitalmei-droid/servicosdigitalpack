@@ -393,9 +393,18 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     <!-- Header -->
     <tr><td class="l-pad" style="background:${D.headerBg};color:${D.headerText};padding:${D.headerPadding}px ${px}px;text-align:left;">
       ${D.showAvatar && D.avatarUrl ? `<div style="margin-bottom:16px;"><img src="${esc(D.avatarUrl)}" alt="" width="${D.avatarSize}" height="${D.avatarSize}" bgcolor="#ffffff" style="width:${D.avatarSize}px;height:${D.avatarSize}px;border-radius:50%;border:3px solid #ffffff;display:block;background:#ffffff;background-color:#ffffff;" /></div>` : ''}
-      <div class="l-logo" style="font-size:${D.logoSize}px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;margin-bottom:14px;">${logo}</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td style="font-family:Arial,sans-serif;vertical-align:top;">
+          <div class="l-logo" style="font-size:${D.logoSize}px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;">${logo}</div>
+        </td>
+        ${vars.REFERENCIA ? `<td align="right" style="font-family:Arial,sans-serif;vertical-align:top;white-space:nowrap;">
+          <div style="font-size:9px;letter-spacing:1.2px;color:#9fbad8;">PROTOCOLO</div>
+          <div style="font-size:11.5px;font-weight:700;color:#ffffff;margin-top:2px;">${esc(String(vars.REFERENCIA))}</div>
+        </td>` : ''}
+      </tr></table>
+      <div style="height:1px;background:rgba(255,255,255,0.18);margin:14px 0;line-height:1px;font-size:1px;">&nbsp;</div>
       <div class="l-title" style="font-size:${effectiveTitleSize}px;font-weight:800;line-height:1.25;margin:0;white-space:normal;word-break:break-word;">${title}</div>
-      <div class="l-sub" style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:12px;">${subtitle}</div>
+      <div class="l-sub" style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:10px;">${subtitle}</div>
     </td></tr>
     ${D.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(D.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:${D.containerWidth}px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
 
