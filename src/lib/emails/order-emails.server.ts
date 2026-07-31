@@ -86,16 +86,11 @@ async function markEmail(orderId: string, column: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Desconto automático das cobranças: todo e-mail de recuperação leva o link
-// já com o valor promocional aplicado (o checkout lê o desconto do link).
+// Desconto nas cobranças: a régua NUNCA cria desconto. Ela apenas mantém o
+// desconto que já existe no link da empresa (aplicado por uma campanha de
+// e-mail com desconto enviada antes). Se o link tem desconto ativo, a
+// cobrança sai com o modelo promocional e o mesmo valor com desconto.
 // ---------------------------------------------------------------------------
-
-export type RecoveryDiscountConfig = {
-  enabled: boolean
-  amount: number
-  hours: number
-  baseAmount: number
-}
 
 const DEFAULT_BASE_AMOUNT = 97
 
@@ -103,59 +98,58 @@ function brl(v: number): string {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-export async function loadRecoveryDiscount(): Promise<RecoveryDiscountConfig> {
+async function loadBaseAmount(): Promise<number> {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
   const { data } = await supabaseAdmin
     .from('site_settings')
-    .select('product_amount, recovery_discount_enabled, recovery_discount_amount, recovery_discount_hours')
+    .select('product_amount')
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle()
-
-  const row = (data as any) ?? {}
-  const base = Number(row.product_amount)
-  const amount = Number(row.recovery_discount_amount)
-  const hours = Number(row.recovery_discount_hours)
-  return {
-    enabled: row.recovery_discount_enabled !== false,
-    amount: Number.isFinite(amount) && amount > 0 ? amount : 56.99,
-    hours: Number.isFinite(hours) && hours > 0 ? hours : 24,
-    baseAmount: Number.isFinite(base) && base > 0 ? base : DEFAULT_BASE_AMOUNT,
-  }
+  const base = Number((data as any)?.product_amount)
+  return Number.isFinite(base) && base > 0 ? base : DEFAULT_BASE_AMOUNT
 }
 
 /**
- * Grava o desconto no link público do pedido e devolve os dados do e-mail
- * promocional. Retorna null quando o desconto está desligado ou inválido.
+ * Lê o desconto já existente no link público do pedido. Retorna null quando
+ * não há desconto ativo — nesse caso a cobrança sai no valor normal.
  */
-async function applyRecoveryDiscount(
+async function readLinkDiscount(
   order: OrderRow,
-  cfg: RecoveryDiscountConfig,
+  baseAmount: number,
 ): Promise<{ valorPromocional: string; valorOriginal: string; validadeOferta: string } | null> {
-  if (!cfg.enabled || !order.public_link_id) return null
-  if (!(cfg.amount > 0) || cfg.amount >= cfg.baseAmount) return null
+  if (!order.public_link_id) return null
 
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-  const expiresAt = new Date(Date.now() + cfg.hours * 60 * 60 * 1000).toISOString()
-
-  const { error } = await supabaseAdmin
+  const { data } = await supabaseAdmin
     .from('company_links')
-    .update({
-      discount_amount_cents: Math.round(cfg.amount * 100),
-      discount_expires_at: expiresAt,
-    } as any)
+    .select('discount_amount_cents, discount_expires_at')
     .eq('id', order.public_link_id)
-  if (error) {
-    console.error('[order-emails] falha ao aplicar desconto no link', order.public_link_id, error)
-    return null
+    .maybeSingle()
+
+  const row = (data as any) ?? {}
+  const cents = Number(row.discount_amount_cents)
+  if (!Number.isFinite(cents) || cents <= 0) return null
+
+  const expiresAt = row.discount_expires_at ? new Date(row.discount_expires_at) : null
+  if (expiresAt && expiresAt.getTime() <= Date.now()) return null
+
+  const amount = cents / 100
+  if (amount >= baseAmount) return null
+
+  let validade = 'por tempo limitado'
+  if (expiresAt) {
+    const hoursLeft = Math.max(1, Math.round((expiresAt.getTime() - Date.now()) / 3600000))
+    validade = hoursLeft <= 24 ? `nas próximas ${hoursLeft}h` : `até ${expiresAt.toLocaleDateString('pt-BR')}`
   }
 
   return {
-    valorPromocional: brl(cfg.amount),
-    valorOriginal: brl(cfg.baseAmount),
-    validadeOferta: cfg.hours <= 24 ? 'apenas hoje' : `por ${Math.round(cfg.hours / 24)} dias`,
+    valorPromocional: brl(amount),
+    valorOriginal: brl(baseAmount),
+    validadeOferta: validade,
   }
 }
+
 
 
 /** E-mail imediato: "sua guia de pagamento está disponível". */
@@ -221,7 +215,7 @@ export async function sendPendingReminders(minutes = 15): Promise<{ sent: number
     .limit(50)
 
   const rows = (pending as OrderRow[]) ?? []
-  const cfg = await loadRecoveryDiscount()
+  const baseAmount = await loadBaseAmount()
   let sent = 0
   for (const order of rows) {
     if (!order.customer_email) {
@@ -230,7 +224,8 @@ export async function sendPendingReminders(minutes = 15): Promise<{ sent: number
     }
     try {
       const ctx = await resolveContext(order)
-      const promo = await applyRecoveryDiscount(order, cfg)
+      const promo = await readLinkDiscount(order, baseAmount)
+
       await sendTemplateEmail(promo ? 'oferta-desconto' : 'pix-pendente', order.customer_email, {
         idempotencyKey: `pix-pendente-${order.id}`,
         templateData: { ...ctx, ...(promo ?? {}) },
@@ -388,7 +383,7 @@ export async function runNotificationCadence(): Promise<CadenceResult> {
 
   const rows = (data as any[]) ?? []
   const nowMs = now.getTime()
-  const cfg = await loadRecoveryDiscount()
+  const baseAmount = await loadBaseAmount()
 
   for (const row of rows) {
     result.checked++
@@ -408,8 +403,8 @@ export async function runNotificationCadence(): Promise<CadenceResult> {
     try {
       const ctx = await resolveContext(row as OrderRow)
       const nextCount = (row.email_recovery_count ?? 0) + 1
-      // Toda cobrança sai com o link já no valor promocional.
-      const promo = await applyRecoveryDiscount(row as OrderRow, cfg)
+      // Mantém o desconto que a empresa já recebeu por campanha (se houver).
+      const promo = await readLinkDiscount(row as OrderRow, baseAmount)
       await sendTemplateEmail(promo ? 'oferta-desconto' : 'pix-pendente', row.customer_email, {
         idempotencyKey: `cadencia-${row.id}-${nextCount}`,
         templateData: { ...ctx, ...(promo ?? {}) },
