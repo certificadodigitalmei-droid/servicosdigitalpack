@@ -467,6 +467,7 @@ function EnvioMassa() {
                     : [
                         { key: 'h_soft', title: 'Bem devagar', sub: 'Inicial / IP frio', v: 20, batch: 40 },
                         { key: 'h_low', title: 'Conservador', sub: 'Warm-up', v: 50, batch: 80 },
+                        { key: 'h_90', title: 'Recomendado', sub: 'Tranquilo · baixo risco', v: 90, batch: 120 },
                         { key: 'h_med', title: 'Moderado', sub: 'Uso normal', v: 100, batch: 150 },
                         { key: 'h_high', title: 'Ativo', sub: 'Bom rep.', v: 150, batch: 250 },
                         { key: 'h_max', title: 'Máximo saudável', sub: 'Após aquecimento', v: 200, batch: 350 },
