@@ -5,14 +5,33 @@ import { TEMPLATES } from './registry'
 
 // Server-only: reads LOVABLE_API_KEY. Never import from client components.
 
-// Configuration baked in at scaffold time
-const SITE_NAME = "certificadodigitalccmei"
 // SENDER_DOMAIN is the verified sender subdomain FQDN (e.g., "notify.example.com").
 // It MUST match the subdomain delegated to Lovable's nameservers. NEVER use the root domain.
 const SENDER_DOMAIN = "notify.seu-certificado-mei-digital.online"
-// FROM_DOMAIN is the domain shown in the From: header (e.g., "example.com").
-// Can be the root domain when display_from_root is enabled — this is cosmetic only.
-const FROM_DOMAIN = "notify.seu-certificado-mei-digital.online"
+// Fallback From values when site_settings has no configured sender.
+const DEFAULT_FROM_NAME = "Certificado Digital MEI"
+const DEFAULT_FROM_EMAIL = "certificado.mei.estadual@seu-certificado-mei-digital.online"
+
+let cachedSender: { name: string; email: string; reply_to?: string | null } | null = null;
+let cachedSenderAt = 0;
+
+async function resolveSender(): Promise<{ name: string; email: string; reply_to?: string | null }> {
+  const now = Date.now();
+  if (cachedSender && now - cachedSenderAt < 60_000) return cachedSender;
+  try {
+    const { getEmailSenderSettings } = await import('@/lib/email-sender.functions');
+    const s = await getEmailSenderSettings();
+    cachedSender = {
+      name: s.from_name?.trim() || DEFAULT_FROM_NAME,
+      email: s.from_email?.trim() || DEFAULT_FROM_EMAIL,
+      reply_to: s.reply_to,
+    };
+  } catch {
+    cachedSender = { name: DEFAULT_FROM_NAME, email: DEFAULT_FROM_EMAIL };
+  }
+  cachedSenderAt = now;
+  return cachedSender;
+}
 
 export type SendTemplateEmailResult =
   | { sent: true }
