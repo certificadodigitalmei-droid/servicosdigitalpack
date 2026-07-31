@@ -187,7 +187,13 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
   showBadges: true,
   badgesText: 'Site Seguro (SSL 256-bits)  ·  Dados Protegidos (LGPD)  ·  Validade 12 meses',
+
+  showStatusBar: true,
+  statusLabel: 'SITUAÇÃO DO CADASTRO',
+  statusValue: 'PENDENTE',
+  statusNote: 'Certificado Digital e-CNPJ não localizado para esta inscrição.',
 };
+
 
 
 export const DEFAULT_SUBJECT = 'Certificado Digital e-CNPJ — pendência de emissão ({{CNPJ}})';
