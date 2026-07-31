@@ -453,18 +453,13 @@ function restartListLoop() {
     if (cur.isCounting) return;
     // 1) Conta rápido (1 request)
     await runCountOnce({ silent: true });
-    // 2) Se a chave (data/filtros) mudou OU há mais itens no servidor do
-    // que temos localmente, pagina as novas remessas automaticamente —
-    // sem precisar ligar/desligar o Modo automático.
-    const after = consultaStore.get();
-    const date = effectiveDate();
-    const key = `${date}|${JSON.stringify(after.filters)}`;
-    const total = after.countResult?.total ?? null;
-    const localCount = key === after.foundListKey ? after.foundList.length : 0;
-    if (key !== after.foundListKey || (total != null && total > localCount)) {
-      await runListOnce({ silent: true });
-    }
+    // 2) Relê SEMPRE a partir da página 1 — a lista acompanha automaticamente
+    // as novas remessas do dia, sem precisar clicar em "listar" nem
+    // ligar/desligar o modo automático. A varredura para cedo quando as
+    // páginas do topo já são conhecidas, então o custo é baixo.
+    await runListOnce({ silent: true });
   };
+
   void tick();
   listIntervalId = window.setInterval(tick, Math.max(5, s.autoIntervalSec) * 1000);
 }
