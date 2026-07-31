@@ -167,7 +167,8 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   unsubText: '',
   unsubHref: '#',
 
-  showAvatar: true,
+  // Sem logo no topo: a imagem fica apenas na foto de perfil do remetente.
+  showAvatar: false,
   avatarUrl: AVATAR_URL,
   avatarSize: 58,
 
