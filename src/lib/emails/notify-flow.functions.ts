@@ -26,6 +26,8 @@ export type NotifyFlowRow = {
   lastReminderAt: string | null;
   nextSendAt: string | null;
   finished: boolean;
+  /** true quando existe uma guia mais recente (ou pagamento) para o mesmo destinatário */
+  superseded: boolean;
 };
 
 export type NotifyFlowStats = {
@@ -35,6 +37,8 @@ export type NotifyFlowStats = {
   pagos: number;
   aguardando: number;
   semEmail: number;
+  emCobranca: number;
+  duplicadas: number;
   janelaAberta: boolean;
   horaAtual: number;
 };
