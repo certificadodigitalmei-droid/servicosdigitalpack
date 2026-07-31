@@ -277,6 +277,8 @@ function PanelLayout() {
 
   const getBreadcrumbLabel = (path: string) => {
     if (path === '/painel') return 'Dashboard';
+    if (path === '/painel/recuperacao-carrinho') return 'Recuperação de Carrinho';
+    if (path === '/painel/modelos-email') return 'Modelos de E-mail';
     if (path === '/painel/consulta-automatica') return 'Consulta Automática';
     if (path === '/painel/importacao-automatica') return 'Importação Automática';
     if (path === '/painel/empresas-importadas') return 'Empresas Importadas';
