@@ -56,6 +56,7 @@ export async function sendTemplateEmail(
   to: string,
   options: SendTemplateEmailOptions = {}
 ): Promise<SendTemplateEmailResult> {
+  const sender = await resolveSender();
   const apiKey = process.env.LOVABLE_API_KEY
   if (!apiKey) {
     throw new Error('LOVABLE_API_KEY is not configured')
