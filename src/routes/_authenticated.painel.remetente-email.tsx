@@ -166,9 +166,17 @@ function EmailSenderPage() {
                 Foto de perfil (logo do remetente)
               </CardTitle>
               <CardDescription>
-                Essa imagem aparece no cabeçalho de todos os e-mails enviados (PIX gerado, lembrete,
-                pagamento confirmado, ofertas e campanhas). Use PNG/JPG quadrado, até 800KB.
+                Essa imagem aparece <strong>dentro</strong> do e-mail (cabeçalho azul) em todos os
+                envios. Use PNG/JPG quadrado, até 800KB.
+                <br />
+                <span className="mt-2 block text-amber-700">
+                  Atenção: a bolinha com a letra “C” que aparece na caixa de entrada do Gmail
+                  <strong> não</strong> vem do e-mail — é a foto do perfil da conta Google do
+                  remetente. Para trocá-la, entre na conta {form.from_email || 'do remetente'} em
+                  myaccount.google.com e defina a foto de perfil (ou configure BIMI no DNS).
+                </span>
               </CardDescription>
+
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap items-center gap-4">
