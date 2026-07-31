@@ -21,9 +21,11 @@ import {
   sendFunnelCampaign,
   clearFunnelDiscount,
   sendFunnelTestEmail,
+  sendManualEmails,
   type FunnelStage,
   type FunnelTarget,
 } from '@/lib/emails/funnel-campaign.functions';
+import { Textarea } from '@/components/ui/textarea';
 import { formatCNPJ } from '@/lib/format';
 
 export const Route = createFileRoute('/_authenticated/painel/disparo-etapa')({
@@ -38,6 +40,15 @@ export const Route = createFileRoute('/_authenticated/painel/disparo-etapa')({
     ],
   }),
 });
+
+type TemplateName = 'pix-pendente' | 'oferta-desconto' | 'pix-gerado' | 'pagamento-confirmado';
+
+const TEMPLATES: { value: TemplateName; label: string; hint: string }[] = [
+  { value: 'pix-pendente', label: 'Cobrança / pendência (guia não paga)', hint: 'Alerta de pagamento pendente.' },
+  { value: 'oferta-desconto', label: 'Oferta com desconto', hint: 'Usa o valor promocional configurado abaixo.' },
+  { value: 'pix-gerado', label: 'Guia gerada (PIX criado)', hint: 'Confirma que a guia está disponível.' },
+  { value: 'pagamento-confirmado', label: 'Pagamento confirmado', hint: 'Certificado emitido e vinculado.' },
+];
 
 type Preset = 'today' | 'yesterday' | '7d' | '30d' | 'all' | 'custom';
 
@@ -92,7 +103,8 @@ function DisparoEtapaPage() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
-  const [useDiscount, setUseDiscount] = useState(true);
+  const [template, setTemplate] = useState<TemplateName>('pix-pendente');
+  const [useDiscount, setUseDiscount] = useState(false);
   const [discount, setDiscount] = useState('56,99');
   const [hours, setHours] = useState('24');
   const [label, setLabel] = useState('apenas hoje');
@@ -103,6 +115,26 @@ function DisparoEtapaPage() {
   const doSend = useServerFn(sendFunnelCampaign);
   const doClear = useServerFn(clearFunnelDiscount);
   const doTest = useServerFn(sendFunnelTestEmail);
+  const doManual = useServerFn(sendManualEmails);
+
+  const [manualList, setManualList] = useState('');
+  const [manualEmpresa, setManualEmpresa] = useState('');
+  const [manualCnpj, setManualCnpj] = useState('');
+  const [manualLink, setManualLink] = useState('');
+  const [manualSending, setManualSending] = useState(false);
+
+  const manualEmails = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          manualList
+            .split(/[\s,;]+/)
+            .map((e) => e.trim().toLowerCase())
+            .filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)),
+        ),
+      ),
+    [manualList],
+  );
 
   const range = useMemo(() => rangeFrom(preset, from, to), [preset, from, to]);
 
@@ -162,7 +194,7 @@ function DisparoEtapaPage() {
         const r = await doSend({
           data: {
             linkIds: ids.slice(i, i + 200),
-            template: useDiscount ? 'oferta-desconto' : 'pix-pendente',
+            template,
             discountAmount: useDiscount ? parsedDiscount : undefined,
             discountHours: Number(hours) || 24,
             ofertaLabel: label || undefined,
@@ -192,7 +224,7 @@ function DisparoEtapaPage() {
       await doTest({
         data: {
           email,
-          template: useDiscount ? 'oferta-desconto' : 'pix-pendente',
+          template,
           discountAmount: useDiscount && parsedDiscount > 0 ? parsedDiscount : undefined,
           ofertaLabel: label || undefined,
           linkId: firstSelected?.linkId,
@@ -203,6 +235,39 @@ function DisparoEtapaPage() {
       toast.error('Falha no teste: ' + (e?.message ?? 'erro'));
     } finally {
       setTesting(false);
+    }
+  };
+
+  const sendManual = async () => {
+    if (!manualEmails.length) {
+      toast.error('Cole ao menos um e-mail válido.');
+      return;
+    }
+    if (!confirm(`Enviar o modelo selecionado para ${manualEmails.length} e-mail(s)?`)) return;
+    setManualSending(true);
+    try {
+      let ok = 0;
+      let fail = 0;
+      for (let i = 0; i < manualEmails.length; i += 200) {
+        const r = await doManual({
+          data: {
+            emails: manualEmails.slice(i, i + 200),
+            template,
+            empresa: manualEmpresa.trim() || undefined,
+            cnpj: manualCnpj.trim() || undefined,
+            link: manualLink.trim() || undefined,
+            discountAmount: useDiscount && parsedDiscount > 0 ? parsedDiscount : undefined,
+            ofertaLabel: label || undefined,
+          },
+        });
+        ok += r.sent;
+        fail += r.skipped;
+      }
+      toast.success(`${ok} e-mail(s) enviado(s). ${fail ? `${fail} ignorado(s).` : ''}`);
+    } catch (e: any) {
+      toast.error('Falha no envio: ' + (e?.message ?? 'erro'));
+    } finally {
+      setManualSending(false);
     }
   };
 
@@ -296,13 +361,92 @@ function DisparoEtapaPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
+            <Mail className="h-4 w-4" /> Modelo de e-mail
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {TEMPLATES.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => setTemplate(t.value)}
+                className={`rounded-lg border p-3 text-left transition ${
+                  template === t.value
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                    : 'hover:bg-muted/50'
+                }`}
+              >
+                <div className="text-sm font-medium">{t.label}</div>
+                <div className="text-xs text-muted-foreground">{t.hint}</div>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            O modelo escolhido é usado tanto no disparo por etapa quanto na lista de e-mails
+            digitados manualmente.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Send className="h-4 w-4" /> Enviar para e-mails digitados
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>E-mails (um por linha, ou separados por vírgula)</Label>
+            <Textarea
+              rows={5}
+              placeholder={'cliente1@email.com\ncliente2@email.com'}
+              value={manualList}
+              onChange={(e) => setManualList(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              {manualEmails.length} e-mail(s) válido(s) detectado(s).
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label>Nome da empresa (opcional)</Label>
+              <Input value={manualEmpresa} onChange={(e) => setManualEmpresa(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>CNPJ (opcional)</Label>
+              <Input value={manualCnpj} onChange={(e) => setManualCnpj(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Link do e-mail (opcional)</Label>
+              <Input
+                placeholder="https://..."
+                value={manualLink}
+                onChange={(e) => setManualLink(e.target.value)}
+              />
+            </div>
+          </div>
+          <Button onClick={sendManual} disabled={manualSending || !manualEmails.length}>
+            {manualSending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Mail className="h-4 w-4 mr-2" />
+            )}
+            Enviar para {manualEmails.length} e-mail(s)
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
             <Tag className="h-4 w-4" /> Desconto da campanha
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={useDiscount} onCheckedChange={(v) => setUseDiscount(!!v)} />
-            Enviar com desconto (o link passa a cobrar o valor promocional)
+            Aplicar desconto no link das empresas selecionadas (valor promocional)
           </label>
           {useDiscount ? (
             <div className="grid gap-4 md:grid-cols-3">
