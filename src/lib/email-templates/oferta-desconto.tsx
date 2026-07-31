@@ -149,8 +149,8 @@ export const template = {
   },
 } satisfies TemplateEntry
 
-const BRAND = '#0b5d3b'
-const BRAND_DARK = '#083f28'
+const BRAND = '#1a4a8a'
+const BRAND_DARK = '#0e3a70'
 const ALERT = '#a11a1a'
 
 const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, Helvetica, sans-serif', margin: '0' }
