@@ -44,10 +44,16 @@ const MODELOS = [
     when: 'Enviado 15 minutos após gerar o PIX e depois 1x por dia até o pagamento.',
   },
   {
+    name: 'oferta-desconto',
+    label: 'Oferta com desconto',
+    when: 'Enviado no disparo por etapa quando você ativa desconto por tempo limitado.',
+  },
+  {
     name: 'pagamento-confirmado',
     label: 'Pagamento confirmado',
     when: 'Enviado assim que o pagamento é confirmado (certificado emitido).',
   },
+
 ];
 
 const PREVIEW_VARS: Record<string, string> = {
