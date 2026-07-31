@@ -60,7 +60,31 @@ function EmailSenderPage() {
     onError: (e: any) => toast.error(e?.message || 'Erro ao salvar'),
   });
 
+  /** Achata a imagem sobre fundo branco (evita PNG transparente virar preto no e-mail). */
+  async function flattenOnWhite(dataUrl: string): Promise<string> {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = dataUrl;
+    });
+    const size = Math.min(512, Math.max(img.width, img.height)) || 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return dataUrl;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    const scale = Math.min(size / img.width, size / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+    return canvas.toDataURL('image/jpeg', 0.92);
+  }
+
   async function handleFile(file: File) {
+
     if (file.size > 800 * 1024) {
       toast.error('Imagem muito grande (máx. 800KB)');
       return;
