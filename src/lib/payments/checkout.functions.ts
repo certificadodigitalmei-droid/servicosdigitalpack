@@ -163,7 +163,7 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
         reference_cnpj: data.document.replace(/\D/g, "").length === 14 ? data.document.replace(/\D/g, "") : null,
         reference_name: data.name,
         product_name: data.productName,
-        amount: data.amount,
+        amount,
         status: "pending",
         customer_name: data.name,
         customer_document: data.document.replace(/\D/g, ""),
@@ -187,7 +187,7 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
     try {
       pix = await callSigiloPay(apiKey, baseUrl, {
         identifier: order.id,
-        amount: data.amount,
+        amount,
         callbackUrl: data.webhookUrl,
         // Dados pessoais do cliente NÃO são enviados ao gateway.
         // Usamos um pagador genérico; os dados reais ficam apenas no nosso banco.
