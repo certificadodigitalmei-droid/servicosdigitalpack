@@ -169,6 +169,8 @@ export const listFunnelTargets = createServerFn({ method: 'POST' })
       if (data.stage === 'not_visited' && s.view > 0) continue;
       if (data.stage === 'visited' && s.view === 0) continue;
       if (data.stage === 'checkout' && s.checkout === 0) continue;
+      // Chegaram no checkout e não pagaram (quem pagou já foi removido acima).
+      if (data.stage === 'checkout_unpaid' && s.checkout === 0) continue;
       if (data.stage === 'guia' && s.guia === 0) continue;
       if (data.stage === 'pending_pix' && !isPending) continue;
 

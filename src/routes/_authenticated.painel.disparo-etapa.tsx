@@ -67,8 +67,9 @@ const STAGES: { value: FunnelStage; label: string }[] = [
   { value: 'not_visited', label: 'Não visitaram o link' },
   { value: 'visited', label: 'Apenas visitaram' },
   { value: 'checkout', label: 'Chegaram no checkout' },
+  { value: 'checkout_unpaid', label: 'Foram ao checkout e não pagaram' },
   { value: 'guia', label: 'Clicaram em gerar guia' },
-  { value: 'pending_pix', label: 'Geraram PIX e não pagaram' },
+  { value: 'pending_pix', label: 'Geraram PIX pendente e não pagaram' },
 ];
 
 function rangeFrom(preset: Preset, from: string, to: string) {
