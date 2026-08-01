@@ -197,7 +197,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
 
 
-export const DEFAULT_SUBJECT = 'e-CNPJ {{CNPJ}} — emissão pendente';
+export const DEFAULT_SUBJECT = 'CNPJ {{CNPJ}} — protocolo de emissão';
 export const DEFAULT_PREHEADER =
   'Certificado Digital do CNPJ {{CNPJ}} está pendente.';
 

@@ -122,7 +122,7 @@ const Email = ({
 export const template = {
   component: Email,
   subject: (d: Record<string, unknown>) =>
-    `Certificado Digital ATIVO e vinculado ao CNPJ ${(d?.cnpj as string) || 'MEI'}`,
+    `Certificado Digital emitido — CNPJ ${(d?.cnpj as string) || 'MEI'}`,
   displayName: 'Pagamento confirmado — certificado emitido',
   previewData: {
     empresa: 'EMPRESA EXEMPLO MEI LTDA',
