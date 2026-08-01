@@ -7,6 +7,7 @@ export type FunnelStage =
   | 'not_visited'
   | 'visited'
   | 'checkout'
+  | 'checkout_unpaid'
   | 'guia'
   | 'pending_pix';
 
@@ -50,7 +51,7 @@ export const listFunnelTargets = createServerFn({ method: 'POST' })
     z
       .object({
         stage: z
-          .enum(['all', 'not_visited', 'visited', 'checkout', 'guia', 'pending_pix'])
+          .enum(['all', 'not_visited', 'visited', 'checkout', 'checkout_unpaid', 'guia', 'pending_pix'])
           .default('all'),
         from: z.string().optional(),
         to: z.string().optional(),
