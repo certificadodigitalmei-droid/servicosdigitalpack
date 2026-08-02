@@ -753,10 +753,13 @@ export async function startSending() {
       break;
     }
     if (cur.limitMode === 'daily' && cur.dailyLimit > 0 && cur.sentToday >= cur.dailyLimit) {
-      pushLog(`🛑 Limite diário atingido (${cur.sentToday}/${cur.dailyLimit}). Envio parado.`);
-      toast.info(`Limite diário atingido (${cur.dailyLimit}).`);
+      pushLog(
+        `🛑 Limite DIÁRIO configurado atingido (${cur.sentToday}/${cur.dailyLimit}). Para continuar hoje, aumente o limite diário ou troque para "Limite por hora".`,
+      );
+      toast.info(`Limite diário atingido (${cur.dailyLimit}). Aumente o limite para continuar.`);
       break;
     }
+
 
     if (cur.limitMode === 'hourly' && cur.hourlyLimit > 0 && cur.sentThisHour >= cur.hourlyLimit) {
       const rest = Math.max(0, cur.hourlyRestMin || 0);
