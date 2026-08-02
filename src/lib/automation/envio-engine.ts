@@ -770,10 +770,22 @@ export async function startSending() {
         pushLog(`▶ Descanso concluído. Retomando envios (novo lote de até ${cur.hourlyLimit}).`);
         continue;
       }
-      pushLog(`⏸ Limite por hora atingido (${cur.sentThisHour}/${cur.hourlyLimit}). Aguardando próxima hora...`);
-      // aguarda 60s e reavalia — ensureDailyWindow reseta ao virar a hora
-      await new Promise((r) => setTimeout(r, 60_000));
+      // Aguarda a virada da hora e libera um novo lote automaticamente
+      // (não depende de a chave da hora ser recalculada corretamente).
+      const waitMs = msToNextHour();
+      pushLog(
+        `⏸ Limite por hora atingido (${cur.sentThisHour}/${cur.hourlyLimit}). Retomando em ${Math.ceil(waitMs / 60000)} min (virada da hora).`,
+      );
+      let waitedHour = 0;
+      while (waitedHour < waitMs && !stopFlag) {
+        await new Promise((r) => setTimeout(r, 5_000));
+        waitedHour += 5_000;
+      }
+      if (stopFlag) break;
+      envioStore.set({ sentThisHour: 0, sentHour: hourStr() });
+      pushLog(`▶ Nova hora iniciada. Retomando envios (lote de até ${cur.hourlyLimit}).`);
       continue;
+
     }
     const pendings = cur.queue.filter((x) => x.status === 'pending' || x.status === 'error');
     if (pendings.length === 0) {
