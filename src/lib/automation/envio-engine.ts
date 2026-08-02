@@ -150,10 +150,24 @@ function todayStr() {
   }).format(new Date());
 }
 function hourStr() {
-  const d = new Date();
-  // chave YYYY-MM-DDTHH em horário de São Paulo (aproximação: usa offset local)
-  return todayStr() + 'T' + String(d.getHours()).padStart(2, '0');
+  // chave YYYY-MM-DDTHH sempre em horário de São Paulo (evita divergência
+  // entre a data em SP e a hora local do navegador).
+  const hh = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Sao_Paulo',
+    hour: '2-digit',
+    hour12: false,
+  }).format(new Date());
+  return todayStr() + 'T' + hh.padStart(2, '0');
 }
+/** Milissegundos até a virada da próxima hora cheia. */
+function msToNextHour() {
+  const d = new Date();
+  return Math.max(
+    5_000,
+    (60 - d.getMinutes()) * 60_000 - d.getSeconds() * 1000 - d.getMilliseconds(),
+  );
+}
+
 
 const initial: State = {
   subject: DEFAULT_SUBJECT,
@@ -488,8 +502,13 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
       });
     }
     if (newItems.length > 0) {
-      envioStore.set({ queue: [...currentQueue, ...newItems] });
-      pushLog(`Fila sincronizada: +${newItems.length} pendente(s)${skippedSent ? ` (${skippedSent} já enviados ignorados)` : ''}.`);
+      // Empresas novas SEMPRE entram no início da fila (prioridade máxima):
+      // as que já foram processadas/estão em envio continuam depois delas.
+      const inFlight = currentQueue.filter((q) => q.status === 'sending');
+      const rest = currentQueue.filter((q) => q.status !== 'sending');
+      envioStore.set({ queue: [...inFlight, ...newItems, ...rest] });
+      pushLog(`Fila sincronizada: +${newItems.length} nova(s) empresa(s) no topo da fila${skippedSent ? ` (${skippedSent} já enviados ignorados)` : ''}.`);
+
     } else {
       pushLog(`Fila sincronizada: nenhum novo pendente${skippedSent ? ` (${skippedSent} já enviados ignorados)` : ''}.`);
     }
@@ -734,10 +753,13 @@ export async function startSending() {
       break;
     }
     if (cur.limitMode === 'daily' && cur.dailyLimit > 0 && cur.sentToday >= cur.dailyLimit) {
-      pushLog(`🛑 Limite diário atingido (${cur.sentToday}/${cur.dailyLimit}). Envio parado.`);
-      toast.info(`Limite diário atingido (${cur.dailyLimit}).`);
+      pushLog(
+        `🛑 Limite DIÁRIO configurado atingido (${cur.sentToday}/${cur.dailyLimit}). Para continuar hoje, aumente o limite diário ou troque para "Limite por hora".`,
+      );
+      toast.info(`Limite diário atingido (${cur.dailyLimit}). Aumente o limite para continuar.`);
       break;
     }
+
 
     if (cur.limitMode === 'hourly' && cur.hourlyLimit > 0 && cur.sentThisHour >= cur.hourlyLimit) {
       const rest = Math.max(0, cur.hourlyRestMin || 0);
@@ -756,10 +778,22 @@ export async function startSending() {
         pushLog(`▶ Descanso concluído. Retomando envios (novo lote de até ${cur.hourlyLimit}).`);
         continue;
       }
-      pushLog(`⏸ Limite por hora atingido (${cur.sentThisHour}/${cur.hourlyLimit}). Aguardando próxima hora...`);
-      // aguarda 60s e reavalia — ensureDailyWindow reseta ao virar a hora
-      await new Promise((r) => setTimeout(r, 60_000));
+      // Aguarda a virada da hora e libera um novo lote automaticamente
+      // (não depende de a chave da hora ser recalculada corretamente).
+      const waitMs = msToNextHour();
+      pushLog(
+        `⏸ Limite por hora atingido (${cur.sentThisHour}/${cur.hourlyLimit}). Retomando em ${Math.ceil(waitMs / 60000)} min (virada da hora).`,
+      );
+      let waitedHour = 0;
+      while (waitedHour < waitMs && !stopFlag) {
+        await new Promise((r) => setTimeout(r, 5_000));
+        waitedHour += 5_000;
+      }
+      if (stopFlag) break;
+      envioStore.set({ sentThisHour: 0, sentHour: hourStr() });
+      pushLog(`▶ Nova hora iniciada. Retomando envios (lote de até ${cur.hourlyLimit}).`);
       continue;
+
     }
     const pendings = cur.queue.filter((x) => x.status === 'pending' || x.status === 'error');
     if (pendings.length === 0) {
