@@ -150,10 +150,24 @@ function todayStr() {
   }).format(new Date());
 }
 function hourStr() {
-  const d = new Date();
-  // chave YYYY-MM-DDTHH em horário de São Paulo (aproximação: usa offset local)
-  return todayStr() + 'T' + String(d.getHours()).padStart(2, '0');
+  // chave YYYY-MM-DDTHH sempre em horário de São Paulo (evita divergência
+  // entre a data em SP e a hora local do navegador).
+  const hh = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Sao_Paulo',
+    hour: '2-digit',
+    hour12: false,
+  }).format(new Date());
+  return todayStr() + 'T' + hh.padStart(2, '0');
 }
+/** Milissegundos até a virada da próxima hora cheia. */
+function msToNextHour() {
+  const d = new Date();
+  return Math.max(
+    5_000,
+    (60 - d.getMinutes()) * 60_000 - d.getSeconds() * 1000 - d.getMilliseconds(),
+  );
+}
+
 
 const initial: State = {
   subject: DEFAULT_SUBJECT,
