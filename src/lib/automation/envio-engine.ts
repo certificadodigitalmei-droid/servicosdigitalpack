@@ -502,8 +502,13 @@ export async function loadRecipients(opts: { limit?: number } = {}) {
       });
     }
     if (newItems.length > 0) {
-      envioStore.set({ queue: [...currentQueue, ...newItems] });
-      pushLog(`Fila sincronizada: +${newItems.length} pendente(s)${skippedSent ? ` (${skippedSent} já enviados ignorados)` : ''}.`);
+      // Empresas novas SEMPRE entram no início da fila (prioridade máxima):
+      // as que já foram processadas/estão em envio continuam depois delas.
+      const inFlight = currentQueue.filter((q) => q.status === 'sending');
+      const rest = currentQueue.filter((q) => q.status !== 'sending');
+      envioStore.set({ queue: [...inFlight, ...newItems, ...rest] });
+      pushLog(`Fila sincronizada: +${newItems.length} nova(s) empresa(s) no topo da fila${skippedSent ? ` (${skippedSent} já enviados ignorados)` : ''}.`);
+
     } else {
       pushLog(`Fila sincronizada: nenhum novo pendente${skippedSent ? ` (${skippedSent} já enviados ignorados)` : ''}.`);
     }
