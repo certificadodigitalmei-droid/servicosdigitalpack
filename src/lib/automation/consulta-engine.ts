@@ -465,8 +465,6 @@ function restartListLoop() {
 }
 
 
-let envioJaRodou = false;
-
 function restartImportLoop() {
 
   if (importIntervalId != null) {
@@ -500,7 +498,6 @@ function restartImportLoop() {
     if (!envioAtivo) {
       return;
     }
-    envioJaRodou = true;
     if (env.paused) return;
 
 
