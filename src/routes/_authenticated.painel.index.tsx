@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link2, Link as LinkIcon, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet, Trash2, Calendar as CalendarIcon, CheckCircle2, Bell, Info, Copy } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatCNPJ } from '@/lib/format';
