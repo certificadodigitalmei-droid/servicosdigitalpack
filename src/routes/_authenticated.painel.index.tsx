@@ -153,16 +153,30 @@ function DashboardPage() {
       if (range.from) ordersQ = ordersQ.gte('paid_at', range.from.toISOString());
       if (range.to) ordersQ = ordersQ.lte('paid_at', range.to.toISOString());
 
-      const [{ count: linksTotal }, evRes, linksRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
+      const [{ count: linksTotal }, evRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
         linksCountQ,
         evQ,
-        supabase.from('company_links').select('token, cnpj'),
         ordersQ,
         supabase.from('link_events').select('id', { count: 'exact', head: true }).eq('event_type', 'copy_pix'),
       ]);
 
+      if (evRes.error) throw evRes.error;
+      if (ordersRes.error) throw ordersRes.error;
+
       const events = (evRes.data ?? []) as EventRow[];
-      const linkMap = new Map((linksRes.data ?? []).map((l: any) => [l.token, l.cnpj]));
+
+      // Mapa token -> CNPJ apenas para os eventos recentes exibidos na lista.
+      const recentTokens = Array.from(new Set(events.slice(-10).map((e) => e.token).filter(Boolean)));
+      const linkMap = new Map<string, string | undefined>();
+      if (recentTokens.length > 0) {
+        const { data: linkRows } = await supabase
+          .from('company_links')
+          .select('public_token, company_data')
+          .in('public_token', recentTokens);
+        for (const l of linkRows ?? []) {
+          linkMap.set((l as any).public_token, ((l as any).company_data as any)?.cnpj);
+        }
+      }
       const paidOrders = (ordersRes.data ?? []) as { amount: number | null }[];
 
 
