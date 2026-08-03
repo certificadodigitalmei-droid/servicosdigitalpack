@@ -257,9 +257,20 @@ function DashboardPage() {
       setJourney(journeyRows);
 
       setRecent(events.slice(-10).reverse().map(e => ({ ...e, cnpj: linkMap.get(e.token) })));
+    } catch (e: any) {
+      console.error('[dashboard] falha ao carregar', e);
+      toast.error(e?.message ?? 'Falha ao carregar os dados do dashboard');
     } finally {
       setLoading(false);
     }
+  }
+
+  async function refreshAll() {
+    await Promise.all([
+      load(),
+      qc.invalidateQueries({ queryKey: ['dashboard-overview'] }),
+    ]);
+    toast.success('Dados atualizados');
   }
 
   useEffect(() => {
