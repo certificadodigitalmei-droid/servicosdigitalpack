@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link2, Link as LinkIcon, ShoppingCart, MousePointerClick, FileSignature, Loader2, RefreshCw, Monitor, Smartphone, Tablet, Trash2, Calendar as CalendarIcon, CheckCircle2, Bell, Info, Copy } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatCNPJ } from '@/lib/format';
@@ -105,6 +106,7 @@ function computeRange(preset: Preset, customFrom?: string, customTo?: string): {
 }
 
 function DashboardPage() {
+  const qc = useQueryClient();
   const [stats, setStats] = useState<Stats>(EMPTY);
   const [recent, setRecent] = useState<(EventRow & { cnpj?: string })[]>([]);
   const [journey, setJourney] = useState<{ step: number; label: string; color: string; count: number }[]>([]);
@@ -153,16 +155,30 @@ function DashboardPage() {
       if (range.from) ordersQ = ordersQ.gte('paid_at', range.from.toISOString());
       if (range.to) ordersQ = ordersQ.lte('paid_at', range.to.toISOString());
 
-      const [{ count: linksTotal }, evRes, linksRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
+      const [{ count: linksTotal }, evRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
         linksCountQ,
         evQ,
-        supabase.from('company_links').select('token, cnpj'),
         ordersQ,
         supabase.from('link_events').select('id', { count: 'exact', head: true }).eq('event_type', 'copy_pix'),
       ]);
 
+      if (evRes.error) throw evRes.error;
+      if (ordersRes.error) throw ordersRes.error;
+
       const events = (evRes.data ?? []) as EventRow[];
-      const linkMap = new Map((linksRes.data ?? []).map((l: any) => [l.token, l.cnpj]));
+
+      // Mapa token -> CNPJ apenas para os eventos recentes exibidos na lista.
+      const recentTokens = Array.from(new Set(events.slice(-10).map((e) => e.token).filter(Boolean)));
+      const linkMap = new Map<string, string | undefined>();
+      if (recentTokens.length > 0) {
+        const { data: linkRows } = await supabase
+          .from('company_links')
+          .select('public_token, company_data')
+          .in('public_token', recentTokens);
+        for (const l of linkRows ?? []) {
+          linkMap.set((l as any).public_token, ((l as any).company_data as any)?.cnpj);
+        }
+      }
       const paidOrders = (ordersRes.data ?? []) as { amount: number | null }[];
 
 
@@ -243,9 +259,20 @@ function DashboardPage() {
       setJourney(journeyRows);
 
       setRecent(events.slice(-10).reverse().map(e => ({ ...e, cnpj: linkMap.get(e.token) })));
+    } catch (e: any) {
+      console.error('[dashboard] falha ao carregar', e);
+      toast.error(e?.message ?? 'Falha ao carregar os dados do dashboard');
     } finally {
       setLoading(false);
     }
+  }
+
+  async function refreshAll() {
+    await Promise.all([
+      load(),
+      qc.invalidateQueries({ queryKey: ['dashboard-overview'] }),
+    ]);
+    toast.success('Dados atualizados');
   }
 
   useEffect(() => {
@@ -353,7 +380,7 @@ function DashboardPage() {
             </AlertDialogContent>
           </AlertDialog>
 
-          <Button variant="outline" onClick={load} disabled={loading}>
+          <Button variant="outline" onClick={refreshAll} disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Atualizar
           </Button>

@@ -45,12 +45,15 @@ function isH3SwallowedErrorBody(body: string): boolean {
 }
 
 function isBrazilRequest(request: Request): boolean {
-  const country =
+  const country = (
     request.headers.get("cf-ipcountry") ||
     request.headers.get("x-vercel-ip-country") ||
     request.headers.get("x-country-code") ||
-    "";
-  return country.toUpperCase() === "BR";
+    ""
+  ).toUpperCase();
+  // Sem cabeçalho de país (dev/preview/edge sem geo) não bloqueia: fail-open.
+  if (!country || country === "XX" || country === "T1") return true;
+  return country === "BR";
 }
 
 function shouldBypassGeoBlock(url: URL): boolean {
