@@ -655,7 +655,6 @@ function EnvioMassa() {
               {!running ? (
                 <Button
                   onClick={startSending}
-                  disabled={queue.length === 0}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   <Play className="h-4 w-4" /> {testMode ? 'Iniciar teste' : 'Iniciar envio real'}

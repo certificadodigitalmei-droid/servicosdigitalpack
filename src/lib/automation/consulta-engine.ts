@@ -491,18 +491,13 @@ function restartImportLoop() {
       return;
     }
 
-    // Gate: envio em massa precisa estar rodando em modo REAL.
-    // Se o disparo em massa estiver pausado, apenas espera. Se ele PAROU
-    // depois de ter rodado, a importação automática é desligada — não pode
-    // ficar importando empresa sem ninguém enviar.
+    // Gate: envio em massa precisa estar rodando em modo REAL. Quando ele não
+    // está ativo, apenas espera; nunca desliga sozinho a configuração do fluxo.
+    // Assim uma troca momentânea de estado não obriga o operador a clicar de
+    // novo e não quebra a sequência consultar → importar → enviar.
     const env = envioStore.get();
     const envioAtivo = isEnvioRunning() && env.running && !env.testMode;
     if (!envioAtivo) {
-      if (envioJaRodou) {
-        envioJaRodou = false;
-        setAutoImport(false);
-        toast.info('Disparo em massa parado — importação automática desligada.');
-      }
       return;
     }
     envioJaRodou = true;
