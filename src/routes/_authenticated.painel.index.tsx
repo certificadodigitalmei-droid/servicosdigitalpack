@@ -105,6 +105,7 @@ function computeRange(preset: Preset, customFrom?: string, customTo?: string): {
 }
 
 function DashboardPage() {
+  const qc = useQueryClient();
   const [stats, setStats] = useState<Stats>(EMPTY);
   const [recent, setRecent] = useState<(EventRow & { cnpj?: string })[]>([]);
   const [journey, setJourney] = useState<{ step: number; label: string; color: string; count: number }[]>([]);
