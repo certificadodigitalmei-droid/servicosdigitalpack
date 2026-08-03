@@ -721,43 +721,52 @@ export async function startSending() {
     toast.error('Modo teste ativo: informe um e-mail de teste.');
     return;
   }
-  if (cfg.queue.length === 0) {
-    let autoImportOn = false;
-    try {
-      const mod = await import('./consulta-engine');
-      autoImportOn = !!mod.consultaStore.get().autoImport;
-    } catch { /* noop */ }
-    if (!autoImportOn) {
-      toast.error('Nenhum destinatário na fila.');
-      return;
-    }
-  }
   running = true;
   paused = false;
   stopFlag = false;
   envioStore.set({ running: true, paused: false });
   pushLog(`▶ Iniciando envio${cfg.testMode ? ' (MODO TESTE)' : ''}. Delay: ${cfg.delaySec}s`);
 
+  // Um clique em "Iniciar envio real" ativa o fluxo completo. Isso elimina o
+  // ciclo em que a fila vazia encerrava o envio antes de a importação conseguir
+  // inserir a próxima empresa.
+  if (!cfg.testMode) {
+    try {
+      const mod = await import('./consulta-engine');
+      // No fluxo de envio contínuo não existe meta de importações: ele só
+      // termina quando o operador pressiona "Parar envio real".
+      mod.setAutoImportTarget(0);
+      if (!mod.consultaStore.get().autoCount) mod.setAutoCount(true);
+      if (!mod.consultaStore.get().autoImport) mod.setAutoImport(true);
+      pushLog('↻ Fluxo contínuo ativo: consultar recentes → importar → enviar.');
+    } catch (error) {
+      pushLog(`⚠ Não foi possível iniciar a consulta automática: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
+    }
+  }
+
   // Reavaliar a cada iteração com estado atualizado.
   while (!stopFlag) {
     ensureDailyWindow();
     const cur = envioStore.get();
-    // "Parar tudo" (meta diária): interrompe envio, importação e consultas.
+    // Metas e limites pausam o fluxo, mas nunca desligam o botão. O motor só
+    // encerra quando o operador chama stopSending().
     if (cur.stopAtDaily > 0 && cur.sentToday >= cur.stopAtDaily) {
-      pushLog(`🛑 Meta diária atingida (${cur.sentToday}/${cur.stopAtDaily}). Parando envio + importação automática.`);
-      toast.info(`Meta diária atingida (${cur.stopAtDaily}). Tudo pausado até amanhã.`);
-      try {
-        const mod = await import('./consulta-engine');
-        mod.setAutoImport(false);
-      } catch { /* opcional */ }
-      break;
+      pushLog(`⏸ Meta diária atingida (${cur.sentToday}/${cur.stopAtDaily}). Aguardando o próximo dia sem desligar o fluxo.`);
+      while (!stopFlag && envioStore.get().sentDay === todayStr()) {
+        await new Promise((resolve) => setTimeout(resolve, 30_000));
+        ensureDailyWindow();
+      }
+      continue;
     }
     if (cur.limitMode === 'daily' && cur.dailyLimit > 0 && cur.sentToday >= cur.dailyLimit) {
       pushLog(
-        `🛑 Limite DIÁRIO configurado atingido (${cur.sentToday}/${cur.dailyLimit}). Para continuar hoje, aumente o limite diário ou troque para "Limite por hora".`,
+        `⏸ Limite diário atingido (${cur.sentToday}/${cur.dailyLimit}). Aguardando o próximo dia sem desligar o fluxo.`,
       );
-      toast.info(`Limite diário atingido (${cur.dailyLimit}). Aumente o limite para continuar.`);
-      break;
+      while (!stopFlag && envioStore.get().sentDay === todayStr()) {
+        await new Promise((resolve) => setTimeout(resolve, 30_000));
+        ensureDailyWindow();
+      }
+      continue;
     }
 
 
@@ -797,14 +806,15 @@ export async function startSending() {
     }
     const pendings = cur.queue.filter((x) => x.status === 'pending' || x.status === 'error');
     if (pendings.length === 0) {
-      // Se a importação automática está ligada, o envio não para: aguarda
-      // novos CNPJs entrarem na fila (importa 1 → envia → importa próximo).
-      let autoImportOn = false;
+      // Fila vazia nunca finaliza o envio real. Reforça os motores automáticos,
+      // consulta o topo do dia e aguarda a próxima empresa recente.
       try {
         const mod = await import('./consulta-engine');
-        autoImportOn = !!mod.consultaStore.get().autoImport;
+        if (!cur.testMode) {
+          if (!mod.consultaStore.get().autoCount) mod.setAutoCount(true);
+          if (!mod.consultaStore.get().autoImport) mod.setAutoImport(true);
+        }
       } catch { /* noop */ }
-      if (!autoImportOn) break;
       pushLog('⏳ Fila vazia. Aguardando importação automática puxar próximo CNPJ...');
       let waited = 0;
       while (waited < 60_000 && !stopFlag) {
@@ -875,7 +885,7 @@ export async function startSending() {
   running = false;
   paused = false;
   envioStore.set({ running: false, paused: false });
-  pushLog('■ Envio finalizado.');
+  pushLog(stopFlag ? '■ Envio parado pelo operador.' : '■ Envio finalizado.');
 }
 
 export function togglePause() {
