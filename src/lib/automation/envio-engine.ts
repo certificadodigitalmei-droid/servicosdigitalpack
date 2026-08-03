@@ -733,6 +733,9 @@ export async function startSending() {
   if (!cfg.testMode) {
     try {
       const mod = await import('./consulta-engine');
+      // No fluxo de envio contínuo não existe meta de importações: ele só
+      // termina quando o operador pressiona "Parar envio real".
+      mod.setAutoImportTarget(0);
       if (!mod.consultaStore.get().autoCount) mod.setAutoCount(true);
       if (!mod.consultaStore.get().autoImport) mod.setAutoImport(true);
       pushLog('↻ Fluxo contínuo ativo: consultar recentes → importar → enviar.');
