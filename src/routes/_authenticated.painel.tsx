@@ -47,6 +47,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { GlobalFloatingPanels } from '@/components/painel/GlobalFloatingPanels';
 import { getCloudState, saveCloudState } from '@/lib/cloud-state.functions';
+import { SidebarPlanInfo } from '@/components/painel/SidebarPlanInfo';
 
 // Chaves de localStorage que compõem o "estado do painel" salvo na nuvem.
 const CLOUD_PREFIXES = ['automation:', 'campanha:', 'envio:', 'consulta:', 'monitor:', 'painel:'];
@@ -367,6 +368,7 @@ function PanelLayout() {
             ))}
           </SidebarContent>
           <SidebarFooter className="border-t border-slate-200/70 p-3">
+            <SidebarPlanInfo />
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 rounded-lg text-slate-600 transition hover:bg-red-50 hover:text-red-600"
