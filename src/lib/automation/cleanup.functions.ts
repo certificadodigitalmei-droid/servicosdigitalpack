@@ -9,7 +9,6 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     console.log("Iniciando limpeza total de empresas (exceto pagas)...");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     try {
       // 1. Identificar todas as empresas que JÁ PAGARAM para protegê-las
@@ -18,12 +17,11 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         .select("company_id")
         .eq("status", "paid");
       
-      const paidCompanyIds = new Set((paidOrders || []).map(o => o.company_id).filter(Boolean));
+      const paidCompanyIds = new Set((paidOrders || [])
+        .map(o => o.company_id)
+        .filter((id): id is string => !!id));
 
-      // 2. Limpar Recipientes de Campanha (quase todos, exceto de empresas pagas)
-      // Como não temos company_id direto fácil em recipientes, vamos por CNPJ depois
-      
-      // 3. Limpar Links de Empresas (company_links)
+      // 2. Limpar Links de Empresas (company_links) que não são de empresas pagas
       const { data: allLinks } = await supabaseAdmin
         .from("company_links")
         .select("id, company_id");
@@ -41,21 +39,22 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         if (!errLink) linksRemoved = linksToDelete.length;
       }
 
-      // 4. Limpar Recipientes que não são de empresas pagas
-      // Buscamos os CNPJs das empresas pagas para proteger
+      // 3. Limpar Recipientes que não são de empresas pagas (proteger por CNPJ)
       const { data: paidCompaniesData } = await supabaseAdmin
         .from("companies")
         .select("cnpj")
         .in("id", Array.from(paidCompanyIds));
       
-      const paidCnpjs = (paidCompaniesData || []).map(c => c.cnpj);
+      const paidCnpjs = (paidCompaniesData || [])
+        .map(c => c.cnpj)
+        .filter((cnpj): cnpj is string => !!cnpj);
 
       const { data: allRecipients } = await supabaseAdmin
         .from("email_campaign_recipients")
         .select("id, cnpj");
       
       const recipientsToDelete = (allRecipients || [])
-        .filter(r => !paidCnpjs.includes(r.cnpj))
+        .filter(r => !r.cnpj || !paidCnpjs.includes(r.cnpj))
         .map(r => r.id);
 
       let recipientsRemoved = 0;
@@ -67,7 +66,7 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         if (!errRec) recipientsRemoved = recipientsToDelete.length;
       }
 
-      // 5. Limpar a tabela de Empresas (companies)
+      // 4. Limpar a tabela de Empresas (companies) que não pagaram
       const { data: allCompanies } = await supabaseAdmin
         .from("companies")
         .select("id");
@@ -77,7 +76,7 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         .map(c => c.id);
 
       let companiesRemoved = 0;
-      // Excluir em lotes de 1000 para evitar timeout ou limite de payload
+      // Excluir em lotes de 1000 para evitar timeout
       if (companiesToDelete.length > 0) {
         for (let i = 0; i < companiesToDelete.length; i += 1000) {
           const batch = companiesToDelete.slice(i, i + 1000);
@@ -98,7 +97,7 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         }
       };
     } catch (error: any) {
-      console.error("Erro na limpeza:", error);
+      console.error("Erro na limpeza total:", error);
       return { success: false, error: error.message };
     }
   });
