@@ -316,10 +316,10 @@ export async function sendDailyRecovery(
 // ---------------------------------------------------------------------------
 
 export const CADENCE = {
-  firstReminderMinutes: 30,
-  repeatMinutes: 60,
-  stopHour: 22,
-} as const
+  firstReminderMinutes: 180, // de 3 a 3 horas (3 * 60 = 180)
+  repeatMinutes: 180,      // de 3 a 3 horas
+  stopHour: 22,            // para às 22h (10h da noite)
+} as const;
 
 /** Retorna partes de data/hora no fuso de São Paulo. */
 export function spParts(date = new Date()) {
