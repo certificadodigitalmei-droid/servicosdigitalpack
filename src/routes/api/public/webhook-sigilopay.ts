@@ -10,20 +10,35 @@ export const Route = createFileRoute('/api/public/webhook-sigilopay')({
       POST: async ({ request }) => {
         try {
           const body: any = await request.json();
-          const event = String(body?.event || '').toUpperCase();
+          // Log básico para debug (sem dados sensíveis)
+          console.log('[webhook-sigilopay] payload recebido:', JSON.stringify({
+            event: body?.event,
+            status: body?.transaction?.status || body?.status,
+            identifier: body?.transaction?.identifier || body?.identifier
+          }));
 
+          const event = String(body?.event || '').toUpperCase();
           const transaction = body?.transaction ?? {};
+          const status = String(transaction?.status || body?.status || '').toUpperCase();
+
+          // Mapeamento de eventos da SigiloPay para o status 'paid'
+          // Suporta eventos de transação paga, concluída ou transferência concluída
+          const isPaidEvent = 
+            event === 'TRANSACTION_PAID' || 
+            event === 'TRANSACTION_COMPLETED' ||
+            event === 'TRANSFER_COMPLETED' ||
+            status === 'PAID' || 
+            status === 'OK' ||
+            status === 'COMPLETED';
+
+          if (!isPaidEvent) {
+            return new Response('OK', { status: 200 });
+          }
+
           const transactionId: string | undefined =
             transaction?.id || body?.transactionId || body?.transaction_id;
           const identifier: string | undefined =
             transaction?.identifier || body?.identifier;
-          const status: string = String(transaction?.status || body?.status || '').toUpperCase();
-
-          const isPaid = event === 'TRANSACTION_PAID' || status === 'PAID' || status === 'OK';
-
-          if (!isPaid) {
-            return new Response('OK', { status: 200 });
-          }
 
           if (!transactionId && !identifier) {
             console.warn('[webhook-sigilopay] payload sem identificadores', body);
