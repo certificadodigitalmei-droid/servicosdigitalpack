@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
+import { cleanupUnsentCompanies } from '@/lib/automation/cleanup.functions';
 import {
   LayoutDashboard,
   LogOut,
@@ -23,6 +24,7 @@ import {
   
   Loader2,
   BellRing,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -91,6 +93,8 @@ function PanelLayout() {
   const [hydrated, setHydrated] = useState(false);
   const doSave = useServerFn(saveCloudState);
   const doLoad = useServerFn(getCloudState);
+  const doCleanup = useServerFn(cleanupUnsentCompanies);
+  const [cleaning, setCleaning] = useState(false);
 
   const lastSnapshotJsonRef = useRef<string>('');
   const persistNow = async () => {
@@ -138,6 +142,24 @@ function PanelLayout() {
     } catch (e: any) {
       toast.error('Falha ao restaurar: ' + (e?.message ?? 'erro'));
       setRestoring(false);
+    }
+  };
+
+  const handleCleanup = async () => {
+    if (!confirm('Deseja apagar todas as empresas importadas que NÃO receberam e-mails? Isso liberará espaço no banco de dados.')) return;
+    
+    setCleaning(true);
+    try {
+      const result = await doCleanup({ data: { confirm: true } });
+      if (result.success) {
+        toast.success(`Limpeza concluída! Removidos: ${result.removed?.recipients} destinatários, ${result.removed?.links} links e ${result.removed?.companies} empresas.`);
+      } else {
+        toast.error('Erro na limpeza: ' + (result.message || result.error));
+      }
+    } catch (e: any) {
+      toast.error('Falha ao executar limpeza: ' + (e?.message ?? 'erro'));
+    } finally {
+      setCleaning(false);
     }
   };
 
@@ -393,6 +415,17 @@ function PanelLayout() {
                 >
                   {restoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
                   <span className="hidden md:inline">Restaurar</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleCleanup}
+                  disabled={cleaning}
+                  className="text-slate-400 hover:text-red-600 gap-2"
+                  title="Apagar empresas sem e-mail enviado para liberar espaço."
+                >
+                  {cleaning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  <span className="hidden lg:inline text-xs">Limpar Banco</span>
                 </Button>
                 {lastSavedAt && (
                   <span className="hidden lg:inline text-[10px] text-emerald-600">
