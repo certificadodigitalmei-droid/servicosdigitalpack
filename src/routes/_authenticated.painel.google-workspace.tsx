@@ -89,7 +89,7 @@ function GoogleWorkspacePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-mono text-sm break-all">certificadodigitalccmei.online</p>
+            <p className="font-mono text-sm break-all">seu-certificado-mei-digital.online</p>
             <p className="text-xs text-muted-foreground mt-1">Domínio do site — não é alterado.</p>
           </CardContent>
         </Card>
