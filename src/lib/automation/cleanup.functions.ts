@@ -8,83 +8,96 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    console.log("Iniciando limpeza de empresas sem e-mail enviado...");
+    console.log("Iniciando limpeza total de empresas (exceto pagas)...");
 
     try {
-      // 1. Remover recipientes de campanhas que não tiveram e-mail enviado
-      const { data: recipients, error: err1 } = await supabaseAdmin
-        .from("email_campaign_recipients")
-        .delete()
-        .is("sent_at", null)
-        .select("id");
+      // 1. Identificar todas as empresas que JÁ PAGARAM para protegê-las
+      const { data: paidOrders } = await supabaseAdmin
+        .from("orders")
+        .select("company_id")
+        .eq("status", "paid");
+      
+      const paidCompanyIds = new Set((paidOrders || [])
+        .map(o => o.company_id)
+        .filter((id): id is string => !!id));
 
-      if (err1) throw err1;
-
-      // 2. Remover links que não tiveram e-mail enviado e nunca foram acessados
-      const { data: links, error: err2 } = await supabaseAdmin
+      // 2. Limpar Links de Empresas (company_links) que não são de empresas pagas
+      const { data: allLinks } = await supabaseAdmin
         .from("company_links")
-        .delete()
-        .is("promo_email_sent_at", null)
-        .eq("access_count", 0)
-        .select("id");
+        .select("id, company_id");
+      
+      const linksToDelete = (allLinks || [])
+        .filter(l => l.company_id && !paidCompanyIds.has(l.company_id))
+        .map(l => l.id);
 
-      if (err2) throw err2;
+      let linksRemoved = 0;
+      if (linksToDelete.length > 0) {
+        const { error: errLink } = await supabaseAdmin
+          .from("company_links")
+          .delete()
+          .in("id", linksToDelete);
+        if (!errLink) linksRemoved = linksToDelete.length;
+      }
 
-      // 3. Remover empresas que não possuem nenhum link (ou seja, não tem mais rastro de envio ou interesse)
-      // Nota: Buscamos empresas que não aparecem na tabela company_links nem em email_campaign_recipients
-      // Como o Supabase não suporta subqueries complexas no .delete() via SDK facilmente,
-      // e o usuário quer liberar espaço, vamos focar nos links e recipientes que são o maior volume.
-      
-      // Para limpar a tabela 'companies' (que contém os dados pesados de CNPJ):
-      // Precisamos rodar um RPC ou fazer uma busca por lotes.
-      // Vou buscar empresas que foram criadas há mais de 10 minutos (para não apagar as que estão sendo importadas agora)
-      // e que não tem links associados.
-      
-      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-      
-      // Pegamos um lote de empresas antigas
-      const { data: oldCompanies } = await supabaseAdmin
+      // 3. Limpar Recipientes que não são de empresas pagas (proteger por CNPJ)
+      const { data: paidCompaniesData } = await supabaseAdmin
         .from("companies")
-        .select("id, cnpj")
-        .lt("created_at", tenMinutesAgo)
-        .limit(1000);
+        .select("cnpj")
+        .in("id", Array.from(paidCompanyIds));
+      
+      const paidCnpjs = (paidCompaniesData || [])
+        .map(c => c.cnpj)
+        .filter((cnpj): cnpj is string => !!cnpj);
+
+      const { data: allRecipients } = await supabaseAdmin
+        .from("email_campaign_recipients")
+        .select("id, cnpj");
+      
+      const recipientsToDelete = (allRecipients || [])
+        .filter(r => !r.cnpj || !paidCnpjs.includes(r.cnpj))
+        .map(r => r.id);
+
+      let recipientsRemoved = 0;
+      if (recipientsToDelete.length > 0) {
+        const { error: errRec } = await supabaseAdmin
+          .from("email_campaign_recipients")
+          .delete()
+          .in("id", recipientsToDelete);
+        if (!errRec) recipientsRemoved = recipientsToDelete.length;
+      }
+
+      // 4. Limpar a tabela de Empresas (companies) que não pagaram
+      const { data: allCompanies } = await supabaseAdmin
+        .from("companies")
+        .select("id");
+      
+      const companiesToDelete = (allCompanies || [])
+        .filter(c => !paidCompanyIds.has(c.id))
+        .map(c => c.id);
 
       let companiesRemoved = 0;
-      if (oldCompanies && oldCompanies.length > 0) {
-        for (const company of oldCompanies) {
-          // Verifica se ainda tem algum link ou e-mail vinculado
-          const { count: linkCount } = await supabaseAdmin
-            .from("company_links")
-            .select("*", { count: 'exact', head: true })
-            .eq("company_id", company.id);
-
-          const { count: recipientCount } = await supabaseAdmin
-            .from("email_campaign_recipients")
-            .select("*", { count: 'exact', head: true })
-            .eq("cnpj", company.cnpj);
-            
-          const { count: orderCount } = await supabaseAdmin
-            .from("orders")
-            .select("*", { count: 'exact', head: true })
-            .eq("company_id", company.id);
-
-          if (linkCount === 0 && recipientCount === 0 && orderCount === 0) {
-            await supabaseAdmin.from("companies").delete().eq("id", company.id);
-            companiesRemoved++;
-          }
+      // Excluir em lotes de 1000 para evitar timeout
+      if (companiesToDelete.length > 0) {
+        for (let i = 0; i < companiesToDelete.length; i += 1000) {
+          const batch = companiesToDelete.slice(i, i + 1000);
+          const { error: errComp } = await supabaseAdmin
+            .from("companies")
+            .delete()
+            .in("id", batch);
+          if (!errComp) companiesRemoved += batch.length;
         }
       }
 
       return {
         success: true,
         removed: {
-          recipients: recipients?.length || 0,
-          links: links?.length || 0,
+          recipients: recipientsRemoved,
+          links: linksRemoved,
           companies: companiesRemoved
         }
       };
     } catch (error: any) {
-      console.error("Erro na limpeza:", error);
+      console.error("Erro na limpeza total:", error);
       return { success: false, error: error.message };
     }
   });
