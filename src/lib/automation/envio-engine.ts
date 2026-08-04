@@ -912,7 +912,8 @@ export async function startSending() {
        const windowMs = Date.now() - new Date(cur.rateLimitWindowStart).getTime();
        if (windowMs > 3600000 && cur.rateLimitCount === 0) {
           envioStore.set({ throttleMode: false });
-          pushLog("✨ Estabilidade confirmada por 60 min. Voltando para cota de 300/h.");
+          pushLog("✨ Estabilidade confirmada por 60 min. Voltando para cota de 100/h.");
+
        }
     }
 
@@ -927,8 +928,9 @@ export async function startSending() {
     // e cairá na verificação de rateLimitPauseUntil no topo do while.
     
     if (!stopFlag) {
-      // INTERVALO: 13 segundos (ou 38 se throttleMode)
-      const baseDelay = cur.throttleMode ? 38 : 13;
+      // INTERVALO: 36 segundos (ou 72 se throttleMode)
+      const baseDelay = cur.throttleMode ? 72 : 36;
+
       const delay = Math.max(baseDelay, envioStore.get().delaySec);
       await new Promise((r) => setTimeout(r, delay * 1000));
     }
