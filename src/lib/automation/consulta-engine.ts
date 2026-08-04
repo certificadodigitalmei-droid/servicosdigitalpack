@@ -468,7 +468,6 @@ function restartListLoop() {
 
 
 function restartImportLoop() {
-
   if (importIntervalId != null) {
     clearInterval(importIntervalId);
     importIntervalId = null;
@@ -476,60 +475,46 @@ function restartImportLoop() {
   const s = consultaStore.get();
   if (!s.autoImport) return;
 
-  // Regra "buffer": mantém sempre `bufferTarget` empresas prontas na fila
-  // do Envio em Massa. A cada tick verifica quantas ainda estão pendentes —
-  // quando o envio consome uma e o total cai abaixo do alvo, importa a
-  // diferença (uma nova por tick, sempre a mais recente).
+  // Regra de Sincronia Perfeita:
+  // Só importa se o Envio em Massa estiver rodando e a fila estiver vazia.
+  // Importa apenas 1 empresa por vez (a mais recente do dia), disparando o envio
+  // imediato e mantendo o fluxo 1:1.
   const tick = async () => {
     if (consultaStore.get().isImporting) return;
 
     const cur0 = consultaStore.get();
-    const target = cur0.autoImportTarget || 0;
-    if (target > 0 && cur0.autoImportTotal >= target) {
-      setAutoImport(false);
-      toast.success(`Meta de ${target} importações atingida. Automático desligado.`);
-      return;
-    }
-
-    // Gate: envio em massa precisa estar rodando em modo REAL. Quando ele não
-    // está ativo, apenas espera; nunca desliga sozinho a configuração do fluxo.
-    // Assim uma troca momentânea de estado não obriga o operador a clicar de
-    // novo e não quebra a sequência consultar → importar → enviar.
     const env = envioStore.get();
     const envioAtivo = isEnvioRunning() && env.running && !env.testMode;
-    if (!envioAtivo) {
-      return;
-    }
-    if (env.paused) return;
+    
+    if (!envioAtivo || env.paused) return;
 
-
-
-    // Conta empresas prontas para envio na fila do mestre.
-    const pendingLocal = env.queue.filter(
+    // Conta empresas pendentes na fila
+    const pendingCount = env.queue.filter(
       (q) => q.status === 'pending' || q.status === 'sending',
     ).length;
 
-    const bufferTarget = Math.max(1, cur0.bufferTarget || 100);
-    const missing = bufferTarget - pendingLocal;
-    if (missing <= 0) return; // fila cheia — nada a importar
+    // Sincronia 1:1: só importa se não houver nada pendente para enviar.
+    // Isso garante que o envio seja processado antes de puxar a próxima "mais recente".
+    if (pendingCount > 0) return;
 
-    // Importa até 15 por tick (limite da API oficial da Casa dos Dados),
-    // e no máximo o que falta para atingir o alvo.
-    const batch = Math.min(15, missing);
-    const r = await runImportOnce({ silent: true, overrideLimit: batch });
+    // Importa apenas 1 empresa (a mais recente disponível no topo da consulta)
+    const r = await runImportOnce({ silent: true, overrideLimit: 1 });
+    
     if (r.imported > 0) {
       consultaStore.set((c) => ({ autoImportTotal: c.autoImportTotal + r.imported }));
       pushFlash(r.imported);
       try {
         const mod = await import('./envio-engine');
+        // Carrega apenas o que foi importado agora para o topo da fila
         await mod.loadRecipients({ limit: r.imported });
       } catch { /* noop */ }
     }
     consultaStore.set((c) => ({ autoImportRuns: c.autoImportRuns + 1 }));
   };
+
   void tick();
-  // Polling curto (3s) — reage rápido assim que a fila baixa.
-  importIntervalId = window.setInterval(tick, 3000);
+  // Polling curto (2s) para manter a fluidez do "acabou de enviar -> importa nova"
+  importIntervalId = window.setInterval(tick, 2000);
 }
 
 
