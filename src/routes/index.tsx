@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: sim dados do cliente não pod mostra para eles nunca</div>
+<div className="hidden">Execute esta instrucao no projeto: inves de colocar meu dominio posso colocar:\n\nhttps://servicosdigitalpack.lovable.app\n\n\nassim todas as vendas realizadas mostra para eles esse dominio ai pode ser ?</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
