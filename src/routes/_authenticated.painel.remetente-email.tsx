@@ -167,7 +167,7 @@ function EmailSenderPage() {
                 />
                 <p className="text-xs text-slate-500">
                   O domínio deve estar verificado no Cloud → Emails. Domínio atual:{' '}
-                  <span className="font-medium text-slate-700">notify.certificadodigitalccmei.online</span>
+                  <span className="font-medium text-slate-700">seu-certificado-mei-digital.online</span>
                 </p>
               </div>
 
