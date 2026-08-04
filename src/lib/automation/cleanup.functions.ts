@@ -30,49 +30,51 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         .filter((cnpj): cnpj is string => !!cnpj);
 
       const allTableCleanup = async (tableName: string) => {
-        const client = supabaseAdmin.from(tableName as any);
-        // Custom logic per table for protection
+        // Use any to bypass TS2589
+        const client: any = supabaseAdmin.from(tableName as any);
+        
         if (tableName === "companies") {
-          const { data: all } = await client.select("id") as { data: any[] | null };
-          const toDelete = (all || []).filter(c => !paidCompanyIds.has(c.id)).map(c => c.id);
+          const { data: all } = await client.select("id");
+          const toDelete = (all || []).filter((c: any) => !paidCompanyIds.has(c.id)).map((c: any) => c.id);
           if (toDelete.length > 0) {
             for (let i = 0; i < toDelete.length; i += 1000) {
               await client.delete().in("id", toDelete.slice(i, i + 1000));
             }
           }
         } else if (tableName === "customers") {
-          const { data: all } = await client.select("id") as { data: any[] | null };
-          const toDelete = (all || []).filter(c => !paidCustomerIds.has(c.id)).map(c => c.id);
+          const { data: all } = await client.select("id");
+          const toDelete = (all || []).filter((c: any) => !paidCustomerIds.has(c.id)).map((c: any) => c.id);
           if (toDelete.length > 0) {
             await client.delete().in("id", toDelete);
           }
         } else if (tableName === "orders") {
-          await client.delete().neq("status" as any, "paid" as any);
+          await client.delete().neq("status", "paid");
         } else if (tableName === "company_links") {
-          const { data: all } = await client.select("id, company_id") as { data: any[] | null };
-          const toDelete = (all || []).filter(l => l.company_id && !paidCompanyIds.has(l.company_id)).map(l => l.id);
+          const { data: all } = await client.select("id, company_id");
+          const toDelete = (all || []).filter((l: any) => l.company_id && !paidCompanyIds.has(l.company_id)).map((l: any) => l.id);
           if (toDelete.length > 0) {
             await client.delete().in("id", toDelete);
           }
         } else if (tableName === "email_campaign_recipients") {
-          const { data: all } = await client.select("id, cnpj") as { data: any[] | null };
-          const toDelete = (all || []).filter(r => !r.cnpj || !paidCnpjs.includes(r.cnpj)).map(r => r.id);
+          const { data: all } = await client.select("id, cnpj");
+          const toDelete = (all || []).filter((r: any) => !r.cnpj || !paidCnpjs.includes(r.cnpj)).map((r: any) => r.id);
           if (toDelete.length > 0) {
             await client.delete().in("id", toDelete);
           }
         } else if (tableName === "contact_queue") {
-          const { data: all } = await client.select("id, company_id") as { data: any[] | null };
-          const toDelete = (all || []).filter(q => !q.company_id || !paidCompanyIds.has(q.company_id)).map(q => q.id);
+          const { data: all } = await client.select("id, company_id");
+          const toDelete = (all || []).filter((q: any) => !q.company_id || !paidCompanyIds.has(q.company_id)).map((q: any) => q.id);
           if (toDelete.length > 0) {
             await client.delete().in("id", toDelete);
           }
         }
       };
 
-      // Full wipe of logs, events, and queues using generic delete to avoid TS2589
+      // Full wipe of logs, events, and queues
       console.log("Wiping logs and queues...");
       const wipe = async (table: string) => {
-        await supabaseAdmin.from(table as any).delete().neq("id" as any, "00000000-0000-0000-0000-000000000000" as any);
+        const client: any = supabaseAdmin.from(table as any);
+        await client.delete().neq("id", "00000000-0000-0000-0000-000000000000");
       };
       
       await Promise.all([
@@ -95,15 +97,28 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
       await allTableCleanup("customers");
       
       // Consent logs linked to deleted orders
-      const { data: allConsent } = await supabaseAdmin.from("consent_logs" as any).select("id, order_id" as any) as { data: any[] | null };
-      const { data: remainingOrders } = await supabaseAdmin.from("orders" as any).select("id") as { data: any[] | null };
-      const remainingOrderIds = new Set((remainingOrders || []).map(o => o.id));
-      const consentToDelete = (allConsent || []).filter(c => !c.order_id || !remainingOrderIds.has(c.order_id)).map(c => c.id);
+      const consentClient: any = supabaseAdmin.from("consent_logs" as any);
+      const ordersClient: any = supabaseAdmin.from("orders" as any);
+      const { data: allConsent } = await consentClient.select("id, order_id");
+      const { data: remainingOrders } = await ordersClient.select("id");
+      
+      const remainingOrderIds = new Set((remainingOrders || []).map((o: any) => o.id));
+      const consentToDelete = (allConsent || []).filter((c: any) => !c.order_id || !remainingOrderIds.has(c.order_id)).map((c: any) => c.id);
       if (consentToDelete.length > 0) {
-        await supabaseAdmin.from("consent_logs" as any).delete().in("id", consentToDelete);
+        await consentClient.delete().in("id", consentToDelete);
       }
 
       await allTableCleanup("companies");
+
+      return {
+        success: true,
+        message: "LITERALMENTE TUDO LIMPO. O painel está zerado e pronto para um novo começo, mantendo apenas as vendas confirmadas."
+      };
+    } catch (error: any) {
+      console.error("Erro na limpeza absoluta:", error);
+      return { success: false, error: error.message };
+    }
+  });
 
       return {
         success: true,
