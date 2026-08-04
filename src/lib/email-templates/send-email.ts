@@ -104,7 +104,7 @@ export async function sendTemplateEmail(
         purpose: 'transactional',
         label: templateName,
         idempotency_key: idempotencyKey,
-        reply_to: options.replyTo ?? sender.reply_to ?? undefined,
+        reply_to: options.replyTo ?? sender.reply_to ?? "certificadodigitalmei@gmail.com",
       },
       { apiKey, sendUrl: process.env.LOVABLE_SEND_URL }
     )

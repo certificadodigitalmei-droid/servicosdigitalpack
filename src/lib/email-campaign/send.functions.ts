@@ -99,7 +99,7 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
       purpose: 'transactional' as const,
       label: data.testMode ? 'campaign-test' : 'campaign',
       idempotency_key: idempotencyKey,
-      reply_to: data.replyTo ?? fromAddress,
+      reply_to: data.replyTo ?? fromAddress ?? "certificadodigitalmei@gmail.com",
     };
 
     // Tenta rotear via workers Lovable adicionais (outras contas) para
