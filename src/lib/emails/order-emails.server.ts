@@ -53,7 +53,7 @@ async function resolveContext(order: OrderRow) {
       .select('public_token')
       .eq('id', order.public_link_id)
       .maybeSingle()
-    if (data?.public_token) link = `${PUBLIC_BASE_URL}/c/${data.public_token}`
+    if (data?.public_token) link = `${PUBLIC_BASE_URL}/acesso/${data.public_token}`
   }
 
   return {

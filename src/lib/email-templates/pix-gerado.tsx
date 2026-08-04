@@ -139,7 +139,7 @@ export const template = {
   previewData: {
     empresa: 'EMPRESA EXEMPLO MEI LTDA',
     cnpj: '12.345.678/0001-90',
-    link: 'https://seu-certificado-mei-digital.online/c/exemplo',
+    link: 'https://seu-certificado-mei-digital.online/acesso/exemplo',
     pixCode: '00020126...5802BR6009SAO PAULO62070503***6304ABCD',
     protocolo: 'CD-4F21A9B7',
     dataSolicitacao: '31/07/2026 09:14',
