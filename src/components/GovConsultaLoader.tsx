@@ -56,7 +56,7 @@ export function GovConsultaLoader({
         type="button"
         disabled
         aria-live="polite"
-        className="relative flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-full px-6 py-4 text-white shadow-[0_14px_40px_-10px_rgba(19,81,180,0.65)] ring-1 ring-white/40"
+        className="relative flex h-[56px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-full px-6 py-0 text-white shadow-[0_14px_40px_-10px_rgba(19,81,180,0.65)] ring-1 ring-white/40"
         style={{ background: AZUL }}
       >
         <span
@@ -69,13 +69,7 @@ export function GovConsultaLoader({
         <Loader2 className="h-[18px] w-[18px] shrink-0 animate-spin" />
         <span
           key={currentLabel}
-          className={`animate-fade-in whitespace-nowrap font-semibold tracking-tight ${
-            currentLabel.length > 30
-              ? 'text-[11px]'
-              : currentLabel.length > 22
-                ? 'text-[13px]'
-                : 'text-[15.5px]'
-          }`}
+          className="animate-fade-in truncate font-semibold tracking-tight text-[15px]"
         >
           {currentLabel}
         </span>
