@@ -14,7 +14,7 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
       // 1. Identificar todas as empresas que JÁ PAGARAM para protegê-las
       const { data: paidOrders } = await supabaseAdmin
         .from("orders")
-        .select("company_id, customer_id")
+        .select("company_id, customer_id, reference_cnpj")
         .eq("status", "paid");
       
       const paidCompanyIds = new Set((paidOrders || [])
@@ -25,8 +25,11 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         .map(o => o.customer_id)
         .filter((id): id is string => !!id));
 
+      const paidCnpjs = (paidOrders || [])
+        .map(o => o.reference_cnpj)
+        .filter((cnpj): cnpj is string => !!cnpj);
+
       // 2. Limpar Campanhas de Email (exceto destinatários de empresas pagas)
-      // Primeiro os destinatários
       const { data: allRecipients } = await supabaseAdmin
         .from("email_campaign_recipients")
         .select("id, cnpj");
@@ -54,16 +57,10 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
 
       // 4. Limpar Pedidos Pendentes/Cancelados (orders)
       // IMPORTANTE: Deletamos apenas os que NÃO são 'paid'
-      const { error: errOrders } = await supabaseAdmin
-        .from("orders")
-        .delete()
-        .neq("status", "paid");
+      await supabaseAdmin.from("orders").delete().neq("status", "paid");
 
       // 5. Limpar Clientes (customers) que não têm pedidos pagos
-      const { data: allCustomers } = await supabaseAdmin
-        .from("customers")
-        .select("id");
-      
+      const { data: allCustomers } = await supabaseAdmin.from("customers").select("id");
       const customersToDelete = (allCustomers || [])
         .filter(c => !paidCustomerIds.has(c.id))
         .map(c => c.id);
@@ -73,8 +70,6 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
       }
 
       // 6. Limpar Logs de Consentimento (consent_logs)
-      // Como vinculamos ao order_id, se o pedido foi apagado, o log deve sumir via CASCADE se configurado, 
-      // mas vamos garantir.
       const { data: allConsent } = await supabaseAdmin.from("consent_logs").select("id, order_id");
       const { data: existingOrders } = await supabaseAdmin.from("orders").select("id");
       const existingOrderIds = new Set((existingOrders || []).map(o => o.id));
@@ -87,32 +82,21 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
       }
 
       // 7. Limpar a tabela de Empresas (companies) que não pagaram
-      const { data: allCompanies } = await supabaseAdmin
-        .from("companies")
-        .select("id");
-      
+      const { data: allCompanies } = await supabaseAdmin.from("companies").select("id");
       const companiesToDelete = (allCompanies || [])
         .filter(c => !paidCompanyIds.has(c.id))
         .map(c => c.id);
 
-      let companiesRemoved = 0;
       if (companiesToDelete.length > 0) {
         for (let i = 0; i < companiesToDelete.length; i += 1000) {
           const batch = companiesToDelete.slice(i, i + 1000);
-          const { error: errComp } = await supabaseAdmin
-            .from("companies")
-            .delete()
-            .in("id", batch);
-          if (!errComp) companiesRemoved += batch.length;
+          await supabaseAdmin.from("companies").delete().in("id", batch);
         }
       }
 
-      // 8. Limpar Notificações de Whatsapp (se houver tabela)
-      // Se houver tabelas de logs de envio de zap, limpar aqui também.
-
       return {
         success: true,
-        message: "Limpeza profunda concluída. Apenas dados de vendas confirmadas foram preservados."
+        message: "Limpeza profunda concluída. O painel está zerado, mantendo apenas vendas confirmadas."
       };
     } catch (error: any) {
       console.error("Erro na limpeza profunda:", error);
