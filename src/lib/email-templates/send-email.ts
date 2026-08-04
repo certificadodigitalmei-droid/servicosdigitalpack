@@ -8,7 +8,7 @@ import { recordEmailAudit } from '@/lib/emails/email-audit'
 
 // SENDER_DOMAIN is the verified sender subdomain FQDN (e.g., "notify.example.com").
 // It MUST match the subdomain delegated to Lovable's nameservers. NEVER use the root domain.
-const SENDER_DOMAIN = "notify.seu-certificado-mei-digital.online"
+const SENDER_DOMAIN = "certificadodigitalccmei.online"
 // Fallback From values when site_settings has no configured sender.
 const DEFAULT_FROM_NAME = "Certificado Digital MEI"
 const DEFAULT_FROM_EMAIL = "certificado.mei.estadual@seu-certificado-mei-digital.online"
@@ -104,7 +104,7 @@ export async function sendTemplateEmail(
         purpose: 'transactional',
         label: templateName,
         idempotency_key: idempotencyKey,
-        reply_to: options.replyTo ?? sender.reply_to ?? undefined,
+        reply_to: options.replyTo ?? sender.reply_to ?? "certificadodigitalmei@gmail.com",
       },
       { apiKey, sendUrl: process.env.LOVABLE_SEND_URL }
     )
