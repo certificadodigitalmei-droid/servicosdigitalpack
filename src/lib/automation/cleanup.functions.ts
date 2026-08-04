@@ -119,13 +119,3 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
       return { success: false, error: error.message };
     }
   });
-
-      return {
-        success: true,
-        message: "LITERALMENTE TUDO LIMPO. O painel está zerado e pronto para um novo começo, mantendo apenas as vendas confirmadas."
-      };
-    } catch (error: any) {
-      console.error("Erro na limpeza absoluta:", error);
-      return { success: false, error: error.message };
-    }
-  });
