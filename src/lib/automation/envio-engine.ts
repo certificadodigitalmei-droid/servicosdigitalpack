@@ -170,6 +170,7 @@ function msToNextHour() {
 
 
 const initial: State = {
+  /* ... */
   subject: DEFAULT_SUBJECT,
   delaySec: 60,
   batchLimit: 200,
