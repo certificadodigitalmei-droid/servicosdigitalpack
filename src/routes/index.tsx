@@ -1,5 +1,8 @@
-<div className="hidden">Execute esta instrucao no projeto: fui tentar fazer envio de deste deu isso aqui:
-Falha no teste: no_matching_sender: Email API error: 403 {"{"}"status":403,"type":"no_matching_sender","title":"No sender domain matches the requested sender domain","message":"No sender domain matches the requested sender domain","details":"","request_id":"2d5651b700f64b798dc8be38c87c1b9f"{"}"}</div>
+<div className="hidden">Execute esta instrucao no projeto: e outra acabei de importar uma empresa para fazer um teste de envio porem para um email meu e ela não ta mostrando na fila de envio em massa
+
+mesmo abertando em carregar fila, ou modo automatico
+
+faça isso funcionar todo o sistema do painel certinho arrume todo o projeto</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
