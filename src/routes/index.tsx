@@ -1,8 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: e outra acabei de importar uma empresa para fazer um teste de envio porem para um email meu e ela não ta mostrando na fila de envio em massa
-
-mesmo abertando em carregar fila, ou modo automatico
-
-faça isso funcionar todo o sistema do painel certinho arrume todo o projeto</div>
+<div className="hidden">Execute esta instrucao no projeto: to falando da minha capacidade de envio de email com esse plano atual da lovablee</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
