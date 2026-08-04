@@ -351,7 +351,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no"/>
 <title>${title}</title>
 <style>
-  :root { color-scheme: light only; supported-color-schemes: light only; }
+  :root { color-scheme: light; supported-color-schemes: light; }
   /* Force light mode on clients that auto-invert (Outlook.com, Yahoo, Gmail iOS) */
   [data-ogsc] body, [data-ogsb] body,
   u + .body, u + #body {
