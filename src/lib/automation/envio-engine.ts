@@ -134,6 +134,12 @@ type State = {
   lastSuccessAt: string | null;
   lastErrorMsg: string | null;
 
+  // Estado de Rate Limit (429)
+  rateLimitPauseUntil: string | null; // ISO
+  rateLimitCount: number;
+  rateLimitWindowStart: string | null; // ISO
+  throttleMode: boolean;
+
   // Estado
   queue: QueueItem[];
   sentEmails: SentEmail[];
@@ -193,6 +199,12 @@ const initial: State = {
   heroImageUrl: '',
   lastSuccessAt: null,
   lastErrorMsg: null,
+  
+  rateLimitPauseUntil: null,
+  rateLimitCount: 0,
+  rateLimitWindowStart: null,
+  throttleMode: false,
+
   queue: [],
   sentEmails: [],
   running: false,
@@ -227,6 +239,9 @@ export const envioStore = createStore<State>(initial, {
     'heroImageUrl',
     'lastSuccessAt',
     'lastErrorMsg',
+    'rateLimitCount',
+    'rateLimitWindowStart',
+    'throttleMode',
     'queue',
     'sentEmails',
     'logs',
@@ -689,13 +704,35 @@ async function sendOne(item: QueueItem, channelIndex?: number): Promise<{ ok: bo
       return { ok: true };
     }
     if (res.reason === 'rate_limited') {
-      envioStore.set((s) => ({
-        queue: s.queue.map((q) =>
-          q.id === item.id ? { ...q, status: 'pending', message: res.message } : q,
-        ),
-      }));
-      pushLog(`⏸ Rate-limited: aguardando ${res.retryAfterSeconds ?? 60}s`);
-      return { ok: false, waitSec: res.retryAfterSeconds ?? 60 };
+      const wait = res.retryAfterSeconds ?? 60;
+      const until = new Date(Date.now() + wait * 1000).toISOString();
+      const now = new Date().toISOString();
+      
+      envioStore.set((s) => {
+        const windowStart = s.rateLimitWindowStart || now;
+        const windowMs = new Date().getTime() - new Date(windowStart).getTime();
+        const newCount = windowMs > 3600000 ? 1 : s.rateLimitCount + 1;
+        
+        // Se 3 ou mais 429 em 1 hora, pausa por 60 min
+        let finalWaitUntil = until;
+        if (newCount >= 3) {
+          finalWaitUntil = new Date(Date.now() + 3600 * 1000).toISOString();
+          pushLog(`🚨 Múltiplos 429 detectados (${newCount}). Pausando fila por 60 minutos.`);
+        }
+
+        return {
+          queue: s.queue.map((q) =>
+            q.id === item.id ? { ...q, status: 'pending', message: 'Rate limited (429)' } : q,
+          ),
+          rateLimitPauseUntil: finalWaitUntil,
+          rateLimitCount: newCount,
+          rateLimitWindowStart: windowMs > 3600000 ? now : windowStart,
+          throttleMode: true, // Ativa modo reduzido após 429
+        };
+      });
+      
+      pushLog(`⏸ HTTP 429: Retomada prevista em ${new Date(envioStore.get().rateLimitPauseUntil!).toLocaleTimeString()}`);
+      return { ok: false, waitSec: wait };
     }
     envioStore.set((s) => ({
       queue: s.queue.map((q) =>
@@ -836,51 +873,61 @@ export async function startSending() {
     }
     if (stopFlag) break;
 
-    // Envio PARALELO: descobre quantos canais ativos existem
-    // (conta local + N workers Lovable). Envia esse número de e-mails
-    // ao mesmo tempo, cada um roteado para um canal diferente. Assim,
-    // com 1 worker cadastrado, saem 2 e-mails simultaneamente (2x mais
-    // rápido); com 2 workers, saem 3 e-mails, e assim por diante.
-    let parallelism = 1;
-    try {
-      const { data: aw } = await supabase
-        .from('email_workers')
-        .select('id')
-        .eq('is_active', true);
-      parallelism = 1 + (aw?.length ?? 0);
-    } catch { parallelism = 1; }
-
-    // Respeita limites (por hora / diário) ao dimensionar o lote.
-    const cur2 = envioStore.get();
-    if (cur2.limitMode === 'hourly' && cur2.hourlyLimit > 0) {
-      parallelism = Math.min(parallelism, Math.max(1, cur2.hourlyLimit - cur2.sentThisHour));
-    }
-    if (cur2.limitMode === 'daily' && cur2.dailyLimit > 0) {
-      parallelism = Math.min(parallelism, Math.max(1, cur2.dailyLimit - cur2.sentToday));
-    }
-    parallelism = Math.max(1, parallelism);
-
-    const batch = pendings.slice(0, parallelism);
-    if (batch.length > 1) {
-      pushLog(`⇉ Disparando ${batch.length} e-mails em paralelo (${batch.length} canais).`);
-    }
-    const results = await Promise.all(batch.map((it, i) => sendOne(it, i)));
-
-    // Se algum canal disse "rate_limited", aguarda o maior retryAfter
-    const maxWait = Math.max(0, ...results.map((r) => r.waitSec ?? 0));
-    if (maxWait > 0 && !stopFlag) {
-      await new Promise((r) => setTimeout(r, Math.min(maxWait, 300) * 1000));
-      // reenviar os que ficaram pending por rate limit
-      for (let i = 0; i < batch.length; i++) {
-        if (!results[i].ok && results[i].waitSec) {
-          if (stopFlag) break;
-          await sendOne(batch[i], i);
-        }
+    // Nunca ultrapassar 300 envios na janela de 60 minutos.
+    // Usamos sentThisHour como proxy simplificado, mas garantimos que 
+    // se throttleMode estiver on, o limite cai para 100/h.
+    const effectiveLimit = cur.throttleMode ? 100 : 300;
+    if (cur.sentThisHour >= effectiveLimit) {
+      const waitMs = msToNextHour();
+      pushLog(`⏸ Limite ${effectiveLimit}/h atingido. Aguardando virada da hora...`);
+      let waited = 0;
+      while (waited < waitMs && !stopFlag) {
+        await new Promise((r) => setTimeout(r, 5000));
+        waited += 5000;
       }
+      continue;
     }
 
+    // Processamento de retoma de rate limit
+    if (cur.rateLimitPauseUntil) {
+      const until = new Date(cur.rateLimitPauseUntil).getTime();
+      const remaining = until - Date.now();
+      if (remaining > 0) {
+        pushLog(`⏸ Fila pausada por 429. Retomando em ${Math.ceil(remaining / 60000)} min...`);
+        let waited = 0;
+        while (waited < remaining && !stopFlag) {
+          await new Promise((r) => setTimeout(r, 5000));
+          waited += 5000;
+          if (new Date(envioStore.get().rateLimitPauseUntil || 0).getTime() <= Date.now()) break;
+        }
+        if (stopFlag) break;
+      }
+      envioStore.set({ rateLimitPauseUntil: null });
+    }
+
+    // Verificação de reset do throttleMode (60 min sem 429)
+    if (cur.throttleMode && cur.rateLimitWindowStart) {
+       const windowMs = Date.now() - new Date(cur.rateLimitWindowStart).getTime();
+       if (windowMs > 3600000 && cur.rateLimitCount === 0) {
+          envioStore.set({ throttleMode: false });
+          pushLog("✨ Estabilidade confirmada por 60 min. Voltando para cota de 300/h.");
+       }
+    }
+
+    // CONCORRÊNCIA: Somente 1 envio por vez (conforme instrução).
+    // O sistema ignora os workers Lovable para garantir processamento serial único.
+    let parallelism = 1;
+    
+    const batch = pendings.slice(0, parallelism);
+    const results = await Promise.all(batch.map((it, i) => sendOne(it, i)));
+    
+    // Se algum canal disse "rate_limited", o loop principal continuará 
+    // e cairá na verificação de rateLimitPauseUntil no topo do while.
+    
     if (!stopFlag) {
-      const delay = Math.max(1, envioStore.get().delaySec);
+      // INTERVALO: 13 segundos (ou 38 se throttleMode)
+      const baseDelay = cur.throttleMode ? 38 : 13;
+      const delay = Math.max(baseDelay, envioStore.get().delaySec);
       await new Promise((r) => setTimeout(r, delay * 1000));
     }
   }
