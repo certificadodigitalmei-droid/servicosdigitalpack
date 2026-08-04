@@ -42,7 +42,7 @@ export const workspaceStatus = createServerFn({ method: 'GET' })
     const { hasAllGoogleSecrets, getSenderEmail } = await import('./gmail.server');
     const status = hasAllGoogleSecrets();
     return {
-      site: 'https://certificadodigitalccmei.online',
+      site: 'https://seu-certificado-mei-digital.online',
       sender: status.ok ? getSenderEmail() : null,
       configured: status.ok,
       missing: status.missing,

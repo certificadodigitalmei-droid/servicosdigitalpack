@@ -241,7 +241,7 @@ function CampanhasEmail() {
           LINK_PUBLICO: (() => {
             const raw = link?.public_url || '';
             const broken = !raw || /^https?:\/\/\/?/i.test(raw) || !/^https?:\/\/[^/]+/i.test(raw) || /lovable\.app|localhost|127\.0\.0\.1|seu-certificado-mei-digital\.online/i.test(raw);
-            if (broken && link?.public_token) return `https://certificadodigitalccmei.online/c/${link.public_token}`;
+            if (broken && link?.public_token) return `https://seu-certificado-mei-digital.online/c/${link.public_token}`;
             return raw;
           })(),
           LINK_CHECKOUT: link?.checkout_url || '',
