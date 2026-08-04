@@ -303,7 +303,7 @@ export function ensureDailyWindow() {
 export async function loadRecipients(opts: { limit?: number } = {}) {
   // Guard: se a engine não está rodando (running == false), não importa novos
   // se o usuário parou o envio, a importação também deve parar.
-  if (!running) return;
+  if (!running && !opts.limit) return;
 
   const limit = Math.max(1, opts.limit ?? 1);
   if (envioStore.get().loading) return;
