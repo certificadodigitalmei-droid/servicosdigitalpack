@@ -251,6 +251,23 @@ function EnvioMassa() {
 
   return (
     <div className="space-y-6">
+      {/* Alerta de Configuração para Alto Volume */}
+      {hourlyLimit <= 100 && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+              <Zap className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-blue-900">🚀 Quer enviar mais de 100 e-mails por hora?</h3>
+              <p className="mt-1 text-sm text-blue-700 leading-relaxed">
+                Para alta performance, utilize o perfil <strong>Turbo</strong> ou ajuste o <strong>Limite por hora</strong> para um valor maior (ex: 150 ou 200) e reduza o <strong>Intervalo entre envios</strong> para 20 ou 30 segundos nas configurações de Ritmo abaixo.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Envio em Massa</h1>
         <p className="text-sm text-slate-500">

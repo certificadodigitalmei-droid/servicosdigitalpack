@@ -172,12 +172,12 @@ function msToNextHour() {
 const initial: State = {
   /* ... */
   subject: DEFAULT_SUBJECT,
-  delaySec: 60,
-  batchLimit: 200,
-  limitMode: 'daily',
-  dailyLimit: 50,
-  hourlyLimit: 30,
-  hourlyRestMin: 0,
+  delaySec: 30, // Reduzido de 60 para 30s
+  batchLimit: 500, // Aumentado para suportar volumes maiores
+  limitMode: 'hourly', // Foco em volume por hora
+  dailyLimit: 2000,
+  hourlyLimit: 150, // Permite > 100 por hora
+  hourlyRestMin: 5, // Pequeno descanso
   stopAtDaily: 0,
 
   sentToday: 0,
