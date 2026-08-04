@@ -263,11 +263,12 @@ function EnvioMassa() {
             <Activity className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="font-bold text-indigo-900">Configuração de Envio (300 e-mails/h)</h3>
+            <h3 className="font-bold text-indigo-900">Configuração de Envio (100 e-mails/h)</h3>
             <p className="mt-1 text-sm text-indigo-700 leading-relaxed">
-              O limite do workspace é de <strong>300 e-mails/hora</strong>.
-              Intervalo configurado: <strong>13 segundos</strong>.
+              O limite do workspace é de <strong>100 e-mails/hora</strong>.
+              Intervalo configurado: <strong>36 segundos</strong>.
               O sistema lida automaticamente com erros 429, pausando e retomando a fila.
+
             </p>
           </div>
         </div>
@@ -323,21 +324,22 @@ function EnvioMassa() {
           <div className="grid gap-3 sm:grid-cols-4">
               <BigStat
                 label="Cota Configurada"
-                value="300/h"
+                value="100/h"
                 sub="Cota padrão workspace"
                 accent="slate"
               />
               <BigStat
                 label="Cota Efetiva Atual"
-                value={throttleMode ? "100/h" : "300/h"}
+                value={throttleMode ? "50/h" : "100/h"}
                 sub={throttleMode ? "⚠ Reduzida por 429" : "Cota máxima ativa"}
                 accent={throttleMode ? 'amber' : 'emerald'}
               />
               <BigStat
                 label="Intervalo Atual"
-                value={throttleMode ? "38s" : "13s"}
+                value={throttleMode ? "72s" : "36s"}
                 sub="Entre cada envio"
                 accent="blue"
+
               />
               <BigStat
                 label="Status de Retomada"
@@ -365,11 +367,12 @@ function EnvioMassa() {
           <div className="rounded-lg border border-slate-200 bg-white p-4 text-xs text-slate-600">
             <div className="mb-2 text-sm font-semibold text-slate-800">Regras de Envio Específicas do Workspace</div>
             <ul className="grid gap-1.5 sm:grid-cols-2">
-              <li>✅ <strong>Cota Máxima</strong>: 300 e-mails por hora liberados pela Lovable.</li>
+              <li>✅ <strong>Cota Máxima</strong>: 100 e-mails por hora liberados pela Lovable.</li>
               <li>✅ <strong>Concorrência Serial</strong>: Apenas 1 envio por vez para máxima estabilidade.</li>
               <li>✅ <strong>Gestão de 429</strong>: Respeito automático ao header Retry-After e pausa inteligente.</li>
-              <li>✅ <strong>Modo de Segurança (Throttle)</strong>: Redução automática para 100/h e 38s após erro 429.</li>
+              <li>✅ <strong>Modo de Segurança (Throttle)</strong>: Redução automática para 50/h e 72s após erro 429.</li>
               <li>✅ <strong>Pausa Prolongada</strong>: Se ocorrerem 3 erros 429 em 1 hora, a fila pausa por 60 minutos.</li>
+
               <li>✅ <strong>Retomada Automática</strong>: O sistema retoma o processamento assim que a cota é liberada.</li>
               <li>🚫 <strong>Supressão Permanente</strong>: Nunca reenvia para hard bounces, reclamações ou descadastros.</li>
               <li>⚙️ <strong>Independência</strong>: O processamento ocorre no servidor, sem depender da aba estar aberta.</li>

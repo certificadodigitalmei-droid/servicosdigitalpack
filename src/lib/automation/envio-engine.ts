@@ -178,12 +178,13 @@ function msToNextHour() {
 const initial: State = {
   /* ... */
   subject: DEFAULT_SUBJECT,
-  delaySec: 13, // Ajustado para 300 e-mails/hora (13s)
-  batchLimit: 300, 
+  delaySec: 36, // Ajustado para 100 e-mails/hora (36s)
+  batchLimit: 100, 
   limitMode: 'hourly', 
-  dailyLimit: 7200, // 300 * 24
-  hourlyLimit: 300, // Limite ajustado para 300 por hora
-  hourlyRestMin: 0, // Sem descanso fixo, usa Retry-After se 429 ocorrer
+  dailyLimit: 2400, // 100 * 24
+  hourlyLimit: 100, // Limite ajustado para 100 por hora
+  hourlyRestMin: 0, 
+
   stopAtDaily: 0,
 
   sentToday: 0,
