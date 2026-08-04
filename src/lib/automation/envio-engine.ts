@@ -301,9 +301,11 @@ export function ensureDailyWindow() {
 /* ----------------------------- queue actions ------------------------------ */
 
 export async function loadRecipients(opts: { limit?: number } = {}) {
+  // Guard: se a engine não está rodando (running == false), não importa novos
+  // se o usuário parou o envio, a importação também deve parar.
+  if (!running) return;
+
   const limit = Math.max(1, opts.limit ?? 1);
-  // Guard: evita execuções concorrentes (auto-sync + clique manual/realtime)
-  // que podem inserir a mesma empresa duas vezes na fila.
   if (envioStore.get().loading) return;
   envioStore.set({ loading: true });
   try {
@@ -901,6 +903,13 @@ export function stopSending() {
   paused = false;
   running = false;
   envioStore.set({ running: false, paused: false });
+
+  // Desativa também os motores de consulta/importação para garantir parada total
+  import('./consulta-engine').then(mod => {
+    if (mod.consultaStore.get().autoCount) mod.setAutoCount(false);
+    if (mod.consultaStore.get().autoImport) mod.setAutoImport(false);
+  }).catch(() => {});
+
   pushLog('■ Parada solicitada.');
 }
 

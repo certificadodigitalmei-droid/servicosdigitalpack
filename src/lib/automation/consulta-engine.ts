@@ -263,7 +263,9 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
   const knownBefore = consultaStore.get().foundList.length;
 
   try {
-    while (page <= HARD_BACKSTOP_PAGES) {
+    // Se o envio em massa foi parado, encerramos qualquer varredura de lista
+    // para garantir que a importação também pare imediatamente.
+    while (page <= HARD_BACKSTOP_PAGES && isEnvioRunning()) {
       const r: any = await listByDate({
         data: { date, filters, limit: pageSize, page },
       });
