@@ -43,7 +43,10 @@ export function SidebarPlanInfo() {
       
       <div className="space-y-2">
         <div className="flex items-end justify-between">
-          <span className="text-sm font-bold text-slate-700">{data.used} <span className="text-[10px] font-normal text-slate-400">/ {data.granted} créditos</span></span>
+          <div className="flex flex-col">
+            <span className="text-sm font-bold text-slate-700">{data.used} <span className="text-[10px] font-normal text-slate-400">/ {data.granted} créditos</span></span>
+            <span className="text-[9px] font-medium text-emerald-600">~{data.granted - data.used} e-mails restantes</span>
+          </div>
           <span className={cn(
             "text-[10px] font-bold",
             percentage > 90 ? "text-red-500" : percentage > 70 ? "text-amber-500" : "text-emerald-500"
