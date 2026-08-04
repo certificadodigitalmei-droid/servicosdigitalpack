@@ -127,7 +127,7 @@ export const template = {
   previewData: {
     empresa: 'EMPRESA EXEMPLO MEI LTDA',
     cnpj: '12.345.678/0001-90',
-    link: 'https://certificadodigitalccmei.online/c/exemplo',
+    link: 'https://seu-certificado-mei-digital.online/c/exemplo',
     validade: '12 meses',
     protocolo: 'CD-4F21A9B7',
     dataEmissao: '31/07/2026 09:32',
