@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: bom agora preciso que arrume seguinte\n\nos links das empresas etc quando elas clica ta indo tudo o dominio antigo que era o https://certificadodigitalccmei.online/\n\nporem agora mudou o processo dos links etc criadodoas das empresas etc, pagamento tudo é por:\nhttps://seu-certificado-mei-digital.online/</div>
+<div className="hidden">Execute esta instrucao no projeto: arrumou as empresas que ja tinha fiz um envio de teste cliequei e foi do dominio antigo</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
