@@ -101,7 +101,7 @@ export type CampaignDesign = {
 
 const AVATAR_URL = govbrAvatarAsset.url.startsWith('http')
   ? govbrAvatarAsset.url
-  : `https://seu-certificado-mei-digital.online${govbrAvatarAsset.url}`;
+  : `https://certificadodigitalccmei.online${govbrAvatarAsset.url}`;
 
 /**
  * Padrão visual único das campanhas: mesmo estilo institucional dos e-mails
