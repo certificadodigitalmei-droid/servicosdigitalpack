@@ -33,7 +33,7 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         const client = supabaseAdmin.from(tableName as any);
         // Custom logic per table for protection
         if (tableName === "companies") {
-          const { data: all } = await client.select("id");
+          const { data: all } = await client.select("id") as { data: any[] | null };
           const toDelete = (all || []).filter(c => !paidCompanyIds.has(c.id)).map(c => c.id);
           if (toDelete.length > 0) {
             for (let i = 0; i < toDelete.length; i += 1000) {
@@ -41,7 +41,7 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
             }
           }
         } else if (tableName === "customers") {
-          const { data: all } = await client.select("id");
+          const { data: all } = await client.select("id") as { data: any[] | null };
           const toDelete = (all || []).filter(c => !paidCustomerIds.has(c.id)).map(c => c.id);
           if (toDelete.length > 0) {
             await client.delete().in("id", toDelete);
@@ -49,19 +49,19 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         } else if (tableName === "orders") {
           await client.delete().neq("status" as any, "paid" as any);
         } else if (tableName === "company_links") {
-          const { data: all } = await client.select("id, company_id");
+          const { data: all } = await client.select("id, company_id") as { data: any[] | null };
           const toDelete = (all || []).filter(l => l.company_id && !paidCompanyIds.has(l.company_id)).map(l => l.id);
           if (toDelete.length > 0) {
             await client.delete().in("id", toDelete);
           }
         } else if (tableName === "email_campaign_recipients") {
-          const { data: all } = await client.select("id, cnpj");
+          const { data: all } = await client.select("id, cnpj") as { data: any[] | null };
           const toDelete = (all || []).filter(r => !r.cnpj || !paidCnpjs.includes(r.cnpj)).map(r => r.id);
           if (toDelete.length > 0) {
             await client.delete().in("id", toDelete);
           }
         } else if (tableName === "contact_queue") {
-          const { data: all } = await client.select("id, company_id");
+          const { data: all } = await client.select("id, company_id") as { data: any[] | null };
           const toDelete = (all || []).filter(q => !q.company_id || !paidCompanyIds.has(q.company_id)).map(q => q.id);
           if (toDelete.length > 0) {
             await client.delete().in("id", toDelete);
@@ -95,8 +95,8 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
       await allTableCleanup("customers");
       
       // Consent logs linked to deleted orders
-      const { data: allConsent } = await supabaseAdmin.from("consent_logs" as any).select("id, order_id" as any);
-      const { data: remainingOrders } = await supabaseAdmin.from("orders" as any).select("id");
+      const { data: allConsent } = await supabaseAdmin.from("consent_logs" as any).select("id, order_id" as any) as { data: any[] | null };
+      const { data: remainingOrders } = await supabaseAdmin.from("orders" as any).select("id") as { data: any[] | null };
       const remainingOrderIds = new Set((remainingOrders || []).map(o => o.id));
       const consentToDelete = (allConsent || []).filter(c => !c.order_id || !remainingOrderIds.has(c.order_id)).map(c => c.id);
       if (consentToDelete.length > 0) {
