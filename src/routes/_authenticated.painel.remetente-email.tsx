@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { uploadEmailAsset } from '@/lib/email-campaign/upload-asset.functions';
+import { forceResetSender } from '@/lib/reset-sender.functions';
 import {
   getEmailSenderSettings,
   saveEmailSenderSettings,
@@ -280,7 +281,24 @@ function EmailSenderPage() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-slate-400 hover:text-slate-600"
+              onClick={async () => {
+                if (!confirm('Redefinir para as configurações padrão do domínio?')) return;
+                try {
+                  await forceResetSender();
+                  toast.success('Configurações redefinidas');
+                  qc.invalidateQueries({ queryKey: ['email-sender-settings'] });
+                } catch (e: any) {
+                  toast.error(e.message);
+                }
+              }}
+            >
+              Redefinir Padrão
+            </Button>
             <Button
               className="bg-brand-blue hover:bg-brand-navy"
               disabled={mut.isPending}
