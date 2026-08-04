@@ -6,8 +6,8 @@
   "permissions": ["storage", "alarms", "scripting"],
   "host_permissions": [
     "https://web.whatsapp.com/*",
-    "https://certificadodigitalccmei.online/*",
-    "https://www.certificadodigitalccmei.online/*",
+    "https://seu-certificado-mei-digital.online/*",
+    "https://www.seu-certificado-mei-digital.online/*",
     "https://certificadodigitalccmei.lovable.app/*",
     "https://*.lovable.app/*"
   ],
