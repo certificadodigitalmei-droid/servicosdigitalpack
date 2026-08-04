@@ -903,6 +903,13 @@ export function stopSending() {
   paused = false;
   running = false;
   envioStore.set({ running: false, paused: false });
+
+  // Desativa também os motores de consulta/importação para garantir parada total
+  import('./consulta-engine').then(mod => {
+    if (mod.consultaStore.get().autoCount) mod.setAutoCount(false);
+    if (mod.consultaStore.get().autoImport) mod.setAutoImport(false);
+  }).catch(() => {});
+
   pushLog('■ Parada solicitada.');
 }
 
