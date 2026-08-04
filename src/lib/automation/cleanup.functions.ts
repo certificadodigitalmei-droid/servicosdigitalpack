@@ -8,7 +8,7 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    console.log("Iniciando limpeza profunda de todos os dados (exceto pedidos pagos)...");
+    console.log("Iniciando limpeza total de todos os dados (exceto pedidos pagos)...");
 
     try {
       // 1. Identificar todas as empresas que JÁ PAGARAM para protegê-las
@@ -29,7 +29,27 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         .map(o => o.reference_cnpj)
         .filter((cnpj): cnpj is string => !!cnpj);
 
-      // 2. Limpar Campanhas de Email (exceto destinatários de empresas pagas)
+      // 2. Limpar Logs de API e Eventos (Total)
+      console.log("Limpando logs e eventos...");
+      await supabaseAdmin.from("api_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabaseAdmin.from("link_events").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+      // 3. Limpar Campanhas de Email e Fila de Envio (Total, exceto pagos)
+      console.log("Limpando campanhas e filas de email...");
+      
+      // Limpar fila de envio em massa (contact_queue)
+      const { data: allContactQueue } = await supabaseAdmin.from("contact_queue").select("id, company_id");
+      const contactQueueToDelete = (allContactQueue || [])
+        .filter(q => !q.company_id || !paidCompanyIds.has(q.company_id))
+        .map(q => q.id);
+      if (contactQueueToDelete.length > 0) {
+        await supabaseAdmin.from("contact_queue").delete().in("id", contactQueueToDelete);
+      }
+
+      // Limpar fila de envio unitário (email_send_queue)
+      await supabaseAdmin.from("email_send_queue").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+      // Limpar destinatários de campanhas (email_campaign_recipients)
       const { data: allRecipients } = await supabaseAdmin
         .from("email_campaign_recipients")
         .select("id, cnpj");
@@ -42,7 +62,8 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         await supabaseAdmin.from("email_campaign_recipients").delete().in("id", recipientsToDelete);
       }
 
-      // 3. Limpar Links de Empresas (company_links)
+      // 4. Limpar Links de Empresas (company_links)
+      console.log("Limpando links de empresas...");
       const { data: allLinks } = await supabaseAdmin
         .from("company_links")
         .select("id, company_id");
@@ -55,11 +76,12 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         await supabaseAdmin.from("company_links").delete().in("id", linksToDelete);
       }
 
-      // 4. Limpar Pedidos Pendentes/Cancelados (orders)
-      // IMPORTANTE: Deletamos apenas os que NÃO são 'paid'
+      // 5. Limpar Pedidos Pendentes/Cancelados (orders)
+      console.log("Limpando pedidos não pagos...");
       await supabaseAdmin.from("orders").delete().neq("status", "paid");
 
-      // 5. Limpar Clientes (customers) que não têm pedidos pagos
+      // 6. Limpar Clientes (customers) que não têm pedidos pagos
+      console.log("Limpando clientes sem compra...");
       const { data: allCustomers } = await supabaseAdmin.from("customers").select("id");
       const customersToDelete = (allCustomers || [])
         .filter(c => !paidCustomerIds.has(c.id))
@@ -69,7 +91,8 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         await supabaseAdmin.from("customers").delete().in("id", customersToDelete);
       }
 
-      // 6. Limpar Logs de Consentimento (consent_logs)
+      // 7. Limpar Logs de Consentimento (consent_logs)
+      console.log("Limpando logs de consentimento...");
       const { data: allConsent } = await supabaseAdmin.from("consent_logs").select("id, order_id");
       const { data: existingOrders } = await supabaseAdmin.from("orders").select("id");
       const existingOrderIds = new Set((existingOrders || []).map(o => o.id));
@@ -81,7 +104,13 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         await supabaseAdmin.from("consent_logs").delete().in("id", consentToDelete);
       }
 
-      // 7. Limpar a tabela de Empresas (companies) que não pagaram
+      // 8. Limpar Registros de Automação (Fila e Execuções)
+      console.log("Limpando registros de automação...");
+      await supabaseAdmin.from("automatic_company_queue").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabaseAdmin.from("automatic_company_query_runs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+      // 9. Limpar a tabela de Empresas (companies) que não pagaram
+      console.log("Limpando empresas importadas...");
       const { data: allCompanies } = await supabaseAdmin.from("companies").select("id");
       const companiesToDelete = (allCompanies || [])
         .filter(c => !paidCompanyIds.has(c.id))
@@ -96,7 +125,7 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
 
       return {
         success: true,
-        message: "Limpeza profunda concluída. O painel está zerado, mantendo apenas vendas confirmadas."
+        message: "Limpeza total concluída. Todos os registros (Emails, Envio em Massa, Logs, Automações e Empresas) foram removidos, preservando apenas vendas confirmadas."
       };
     } catch (error: any) {
       console.error("Erro na limpeza profunda:", error);
