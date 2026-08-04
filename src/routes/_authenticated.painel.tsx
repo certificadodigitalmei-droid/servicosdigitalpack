@@ -150,7 +150,7 @@ function PanelLayout() {
     
     setCleaning(true);
     try {
-      const result = await doCleanup({ confirm: true });
+      const result = await doCleanup({ data: { confirm: true } });
       if (result.success) {
         toast.success(`Limpeza concluída! Removidos: ${result.removed?.recipients} destinatários, ${result.removed?.links} links e ${result.removed?.companies} empresas.`);
       } else {
