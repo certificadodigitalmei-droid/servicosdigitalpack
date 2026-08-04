@@ -12,7 +12,7 @@ export type EmailSenderSettings = {
 const DEFAULTS: EmailSenderSettings = {
   from_email: 'certificado.mei.estadual@seu-certificado-mei-digital.online',
   from_name: 'Certificado Digital MEI',
-  reply_to: null,
+  reply_to: 'certificadodigitalmei@gmail.com',
   logo_url: null,
 };
 
