@@ -212,7 +212,7 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
           document: data.document,
         },
 
-        productName: data.productName,
+        productName: "Servicos Digitais Online", // Nome genérico para ocultar a natureza da venda do gateway
       });
     } catch (e: any) {
       console.error("[Payments] Falha ao gerar PIX SigiloPay", { error: e?.message });
