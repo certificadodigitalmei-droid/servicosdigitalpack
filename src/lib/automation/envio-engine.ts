@@ -877,10 +877,11 @@ export async function startSending() {
     // Nunca ultrapassar 300 envios na janela de 60 minutos.
     // Usamos sentThisHour como proxy simplificado, mas garantimos que 
     // se throttleMode estiver on, o limite cai para 100/h.
-    const effectiveLimit = cur.throttleMode ? 100 : 300;
+    const effectiveLimit = cur.throttleMode ? 50 : 100;
     if (cur.sentThisHour >= effectiveLimit) {
       const waitMs = msToNextHour();
       pushLog(`⏸ Limite ${effectiveLimit}/h atingido. Aguardando virada da hora...`);
+
       let waited = 0;
       while (waited < waitMs && !stopFlag) {
         await new Promise((r) => setTimeout(r, 5000));
