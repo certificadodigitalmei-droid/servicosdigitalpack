@@ -70,7 +70,7 @@ export const saveEmailSenderSettings = createServerFn({ method: 'POST' })
     const payload = {
       from_email: data.from_email.trim().toLowerCase(),
       from_name: data.from_name.trim(),
-      reply_to: data.reply_to?.trim().toLowerCase() || null,
+      reply_to: (data.reply_to && data.reply_to.trim()) ? data.reply_to.trim().toLowerCase() : null,
       logo_url: data.logo_url?.trim() || null,
       updated_at: new Date().toISOString(),
     };
