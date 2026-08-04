@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: não pk ele vai ver o dominio a empresa não pode ver o dominio do site da venda entendeu</div>
+<div className="hidden">Execute esta instrucao no projeto: e qual dominio coloco lá agora ?\n\npara dar retorno do webhooks ?</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
