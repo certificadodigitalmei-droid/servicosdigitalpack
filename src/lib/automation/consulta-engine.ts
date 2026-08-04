@@ -265,7 +265,7 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
   try {
     // Se o envio em massa foi parado, encerramos qualquer varredura de lista
     // para garantir que a importação também pare imediatamente.
-    while (page <= HARD_BACKSTOP_PAGES && isEnvioRunning()) {
+    while (page <= HARD_BACKSTOP_PAGES) {
       const r: any = await listByDate({
         data: { date, filters, limit: pageSize, page },
       });
