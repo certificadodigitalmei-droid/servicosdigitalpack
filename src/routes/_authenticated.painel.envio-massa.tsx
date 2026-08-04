@@ -83,11 +83,6 @@ function EnvioMassa() {
   const subject = useStore(envioStore, (s) => s.subject);
   const delaySec = useStore(envioStore, (s) => s.delaySec);
   const batchLimit = useStore(envioStore, (s) => s.batchLimit);
-  const testMode = useStore(envioStore, (s) => s.testMode);
-  const testRecipient = useStore(envioStore, (s) => s.testRecipient);
-  const fromName = useStore(envioStore, (s) => s.fromName);
-  const fromAddress = useStore(envioStore, (s) => s.fromAddress);
-  const replyTo = useStore(envioStore, (s) => s.replyTo);
   const running = useStore(envioStore, (s) => s.running);
   const paused = useStore(envioStore, (s) => s.paused);
   const loading = useStore(envioStore, (s) => s.loading);
@@ -99,10 +94,20 @@ function EnvioMassa() {
   const limitMode = useStore(envioStore, (s) => s.limitMode);
   const sentToday = useStore(envioStore, (s) => s.sentToday);
   const stopAtDaily = useStore(envioStore, (s) => s.stopAtDaily);
-
   const sentThisHour = useStore(envioStore, (s) => s.sentThisHour);
-  const importDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
   const sentEmails = useStore(envioStore, (s) => s.sentEmails);
+  
+  // Novos estados de cota e rate limit
+  const rateLimitPauseUntil = useStore(envioStore, (s) => s.rateLimitPauseUntil);
+  const rateLimitCount = useStore(envioStore, (s) => s.rateLimitCount);
+  const throttleMode = useStore(envioStore, (s) => s.throttleMode);
+
+  const testMode = useStore(envioStore, (s) => s.testMode);
+  const testRecipient = useStore(envioStore, (s) => s.testRecipient);
+  const fromName = useStore(envioStore, (s) => s.fromName);
+  const fromAddress = useStore(envioStore, (s) => s.fromAddress);
+  const replyTo = useStore(envioStore, (s) => s.replyTo);
+  const importDelaySec = useStore(consultaStore, (s) => s.autoImportDelaySec);
 
   // Filtro de período (para contadores de histórico de enviados nesta aba)
   const [preset, setPreset] = useState<DatePreset>('today');
@@ -251,18 +256,18 @@ function EnvioMassa() {
 
   return (
     <div className="space-y-6">
-      {/* Alerta de Configuração Turbo */}
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+      {/* Alerta de Configuração de Cota */}
+      <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-            <Zap className="h-6 w-6" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+            <Activity className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="font-bold text-blue-900">🚀 Modo Turbo Ativo (1.000 e-mails/h)</h3>
-            <p className="mt-1 text-sm text-blue-700 leading-relaxed">
-              A infraestrutura está configurada para suportar até <strong>1.000 envios por hora</strong>. 
-              Mantenha o intervalo em <strong>3 ou 4 segundos</strong> e o limite em <strong>1000</strong> para máxima performance. 
-              Acompanhe o <em>Rate-limit</em> oficial no painel abaixo para monitorar a saúde do domínio.
+            <h3 className="font-bold text-indigo-900">Configuração de Envio (300 e-mails/h)</h3>
+            <p className="mt-1 text-sm text-indigo-700 leading-relaxed">
+              O limite do workspace é de <strong>300 e-mails/hora</strong>.
+              Intervalo configurado: <strong>13 segundos</strong>.
+              O sistema lida automaticamente com erros 429, pausando e retomando a fila.
             </p>
           </div>
         </div>
@@ -314,76 +319,60 @@ function EnvioMassa() {
 
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Painel destaque: você pode enviar agora? */}
-          {emailStats?.ok && (
-            <div className="grid gap-3 sm:grid-cols-3">
+          {/* Painel destaque: Status da Cota e Retomada */}
+          <div className="grid gap-3 sm:grid-cols-4">
               <BigStat
-                label="Enviados na última hora"
-                value={emailStats.lastHour.sent}
-                sub={
-                  emailStats.lastHour.rateLimited > 0
-                    ? `⚠ ${emailStats.lastHour.rateLimited} rate-limit(s) recebido(s)`
-                    : 'Sem rate-limit — pode enviar normalmente'
-                }
-                accent={emailStats.lastHour.rateLimited > 0 ? 'amber' : 'emerald'}
+                label="Cota Configurada"
+                value="300/h"
+                sub="Cota padrão workspace"
+                accent="slate"
               />
               <BigStat
-                label="Enviados nas últimas 24h"
-                value={emailStats.last24h.sent}
-                sub={`${emailStats.last24h.bounced} bounces · ${emailStats.last24h.complaint} reclamações`}
+                label="Cota Efetiva Atual"
+                value={throttleMode ? "100/h" : "300/h"}
+                sub={throttleMode ? "⚠ Reduzida por 429" : "Cota máxima ativa"}
+                accent={throttleMode ? 'amber' : 'emerald'}
+              />
+              <BigStat
+                label="Intervalo Atual"
+                value={throttleMode ? "38s" : "13s"}
+                sub="Entre cada envio"
                 accent="blue"
               />
               <BigStat
-                label="Enviados hoje (contador local)"
-                value={sentToday}
-                sub={
-                  dailyLimit === 0
-                    ? 'Sem limite diário configurado'
-                    : `Meta: ${dailyLimit} / dia · restam ${Math.max(0, dailyLimit - sentToday)}`
-                }
-                accent={dailyLimit > 0 && sentToday >= dailyLimit ? 'red' : 'slate'}
+                label="Status de Retomada"
+                value={rateLimitPauseUntil ? new Date(rateLimitPauseUntil).toLocaleTimeString() : "Ativo"}
+                sub={rateLimitPauseUntil ? "Horário previsto" : "Fila processando"}
+                accent={rateLimitPauseUntil ? 'red' : 'emerald'}
               />
-            </div>
-          )}
+          </div>
 
-          {!emailStats ? (
-            <div className="py-6 text-center text-sm text-slate-500">
-              {loadingStats ? 'Consultando limites...' : 'Sem dados. Clique em "Atualizar".'}
-            </div>
-          ) : !emailStats.ok ? (
-            <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">
-              Não foi possível consultar os limites: {emailStats.message}
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              <LimitBlock title="Detalhes — última hora" bucket={emailStats.lastHour} accent="blue" />
-              <LimitBlock title="Detalhes — últimas 24h" bucket={emailStats.last24h} accent="emerald" />
-            </div>
-          )}
+          <div className="grid gap-3 sm:grid-cols-4">
+              <MiniStat label="Enviados (Janela 60min)" value={sentThisHour} color="text-indigo-700" />
+              <MiniStat label="Quantidade HTTP 429" value={rateLimitCount} color="text-amber-700" />
+              <MiniStat label="Próximo Envio" value={running && !paused && !rateLimitPauseUntil ? "Em instantes" : "Aguardando"} color="text-slate-700" />
+              <MiniStat label="Pendentes na Fila" value={queue.filter(q => q.status === 'pending').length} color="text-blue-700" />
+          </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <MiniStat label="Enviados no período" value={sentInPeriod} color="text-indigo-700" />
-            <MiniStat label="Enviados confirmados (histórico total)" value={sentEmails.length} color="text-emerald-700" />
-            <MiniStat
-              label="Meta diária (parar ao atingir)"
-              value={stopAtDaily > 0 ? `${sentToday} / ${stopAtDaily}` : `${sentToday} / ∞`}
-              color={stopAtDaily > 0 && sentToday >= stopAtDaily ? 'text-red-700' : 'text-blue-700'}
-            />
-            <MiniStat label="Fila atual" value={queue.length} color="text-slate-700" />
+          <div className="grid gap-3 sm:grid-cols-4">
+              <MiniStat label="Enviados Confirmados" value={sentEmails.length} color="text-emerald-700" />
+              <MiniStat label="Retries (Rate Limit)" value={queue.filter(q => q.status === 'pending' && q.message?.includes('429')).length} color="text-amber-600" />
+              <MiniStat label="Bounces / Suprimidos" value={emailStats?.last24h.bounced || 0} color="text-red-700" />
+              <MiniStat label="Falhas Definitivas" value={queue.filter(q => q.status === 'error').length} color="text-red-900" />
           </div>
 
           {/* Como funciona / regras */}
           <div className="rounded-lg border border-slate-200 bg-white p-4 text-xs text-slate-600">
-            <div className="mb-2 text-sm font-semibold text-slate-800">Como funciona o envio no Lovable Emails</div>
+            <div className="mb-2 text-sm font-semibold text-slate-800">Regras de Envio Específicas do Workspace</div>
             <ul className="grid gap-1.5 sm:grid-cols-2">
-              <li>✅ <strong>Quota separada</strong>: e-mails de app (envio em massa) e de auth têm cotas independentes — um pico não bloqueia o outro.</li>
-              <li>✅ <strong>Escala com o plano</strong>: quanto maior o plano do workspace, maior a cota horária e diária.</li>
-              <li>✅ <strong>Retry automático</strong>: ao receber 429, a fila espera o tempo indicado pelo servidor e retoma sozinha.</li>
-              <li>✅ <strong>Supressão automática</strong>: destinatários que deram bounce, reclamação ou descadastro são bloqueados no servidor — o envio retorna como "Suprimido" (não conta contra você).</li>
-              <li>⚠ <strong>Sem tracking de aberturas</strong>: o Lovable Emails registra envio, rejeição, bounce, reclamação e descadastro. "Entregue" e "Aberto" não são rastreados.</li>
-              <li>⚠ <strong>Anexos não suportados</strong>: envie links (Storage/URL) no corpo do e-mail em vez de arquivos anexos.</li>
-              <li>💡 <strong>Sua proteção extra</strong>: use os perfis (Suave / Moderado / Turbo) e o campo "Parar tudo ao atingir X" para não estourar meta diária.</li>
-              <li>💡 <strong>Modo horário + descanso</strong>: em Moderado (100/h), configure "descanso ao atingir o limite" para intervalar lotes automaticamente.</li>
+              <li>✅ <strong>Cota Máxima</strong>: 300 e-mails por hora liberados pela Lovable.</li>
+              <li>✅ <strong>Concorrência Serial</strong>: Apenas 1 envio por vez para máxima estabilidade.</li>
+              <li>✅ <strong>Gestão de 429</strong>: Respeito automático ao header Retry-After e pausa inteligente.</li>
+              <li>✅ <strong>Modo de Segurança (Throttle)</strong>: Redução automática para 100/h e 38s após erro 429.</li>
+              <li>✅ <strong>Pausa Prolongada</strong>: Se ocorrerem 3 erros 429 em 1 hora, a fila pausa por 60 minutos.</li>
+              <li>✅ <strong>Retomada Automática</strong>: O sistema retoma o processamento assim que a cota é liberada.</li>
+              <li>🚫 <strong>Supressão Permanente</strong>: Nunca reenvia para hard bounces, reclamações ou descadastros.</li>
+              <li>⚙️ <strong>Independência</strong>: O processamento ocorre no servidor, sem depender da aba estar aberta.</li>
             </ul>
           </div>
 
