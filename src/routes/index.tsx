@@ -1,14 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: todos os links agora que enviar para as empresas
-
-tem que ser com dominio: https://seu-certificado-mei-digital.online/
-
-os email que enviar para as empresas sempre tem que ser esse url/dados da enmpresa
-
-Nunca levar direto para chekout
-
-ou pix gerado etc
-
-sempre pessoa tem que ir para a pagina principal dela dos dados dela</div>
+<div className="hidden">Execute esta instrucao no projeto: deixa eu falar o botão de animação quando a pessoa ta entrando sabe carreango pra ir para pagina de informação da empresa\n\nas fazes o botão fica grosso outras horas finos, alarga afina aumenta dimiunuiu tem que ficar de 1 tamanho so estatico certinho apenas carregas as informção denteo dele etc entendeu</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
