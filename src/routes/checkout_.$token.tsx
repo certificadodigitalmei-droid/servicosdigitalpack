@@ -140,8 +140,15 @@ function CheckoutTokenPage() {
       return;
     }
     trackEvent(token, 'click_guia');
-    setSubmitting(true);
+    
+    // Agora o sistema primeiro abre o pop-up informativo ANTES de gerar a guia no gateway.
+    // Isso evita gerar cobranças desnecessárias para usuários que desistem ao ler o aviso.
     setInfoOpen(true);
+    setInfoLoading(false); // O loading agora só acontece DEPOIS que ele clicar em continuar
+  }
+
+  async function handleConfirmPayment() {
+    setSubmitting(true);
     setInfoLoading(true);
     try {
       const [result] = await Promise.all([
@@ -164,20 +171,19 @@ function CheckoutTokenPage() {
       if (result.orderId) setOrderId(result.orderId);
       if (result.pix_code || result.qr_code_base64) {
         setPixData({ pix_code: result.pix_code, qr_code_base64: result.qr_code_base64, transaction_id: result.transaction_id });
-        setInfoLoading(false);
-      } else {
         setInfoOpen(false);
-        setInfoLoading(false);
+        setPixOpen(true);
+        if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
         toast.error('A cobrança foi criada mas o PIX não foi retornado. Tente novamente em instantes.');
       }
     } catch (err) {
       console.error('[Checkout] Erro ao gerar cobrança PIX:', err);
       const msg = extractErrorMessage(err);
-      setInfoOpen(false);
-      setInfoLoading(false);
       toast.error(`Erro ao gerar cobrança: ${msg}`, { duration: 12000 });
     } finally {
       setSubmitting(false);
+      setInfoLoading(false);
     }
   }
 
@@ -340,11 +346,7 @@ function CheckoutTokenPage() {
         loading={infoLoading}
         settings={popupSettings ?? undefined}
         onClose={() => { setInfoOpen(false); setInfoLoading(false); }}
-        onContinue={() => {
-          setInfoOpen(false);
-          setPixOpen(true);
-          if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+        onContinue={handleConfirmPayment}
       />
 
       <PixModal
