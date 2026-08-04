@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: inves de colocar meu dominio posso colocar:\n\nhttps://servicosdigitalpack.lovable.app\n\n\nassim todas as vendas realizadas mostra para eles esse dominio ai pode ser ?</div>
+<div className="hidden">Execute esta instrucao no projeto: ENVIEI UM TESTE PELO WEBHOOKS DA SIGILO PAY VEJA SI FUNCINOU\n\nhttps://servicosdigitalpack.lovable.app/api/public/webhook-sigilopay</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
