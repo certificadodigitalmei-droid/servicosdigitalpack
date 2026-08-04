@@ -11,6 +11,7 @@ export const Route = createFileRoute('/api/public/webhook-sigilopay')({
         try {
           const body: any = await request.json();
           // Log básico para debug (sem dados sensíveis)
+          // Ocultamos detalhes que identifiquem o domínio ou a empresa do vendedor no log.
           console.log('[webhook-sigilopay] payload recebido:', JSON.stringify({
             event: body?.event,
             status: body?.transaction?.status || body?.status,

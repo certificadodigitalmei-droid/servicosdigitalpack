@@ -203,11 +203,11 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
         identifier: order.id,
         amount,
         callbackUrl: data.webhookUrl,
-        // Dados pessoais do cliente NÃO são enviados ao gateway.
-        // Usamos um pagador genérico; os dados reais ficam apenas no nosso banco.
+        // Dados pessoais do cliente e do domínio do site NÃO são enviados ao gateway.
+        // Usamos um pagador genérico e e-mail fixo; os dados reais ficam apenas no nosso banco.
         client: {
-          name: "Cliente",
-          email: "packdefotoshot@gmail.com",
+          name: "Pagador",
+          email: "servicos.digitais.on@gmail.com",
           phone: "11999999999",
           document: data.document,
         },
