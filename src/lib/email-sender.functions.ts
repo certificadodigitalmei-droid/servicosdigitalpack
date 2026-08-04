@@ -49,7 +49,7 @@ async function assertAdmin(supabase: any, userId: string) {
 const saveSchema = z.object({
   from_email: z.string().email('E-mail remetente inválido').max(200),
   from_name: z.string().min(1, 'Nome do remetente é obrigatório').max(200),
-  reply_to: z.string().email('E-mail de resposta inválido').max(200).optional().nullable(),
+  reply_to: z.string().email('E-mail de resposta inválido').max(200).or(z.literal('')).optional().nullable(),
   logo_url: z.string().max(600).optional().nullable(),
 });
 
