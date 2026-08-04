@@ -309,8 +309,8 @@ export async function sendDailyRecovery(
 // ---------------------------------------------------------------------------
 // Fluxo de notificação automática (somente pedidos do dia, fuso de São Paulo)
 // 1) PIX gerado  -> e-mail "Guia gerada" (disparado no momento da criação)
-// 2) 30 minutos sem pagamento -> 1º e-mail de cobrança
-// 3) depois disso, 1 e-mail de cobrança por hora
+// 2) 3 horas sem pagamento -> 1º e-mail de cobrança
+// 3) depois disso, 1 e-mail de cobrança a cada 3 horas
 // 4) para de enviar às 22h (10h da noite) do mesmo dia
 // 5) pagou -> e-mail "Pagamento confirmado"
 // ---------------------------------------------------------------------------
