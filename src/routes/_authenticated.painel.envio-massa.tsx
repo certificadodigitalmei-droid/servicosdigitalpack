@@ -251,24 +251,22 @@ function EnvioMassa() {
 
   return (
     <div className="space-y-6">
-      {/* Alerta de Configuração para Alto Volume */}
-      {hourlyLimit < 1000 && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-              <Zap className="h-6 w-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-emerald-900">🚀 Capacidade de até 1.000 e-mails/hora liberada</h3>
-              <p className="mt-1 text-sm text-emerald-700 leading-relaxed">
-                Sim! A infraestrutura do Lovable suporta até <strong>1.000 envios por hora</strong>. 
-                Para atingir esse volume, ajuste o <strong>Limite por hora</strong> para 1000 e o <strong>Intervalo</strong> para 3 ou 4 segundos. 
-                <em> Lembre-se que o limite real depende também da reputação do seu domínio e do plano do seu workspace.</em>
-              </p>
-            </div>
+      {/* Alerta de Configuração Turbo */}
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+            <Zap className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="font-bold text-blue-900">🚀 Modo Turbo Ativo (1.000 e-mails/h)</h3>
+            <p className="mt-1 text-sm text-blue-700 leading-relaxed">
+              A infraestrutura está configurada para suportar até <strong>1.000 envios por hora</strong>. 
+              Mantenha o intervalo em <strong>3 ou 4 segundos</strong> e o limite em <strong>1000</strong> para máxima performance. 
+              Acompanhe o <em>Rate-limit</em> oficial no painel abaixo para monitorar a saúde do domínio.
+            </p>
           </div>
         </div>
-      )}
+      </div>
 
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Envio em Massa</h1>
