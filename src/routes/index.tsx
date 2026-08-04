@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: tem que funcionar em perfeita sicronica\n\nas consultas de novas empresas do dia\n\nasssim que ligar é constante igual como está\n\na importação só vai importar para a fila de disparo em massa sempre as mas recentes que acabou de aparecer na consulta automatica\n\nporem ia importar de forma organiliza por ordem de envio\n\nenvio em massa mando pra 1 empresa, deu email enviado com sucesso, importa outra empresa para a lista de envio as mais recentes do topo entendeu. e asssim vai organizado.\n\nassim já a gente não importa mais do que vai disparar entendeu.\n\nverifique isso, corrija e deixa funcinal dessa forma</div>
+<div className="hidden">Execute esta instrucao no projeto: as consultas automatica deve sempre mostra quantes tem disponvieis até momento e sempre que chegar novas mostra tambem sabe igual antes</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
