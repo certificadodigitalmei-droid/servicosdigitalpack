@@ -147,13 +147,13 @@ function PanelLayout() {
   };
 
   const handleCleanup = async () => {
-    if (!confirm('Deseja apagar todas as empresas importadas que NÃO receberam e-mails? Isso liberará espaço no banco de dados.')) return;
+    if (!confirm('Deseja apagar TODOS os dados (empresas, links, pedidos pendentes, clientes sem compra) e deixar o painel limpo? Apenas vendas confirmadas serão preservadas.')) return;
     
     setCleaning(true);
     try {
       const result = await doCleanup({ data: { confirm: true } });
       if (result.success) {
-        toast.success(`Limpeza concluída! Removidos: ${result.removed?.recipients} destinatários, ${result.removed?.links} links e ${result.removed?.companies} empresas.`);
+        toast.success(result.message);
       } else {
         toast.error('Erro na limpeza: ' + (result.message || result.error));
       }
@@ -424,7 +424,7 @@ function PanelLayout() {
                   onClick={handleCleanup}
                   disabled={cleaning}
                   className="text-slate-400 hover:text-red-600 gap-2"
-                  title="Apagar empresas sem e-mail enviado para liberar espaço."
+                  title="Limpeza total: apaga tudo exceto vendas pagas."
                 >
                   {cleaning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                   <span className="hidden lg:inline text-xs">Limpar Banco</span>

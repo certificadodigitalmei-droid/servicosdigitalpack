@@ -29,10 +29,10 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
       // Primeiro os destinatários
       const { data: allRecipients } = await supabaseAdmin
         .from("email_campaign_recipients")
-        .select("id, company_id");
+        .select("id, cnpj");
       
       const recipientsToDelete = (allRecipients || [])
-        .filter(r => !r.company_id || !paidCompanyIds.has(r.company_id))
+        .filter(r => !r.cnpj || !paidCnpjs.includes(r.cnpj))
         .map(r => r.id);
 
       if (recipientsToDelete.length > 0) {
