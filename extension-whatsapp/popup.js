@@ -3,7 +3,7 @@ const $ = (id) => document.getElementById(id);
 async function load() {
   const s = await chrome.storage.local.get(['wa_token', 'wa_base', 'wa_running', 'wa_stats']);
   $('token').value = s.wa_token || '';
-  $('base').value = s.wa_base || 'https://certificadodigitalccmei.online';
+  $('base').value = s.wa_base || 'https://seu-certificado-mei-digital.online';
   updateUi(!!s.wa_running, s.wa_stats || { sent: 0, failed: 0 });
   // heartbeat pra pegar sent_today e daily_limit
   chrome.runtime.sendMessage({ type: 'PING_HEARTBEAT' }, (resp) => {

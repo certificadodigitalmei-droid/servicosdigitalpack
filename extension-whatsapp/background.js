@@ -1,5 +1,5 @@
 // Service worker: puxa fila do painel e agenda envios com delay aleatório.
-const DEFAULT_BASE = 'https://certificadodigitalccmei.online';
+const DEFAULT_BASE = 'https://seu-certificado-mei-digital.online';
 const STORAGE_KEYS = { token: 'wa_token', base: 'wa_base', running: 'wa_running', stats: 'wa_stats', batchCount: 'wa_batch_count', consec_fail: 'wa_consec_fail' };
 
 async function getState() {
