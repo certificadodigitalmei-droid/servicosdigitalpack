@@ -29,12 +29,7 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         .map(o => o.reference_cnpj)
         .filter((cnpj): cnpj is string => !!cnpj);
 
-      const allTableCleanup = async (tableName: string, filterPaid: boolean = true) => {
-        if (!filterPaid) {
-          await supabaseAdmin.from(tableName as any).delete().neq("id" as any, "00000000-0000-0000-0000-000000000000" as any);
-          return;
-        }
-
+      const allTableCleanup = async (tableName: string) => {
         // Custom logic per table for protection
         if (tableName === "companies") {
           const { data: all } = await supabaseAdmin.from("companies").select("id");
@@ -73,17 +68,19 @@ export const cleanupUnsentCompanies = createServerFn({ method: "POST" })
         }
       };
 
-      // Full wipe of logs, events, and queues
+      // Full wipe of logs, events, and queues using generic delete to avoid TS2589
       console.log("Wiping logs and queues...");
+      const wipe = async (table: any) => supabaseAdmin.from(table).delete().neq("id" as any, "00000000-0000-0000-0000-000000000000" as any);
+      
       await Promise.all([
-        supabaseAdmin.from("api_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabaseAdmin.from("link_events").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabaseAdmin.from("email_send_queue").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabaseAdmin.from("automatic_company_queue").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabaseAdmin.from("automatic_company_query_runs").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabaseAdmin.from("whatsapp_queue").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabaseAdmin.from("webhook_events").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-        supabaseAdmin.from("sync_runs").delete().neq("id", "00000000-0000-0000-0000-000000000000")
+        wipe("api_logs"),
+        wipe("link_events"),
+        wipe("email_send_queue"),
+        wipe("automatic_company_queue"),
+        wipe("automatic_company_query_runs"),
+        wipe("whatsapp_queue"),
+        wipe("webhook_events"),
+        wipe("sync_runs")
       ]);
 
       // Wipe core tables with protection
