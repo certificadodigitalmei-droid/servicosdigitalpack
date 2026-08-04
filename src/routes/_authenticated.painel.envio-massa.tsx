@@ -82,6 +82,7 @@ function EnvioMassa() {
   const queue = useStore(envioStore, (s) => s.queue);
   const subject = useStore(envioStore, (s) => s.subject);
   const delaySec = useStore(envioStore, (s) => s.delaySec);
+  const batchLimit = useStore(envioStore, (s) => s.batchLimit);
   const running = useStore(envioStore, (s) => s.running);
   const paused = useStore(envioStore, (s) => s.paused);
   const loading = useStore(envioStore, (s) => s.loading);
@@ -89,6 +90,8 @@ function EnvioMassa() {
   const showFloating = useStore(envioStore, (s) => s.showFloating);
   const dailyLimit = useStore(envioStore, (s) => s.dailyLimit);
   const hourlyLimit = useStore(envioStore, (s) => s.hourlyLimit);
+  const hourlyRestMin = useStore(envioStore, (s) => s.hourlyRestMin);
+  const limitMode = useStore(envioStore, (s) => s.limitMode);
   const sentToday = useStore(envioStore, (s) => s.sentToday);
   const stopAtDaily = useStore(envioStore, (s) => s.stopAtDaily);
   const sentThisHour = useStore(envioStore, (s) => s.sentThisHour);
