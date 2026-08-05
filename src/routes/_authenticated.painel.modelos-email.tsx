@@ -63,7 +63,7 @@ const PREVIEW_VARS: Record<string, string> = {
   CNPJ: '68087737000127',
   DATA_ABERTURA: '15/03/2024',
   DATA_SITUACAO: '15/03/2024',
-  SITUACAO: 'CNPJ sem certificado ativo',
+  SITUACAO: 'CNPJ sem certificado pendente',
   MUNICIPIO: 'SÃO PAULO',
   UF: 'SP',
   EMAIL: 'exemplo@email.com',

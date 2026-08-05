@@ -101,7 +101,7 @@ export async function syncMassEmailQueue(limit = 25) {
       CNPJ: c?.cnpj || p.cnpj || '',
       REFERENCIA: (c?.cnpj || p.cnpj || '').slice(-8).toUpperCase() || 'CCMEI',
       DATA_ABERTURA: c?.inicio_atividade || '',
-      SITUACAO: c?.situacao_cadastral_desc || 'PENDENTE',
+      SITUACAO: 'CNPJ sem certificado pendente',
       LINK_PUBLICO: `${publicBaseUrl}/acesso/${p.token}`,
       LINK_CHECKOUT: `${publicBaseUrl}/checkout/${p.token}`,
     };
