@@ -4,7 +4,6 @@ import { DEFAULT_DESIGN, renderHtml, renderText, type Vars } from '@/lib/email-c
 
 /**
  * Pega empresas que ainda não receberam o e-mail da campanha e as adiciona na fila de envio do servidor.
- * Respeita o limite de 100 e-mails por hora (se chamado periodicamente).
  */
 export async function syncMassEmailQueue(limit = 50) {
   // 1. Buscar empresas recentes que possuem e-mail
@@ -13,19 +12,28 @@ export async function syncMassEmailQueue(limit = 50) {
     .select('id, cnpj, email, nome_titular_exibicao, razao_social_original, inicio_atividade, situacao_cadastral_desc')
     .not('email', 'is', null)
     .order('created_at', { ascending: false })
-    .limit(limit * 2); // buscamos um pouco mais para compensar deduplicação
+    .limit(limit * 3); // buscamos um pouco mais para compensar deduplicação
 
   if (fetchErr || !companies) return { ok: false, error: fetchErr?.message };
 
   // 2. Filtrar as que já foram enviadas (pela tabela email_campaign_recipients)
-  const companyIds = companies.map(c => c.id);
+  const emails = companies.map(c => c.email?.trim().toLowerCase()).filter(Boolean) as string[];
+  const cnpjs = companies.map(c => c.cnpj?.replace(/\D+/g, '')).filter(Boolean) as string[];
+
   const { data: sentRecipients } = await supabaseAdmin
     .from('email_campaign_recipients')
-    .select('company_id')
-    .in('company_id', companyIds);
+    .select('email, cnpj')
+    .or(`email.in.(${emails.join(',')}),cnpj.in.(${cnpjs.join(',')})`)
+    .not('sent_at', 'is', null);
 
-  const sentIds = new Set(sentRecipients?.map(r => r.company_id) || []);
-  const pendingCompanies = companies.filter(c => !sentIds.has(c.id)).slice(0, limit);
+  const sentEmails = new Set(sentRecipients?.map(r => r.email?.trim().toLowerCase()) || []);
+  const sentCnpjs = new Set(sentRecipients?.map(r => r.cnpj?.replace(/\D+/g, '')) || []);
+
+  const pendingCompanies = companies.filter(c => {
+    const emailKey = c.email?.trim().toLowerCase();
+    const cnpjKey = c.cnpj?.replace(/\D+/g, '');
+    return !sentEmails.has(emailKey || '') && !sentCnpjs.has(cnpjKey || '');
+  }).slice(0, limit);
 
   if (pendingCompanies.length === 0) return { ok: true, enqueued: 0 };
 
@@ -37,7 +45,7 @@ export async function syncMassEmailQueue(limit = 50) {
     .in('company_id', pendingIds)
     .eq('active', true);
 
-  const linksMap = new Record<string, string>();
+  const linksMap: Record<string, string> = {};
   links?.forEach(l => {
     if (l.company_id) linksMap[l.company_id] = l.public_token;
   });
@@ -45,7 +53,7 @@ export async function syncMassEmailQueue(limit = 50) {
   const publicBaseUrl = (process.env.PUBLIC_APP_URL || 'https://seu-certificado-mei-digital.online').replace(/\/+$/, '');
   const subject = 'RESTRIÇÃO NO SEU CNPJ MEI';
   
-  const enqueued = [];
+  const enqueued: any[] = [];
 
   for (const company of pendingCompanies) {
     let token = linksMap[company.id];
@@ -89,17 +97,16 @@ export async function syncMassEmailQueue(limit = 50) {
       text,
       status: 'queued',
       idempotency_key: `mass-email-${company.id}`,
-      created_by: null // sistema
+      created_by: null
     });
 
-    // Registrar como enviado (ou pelo menos agendado) para não duplicar na próxima rodada
-    // Usamos um status temporário ou inserimos direto na auditoria para evitar race conditions
+    // Registrar na auditoria
     await supabaseAdmin.from('email_campaign_recipients').insert({
-      company_id: company.id,
-      email: company.email,
-      cnpj: company.cnpj,
+      email: company.email?.trim().toLowerCase(),
+      cnpj: company.cnpj?.replace(/\D+/g, ''),
+      company_name: company.nome_titular_exibicao || company.razao_social_original,
       status: 'queued',
-      personalized_subject: subject
+      sent_at: new Date().toISOString() // Marcamos como "enviado" para evitar dupla inserção se a fila demorar
     });
   }
 
