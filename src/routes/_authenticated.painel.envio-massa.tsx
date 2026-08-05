@@ -34,7 +34,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { getEmailMetrics } from '@/lib/emails/email-metrics.functions';
 import { PipelineStrip } from '@/components/painel/PipelineStrip';
-import { FilaUnicaCard, SendHealthCard, FlowSettingsCard } from '@/components/painel/FilaUnica';
+import { FilaUnicaCard, SendHealthCard, SendWindowCard, SendProfileCard } from '@/components/painel/FilaUnica';
 
 import { useStore } from '@/lib/automation/store';
 import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
