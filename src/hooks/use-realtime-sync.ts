@@ -33,7 +33,11 @@ export function useRealtimeSync() {
         () => {
           qc.invalidateQueries({ queryKey: [t.queryKey] });
           qc.invalidateQueries({ queryKey: ['dashboard-overview'] });
+          qc.invalidateQueries({ queryKey: ['pipeline-state'] });
+          qc.invalidateQueries({ queryKey: ['pipeline-sem-link'] });
+          qc.invalidateQueries({ queryKey: ['pipeline-sem-envio'] });
         },
+
       );
     }
     channel.subscribe();
