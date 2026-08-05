@@ -7,10 +7,30 @@ import type {
   UnifiedQueueRow,
   QueueStage,
   SendHealth,
+  SendWindow,
+  SendProfile,
   FlowSettings,
 } from './pipeline.server';
 
-export type { PipelineState, PendingSendRow, UnifiedQueueRow, QueueStage, SendHealth, FlowSettings };
+export type {
+  PipelineState,
+  PendingSendRow,
+  UnifiedQueueRow,
+  QueueStage,
+  SendHealth,
+  SendWindow,
+  SendProfile,
+  FlowSettings,
+};
+
+/** Janela de 1 hora ancorada no primeiro e-mail enviado. */
+export const getSendWindow = createServerFn({ method: 'GET' })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<SendWindow> => {
+    const { computeSendWindow } = await import('./pipeline.server');
+    return computeSendWindow(context.supabase);
+  });
+
 
 
 /** Estado único do funil: importadas -> links -> fila -> enviados (com a trava de importação). */
