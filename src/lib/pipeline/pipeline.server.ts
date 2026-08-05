@@ -264,3 +264,195 @@ export async function listCompaniesWithoutLink(client: AnyClient, limit = 50) {
       createdAt: c.created_at,
     }));
 }
+
+// ---------------------------------------------------------------------------
+// FILA ÚNICA
+// ---------------------------------------------------------------------------
+// Uma única fila para o painel inteiro: empresas importadas (com link gerado)
+// que estão apenas aguardando o envio do e-mail.
+
+export type QueueStage = 'sem_link' | 'aguardando_fila' | 'na_fila' | 'enviando' | 'erro';
+
+export type UnifiedQueueRow = {
+  id: string;
+  companyId: string | null;
+  cnpj: string;
+  nome: string;
+  email: string | null;
+  stage: QueueStage;
+  attempts: number;
+  lastError: string | null;
+  lastStatusCode: number | null;
+};
+
+const STAGE_LABEL: Record<QueueStage, string> = {
+  sem_link: 'gerando link',
+  aguardando_fila: 'aguardando fila',
+  na_fila: 'na fila',
+  enviando: 'enviando',
+  erro: 'erro',
+};
+
+export function stageLabel(s: QueueStage) {
+  return STAGE_LABEL[s];
+}
+
+/** Fila única: itens já na fila de envio + links prontos + importadas sem link. */
+export async function listUnifiedQueue(
+  client: AnyClient,
+  limit = 100,
+): Promise<UnifiedQueueRow[]> {
+  const out: UnifiedQueueRow[] = [];
+
+  const { data: qrows } = await client
+    .from('email_send_queue')
+    .select('id, to_email, status, attempts, last_error, last_status_code, idempotency_key, created_at')
+    .in('status', ['queued', 'pending', 'sending', 'failed'])
+    .order('created_at', { ascending: true })
+    .limit(limit);
+
+  const companyIds = (qrows ?? [])
+    .map((r: any) => (r.idempotency_key ?? '').startsWith(QUEUE_KEY_PREFIX)
+      ? r.idempotency_key.slice(QUEUE_KEY_PREFIX.length)
+      : null)
+    .filter(Boolean) as string[];
+
+  const byId = new Map<string, any>();
+  if (companyIds.length > 0) {
+    const { data: comps } = await client
+      .from('companies')
+      .select('id, cnpj, nome_titular_exibicao, razao_social_original')
+      .in('id', companyIds);
+    for (const c of comps ?? []) byId.set(c.id, c);
+  }
+
+  for (const r of qrows ?? []) {
+    const cid = (r.idempotency_key ?? '').startsWith(QUEUE_KEY_PREFIX)
+      ? r.idempotency_key.slice(QUEUE_KEY_PREFIX.length)
+      : null;
+    const c = cid ? byId.get(cid) : null;
+    out.push({
+      id: r.id,
+      companyId: cid,
+      cnpj: c?.cnpj ?? '',
+      nome: c?.nome_titular_exibicao ?? c?.razao_social_original ?? 'Empresa',
+      email: r.to_email,
+      stage:
+        r.status === 'failed' ? 'erro' : r.status === 'sending' ? 'enviando' : 'na_fila',
+      attempts: r.attempts ?? 0,
+      lastError: r.last_error ?? null,
+      lastStatusCode: r.last_status_code ?? null,
+    });
+  }
+
+  if (out.length < limit) {
+    const links = await listPendingSendTargets(client, limit - out.length);
+    for (const l of links) {
+      out.push({
+        id: `link-${l.companyId}`,
+        companyId: l.companyId,
+        cnpj: l.cnpj,
+        nome: l.nome,
+        email: l.email,
+        stage: 'aguardando_fila',
+        attempts: 0,
+        lastError: null,
+        lastStatusCode: null,
+      });
+    }
+  }
+
+  if (out.length < limit) {
+    const semLink = await listCompaniesWithoutLink(client, limit - out.length);
+    for (const c of semLink) {
+      out.push({
+        id: `nolink-${c.companyId}`,
+        companyId: c.companyId,
+        cnpj: c.cnpj,
+        nome: c.nome,
+        email: c.email,
+        stage: 'sem_link',
+        attempts: 0,
+        lastError: null,
+        lastStatusCode: null,
+      });
+    }
+  }
+
+  return out.slice(0, limit);
+}
+
+export type SendHealth = {
+  updatedAt: string;
+  naFila: number;
+  enviando: number;
+  enviados: number;
+  enviadosUltimaHora: number;
+  falhas: number;
+  retries429: number;
+  suprimidos: number;
+};
+
+/** Saúde do envio: enviados, erros e quantas vezes bateu HTTP 429 (rate limit). */
+export async function computeSendHealth(client: AnyClient): Promise<SendHealth> {
+  const sinceHour = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const head = (apply: (q: any) => any) =>
+    apply(client.from('email_send_queue').select('id', { count: 'exact', head: true }));
+
+  const [fila, enviando, enviados, hora, falhas, r429, supr] = await Promise.all([
+    head((q) => q.in('status', ['queued', 'pending'])),
+    head((q) => q.eq('status', 'sending')),
+    head((q) => q.eq('status', 'sent')),
+    head((q) => q.eq('status', 'sent').gte('updated_at', sinceHour)),
+    head((q) => q.eq('status', 'failed')),
+    head((q) => q.eq('last_status_code', 429)),
+    head((q) => q.eq('status', 'suppressed')),
+  ]);
+
+  return {
+    updatedAt: new Date().toISOString(),
+    naFila: fila.count ?? 0,
+    enviando: enviando.count ?? 0,
+    enviados: enviados.count ?? 0,
+    enviadosUltimaHora: hora.count ?? 0,
+    falhas: falhas.count ?? 0,
+    retries429: r429.count ?? 0,
+    suprimidos: supr.count ?? 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// CONFIGURAÇÕES DO FLUXO
+// ---------------------------------------------------------------------------
+
+export type FlowSettings = {
+  enabled: boolean;
+  importBatchSize: number;
+  sendMode: 'burst' | 'paced';
+  hourlyBatchSize: number;
+  pacedDelaySec: number;
+};
+
+export const DEFAULT_FLOW_SETTINGS: FlowSettings = {
+  enabled: false,
+  importBatchSize: 5,
+  sendMode: 'burst',
+  hourlyBatchSize: 100,
+  pacedDelaySec: 36,
+};
+
+export async function readFlowSettings(client: AnyClient): Promise<FlowSettings> {
+  const { data } = await client
+    .from('cloud_automation_settings')
+    .select('enabled, import_batch_size, send_mode, hourly_batch_size, paced_delay_sec')
+    .eq('id', 1)
+    .maybeSingle();
+  if (!data) return DEFAULT_FLOW_SETTINGS;
+  return {
+    enabled: !!data.enabled,
+    importBatchSize: data.import_batch_size ?? 5,
+    sendMode: data.send_mode === 'paced' ? 'paced' : 'burst',
+    hourlyBatchSize: data.hourly_batch_size ?? 100,
+    pacedDelaySec: data.paced_delay_sec ?? 36,
+  };
+}
