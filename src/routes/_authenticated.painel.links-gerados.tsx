@@ -315,6 +315,8 @@ function LinksGeradosPage() {
 
   return (
     <div className="space-y-6">
+      <PipelineStrip />
+
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Links Gerados</h1>
