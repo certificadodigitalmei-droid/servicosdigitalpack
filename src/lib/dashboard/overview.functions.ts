@@ -187,11 +187,12 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     }).length;
 
     const eventosQ = supabase.from('link_events').select('event_type').gte('created_at', fromISO);
-    const eventosFinal = toISO ? eventosQ.lte('created_at', toISO) : eventosQ;
+    if (toISO) eventosQ.lte('created_at', toISO);
 
     const [{ data: eventos }] = await Promise.all([
-      eventosFinal,
+      eventosQ,
     ]);
+
     const evCount = (ev: string) => (eventos ?? []).filter((e: any) => e.event_type === ev).length;
 
     // ------ Pagamentos ------

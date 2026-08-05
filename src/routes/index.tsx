@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: outra coisa agora que tem mais links gerados do que email enviados, faça quando ativar de novo o envio ele vai terminar de enviar os que falta das empresas importadas so assim depois ele ira rodar linenar: consulta, importa, gera link, envia entendeu sera assim</div>
+<div className="hidden">Execute esta instrucao no projeto: na aba: Links Gerados ta mostrando alguns cards diferentes do Dashboard, tem que mostra certinho sabe quantidade certinha em ambos quantos visitou, clicou etc entedeu, verifique isso, e corrija e arrume. parece que do Dashboard ta travado</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
