@@ -178,8 +178,8 @@ export function SendWindowCard() {
           Janela de envio (1 hora)
         </CardTitle>
         <CardDescription>
-          A janela abre no primeiro e-mail enviado e vale por 1 hora. Quando o tempo termina, o
-          contador zera sozinho e uma nova janela só abre no próximo envio.
+          O lote começa no primeiro e-mail e nunca passa do limite. Ao bater o limite, o próximo
+          lote só libera 1 hora depois do <strong>último e-mail enviado</strong>.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -187,22 +187,24 @@ export function SendWindowCard() {
           <Metric label={`Enviados (de ${limit})`} value={sent} cls="text-indigo-700" />
           <Metric label="Restam nesta janela" value={remaining} cls="text-emerald-700" />
           <div className="rounded-lg border border-slate-200 bg-white p-3">
-            <div className="text-[11px] uppercase tracking-wide text-slate-500">Zera em</div>
+            <div className="text-[11px] uppercase tracking-wide text-slate-500">Libera em</div>
             <div className="text-xl font-bold tabular-nums text-slate-900">
               {data?.open && secondsLeft > 0 ? `${mm}:${ss}` : '--:--'}
             </div>
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-3">
-            <div className="text-[11px] uppercase tracking-wide text-slate-500">Janela iniciada</div>
+            <div className="text-[11px] uppercase tracking-wide text-slate-500">Último envio</div>
             <div className="text-xl font-bold text-slate-900">
-              {data?.open && data.windowStart && secondsLeft > 0
-                ? new Date(data.windowStart).toLocaleTimeString('pt-BR', {
+              {data?.lastSentAt
+                ? new Date(data.lastSentAt).toLocaleTimeString('pt-BR', {
                     hour: '2-digit',
                     minute: '2-digit',
                   })
                 : '—'}
             </div>
           </div>
+        </div>
+
         </div>
 
         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
