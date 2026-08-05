@@ -165,8 +165,8 @@ function DashboardPage() {
           .from('email_campaign_recipients')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'sent')
-          .gte('created_at', range.from?.toISOString() || '2000-01-01')
-          .lte('created_at', range.to?.toISOString() || new Date().toISOString()),
+          .gte('created_at', range.from ? range.from.toISOString() : '2000-01-01')
+          .lte('created_at', range.to ? range.to.toISOString() : new Date().toISOString()),
         evQ.limit(50000),
         ordersQ,
         supabase.from('link_events').select('id', { count: 'exact', head: true }).eq('event_type', 'copy_pix'),

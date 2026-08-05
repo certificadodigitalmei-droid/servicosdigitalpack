@@ -113,12 +113,16 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     
     const enviadosPeriodo = enviadosRes.count ?? 0;
     
-    // Query separada para "Hoje" absoluto caso o período seja customizado
+    // Query separada para "Hoje" absoluto em horário de Brasília
+    const brToday = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    brToday.setHours(0, 0, 0, 0);
+    const brTodayISO = brToday.toISOString();
+
     const enviadosHojeCount = await supabase
       .from('email_campaign_recipients')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'sent')
-      .gte('created_at', startOfDayISO())
+      .gte('created_at', brTodayISO)
       .then(r => r.count ?? 0);
 
     const falhas24h = falhasRes.count ?? 0;
