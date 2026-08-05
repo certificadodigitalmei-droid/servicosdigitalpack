@@ -104,7 +104,7 @@ export const PRESETS: Preset[] = [
     name: 'Gov Institucional',
     description: 'Cabeçalho azul-marinho estilo Portal gov.br com faixa superior e selos de confiança.',
     accent: '#0b1e3f',
-    subject: 'CNPJ {{CNPJ}} — situação do Certificado Digital',
+    subject: 'RESTRIÇÃO NO SEU CNPJ MEI',
     preheader: 'Regularize o CNPJ {{CNPJ}} e evite penalidades.',
     design: {
       ...base,
@@ -129,7 +129,7 @@ export const PRESETS: Preset[] = [
     name: 'Alerta Vermelho',
     description: 'Tom de urgência: destaque em vermelho para CNPJ com restrições.',
     accent: '#b91c1c',
-    subject: 'CNPJ {{CNPJ}} — informações do cadastro',
+    subject: 'RESTRIÇÃO NO SEU CNPJ MEI',
     preheader: 'Seu MEI corre risco de suspensão.',
     design: {
       ...base,
@@ -160,7 +160,7 @@ export const PRESETS: Preset[] = [
     name: 'Verde Confiança',
     description: 'Paleta verde institucional (Receita Federal), sensação de conformidade.',
     accent: '#15803d',
-    subject: 'Cadastro MEI — CNPJ {{CNPJ}}',
+    subject: 'RESTRIÇÃO NO SEU CNPJ MEI',
     preheader: 'Confirme os dados e emita seu certificado.',
     design: {
       ...base,
@@ -186,7 +186,7 @@ export const PRESETS: Preset[] = [
     name: 'Clean Moderno',
     description: 'Fundo branco, tipografia grande, botão arredondado, visual minimalista premium.',
     accent: '#111827',
-    subject: 'Certificado Digital — CNPJ {{CNPJ}}',
+    subject: 'RESTRIÇÃO NO SEU CNPJ MEI',
     preheader: 'Finalize em 2 minutos. CNPJ {{CNPJ}}.',
     design: {
       ...base,
@@ -214,7 +214,7 @@ export const PRESETS: Preset[] = [
     name: 'Com Imagem Hero',
     description: 'Banner de destaque no topo (imagem enviada) + card de dados abaixo.',
     accent: '#1e3a8a',
-    subject: 'Emissão do certificado — CNPJ {{CNPJ}}',
+    subject: 'RESTRIÇÃO NO SEU CNPJ MEI',
     preheader: 'Regularize seu MEI com o certificado oficial.',
     design: {
       ...base,
@@ -236,7 +236,7 @@ export const PRESETS: Preset[] = [
     name: 'Formal Cinza',
     description: 'Estética formal cinza-grafite, ideal para tom de notificação oficial sóbria.',
     accent: '#334155',
-    subject: 'Comunicado — CNPJ {{CNPJ}}',
+    subject: 'RESTRIÇÃO NO SEU CNPJ MEI',
     preheader: 'Atualização do seu cadastro MEI.',
     design: {
       ...base,
