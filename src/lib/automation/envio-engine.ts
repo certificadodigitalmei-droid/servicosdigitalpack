@@ -696,12 +696,34 @@ async function sendOne(item: QueueItem, channelIndex?: number): Promise<{ ok: bo
 
 
     if (res.reason === 'recipient_suppressed') {
+      const { email, cnpj, company_name } = item;
+      pushLog(`🚫 Suprimido (${email}) — removendo empresa e registros...`);
+      
+      // Remove do banco (cleanup imediato para liberar espaço)
+      try {
+        const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+        const cId = item.id;
+        
+        // Remove registros de histórico de campanha para esse CNPJ/Email
+        if (cnpj) {
+          await supabaseAdmin.from('email_campaign_recipients').delete().eq('cnpj', cnpj.replace(/\D+/g, ''));
+        }
+        await supabaseAdmin.from('email_campaign_recipients').delete().eq('email', email.trim().toLowerCase());
+        
+        // Remove links
+        await supabaseAdmin.from('company_links').delete().eq('company_id', cId);
+        
+        // Remove empresa
+        await supabaseAdmin.from('companies').delete().eq('id', cId);
+        
+        pushLog(`✅ Limpeza concluída para ${company_name} (${cnpj})`);
+      } catch (e: any) {
+        pushLog(`⚠ Falha na limpeza automática: ${e.message}`);
+      }
+
       envioStore.set((s) => ({
-        queue: s.queue.map((q) =>
-          q.id === item.id ? { ...q, status: 'suppressed', message: res.message } : q,
-        ),
+        queue: s.queue.filter((q) => q.id !== item.id),
       }));
-      pushLog(`⊘ Suprimido ${item.email}: ${res.message ?? ''}`);
       return { ok: true };
     }
     if (res.reason === 'rate_limited') {
