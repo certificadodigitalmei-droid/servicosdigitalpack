@@ -40,6 +40,9 @@ import {
   type DatePreset,
 } from '@/components/painel/DateRangeFilter';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
+import { PipelineStrip } from '@/components/painel/PipelineStrip';
+import { AguardandoLinkCard, AguardandoEnvioCard } from '@/components/painel/PipelineQueues';
+
 
 export const Route = createFileRoute('/_authenticated/painel/importacao-automatica')({
   head: () => ({
