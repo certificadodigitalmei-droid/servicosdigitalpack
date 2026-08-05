@@ -330,7 +330,7 @@ function PanelLayout() {
     if (path === '/painel/importar-empresas') return 'Importar Empresas';
     if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
     if (path === '/painel/gerador-links') return 'Gerador de Links';
-    if (path === '/painel/campanhas-email') return 'Campanhas de E-mail';
+    
     if (path === '/painel/modelos-email') return 'Modelos de E-mail';
     if (path === '/painel/remetente-email') return 'Remetente de E-mail';
 
