@@ -205,7 +205,7 @@ export function SendWindowCard() {
           </div>
         </div>
 
-        </div>
+
 
         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
           <div
