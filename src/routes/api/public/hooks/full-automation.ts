@@ -27,11 +27,13 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
         try {
           const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
-          // 0. Interruptor global (Nuvem: Ativo/Off) — se nada estiver habilitado, não faz nada.
-          const { count: enabledCount } = await supabaseAdmin
-            .from('automatic_company_queries')
-            .select('id', { count: 'exact', head: true })
-            .eq('enabled', true);
+          // 0. Interruptor global (Nuvem: Ativo/Off) — estado persistente no banco.
+          const { data: cloudCfg } = await supabaseAdmin
+            .from('cloud_automation_settings')
+            .select('enabled')
+            .eq('id', 1)
+            .maybeSingle();
+          const enabledCount = cloudCfg?.enabled ? 1 : 0;
 
           if (!enabledCount) {
             return new Response(JSON.stringify({ skipped: 'cloud_off' }), {
