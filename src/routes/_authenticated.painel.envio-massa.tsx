@@ -329,15 +329,15 @@ function EnvioMassa() {
                 accent="slate"
               />
               <BigStat
-                label="Cota Efetiva Atual"
-                value={throttleMode ? "50/h" : "100/h"}
-                sub={throttleMode ? "⚠ Reduzida por 429" : "Cota máxima ativa"}
-                accent={throttleMode ? 'amber' : 'emerald'}
+                label="Cota Efetiva"
+                value="100/h"
+                sub="Processamento contínuo"
+                accent="emerald"
               />
               <BigStat
-                label="Intervalo Atual"
-                value={throttleMode ? "72s" : "36s"}
-                sub="Entre cada envio"
+                label="Intervalo"
+                value="36s"
+                sub="Fixo por e-mail"
                 accent="blue"
 
               />
@@ -370,7 +370,7 @@ function EnvioMassa() {
               <li>✅ <strong>Cota Máxima</strong>: 100 e-mails por hora liberados pela Lovable.</li>
               <li>✅ <strong>Concorrência Serial</strong>: Apenas 1 envio por vez para máxima estabilidade.</li>
               <li>✅ <strong>Gestão de 429</strong>: Respeito automático ao header Retry-After e pausa inteligente.</li>
-              <li>✅ <strong>Modo de Segurança (Throttle)</strong>: Redução automática para 50/h e 72s após erro 429.</li>
+              <li>✅ <strong>Ritmo Estável</strong>: Envio fixo de 100/h para evitar bloqueios.</li>
               <li>✅ <strong>Pausa Prolongada</strong>: Se ocorrerem 3 erros 429 em 1 hora, a fila pausa por 60 minutos.</li>
 
               <li>✅ <strong>Retomada Automática</strong>: O sistema retoma o processamento assim que a cota é liberada.</li>
