@@ -87,17 +87,37 @@ const EMPTY: Stats = {
 type Preset = 'hoje' | 'ontem' | '7d' | '15d' | '30d' | 'tudo' | 'custom';
 
 function computeRange(preset: Preset, customFrom?: string, customTo?: string): { from?: Date; to?: Date } {
-  const now = new Date();
-  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
-  const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+  // Ajusta para o fuso horário de Brasília (UTC-3)
+  const getBrDate = () => {
+    const d = new Date();
+    return new Date(d.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  };
+  
+  const now = getBrDate();
+  const startOfDay = (d: Date) => {
+    const res = new Date(d);
+    res.setHours(0, 0, 0, 0);
+    return res;
+  };
+  const endOfDay = (d: Date) => {
+    const res = new Date(d);
+    res.setHours(23, 59, 59, 999);
+    return res;
+  };
+
   if (preset === 'tudo') return {};
   if (preset === 'hoje') return { from: startOfDay(now), to: endOfDay(now) };
   if (preset === 'ontem') {
-    const y = new Date(now); y.setDate(now.getDate() - 1);
+    const y = new Date(now);
+    y.setDate(now.getDate() - 1);
     return { from: startOfDay(y), to: endOfDay(y) };
   }
   if (preset === '7d' || preset === '15d' || preset === '30d') {
     const days = preset === '7d' ? 7 : preset === '15d' ? 15 : 30;
+    const from = new Date(now);
+    from.setDate(now.getDate() - days);
+    return { from: startOfDay(from), to: endOfDay(now) };
+  }
     const from = new Date(now); from.setDate(now.getDate() - (days - 1));
     return { from: startOfDay(from), to: endOfDay(now) };
   }
