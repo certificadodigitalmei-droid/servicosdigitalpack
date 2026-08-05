@@ -42,39 +42,44 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
             });
           }
 
-          // 1. Auto-import de novas empresas (Casa dos Dados)
-          const { runImportBatch } = await import('@/lib/casa-dos-dados/simple-flow.server');
-
-          const nowIso = new Date().toISOString();
-          const { data: configs } = await supabaseAdmin
-            .from('automatic_company_queries')
-            .select('*')
-            .eq('enabled', true)
-            .or(`next_run_at.is.null,next_run_at.lte.${nowIso}`)
-            .limit(1);
-
-          if (configs && configs.length > 0) {
-            const cfg = configs[0];
-            const outcome = await runImportBatch({
-              date: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date()),
-              filters: (cfg.filters as any) || { only_mei: true, only_active: true, require_email: false },
-              limit: Math.min(5, (cfg as any).quantity_per_run || 1),
-              skipExisting: true
-            });
-            
-            await supabaseAdmin.from('automatic_company_queries').update({
-              last_run_at: nowIso,
-              next_run_at: new Date(Date.now() + ((cfg as any).interval_minutes || 60) * 60000).toISOString(),
-              status: 'active'
-            }).eq('id', cfg.id);
-            
-            stats.import = outcome;
-          }
-
-          // 2. Sincronizar Fila de Campanha (Transforma empresas em itens na fila de e-mail)
-          // Agora com flag de prioridade: termina de enviar os que já têm links antes de processar novos imports lineares
+          // 1. Verificar se temos saldo de empresas importadas com links mas sem envios
           const { syncMassEmailQueue } = await import('@/lib/automation/mass-email.server');
-          stats.sync = await syncMassEmailQueue(10, true);
+          const syncOutcome = await syncMassEmailQueue(10, true);
+          stats.sync = syncOutcome;
+
+          // Se sincronizamos novos e-mails prioritários (que já tinham links), pulamos a importação para focar neles
+          const hasPriorityPending = (syncOutcome as any)?.enqueued > 0;
+
+          // 2. Auto-import de novas empresas (Casa dos Dados) apenas se não houver prioridade pendente
+          if (!hasPriorityPending) {
+            const { runImportBatch } = await import('@/lib/casa-dos-dados/simple-flow.server');
+
+            const nowIso = new Date().toISOString();
+            const { data: configs } = await supabaseAdmin
+              .from('automatic_company_queries')
+              .select('*')
+              .eq('enabled', true)
+              .or(`next_run_at.is.null,next_run_at.lte.${nowIso}`)
+              .limit(1);
+
+            if (configs && configs.length > 0) {
+              const cfg = configs[0];
+              const outcome = await runImportBatch({
+                date: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date()),
+                filters: (cfg.filters as any) || { only_mei: true, only_active: true, require_email: false },
+                limit: Math.min(5, (cfg as any).quantity_per_run || 1),
+                skipExisting: true
+              });
+              
+              await supabaseAdmin.from('automatic_company_queries').update({
+                last_run_at: nowIso,
+                next_run_at: new Date(Date.now() + ((cfg as any).interval_minutes || 60) * 60000).toISOString(),
+                status: 'active'
+              }).eq('id', cfg.id);
+              
+              stats.import = outcome;
+            }
+          }
 
 
           // 3. Processar Régua de Cobrança (PIX reminders, etc)
