@@ -1,72 +1,51 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Trash2, Search, Download, Copy, ExternalLink } from 'lucide-react';
-import { useStore } from '@/lib/automation/store';
-import { envioStore, removeSentEmail, removeSentEmailsInRange } from '@/lib/automation/envio-engine';
-import { formatCnpj } from '@/lib/email-campaign/template';
+import { CheckCircle2, Search, Download, Copy, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
+import { getEmailMetrics, listSentEmails } from '@/lib/emails/email-metrics.functions';
 
 export const Route = createFileRoute('/_authenticated/painel/enviados')({
   component: EnviadosPage,
 });
 
 function EnviadosPage() {
-  const sent = useStore(envioStore, (s) => s.sentEmails);
   const [q, setQ] = useState('');
   const [preset, setPreset] = useState<DatePreset>('today');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
 
   const range = useMemo(() => computeDateRange(preset, from, to), [preset, from, to]);
+  const fromISO = range.from?.toISOString() ?? null;
+  const toISO = range.to?.toISOString() ?? null;
 
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    const fromMs = range.from?.getTime();
-    const toMs = range.to?.getTime();
-    return sent.filter((e) => {
-      const t = new Date(e.sentAt).getTime();
-      if (fromMs !== undefined && t < fromMs) return false;
-      if (toMs !== undefined && t > toMs) return false;
-      if (!term) return true;
-      return (
-        e.email.toLowerCase().includes(term) ||
-        e.cnpj.toLowerCase().includes(term) ||
-        e.company_name.toLowerCase().includes(term) ||
-        e.subject.toLowerCase().includes(term)
-      );
-    });
-  }, [sent, q, range.from, range.to]);
+  const fetchMetrics = useServerFn(getEmailMetrics);
+  const fetchList = useServerFn(listSentEmails);
 
-  const stats = useMemo(() => {
-    const startHour = Date.now() - 60 * 60 * 1000;
-    let lastHour = 0;
-    let test = 0;
-    for (const e of filtered) {
-      const t = new Date(e.sentAt).getTime();
-      if (t >= startHour) lastHour++;
-      if (e.testMode) test++;
-    }
-    // O usuário quer que o total do período mostre o valor exato selecionado
-    return { total: sent.length, lastHour, test, inRange: filtered.length };
-  }, [sent, filtered]);
+  const metricsQ = useQuery({
+    queryKey: ['email_send_queue', 'metrics', fromISO, toISO],
+    queryFn: () => fetchMetrics({ data: { from: fromISO, to: toISO } }),
+    refetchInterval: 30_000,
+  });
+
+  const listQ = useQuery({
+    queryKey: ['email_send_queue', 'sent-list', fromISO, toISO, q.trim()],
+    queryFn: () => fetchList({ data: { from: fromISO, to: toISO, search: q.trim() || null, limit: 500 } }),
+    refetchInterval: 30_000,
+  });
+
+  const rows = listQ.data ?? [];
+  const m = metricsQ.data;
 
   const exportCsv = () => {
-    const header = ['data_envio', 'email', 'cnpj', 'empresa', 'assunto', 'modo_teste', 'link'];
-    const rows = filtered.map((e) => [
-      e.sentAt,
-      e.email,
-      formatCnpj(e.cnpj),
-      e.company_name,
-      e.subject,
-      e.testMode ? 'sim' : 'não',
-      e.publicUrl || '',
-    ]);
-    const csv = [header, ...rows]
+    const header = ['data_envio', 'email', 'assunto', 'id_mensagem'];
+    const csvRows = rows.map((e) => [e.sentAt, e.to, e.subject, e.messageId ?? '']);
+    const csv = [header, ...csvRows]
       .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
       .join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -80,14 +59,27 @@ function EnviadosPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-          E-mails Enviados
-        </h1>
-        <p className="text-sm text-slate-500">
-          Registro histórico de todos os e-mails confirmados como enviados. Assim que um envio é confirmado, o destinatário sai da fila e aparece aqui automaticamente.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+            E-mails Enviados
+          </h1>
+          <p className="text-sm text-slate-500">
+            Histórico real do servidor (fila de envio). Os mesmos números aparecem no Dashboard e em Links
+            Gerados — e funcionam em qualquer dispositivo, mesmo com o painel fechado.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            metricsQ.refetch();
+            listQ.refetch();
+          }}
+        >
+          <RefreshCw className="h-4 w-4" /> Atualizar
+        </Button>
       </div>
 
       <DateRangeFilter
@@ -99,11 +91,13 @@ function EnviadosPage() {
         onToChange={setTo}
       />
 
-      <div className="grid gap-3 sm:grid-cols-4">
-        <StatCard label="No período selecionado" value={stats.inRange} color="text-indigo-600" />
-        <StatCard label="Última hora (do período)" value={stats.lastHour} color="text-blue-600" />
-        <StatCard label="Em modo teste (do período)" value={stats.test} color="text-amber-600" />
-        <StatCard label="Total registrado (todos)" value={stats.total} color="text-slate-500" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <StatCard label="Enviados no período" value={m?.periodo} color="text-indigo-600" />
+        <StatCard label="Enviados hoje (Brasília)" value={m?.hoje} color="text-emerald-600" />
+        <StatCard label="Última hora" value={m?.ultimaHora} color="text-blue-600" />
+        <StatCard label="Saldo da hora" value={m?.saldoHora} color="text-amber-600" />
+        <StatCard label="Na fila" value={m?.fila} color="text-slate-600" />
+        <StatCard label="Falhas / suprimidos" value={(m?.falhas ?? 0) + (m?.suprimidos ?? 0)} color="text-red-600" />
       </div>
 
       <Card>
@@ -114,47 +108,22 @@ function EnviadosPage() {
               <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 className="w-64 pl-8"
-                placeholder="Buscar por e-mail, CNPJ, empresa ou assunto..."
+                placeholder="Buscar por e-mail ou assunto..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
               />
             </div>
-            <Button size="sm" variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
+            <Button size="sm" variant="outline" onClick={exportCsv} disabled={rows.length === 0}>
               <Download className="h-4 w-4" /> CSV
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => {
-                if (filtered.length === 0) return;
-                const label =
-                  preset === 'all'
-                    ? 'TODO o histórico'
-                    : `${filtered.length} registro(s) do período selecionado`;
-                if (
-                  confirm(
-                    `Apagar ${label}?\n\nSó remove deste registro local. Não afeta a caixa de saída real nem o histórico do servidor.`,
-                  )
-                ) {
-                  const fromISO = range.from?.toISOString();
-                  const toISO = range.to?.toISOString();
-                  const removed = removeSentEmailsInRange(fromISO, toISO);
-                  toast.success(`${removed} registro(s) apagado(s) do período.`);
-                }
-              }}
-              disabled={filtered.length === 0}
-              title="Apaga apenas os registros dentro do período selecionado no filtro acima"
-            >
-              <Trash2 className="h-4 w-4" /> Apagar do período
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {filtered.length === 0 ? (
+          {listQ.isLoading ? (
+            <div className="py-12 text-center text-sm text-slate-500">Carregando envios...</div>
+          ) : rows.length === 0 ? (
             <div className="py-12 text-center text-sm text-slate-500">
-              {sent.length === 0
-                ? 'Nenhum e-mail enviado ainda. Após confirmar um envio na aba "Envio em Massa", ele aparecerá aqui automaticamente.'
-                : 'Nenhum resultado para a busca.'}
+              Nenhum e-mail enviado no período selecionado.
             </div>
           ) : (
             <div className="max-h-[70vh] overflow-auto">
@@ -163,60 +132,29 @@ function EnviadosPage() {
                   <tr className="border-b text-left text-xs uppercase tracking-wide text-slate-500">
                     <th className="py-2 pr-2">Data / Hora</th>
                     <th className="pr-2">Destinatário</th>
-                    <th className="pr-2">CNPJ</th>
-                    <th className="pr-2">Empresa</th>
                     <th className="pr-2">Assunto</th>
-                    <th className="pr-2">Modo</th>
                     <th className="pr-2 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((e) => (
+                  {rows.map((e) => (
                     <tr key={e.id} className="border-b last:border-0 align-top hover:bg-slate-50">
                       <td className="py-2 pr-2 text-xs text-slate-600 whitespace-nowrap">
-                        {new Date(e.sentAt).toLocaleString('pt-BR')}
+                        {new Date(e.sentAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
                       </td>
-                      <td className="pr-2">
-                        <div className="font-medium text-slate-900">{e.email}</div>
-                      </td>
-                      <td className="pr-2 whitespace-nowrap font-mono text-xs text-slate-700">
-                        {formatCnpj(e.cnpj)}
-                      </td>
-                      <td className="pr-2 max-w-[220px] truncate">{e.company_name}</td>
-                      <td className="pr-2 max-w-[260px] truncate text-slate-700">{e.subject}</td>
-                      <td className="pr-2">
-                        {e.testMode ? (
-                          <Badge className="bg-amber-100 text-amber-800">Teste</Badge>
-                        ) : (
-                          <Badge className="bg-emerald-100 text-emerald-700">Real</Badge>
-                        )}
-                      </td>
+                      <td className="pr-2 font-medium text-slate-900">{e.to}</td>
+                      <td className="pr-2 max-w-[360px] truncate text-slate-700">{e.subject}</td>
                       <td className="pr-2 text-right whitespace-nowrap">
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => {
-                            navigator.clipboard.writeText(e.email);
+                            navigator.clipboard.writeText(e.to);
                             toast.success('E-mail copiado.');
                           }}
                           title="Copiar e-mail"
                         >
                           <Copy className="h-3.5 w-3.5" />
-                        </Button>
-                        {e.publicUrl && (
-                          <Button size="sm" variant="ghost" asChild title="Abrir link enviado">
-                            <a href={e.publicUrl} target="_blank" rel="noreferrer">
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removeSentEmail(e.id)}
-                          title="Remover do histórico"
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
                         </Button>
                       </td>
                     </tr>
@@ -231,11 +169,13 @@ function EnviadosPage() {
   );
 }
 
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+function StatCard({ label, value, color }: { label: string; value?: number; color: string }) {
   return (
     <div className="rounded-lg border bg-white p-4 shadow-sm">
       <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={`mt-1 text-2xl font-bold ${color}`}>{value.toLocaleString('pt-BR')}</div>
+      <div className={`mt-1 text-2xl font-bold ${color}`}>
+        {value === undefined ? '—' : value.toLocaleString('pt-BR')}
+      </div>
     </div>
   );
 }
