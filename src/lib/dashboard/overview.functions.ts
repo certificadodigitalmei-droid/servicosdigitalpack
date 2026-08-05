@@ -93,27 +93,29 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const enviadosPeriodoQ = supabase
       .from('email_send_queue')
       .select('id', { count: 'exact', head: true })
-      .eq('status', 'sent')
-      .gte('created_at', fromISO);
-    const enviadosPeriodoFinal = toISO ? enviadosPeriodoQ.lte('created_at', toISO) : enviadosPeriodoQ;
+      .eq('status', 'sent');
+
+    if (data?.from) enviadosPeriodoQ.gte('created_at', data.from);
+    if (data?.to) enviadosPeriodoQ.lte('created_at', data.to);
 
     const falhasPeriodoQ = supabase
       .from('email_send_queue')
       .select('id', { count: 'exact', head: true })
-      .in('status', ['failed', 'suppressed'])
-      .gte('created_at', fromISO);
-    const falhasPeriodoFinal = toISO ? falhasPeriodoQ.lte('created_at', toISO) : falhasPeriodoQ;
+      .in('status', ['failed', 'suppressed']);
+
+    if (data?.from) falhasPeriodoQ.gte('created_at', data.from);
+    if (data?.to) falhasPeriodoQ.lte('created_at', data.to);
 
     const [enviadosRes, { count: filaEnvio }, falhasRes, { data: workers }] = await Promise.all([
-      enviadosPeriodoFinal,
+      enviadosPeriodoQ,
       supabase.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-      falhasPeriodoFinal,
+      falhasPeriodoQ,
       supabase.from('email_workers').select('id,is_active,last_success_at').limit(1),
     ]);
     
     const enviadosPeriodo = enviadosRes.count ?? 0;
     
-    // Query separada para "Hoje" absoluto em horário de Brasília
+    // Calcula o "Hoje" absoluto em horário de Brasília para o semáforo/status
     const brToday = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
     brToday.setHours(0, 0, 0, 0);
     const brTodayISO = brToday.toISOString();
