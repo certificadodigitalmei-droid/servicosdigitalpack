@@ -116,6 +116,7 @@ function DashboardPage() {
   const [customTo, setCustomTo] = useState<string>('');
   const [popupEnabled, setPopupEnabled] = useState<{ p1: boolean; p2: boolean }>({ p1: true, p2: true });
   const fetchPopup = useServerFn(getSitePopup);
+
   useEffect(() => {
     let alive = true;
     fetchPopup()
@@ -123,37 +124,45 @@ function DashboardPage() {
       .catch(() => {});
     return () => { alive = false; };
   }, [fetchPopup]);
-  
 
   const range = useMemo(() => computeRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
 
   async function load() {
     setLoading(true);
     try {
-      // "Links gerados" = links criados no período (mesma fonte da aba
-      // "Links Gerados": company_links.created_at). Assim o Dashboard mostra
-      // TODOS os links gerados no período, tenham sido enviados ou não.
+      // 1. Links criados no período
       let linksCountQ = supabase
         .from('company_links')
         .select('id', { count: 'exact', head: true });
-      let evQ = supabase.from('link_events').select('event_type,browser,os,device,visitor_id,token,created_at').limit(50000);
+      
+      // 2. Eventos (visitas, cliques) no período
+      let evQ = supabase.from('link_events').select('event_type,browser,os,device,visitor_id,token,created_at');
+      
+      // 3. Pagamentos confirmados no período
+      let ordersQ = supabase
+        .from('orders')
+        .select('amount, paid_at, status')
+        .eq('status', 'paid');
+
       if (range.from) {
         const iso = range.from.toISOString();
         linksCountQ = linksCountQ.gte('created_at', iso);
         evQ = evQ.gte('created_at', iso);
+        ordersQ = ordersQ.gte('paid_at', iso);
       }
       if (range.to) {
         const iso = range.to.toISOString();
         linksCountQ = linksCountQ.lte('created_at', iso);
         evQ = evQ.lte('created_at', iso);
+        ordersQ = ordersQ.lte('paid_at', iso);
       }
 
-      let ordersQ = supabase
-        .from('orders')
-        .select('amount, paid_at')
-        .not('paid_at', 'is', null);
-      if (range.from) ordersQ = ordersQ.gte('paid_at', range.from.toISOString());
-      if (range.to) ordersQ = ordersQ.lte('paid_at', range.to.toISOString());
+      const [{ count: linksTotal }, evRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
+        linksCountQ,
+        evQ.limit(50000),
+        ordersQ,
+        supabase.from('link_events').select('id', { count: 'exact', head: true }).eq('event_type', 'copy_pix'),
+      ]);
 
       const [{ count: linksTotal }, evRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
         linksCountQ,
