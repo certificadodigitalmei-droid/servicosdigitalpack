@@ -52,7 +52,9 @@ export type DashboardOverview = {
     comLinks: number;
     comEnvios: number;
   };
+  pipeline: PipelineState;
 };
+
 
 function startOfDayISO(): string {
   // Recorte do dia em horário de Brasília (não UTC).
