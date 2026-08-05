@@ -52,6 +52,18 @@ export async function queuedCompanyIds(client: AnyClient): Promise<Set<string>> 
   return set;
 }
 
+/**
+ * E-mails que já entraram na fila alguma vez (qualquer status/origem).
+ * Necessário porque envios históricos usaram outras chaves de idempotência
+ * (`campaign-…`), e reenviar para eles seria duplicidade.
+ */
+export async function queuedEmails(client: AnyClient): Promise<Set<string>> {
+  const rows = await readAll<{ to_email: string | null }>(client, 'email_send_queue', 'to_email');
+  const set = new Set<string>();
+  for (const r of rows) if (r.to_email) set.add(r.to_email.trim().toLowerCase());
+  return set;
+}
+
 /** Conjunto de company_id que já possuem link ativo gerado. */
 export async function linkedCompanyIds(client: AnyClient): Promise<Set<string>> {
   const rows = await readAll<{ company_id: string | null }>(client, 'company_links', 'company_id');
@@ -59,6 +71,25 @@ export async function linkedCompanyIds(client: AnyClient): Promise<Set<string>> 
   for (const r of rows) if (r.company_id) set.add(r.company_id);
   return set;
 }
+
+/** Empresas (id -> e-mail normalizado) para casar fila por destinatário. */
+export async function companyEmailMap(client: AnyClient): Promise<Map<string, string | null>> {
+  const rows = await readAll<{ id: string; email: string | null }>(client, 'companies', 'id, email');
+  return new Map(rows.map((r) => [r.id, r.email ? r.email.trim().toLowerCase() : null]));
+}
+
+/** true quando a empresa já foi (ou está) na fila de envio. */
+export function isAlreadyQueued(
+  companyId: string,
+  emails: Map<string, string | null>,
+  queuedIds: Set<string>,
+  queuedMails: Set<string>,
+): boolean {
+  if (queuedIds.has(companyId)) return true;
+  const mail = emails.get(companyId);
+  return !!mail && queuedMails.has(mail);
+}
+
 
 export type PipelineState = {
   updatedAt: string;
