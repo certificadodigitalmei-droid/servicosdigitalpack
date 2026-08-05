@@ -134,5 +134,10 @@ export async function syncMassEmailQueue(limit = 25) {
     }
   }
 
-  return { ok: true as const, enqueued: rows.length, semEmail };
+  return {
+    ok: true as const,
+    enqueued: rows.filter((r) => r.status === 'queued').length,
+    semEmail,
+  };
+
 }
