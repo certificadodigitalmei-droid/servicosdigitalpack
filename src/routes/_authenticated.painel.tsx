@@ -291,10 +291,6 @@ function PanelLayout() {
         { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
-        { title: 'Mensagem para Zap', icon: MessageSquare, to: '/painel/mensagem-zap' },
-        { title: 'Disparo por Etapa', icon: Send, to: '/painel/disparo-etapa' },
-        { title: 'E-mail Automático', icon: BellRing, to: '/painel/email-automatico' },
-        { title: 'Log de E-mails', icon: Mail, to: '/painel/log-emails' },
       ],
     },
     {
@@ -317,9 +313,6 @@ function PanelLayout() {
 
   const getBreadcrumbLabel = (path: string) => {
     if (path === '/painel') return 'Dashboard';
-    if (path === '/painel/disparo-etapa') return 'Disparo por Etapa';
-    if (path === '/painel/email-automatico') return 'E-mail Automático';
-    if (path === '/painel/log-emails') return 'Log de E-mails';
     if (path === '/painel/consulta-automatica') return 'Consulta Automática';
     if (path === '/painel/importacao-automatica') return 'Importação Automática';
     if (path === '/painel/empresas-importadas') return 'Empresas Importadas';
@@ -344,7 +337,7 @@ function PanelLayout() {
     if (path === '/painel/envio-massa') return 'Envio em Massa';
     if (path === '/painel/workspace-envio') return 'Envio Google Workspace';
     if (path === '/painel/enviados') return 'E-mails Enviados';
-    if (path === '/painel/mensagem-zap') return 'Mensagem para Zap';
+    
     
     if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
     return 'Painel';
