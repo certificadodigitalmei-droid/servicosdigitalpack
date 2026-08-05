@@ -1,126 +1,55 @@
-# Automação WhatsApp Web via Extensão Chrome
+# Sincronizar envios, métricas e modo nuvem
 
-Vamos criar uma **extensão de navegador** que roda dentro do WhatsApp Web (web.whatsapp.com) e se conecta ao painel. Você seleciona a lista (ex: "nunca visitaram", "geraram PIX pendente", etc.), aperta "Iniciar envio", e a extensão simula você enviando manualmente — com pausas aleatórias para ficar natural e reduzir risco de bloqueio ao mínimo.
+## O que está errado hoje (verificado no projeto e no banco)
 
-## Arquitetura
+1. **A aba "E-mails Enviados" e o Dashboard leem fontes diferentes.**
+   A aba de enviados mostra apenas o que está guardado no navegador (estado local do motor de envio), enquanto o Dashboard e a aba "Links Gerados" contam registros reais da fila do banco. Por isso os números nunca batem (419 x 411) e, se você abrir em outro dispositivo, a aba de enviados aparece quase vazia.
 
-```text
-[Painel Web]  <-->  [Fila no banco]  <-->  [Extensão Chrome]  -->  [WhatsApp Web]
-    |                     |                       |
- escolhe                salva                   envia 1 msg
- lista                pendentes              marca enviada
- e ritmo                                     pega próxima
-```
+2. **A contagem de "hoje" usa meia-noite UTC, não horário de Brasília.**
+   Isso desloca o corte do dia em 3 horas: envios entre 21h e 00h caem no "dia seguinte".
 
-## Parte 1 - Banco de dados
+3. **A contagem usa a data de criação do registro, não a data do envio.**
+   Um e-mail enfileirado ontem e enviado hoje conta no dia errado.
 
-Nova tabela `whatsapp_queue`:
-- `id`, `phone`, `message`, `company_name`, `cnpj`, `company_link_id`
-- `status`: pending | sending | sent | failed | skipped
-- `sent_at`, `error_message`, `attempts`
-- `batch_id` (agrupa envios do mesmo lote)
-- `owner_user_id`
+4. **O card "Fila" do Dashboard sempre mostra 0.**
+   Ele procura registros com situação "pending", mas a fila real grava "queued". No banco existem hoje 747 enviados, 5 na fila e 2 suprimidos.
 
-Nova tabela `whatsapp_batch_config`:
-- Guarda perfil ativo de envio (ritmo, pausas, limites)
-- Token único de autenticação da extensão (para não expor sessão)
+5. **O modo nuvem não roda de fato.**
+   Existe o endpoint de automação completa, mas **não existe nenhum agendamento chamando ele** — o único agendamento ativo é o de lembretes de PIX (a cada 5 min). Com a aba fechada, nada é importado nem enviado. Além disso, cada chamada do endpoint despacha só 4 e-mails e não respeita um teto por hora.
 
-## Parte 2 - Aba "Mensagem para Zap" (mudanças no painel)
+## O que será feito
 
-Adicionar na aba existente:
+### 1. Fonte única de verdade para métricas de e-mail
+- Todas as telas (Dashboard, Links Gerados, E-mails Enviados) passam a ler da fila real do banco, por meio de uma única função de servidor compartilhada.
+- A aba "E-mails Enviados" deixa de depender do navegador: passa a listar os envios reais, com filtro de período, busca e exportação — funcionando em qualquer dispositivo.
+- Contagens padronizadas: dia/período em horário de Brasília e baseados na data de envio confirmado.
+- Correção do card de fila (situações corretas: fila, enviados, falhas, suprimidos).
 
-**Bloco "Envio Automático via Extensão"**
-- Status da extensão: Conectada ✅ / Desconectada ❌ (heartbeat)
-- Botão "Baixar extensão" (baixa `.zip` de `/public/whatsapp-extension.zip`)
-- Botão "Como instalar" (modal com passo a passo)
-- Campo token único (copiar/colar na extensão uma vez)
+### 2. Ritmo garantido de 100 e-mails por hora
+- O despacho passa a calcular quantos e-mails já saíram na última hora e libera apenas o saldo restante até 100.
+- O agendamento na nuvem roda a cada minuto, despachando em pequenas levas — resultado: distribuição uniforme, sem estouro e sem ficar abaixo do alvo.
+- O painel mostra: enviados na última hora, saldo restante da hora, ritmo médio, próximo despacho e falhas.
 
-**Perfis de ritmo (escolher um):**
-| Perfil | Envios/hora | Pausa entre msgs | Pausa longa |
-|---|---|---|---|
-| Ultra Seguro | 20 | 90-180s aleatório | 15min a cada 15 |
-| Seguro (recomendado) | 40 | 45-120s aleatório | 10min a cada 20 |
-| Moderado | 80 | 25-60s aleatório | 8min a cada 30 |
-| Rápido (mais risco) | 150 | 15-30s aleatório | 5min a cada 40 |
+### 3. Modo nuvem realmente automático
+- Criação do agendamento no servidor chamando o endpoint de automação completa a cada minuto.
+- Um interruptor global (Nuvem: Ativo/Off) passa a ser respeitado pelo endpoint: desligado, ele não importa nem envia.
+- Fluxo mantido conforme já definido: importar lote de 5 → enviar → quando a fila cair para 1–2, importar mais 5.
+- Tudo funciona com o navegador fechado; a aba aberta apenas acompanha.
 
-Toda pausa usa **randomização** (ex: 45-120s = sorteia valor a cada msg) para não parecer bot.
-
-**Limite diário:** configurável (padrão 200/dia). Extensão para sozinha ao atingir.
-
-**Botões de ação:**
-- "Adicionar seleção à fila" (usa filtros atuais + template atual da aba)
-- "Iniciar envio" / "Pausar" / "Zerar fila"
-- Progresso em tempo real: `Enviadas: 47 / Fila: 153 / Falhas: 2 / Próxima em: 34s`
-
-**Tabela de fila** com status ao vivo (pending, sent com hora, failed com motivo).
-
-## Parte 3 - Endpoints públicos (extensão consome)
-
-Todos autenticados por `X-Extension-Token` (token único gerado no painel):
-
-- `GET /api/public/whatsapp/next?token=...` - retorna próximo `{id, phone, message}` pendente
-- `POST /api/public/whatsapp/report` - `{id, status: sent|failed, error?}` marca resultado
-- `POST /api/public/whatsapp/heartbeat` - extensão bate a cada 30s pra painel mostrar "Conectada"
-- `GET /api/public/whatsapp/config?token=...` - retorna perfil de ritmo atual
-
-## Parte 4 - Extensão Chrome (arquivo baixável)
-
-Arquivos:
-- `manifest.json` (MV3, permissions: web.whatsapp.com, storage)
-- `background.js` - service worker: agenda próximo envio, gerencia delays, chama endpoints
-- `content.js` - injetado no WhatsApp Web: abre chat, digita mensagem, clica enviar
-- `popup.html` + `popup.js` - UI simples: campo token, botão ligar/desligar, status
-- `icon.png`
-
-**Fluxo da extensão:**
-1. Usuário abre WhatsApp Web e faz login normal (uma vez)
-2. Abre popup da extensão → cola token do painel → clica "Conectar"
-3. Extensão puxa config (perfil de ritmo)
-4. Loop:
-   - Chama `/next` → pega `{phone, message}`
-   - Content script abre `https://web.whatsapp.com/send?phone=X&text=Y`
-   - Aguarda 3-8s (carregar chat)
-   - Simula clique no botão enviar (busca por `[data-icon="send"]` ou `[aria-label="Enviar"]`)
-   - Aguarda confirmação (check verde)
-   - Reporta `sent` ou `failed`
-   - Aguarda delay aleatório (do perfil)
-   - Se atingiu lote (ex: 20 msgs), aguarda pausa longa
-   - Repete
-
-**Proteções anti-bloqueio:**
-- Delay aleatório entre 2 valores (nunca fixo)
-- "Digitação humana" simulada: pequena pausa antes de clicar enviar
-- Detecta captcha / bloqueio do WhatsApp e para automaticamente
-- Máximo 1 mensagem por número em 24h (dedupe local)
-- Para envio se >5 falhas seguidas
-
-## Parte 5 - Download da extensão
-
-- Build da extensão empacotada em `public/whatsapp-extension.zip`
-- Botão no painel usa `fetch + blob` (padrão exigido em preview do Lovable)
-- Modal de instruções: descompactar → chrome://extensions → dev mode → carregar sem compactação
+### 4. Organização e sincronização do painel
+- Atualização em tempo real já existente estendida às telas de envio, para os números mudarem sozinhos sem recarregar.
+- Rótulos padronizados entre abas ("enviados no período" significa a mesma coisa em todos os lugares).
 
 ## Detalhes técnicos
 
-**Segurança:**
-- Token da extensão é aleatório 32 chars, salvo em `whatsapp_batch_config.extension_token`
-- Endpoints `/api/public/whatsapp/*` validam token antes de qualquer operação
-- Token não expira mas pode ser regenerado no painel (invalida extensões antigas)
+- Nova função de servidor `src/lib/emails/email-metrics.functions.ts` (contagens agregadas sobre `email_send_queue`, cortes em `America/Sao_Paulo`, baseadas em `updated_at` para itens `sent`).
+- `src/lib/dashboard/overview.functions.ts`: substituir `startOfDayISO` UTC pelo corte BRT, trocar `created_at` por data de envio nos contadores de envio e corrigir `status: 'pending'` → `'queued'`.
+- `src/routes/_authenticated.painel.enviados.tsx`: trocar `envioStore.sentEmails` por consulta ao servidor (TanStack Query).
+- `src/routes/_authenticated.painel.links-gerados.tsx`: usar a mesma função de métricas.
+- `src/lib/gmail/queue.server.ts`: `processQueueInternal` passa a receber o teto horário e calcular o saldo da hora antes de despachar.
+- `src/routes/api/public/hooks/full-automation.ts`: checar o interruptor global antes de executar e usar o novo cálculo de saldo.
+- Novo agendamento (`cron`) de 1 em 1 minuto para `/api/public/hooks/full-automation`, criado via ferramenta de dados (não em migração), pois contém chave.
+- `src/hooks/use-realtime-sync.ts`: já escuta `email_send_queue`; ligar as novas chaves de consulta.
 
-**Persistência:**
-- Fila fica no Supabase → se fechar navegador, retoma de onde parou ao reabrir WhatsApp Web
-- Extensão salva último ID processado em `chrome.storage.local` (evita reenvio)
-
-**Limitações honestas (aviso no painel):**
-- Precisa manter aba do WhatsApp Web aberta e logada
-- Não é oficial da Meta - risco existe mesmo com delay (recomendar número secundário)
-- Se WhatsApp mudar layout, seletores podem quebrar (fácil de ajustar)
-
-## O que fica pronto ao final
-
-1. Nova seção "Envio Automático" dentro da aba Mensagem para Zap
-2. Extensão `.zip` disponível pra download no painel
-3. Fila persistente com status em tempo real
-4. 4 perfis de ritmo com delays randomizados
-5. Heartbeat mostrando se extensão está online
-6. Instruções de instalação embutidas
+## Fora de escopo
+Nenhuma mudança visual de layout além dos rótulos e novos indicadores citados.
