@@ -263,12 +263,10 @@ function EnvioMassa() {
             <Activity className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="font-bold text-indigo-900">Configuração de Envio (100 e-mails/h)</h3>
+            <h3 className="font-bold text-indigo-900">Envio Automático (100 e-mails/h)</h3>
             <p className="mt-1 text-sm text-indigo-700 leading-relaxed">
-              O limite do workspace é de <strong>100 e-mails/hora</strong>.
-              Intervalo configurado: <strong>36 segundos</strong>.
-              O sistema lida automaticamente com erros 429, pausando e retomando a fila.
-
+              Sistema configurado para **100 e-mails por hora** (1 a cada 36s).
+              O motor de envio garante o ritmo exato e limpa erros automaticamente.
             </p>
           </div>
         </div>
