@@ -1,4 +1,14 @@
-<div className="hidden">Execute esta instrucao no projeto: eu quero que teste o painel e veja si ele esta funcionando perfeitamente</div>
+<div className="hidden">Execute esta instrucao no projeto: tem: 724
+
+Links gerados
+
+Links criados no período
+
+526
+
+E-mails enviados com sucesso
+
+ate momento faça enviar os email que falta para essas empresas que já foram importadas ai sim depois começa importar mais, quase 200 empresas de diferença</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
