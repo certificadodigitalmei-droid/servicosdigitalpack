@@ -377,12 +377,12 @@ function LinksGeradosPage() {
       {/* Aggregate KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         <KPI icon={<ExternalLink className="h-4 w-4" />} label="Links no filtro" value={total} tone="slate" />
-        <KPI icon={<CheckCircle2 className="h-4 w-4" />} label="E-mails enviados" value={agg.emails_sent} tone="emerald" />
-        <KPI icon={<Eye className="h-4 w-4" />} label="Cliques totais" value={agg.total} tone="blue" />
-        <KPI icon={<Eye className="h-4 w-4" />} label="Abriu página" value={agg.view_link} tone="indigo" />
-        <KPI icon={<ShoppingCart className="h-4 w-4" />} label="Checkout" value={agg.view_checkout} tone="violet" />
-        <KPI icon={<FileCheck2 className="h-4 w-4" />} label="Emitir cert." value={agg.click_certificado} tone="emerald" />
-        <KPI icon={<Receipt className="h-4 w-4" />} label="Gerar guia" value={agg.click_guia} tone="amber" />
+        <KPI icon={<CheckCircle2 className="h-4 w-4" />} label="E-mails enviados" value={aggregate.emails_sent} tone="emerald" />
+        <KPI icon={<Eye className="h-4 w-4" />} label="Cliques totais" value={aggregate.total} tone="blue" />
+        <KPI icon={<Eye className="h-4 w-4" />} label="Abriu página" value={aggregate.view_link} tone="indigo" />
+        <KPI icon={<ShoppingCart className="h-4 w-4" />} label="Checkout" value={aggregate.view_checkout} tone="violet" />
+        <KPI icon={<FileCheck2 className="h-4 w-4" />} label="Emitir cert." value={aggregate.click_certificado} tone="emerald" />
+        <KPI icon={<Receipt className="h-4 w-4" />} label="Gerar guia" value={aggregate.click_guia} tone="amber" />
         <KPI icon={<CheckCircle2 className="h-4 w-4" />} label={`Pagos • R$ ${totalPaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} value={totalPaid} tone="green" />
       </div>
 
