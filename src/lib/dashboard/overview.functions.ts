@@ -262,6 +262,8 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
         totalEncontradas,
         comLinks,
         comEnvios
-      }
+      },
+      pipeline,
     };
+
   });
