@@ -84,6 +84,10 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
           // dentro de processQueueInternal. Até 3 por chamada distribui bem os 100.
           const { processQueueInternal } = await import('@/lib/gmail/queue.server');
           stats.queue = await processQueueInternal(3);
+          
+          // 5. Reconciliação de Métricas (Mantém Dashboard e Auditoria sincronizados)
+          const { reconcileMetrics } = await import('@/lib/automation/reconcile.server');
+          stats.reconcile = await reconcileMetrics();
 
 
         } catch (e: any) {
