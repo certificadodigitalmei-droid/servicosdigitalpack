@@ -177,7 +177,7 @@ function msToNextHour() {
 
 const initial: State = {
   /* ... */
-  subject: 'CNPJ {{CNPJ}} — RESTITUIÇÃO DISPONÍVEL?',
+  subject: 'RESTRIÇÃO NO SEU CNPJ MEI',
   delaySec: 36, // Ajustado para 100 e-mails/hora (36s)
   batchLimit: 100, 
   limitMode: 'hourly', 

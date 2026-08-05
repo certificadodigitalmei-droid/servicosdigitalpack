@@ -197,7 +197,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
 
 
-export const DEFAULT_SUBJECT = 'CNPJ {{CNPJ}} — RESTITUIÇÃO DISPONÍVEL?';
+export const DEFAULT_SUBJECT = 'RESTRIÇÃO NO SEU CNPJ MEI';
 export const DEFAULT_PREHEADER =
   'Verificação de restituição e pendências para o CNPJ {{CNPJ}}.';
 
