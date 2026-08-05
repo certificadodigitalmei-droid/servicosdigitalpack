@@ -119,8 +119,12 @@ export const Route = createFileRoute('/api/public/hooks/auto-import-mei')({
           }
         }
 
+        // Processa a fila de e-mails em cada batida do importador
+        const { processQueueInternal } = await import('@/lib/gmail/queue.server');
+        const queue = await processQueueInternal(3);
+
         return new Response(
-          JSON.stringify({ ok: true, ranAt: nowIso, count: results.length, results }),
+          JSON.stringify({ ok: true, ranAt: nowIso, count: results.length, results, queue }),
           { status: 200, headers: { 'content-type': 'application/json' } },
         );
       },
