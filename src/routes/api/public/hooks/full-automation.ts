@@ -25,10 +25,24 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
         const stats: any = {};
 
         try {
-          // 1. Auto-import de novas empresas (Casa dos Dados)
           const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+
+          // 0. Interruptor global (Nuvem: Ativo/Off) — se nada estiver habilitado, não faz nada.
+          const { count: enabledCount } = await supabaseAdmin
+            .from('automatic_company_queries')
+            .select('id', { count: 'exact', head: true })
+            .eq('enabled', true);
+
+          if (!enabledCount) {
+            return new Response(JSON.stringify({ skipped: 'cloud_off' }), {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+            });
+          }
+
+          // 1. Auto-import de novas empresas (Casa dos Dados)
           const { runImportBatch } = await import('@/lib/casa-dos-dados/simple-flow.server');
-          
+
           const nowIso = new Date().toISOString();
           const { data: configs } = await supabaseAdmin
             .from('automatic_company_queries')
@@ -64,10 +78,10 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
           stats.cadence = await runNotificationCadence();
 
           // 4. Despachar e-mails da fila (Gmail API)
-          // Processamos 4 e-mails por chamada. Se o cron rodar a cada 1 minuto -> 240 e-mails/hora.
-          // O limite real de 100/h é garantido pela sincronia e pela capacidade do servidor.
+          // O cron roda a cada minuto; o teto de 100/h é garantido pela janela deslizante
+          // dentro de processQueueInternal. Até 3 por chamada distribui bem os 100.
           const { processQueueInternal } = await import('@/lib/gmail/queue.server');
-          stats.queue = await processQueueInternal(4);
+          stats.queue = await processQueueInternal(3);
 
 
         } catch (e: any) {
