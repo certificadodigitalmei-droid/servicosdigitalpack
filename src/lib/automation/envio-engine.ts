@@ -696,12 +696,34 @@ async function sendOne(item: QueueItem, channelIndex?: number): Promise<{ ok: bo
 
 
     if (res.reason === 'recipient_suppressed') {
+      const { email, cnpj, company_name } = item;
+      pushLog(`🚫 Suprimido (${email}) — removendo empresa e registros...`);
+      
+      // Remove do banco (cleanup imediato para liberar espaço)
+      try {
+        const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+        const cId = item.id;
+        
+        // Remove registros de histórico de campanha para esse CNPJ/Email
+        if (cnpj) {
+          await supabaseAdmin.from('email_campaign_recipients').delete().eq('cnpj', cnpj.replace(/\D+/g, ''));
+        }
+        await supabaseAdmin.from('email_campaign_recipients').delete().eq('email', email.trim().toLowerCase());
+        
+        // Remove links
+        await supabaseAdmin.from('company_links').delete().eq('company_id', cId);
+        
+        // Remove empresa
+        await supabaseAdmin.from('companies').delete().eq('id', cId);
+        
+        pushLog(`✅ Limpeza concluída para ${company_name} (${cnpj})`);
+      } catch (e: any) {
+        pushLog(`⚠ Falha na limpeza automática: ${e.message}`);
+      }
+
       envioStore.set((s) => ({
-        queue: s.queue.map((q) =>
-          q.id === item.id ? { ...q, status: 'suppressed', message: res.message } : q,
-        ),
+        queue: s.queue.filter((q) => q.id !== item.id),
       }));
-      pushLog(`⊘ Suprimido ${item.email}: ${res.message ?? ''}`);
       return { ok: true };
     }
     if (res.reason === 'rate_limited') {
@@ -735,22 +757,54 @@ async function sendOne(item: QueueItem, channelIndex?: number): Promise<{ ok: bo
       pushLog(`⏸ HTTP 429: Retomada prevista em ${new Date(envioStore.get().rateLimitPauseUntil!).toLocaleTimeString()}`);
       return { ok: false, waitSec: wait };
     }
+    const { email, cnpj, company_name } = item;
+    pushLog(`✗ Erro ${email}: ${res.message} — apagando empresa automaticamente.`);
+    try {
+      const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+      const cId = item.id;
+      if (cnpj) {
+        await supabaseAdmin.from('email_campaign_recipients').delete().eq('cnpj', cnpj.replace(/\D+/g, ''));
+      }
+      await supabaseAdmin.from('email_campaign_recipients').delete().eq('email', email.trim().toLowerCase());
+      await supabaseAdmin.from('company_links').delete().eq('company_id', cId);
+      await supabaseAdmin.from('companies').delete().eq('id', cId);
+      pushLog(`✅ Limpeza de erro concluída para ${company_name}`);
+    } catch (cleanErr: any) {
+      pushLog(`⚠ Falha na limpeza após erro: ${cleanErr.message}`);
+    }
     envioStore.set((s) => ({
-      queue: s.queue.map((q) =>
-        q.id === item.id ? { ...q, status: 'error', message: res.message } : q,
-      ),
+      queue: s.queue.filter((q) => q.id !== item.id),
       lastErrorMsg: res.message || 'erro desconhecido',
     }));
-    pushLog(`✗ Erro ${item.email}: ${res.message}`);
     return { ok: true };
   } catch (e: any) {
+    const isError = true;
+    const { email, cnpj, company_name } = item;
+
+    // Se o erro for uma falha definitiva (ex: email não existe, domínio inválido)
+    // ou se o usuário pediu para "apagar empresas que não chegou email"
+    pushLog(`✗ Falha ${email}: ${e.message} — apagando empresa automaticamente.`);
+
+    try {
+      const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+      const cId = item.id;
+      
+      if (cnpj) {
+        await supabaseAdmin.from('email_campaign_recipients').delete().eq('cnpj', cnpj.replace(/\D+/g, ''));
+      }
+      await supabaseAdmin.from('email_campaign_recipients').delete().eq('email', email.trim().toLowerCase());
+      await supabaseAdmin.from('company_links').delete().eq('company_id', cId);
+      await supabaseAdmin.from('companies').delete().eq('id', cId);
+      
+      pushLog(`✅ Limpeza de erro concluída para ${company_name}`);
+    } catch (cleanErr: any) {
+      pushLog(`⚠ Falha na limpeza após erro: ${cleanErr.message}`);
+    }
+
     envioStore.set((s) => ({
-      queue: s.queue.map((q) =>
-        q.id === item.id ? { ...q, status: 'error', message: e.message } : q,
-      ),
+      queue: s.queue.filter((q) => q.id !== item.id),
       lastErrorMsg: e.message || 'falha de rede',
     }));
-    pushLog(`✗ Falha ${item.email}: ${e.message}`);
     return { ok: true };
   }
 }
