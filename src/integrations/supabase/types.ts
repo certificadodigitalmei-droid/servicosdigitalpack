@@ -529,6 +529,7 @@ export type Database = {
       }
       cloud_automation_settings: {
         Row: {
+          burst_concurrency: number
           created_at: string
           enabled: boolean
           hourly_batch_size: number
@@ -537,10 +538,12 @@ export type Database = {
           last_run_at: string | null
           paced_delay_sec: number
           send_mode: string
+          send_profile: string
           status: string
           updated_at: string
         }
         Insert: {
+          burst_concurrency?: number
           created_at?: string
           enabled?: boolean
           hourly_batch_size?: number
@@ -549,10 +552,12 @@ export type Database = {
           last_run_at?: string | null
           paced_delay_sec?: number
           send_mode?: string
+          send_profile?: string
           status?: string
           updated_at?: string
         }
         Update: {
+          burst_concurrency?: number
           created_at?: string
           enabled?: boolean
           hourly_batch_size?: number
@@ -561,6 +566,7 @@ export type Database = {
           last_run_at?: string | null
           paced_delay_sec?: number
           send_mode?: string
+          send_profile?: string
           status?: string
           updated_at?: string
         }

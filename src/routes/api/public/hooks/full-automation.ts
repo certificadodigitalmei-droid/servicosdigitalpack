@@ -68,8 +68,9 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
             : Math.max(1, Math.round(60 / Math.max(1, flow.pacedDelaySec)));
           stats.queue = await processQueueInternal(perTick, flow.hourlyBatchSize, {
             burst,
-            concurrency: 10,
+            concurrency: flow.burstConcurrency,
           });
+
 
           // 4. Régua de cobrança (PIX pendente etc.)
           const { runNotificationCadence } = await import('@/lib/emails/order-emails.server');

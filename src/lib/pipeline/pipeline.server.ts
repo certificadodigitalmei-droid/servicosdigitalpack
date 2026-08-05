@@ -422,8 +422,86 @@ export async function computeSendHealth(client: AnyClient): Promise<SendHealth> 
 }
 
 // ---------------------------------------------------------------------------
+// JANELA DE ENVIO (1 hora, ancorada no 1º e-mail)
+// ---------------------------------------------------------------------------
+
+export type SendWindow = {
+  updatedAt: string;
+  /** Existe janela aberta (houve envio nos últimos 60 min). */
+  open: boolean;
+  windowStart: string | null;
+  windowEnd: string | null;
+  limit: number;
+  sentInWindow: number;
+  remaining: number;
+  secondsToReset: number;
+};
+
+/**
+ * Janela de 1 hora que abre no primeiro e-mail enviado.
+ * Enquanto aberta, contabiliza quantos e-mails saíram e quanto falta zerar.
+ */
+export async function computeSendWindow(
+  client: AnyClient,
+  limitOverride?: number,
+): Promise<SendWindow> {
+  const flow = limitOverride
+    ? { hourlyBatchSize: limitOverride }
+    : await readFlowSettings(client);
+  const limit = limitOverride ?? flow.hourlyBatchSize;
+
+  const sinceIso = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+  const { data: firstRows } = await client
+    .from('email_send_queue')
+    .select('updated_at')
+    .eq('status', 'sent')
+    .gte('updated_at', sinceIso)
+    .order('updated_at', { ascending: true })
+    .limit(1);
+
+  const first = (firstRows ?? [])[0];
+  if (!first?.updated_at) {
+    return {
+      updatedAt: new Date().toISOString(),
+      open: false,
+      windowStart: null,
+      windowEnd: null,
+      limit,
+      sentInWindow: 0,
+      remaining: limit,
+      secondsToReset: 0,
+    };
+  }
+
+  const startMs = new Date(first.updated_at).getTime();
+  const endMs = startMs + 60 * 60 * 1000;
+
+  const { count } = await client
+    .from('email_send_queue')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'sent')
+    .gte('updated_at', new Date(startMs).toISOString());
+
+  const sentInWindow = count ?? 0;
+
+  return {
+    updatedAt: new Date().toISOString(),
+    open: true,
+    windowStart: new Date(startMs).toISOString(),
+    windowEnd: new Date(endMs).toISOString(),
+    limit,
+    sentInWindow,
+    remaining: Math.max(0, limit - sentInWindow),
+    secondsToReset: Math.max(0, Math.round((endMs - Date.now()) / 1000)),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // CONFIGURAÇÕES DO FLUXO
 // ---------------------------------------------------------------------------
+
+export type SendProfile = 'turbo' | 'rapido' | 'equilibrado' | 'moderado' | 'custom';
 
 export type FlowSettings = {
   enabled: boolean;
@@ -431,6 +509,8 @@ export type FlowSettings = {
   sendMode: 'burst' | 'paced';
   hourlyBatchSize: number;
   pacedDelaySec: number;
+  sendProfile: SendProfile;
+  burstConcurrency: number;
 };
 
 export const DEFAULT_FLOW_SETTINGS: FlowSettings = {
@@ -439,20 +519,43 @@ export const DEFAULT_FLOW_SETTINGS: FlowSettings = {
   sendMode: 'burst',
   hourlyBatchSize: 100,
   pacedDelaySec: 36,
+  sendProfile: 'moderado',
+  burstConcurrency: 10,
 };
+
+/** Presets prontos de disparo (aplicados com 1 clique no painel). */
+export const SEND_PROFILE_PRESETS: Record<
+  Exclude<SendProfile, 'custom'>,
+  { sendMode: 'burst' | 'paced'; burstConcurrency: number; pacedDelaySec: number }
+> = {
+  turbo: { sendMode: 'burst', burstConcurrency: 10, pacedDelaySec: 1 },
+  rapido: { sendMode: 'burst', burstConcurrency: 5, pacedDelaySec: 1 },
+  equilibrado: { sendMode: 'burst', burstConcurrency: 2, pacedDelaySec: 5 },
+  moderado: { sendMode: 'paced', burstConcurrency: 1, pacedDelaySec: 36 },
+};
+
+const VALID_PROFILES: SendProfile[] = ['turbo', 'rapido', 'equilibrado', 'moderado', 'custom'];
 
 export async function readFlowSettings(client: AnyClient): Promise<FlowSettings> {
   const { data } = await client
     .from('cloud_automation_settings')
-    .select('enabled, import_batch_size, send_mode, hourly_batch_size, paced_delay_sec')
+    .select(
+      'enabled, import_batch_size, send_mode, hourly_batch_size, paced_delay_sec, send_profile, burst_concurrency',
+    )
     .eq('id', 1)
     .maybeSingle();
   if (!data) return DEFAULT_FLOW_SETTINGS;
+  const profile = VALID_PROFILES.includes(data.send_profile)
+    ? (data.send_profile as SendProfile)
+    : 'custom';
   return {
     enabled: !!data.enabled,
     importBatchSize: data.import_batch_size ?? 5,
     sendMode: data.send_mode === 'paced' ? 'paced' : 'burst',
     hourlyBatchSize: data.hourly_batch_size ?? 100,
     pacedDelaySec: data.paced_delay_sec ?? 36,
+    sendProfile: profile,
+    burstConcurrency: Math.max(1, Math.min(20, data.burst_concurrency ?? 10)),
   };
 }
+

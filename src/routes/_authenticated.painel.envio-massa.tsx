@@ -34,7 +34,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { getEmailMetrics } from '@/lib/emails/email-metrics.functions';
 import { PipelineStrip } from '@/components/painel/PipelineStrip';
-import { FilaUnicaCard, SendHealthCard, FlowSettingsCard } from '@/components/painel/FilaUnica';
+import { FilaUnicaCard, SendHealthCard, SendWindowCard, SendProfileCard } from '@/components/painel/FilaUnica';
 
 import { useStore } from '@/lib/automation/store';
 import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
@@ -271,26 +271,11 @@ function EnvioMassa() {
 
   return (
     <div className="space-y-6">
-      {/* Alerta de Configuração de Cota */}
-      <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
-            <Activity className="h-6 w-6" />
-          </div>
-          <div>
-            <h3 className="font-bold text-indigo-900">Envio Automático (100 e-mails/h)</h3>
-            <p className="mt-1 text-sm text-indigo-700 leading-relaxed">
-              Sistema configurado para **100 e-mails por hora** (1 a cada 36s).
-              O motor de envio garante o ritmo exato e limpa erros automaticamente.
-            </p>
-          </div>
-        </div>
-      </div>
-
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Envio em Massa</h1>
         <p className="text-sm text-slate-500">
-          Dispara e-mails via Lovable Emails (domínio profissional) com controle de delay, pausa e modo teste.
+          Janela de 1 hora ancorada no primeiro envio, perfis de disparo e fila única de empresas
+          com link aguardando envio.
         </p>
         {running && (
           <p className="mt-1 text-xs font-semibold text-emerald-700">
@@ -299,13 +284,16 @@ function EnvioMassa() {
         )}
       </div>
 
-      <PipelineStrip />
+      <SendWindowCard />
+
+      <SendProfileCard />
 
       <SendHealthCard />
 
-      <FlowSettingsCard />
-
       <FilaUnicaCard />
+
+      <PipelineStrip />
+
 
 
 
@@ -318,106 +306,44 @@ function EnvioMassa() {
         onToChange={setToDate}
       />
 
-      {/* Limites do Lovable Emails + Enviados confirmados */}
+      {/* Acompanhamento real dos envios (log oficial do servidor) */}
       <Card className="border-blue-100 bg-gradient-to-br from-blue-50/60 to-white">
         <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
               <Activity className="h-4 w-4 text-blue-600" />
-              Lovable Emails — status e limites
+              Acompanhamento dos envios
             </CardTitle>
             <p className="mt-1 text-xs text-slate-600">
-              Envios saem pelo domínio profissional configurado no Lovable. Os números abaixo vêm do log oficial
-              de entregas (última hora e últimas 24h). Os limites são aplicados no servidor: quando você bate a cota,
-              o Lovable responde <code className="rounded bg-slate-100 px-1">HTTP 429</code> e a fila pausa e retoma
-              automaticamente — você não precisa fazer nada.
+              Números oficiais do servidor — valem mesmo com o painel fechado.
             </p>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Button size="sm" variant="outline" onClick={refreshStats} disabled={loadingStats}>
-              {loadingStats ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-              Atualizar
-            </Button>
-          </div>
-
-
+          <Button size="sm" variant="outline" onClick={refreshStats} disabled={loadingStats}>
+            {loadingStats ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            Atualizar
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Painel destaque: Status da Cota e Retomada */}
           <div className="grid gap-3 sm:grid-cols-4">
-              <BigStat
-                label="Cota Configurada"
-                value="100/h"
-                sub="Cota padrão workspace"
-                accent="slate"
-              />
-              <BigStat
-                label="Cota Efetiva"
-                value="100/h"
-                sub="Processamento contínuo"
-                accent="emerald"
-              />
-              <BigStat
-                label="Intervalo"
-                value="36s"
-                sub="Fixo por e-mail"
-                accent="blue"
-
-              />
-              <BigStat
-                label="Status de Retomada"
-                value={rateLimitPauseUntil ? new Date(rateLimitPauseUntil).toLocaleTimeString() : "Ativo"}
-                sub={rateLimitPauseUntil ? "Horário previsto" : "Fila processando"}
-                accent={rateLimitPauseUntil ? 'red' : 'emerald'}
-              />
+            <MiniStat label="Enviados na última hora" value={sm?.ultimaHora ?? sentThisHour} color="text-indigo-700" />
+            <MiniStat label="Enviados hoje" value={sm?.hoje ?? '—'} color="text-slate-800" />
+            <MiniStat label="Na fila do servidor" value={sm?.fila ?? '—'} color="text-blue-700" />
+            <MiniStat label="Enviados confirmados" value={sentEmails.length} color="text-emerald-700" />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-4">
-              <MiniStat label="Enviados (Janela 60min)" value={sentThisHour} color="text-indigo-700" />
-              <MiniStat label="Quantidade HTTP 429" value={rateLimitCount} color="text-amber-700" />
-              <MiniStat label="Próximo Envio" value={running && !paused && !rateLimitPauseUntil ? "Em instantes" : "Aguardando"} color="text-slate-700" />
-              <MiniStat label="Pendentes na Fila" value={queue.filter(q => q.status === 'pending').length} color="text-blue-700" />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-4">
-              <MiniStat label="Enviados Confirmados" value={sentEmails.length} color="text-emerald-700" />
-              <MiniStat label="Retries (Rate Limit)" value={queue.filter(q => q.status === 'pending' && q.message?.includes('429')).length} color="text-amber-600" />
-              <MiniStat label="Bounces / Suprimidos" value={emailStats?.last24h.bounced || 0} color="text-red-700" />
-              <MiniStat label="Falhas Definitivas" value={queue.filter(q => q.status === 'error').length} color="text-red-900" />
-          </div>
-
-          {/* Números reais do servidor (valem também com a aba fechada) */}
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-800">
-              Servidor / Nuvem (fonte oficial — igual ao Dashboard)
-            </div>
-            <div className="grid gap-3 sm:grid-cols-5">
-              <MiniStat label="Enviados na última hora" value={sm?.ultimaHora ?? '—'} color="text-indigo-700" />
-              <MiniStat label="Saldo da hora (de 100)" value={sm?.saldoHora ?? '—'} color="text-emerald-700" />
-              <MiniStat label="Enviados hoje" value={sm?.hoje ?? '—'} color="text-slate-800" />
-              <MiniStat label="Na fila do servidor" value={sm?.fila ?? '—'} color="text-blue-700" />
-              <MiniStat
-                label="Falhas / suprimidos"
-                value={sm ? sm.falhas + sm.suprimidos : '—'}
-                color="text-red-700"
-              />
-            </div>
-          </div>
-
-          {/* Como funciona / regras */}
-          <div className="rounded-lg border border-slate-200 bg-white p-4 text-xs text-slate-600">
-            <div className="mb-2 text-sm font-semibold text-slate-800">Regras de Envio Específicas do Workspace</div>
-            <ul className="grid gap-1.5 sm:grid-cols-2">
-              <li>✅ <strong>Cota Máxima</strong>: 100 e-mails por hora liberados pela Lovable.</li>
-              <li>✅ <strong>Concorrência Serial</strong>: Apenas 1 envio por vez para máxima estabilidade.</li>
-              <li>✅ <strong>Gestão de 429</strong>: Respeito automático ao header Retry-After e pausa inteligente.</li>
-              <li>✅ <strong>Ritmo Estável</strong>: Envio fixo de 100/h para evitar bloqueios.</li>
-              <li>✅ <strong>Pausa Prolongada</strong>: Se ocorrerem 3 erros 429 em 1 hora, a fila pausa por 60 minutos.</li>
-
-              <li>✅ <strong>Retomada Automática</strong>: O sistema retoma o processamento assim que a cota é liberada.</li>
-              <li>🚫 <strong>Supressão Permanente</strong>: Nunca reenvia para hard bounces, reclamações ou descadastros.</li>
-              <li>⚙️ <strong>Independência</strong>: O processamento ocorre no servidor, sem depender da aba estar aberta.</li>
-            </ul>
+            <MiniStat label="Retries (HTTP 429)" value={rateLimitCount} color="text-amber-700" />
+            <MiniStat label="Bounces / suprimidos" value={sm?.suprimidos ?? emailStats?.last24h.bounced ?? 0} color="text-red-700" />
+            <MiniStat label="Falhas definitivas" value={sm?.falhas ?? queue.filter((q) => q.status === 'error').length} color="text-red-900" />
+            <MiniStat
+              label="Retomada"
+              value={rateLimitPauseUntil ? new Date(rateLimitPauseUntil).toLocaleTimeString('pt-BR') : 'Ativo'}
+              color={rateLimitPauseUntil ? 'text-red-700' : 'text-emerald-700'}
+            />
           </div>
 
           <p className="text-[11px] text-slate-500">
@@ -426,6 +352,7 @@ function EnvioMassa() {
           </p>
         </CardContent>
       </Card>
+
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Config */}
