@@ -51,6 +51,7 @@ function EnviadosPage() {
       if (t >= startHour) lastHour++;
       if (e.testMode) test++;
     }
+    // O usuário quer que o total do período mostre o valor exato selecionado
     return { total: sent.length, lastHour, test, inRange: filtered.length };
   }, [sent, filtered]);
 
