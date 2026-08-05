@@ -157,7 +157,22 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   showWarning: true,
   warningTitle: 'ATENÇÃO · RISCOS ATIVOS NO SEU CNPJ',
   warningItems:
-    'Impossibilitado de emitir nota fiscal (NFS-e).\nImpossibilitado de assinar contratos digitais e físicos com CNPJ.\nBloqueio de limites de crédito empresar
+    'Impossibilitado de emitir nota fiscal (NFS-e).\nImpossibilitado de assinar contratos digitais e físicos com CNPJ.\nBloqueio de limites de crédito empresarial em bancos e financeiras PJ.\nSujeito a multa e restrição perante a Receita Federal.',
+  warningBg: '#fef2f2',
+  warningBorder: '#dc2626',
+  warningTitleColor: '#991b1b',
+  warningTextColor: '#b91c1c',
+
+  showSignature: false,
+  signature: '',
+
+  footer: '',
+  disclaimer:
+    'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nE-mail automático; não responda.',
+  showFooter: true,
+  unsubText: '',
+  unsubHref: '#',
+
 
   // Sem logo no topo: a imagem fica apenas na foto de perfil do remetente.
   showAvatar: false,
