@@ -373,6 +373,24 @@ function EnvioMassa() {
               <MiniStat label="Falhas Definitivas" value={queue.filter(q => q.status === 'error').length} color="text-red-900" />
           </div>
 
+          {/* Números reais do servidor (valem também com a aba fechada) */}
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-800">
+              Servidor / Nuvem (fonte oficial — igual ao Dashboard)
+            </div>
+            <div className="grid gap-3 sm:grid-cols-5">
+              <MiniStat label="Enviados na última hora" value={sm?.ultimaHora ?? '—'} color="text-indigo-700" />
+              <MiniStat label="Saldo da hora (de 100)" value={sm?.saldoHora ?? '—'} color="text-emerald-700" />
+              <MiniStat label="Enviados hoje" value={sm?.hoje ?? '—'} color="text-slate-800" />
+              <MiniStat label="Na fila do servidor" value={sm?.fila ?? '—'} color="text-blue-700" />
+              <MiniStat
+                label="Falhas / suprimidos"
+                value={sm ? sm.falhas + sm.suprimidos : '—'}
+                color="text-red-700"
+              />
+            </div>
+          </div>
+
           {/* Como funciona / regras */}
           <div className="rounded-lg border border-slate-200 bg-white p-4 text-xs text-slate-600">
             <div className="mb-2 text-sm font-semibold text-slate-800">Regras de Envio Específicas do Workspace</div>
