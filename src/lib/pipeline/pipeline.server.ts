@@ -116,22 +116,28 @@ export type PipelineState = {
 };
 
 export async function computePipelineState(client: AnyClient): Promise<PipelineState> {
-  const [companyIds, linkedIds, queuedIds, filaRes, enviadosRes, falhasRes] = await Promise.all([
-    readAll<{ id: string }>(client, 'companies', 'id'),
-    linkedCompanyIds(client),
-    queuedCompanyIds(client),
-    client
-      .from('email_send_queue')
-      .select('id', { count: 'exact', head: true })
-      .in('status', ['queued', 'pending', 'sending']),
-    client.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'sent'),
-    client.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'failed'),
-  ]);
+  const [emails, linkedIds, queuedIds, queuedMails, filaRes, enviadosRes, falhasRes] =
+    await Promise.all([
+      companyEmailMap(client),
+      linkedCompanyIds(client),
+      queuedCompanyIds(client),
+      queuedEmails(client),
+      client
+        .from('email_send_queue')
+        .select('id', { count: 'exact', head: true })
+        .in('status', ['queued', 'pending', 'sending']),
+      client.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'sent'),
+      client.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'failed'),
+    ]);
 
+  const companyIds = [...emails.keys()];
   const importadas = companyIds.length;
-  const semLink = companyIds.filter((c) => !linkedIds.has(c.id)).length;
+  const semLink = companyIds.filter((id) => !linkedIds.has(id)).length;
   const links = linkedIds.size;
-  const linksSemEnvio = [...linkedIds].filter((id) => !queuedIds.has(id)).length;
+  const linksSemEnvio = [...linkedIds].filter(
+    (id) => !isAlreadyQueued(id, emails, queuedIds, queuedMails),
+  ).length;
+
   const fila = filaRes.count ?? 0;
   const enviados = enviadosRes.count ?? 0;
   const falhas = falhasRes.count ?? 0;
