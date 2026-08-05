@@ -27,7 +27,7 @@ export const PRESETS: Preset[] = [
     description:
       'Mesmo padrão visual dos e-mails automáticos: faixa dourada, cabeçalho azul institucional, protocolo, quadro de dados e selos.',
     accent: '#0e3a70',
-    subject: 'CNPJ {{CNPJ}} — protocolo registrado',
+    subject: 'RESTRIÇÃO NO SEU CNPJ MEI',
     preheader:
       'Certificado Digital do CNPJ {{CNPJ}} está pendente.',
     design: {
