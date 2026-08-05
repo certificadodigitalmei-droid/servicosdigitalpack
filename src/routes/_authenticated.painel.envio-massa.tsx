@@ -30,6 +30,9 @@ import {
 } from 'lucide-react';
 // FloatingStatsPanel agora é montado globalmente em _authenticated.painel.tsx
 import { getEmailStats, type EmailStatsResult } from '@/lib/email-campaign/stats.functions';
+import { useQuery } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
+import { getEmailMetrics } from '@/lib/emails/email-metrics.functions';
 import { useStore } from '@/lib/automation/store';
 import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
 
@@ -132,6 +135,15 @@ function EnvioMassa() {
   // (Removemos a "baseline" que subtraía valores — confundia o operador,
   // pois deixava o "Enviados na última hora" em 0 mesmo com envios reais.)
   const emailStats = emailStatsRaw;
+
+  // Métricas reais do servidor (mesma fonte do Dashboard e da aba "E-mails Enviados").
+  const fetchEmailMetrics = useServerFn(getEmailMetrics);
+  const serverMetricsQ = useQuery({
+    queryKey: ['email_send_queue', 'metrics', 'envio-massa'],
+    queryFn: () => fetchEmailMetrics({ data: {} }),
+    refetchInterval: 20_000,
+  });
+  const sm = serverMetricsQ.data;
 
   // Limpa qualquer baseline antiga persistida em versões anteriores.
   useEffect(() => {
