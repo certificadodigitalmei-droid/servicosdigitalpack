@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,12 +10,14 @@ import { formatCNPJ } from '@/lib/format';
 import {
   getUnifiedQueue,
   getSendHealth,
+  getSendWindow,
   getFlowSettings,
   updateFlowSettings,
   type QueueStage,
 } from '@/lib/pipeline/pipeline.functions';
 import { toast } from 'sonner';
-import { Inbox, Send, AlertTriangle, Gauge, Zap, Timer, Settings2 } from 'lucide-react';
+import { Inbox, Send, AlertTriangle, Gauge, Zap, Timer, Settings2, Rocket } from 'lucide-react';
+
 
 const STAGE_UI: Record<QueueStage, { label: string; cls: string }> = {
   sem_link: { label: 'gerando link', cls: 'bg-slate-100 text-slate-700' },
