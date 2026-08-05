@@ -144,14 +144,17 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const enviadosPeriodo = enviadosRes.count ?? 0;
 
     // "Hoje" sempre em horário de Brasília
-    const brTodayISO = startOfDayISO();
+    const brTodayStart = startOfDayISO();
+    const brTodayEnd = new Date(new Date(brTodayStart).getTime() + 24*60*60*1000 - 1).toISOString();
 
     const enviadosHojeCount = await supabase
       .from('email_send_queue')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'sent')
-      .gte('updated_at', brTodayISO)
+      .gte('updated_at', brTodayStart)
+      .lte('updated_at', brTodayEnd)
       .then((r: any) => r.count ?? 0);
+
 
     const falhas24h = falhasRes.count ?? 0;
     const workersAtivos = (workers ?? []).filter((w: any) => w.is_active).length;
@@ -187,11 +190,12 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     }).length;
 
     const eventosQ = supabase.from('link_events').select('event_type').gte('created_at', fromISO);
-    const eventosFinal = toISO ? eventosQ.lte('created_at', toISO) : eventosQ;
+    if (toISO) eventosQ.lte('created_at', toISO);
 
     const [{ data: eventos }] = await Promise.all([
-      eventosFinal,
+      eventosQ,
     ]);
+
     const evCount = (ev: string) => (eventos ?? []).filter((e: any) => e.event_type === ev).length;
 
     // ------ Pagamentos ------

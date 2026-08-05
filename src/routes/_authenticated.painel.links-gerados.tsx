@@ -170,6 +170,7 @@ function LinksGeradosPage() {
         if (range.lte) eqEmail = eqEmail.lte('updated_at', range.lte);
         const { count: eCount } = await eqEmail;
         agg.emails_sent = eCount ?? 0;
+
       }
 
       {
