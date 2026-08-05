@@ -13,13 +13,15 @@ type QueueRow = {
   attempts: number;
 };
 
-export async function sendOneNow(row: QueueRow) {
+export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) {
   const { sendGmailMessage, GmailError } = await import('./gmail.server');
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
-  const wait = Math.max(0, RATE_WINDOW_MS - (Date.now() - lastSendAt));
-  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-  lastSendAt = Date.now();
+  if (!opts.burst) {
+    const wait = Math.max(0, RATE_WINDOW_MS - (Date.now() - lastSendAt));
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastSendAt = Date.now();
+  }
 
   await supabaseAdmin
     .from('email_send_queue')
@@ -105,7 +107,11 @@ export async function sentInLastHour(): Promise<number> {
  * Processa até `maxBatch` e-mails pendentes da fila, respeitando o teto de
  * `HOURLY_LIMIT` envios na janela de 60 minutos.
  */
-export async function processQueueInternal(maxBatch = 10, hourlyLimit = HOURLY_LIMIT) {
+export async function processQueueInternal(
+  maxBatch = 10,
+  hourlyLimit = HOURLY_LIMIT,
+  opts: { burst?: boolean; concurrency?: number } = {},
+) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
   const lastHour = await sentInLastHour();
@@ -125,15 +131,28 @@ export async function processQueueInternal(maxBatch = 10, hourlyLimit = HOURLY_L
     .limit(batch);
   if (error) throw new Error(error.message);
 
+  const list = (rows ?? []) as QueueRow[];
   let sent = 0;
   let failed = 0;
-  for (const row of rows ?? []) {
-    const r = await sendOneNow(row as QueueRow);
-    if (r.ok) sent++;
-    else failed++;
+
+  if (opts.burst) {
+    // Rajada: dispara em paralelo (blocos) até esgotar a cota da hora.
+    const concurrency = Math.max(1, Math.min(20, opts.concurrency ?? 10));
+    for (let i = 0; i < list.length; i += concurrency) {
+      const chunk = list.slice(i, i + concurrency);
+      const res = await Promise.all(chunk.map((row) => sendOneNow(row, { burst: true })));
+      for (const r of res) r.ok ? sent++ : failed++;
+    }
+  } else {
+    for (const row of list) {
+      const r = await sendOneNow(row);
+      if (r.ok) sent++;
+      else failed++;
+    }
   }
+
   return {
-    processed: rows?.length ?? 0,
+    processed: list.length,
     sent,
     failed,
     lastHour: lastHour + sent,
