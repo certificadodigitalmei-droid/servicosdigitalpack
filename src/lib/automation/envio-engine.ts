@@ -52,9 +52,14 @@ export function syncFromMessageModel() {
   const fromName = loadSavedFromName();
   const fromAddress = loadSavedFromAddress();
   const replyTo = loadSavedReplyTo();
+
+  const finalSubject = subject && (subject.includes('protocolo de emissão') || subject.includes('CNPJ'))
+    ? 'RESTRIÇÃO NO SEU CNPJ MEI'
+    : (subject || 'RESTRIÇÃO NO SEU CNPJ MEI');
+
   envioStore.set((s) => ({
     ...s,
-    ...(subject ? { subject } : {}),
+    subject: finalSubject,
     ...(fromName ? { fromName } : {}),
     ...(fromAddress ? { fromAddress } : {}),
     ...(replyTo !== null ? { replyTo } : {}),
