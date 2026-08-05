@@ -296,6 +296,12 @@ function EnvioMassa() {
         )}
       </div>
 
+      <PipelineStrip />
+
+      <AguardandoEnvioCard />
+
+
+
       <DateRangeFilter
         preset={preset}
         onPresetChange={setPreset}
