@@ -1,9 +1,17 @@
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
-import type { PipelineState, PendingSendRow } from './pipeline.server';
+import type {
+  PipelineState,
+  PendingSendRow,
+  UnifiedQueueRow,
+  QueueStage,
+  SendHealth,
+  FlowSettings,
+} from './pipeline.server';
 
-export type { PipelineState, PendingSendRow };
+export type { PipelineState, PendingSendRow, UnifiedQueueRow, QueueStage, SendHealth, FlowSettings };
+
 
 /** Estado único do funil: importadas -> links -> fila -> enviados (com a trava de importação). */
 export const getPipelineState = createServerFn({ method: 'GET' })
