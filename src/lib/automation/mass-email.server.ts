@@ -1,184 +1,126 @@
-
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
 import { DEFAULT_DESIGN, renderHtml, renderText, type Vars } from '@/lib/email-campaign/template';
+import { listCompaniesWithoutLink, listPendingSendTargets } from '@/lib/pipeline/pipeline.server';
 
-/**
- * Pega empresas que ainda não receberam o e-mail da campanha e as adiciona na fila de envio do servidor.
- */
-export async function syncMassEmailQueue(limit = 50, priorityOnly = false) {
-  // 1. Prioridade: Buscar empresas que já possuem link (company_links) mas não estão na campanha
-  if (priorityOnly) {
-    const { data: links, error: linkErr } = await supabaseAdmin
-      .from('company_links')
-      .select('company_id')
-      .eq('active', true)
-      .limit(limit * 2);
+const SUBJECT = 'RESTRIÇÃO NO SEU CNPJ MEI';
 
-    if (!linkErr && links && links.length > 0) {
-      const companyIds = links.map(l => l.company_id).filter((id): id is string => !!id);
-      
-      const { data: priorityCompanies } = await supabaseAdmin
-        .from('companies')
-        .select('id, cnpj, email, nome_titular_exibicao, razao_social_original, inicio_atividade, situacao_cadastral_desc')
-        .in('id', companyIds)
-        .not('email', 'is', null);
-      
-      if (priorityCompanies && priorityCompanies.length > 0) {
-        // Filtrar as que já foram enviadas
-        const cnpjs = priorityCompanies.map(c => c.cnpj?.replace(/\D+/g, '')).filter((cnpj): cnpj is string => !!cnpj);
-        const { data: sentRecipients } = await supabaseAdmin
-          .from('email_campaign_recipients')
-          .select('cnpj')
-          .in('cnpj', cnpjs)
-          .not('sent_at', 'is', null);
-
-        const sentCnpjs = new Set(sentRecipients?.map(r => r.cnpj?.replace(/\D+/g, '')) || []);
-
-        const trulyPending = priorityCompanies.filter(c => !sentCnpjs.has(c.cnpj?.replace(/\D+/g, '') || ''));
-
-        if (trulyPending.length > 0) {
-          return await processPendingCompanies(trulyPending.slice(0, limit));
-        }
-      }
-    }
-    // Se não houver nada prioritário, continua para o fluxo normal
-  }
-
-  // 2. Fluxo Normal: Buscar empresas recentes que possuem e-mail
-  const { data: companies, error: fetchErr } = await supabaseAdmin
-    .from('companies')
-    .select('id, cnpj, email, nome_titular_exibicao, razao_social_original, inicio_atividade, situacao_cadastral_desc')
-    .not('email', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(limit * 3);
-
-
-  if (fetchErr || !companies) return { ok: false, error: fetchErr?.message };
-
-  // 3. Filtrar as que já foram enviadas (pela tabela email_campaign_recipients)
-  const emails = companies.map(c => c.email?.trim().toLowerCase()).filter(Boolean) as string[];
-  const cnpjs = companies.map(c => c.cnpj?.replace(/\D+/g, '')).filter(Boolean) as string[];
-
-  const { data: sentRecipients } = await supabaseAdmin
-    .from('email_campaign_recipients')
-    .select('email, cnpj')
-    .or(`email.in.(${emails.join(',')}),cnpj.in.(${cnpjs.join(',')})`)
-    .not('sent_at', 'is', null);
-
-  const sentEmails = new Set(sentRecipients?.map(r => r.email?.trim().toLowerCase()) || []);
-  const sentCnpjs = new Set(sentRecipients?.map(r => r.cnpj?.replace(/\D+/g, '')) || []);
-
-  const pendingCompanies = companies.filter(c => {
-    const emailKey = c.email?.trim().toLowerCase();
-    const cnpjKey = c.cnpj?.replace(/\D+/g, '');
-    return !sentEmails.has(emailKey || '') && !sentCnpjs.has(cnpjKey || '');
-  }).slice(0, limit);
-
-  if (pendingCompanies.length === 0) return { ok: true, enqueued: 0 };
-
-  return await processPendingCompanies(pendingCompanies);
+function baseUrl() {
+  return (process.env.PUBLIC_APP_URL || 'https://seu-certificado-mei-digital.online').replace(
+    /\/+$/,
+    '',
+  );
 }
 
 /**
- * Função interna para processar a lista de empresas e colocar na fila
+ * Etapa 1 do pipeline: garantir que toda empresa importada tenha link gerado.
+ * Retorna quantos links foram criados.
  */
-async function processPendingCompanies(pendingCompanies: any[]) {
-  // 3. Garantir que tenham links públicos
-  const pendingIds = pendingCompanies.map(c => c.id);
-  const { data: links } = await supabaseAdmin
-    .from('company_links')
-    .select('company_id, public_token')
-    .in('company_id', pendingIds)
-    .eq('active', true);
+export async function ensureLinksForImported(limit = 25) {
+  const pending = await listCompaniesWithoutLink(supabaseAdmin as any, limit);
+  if (pending.length === 0) return { created: 0 };
 
+  const publicBaseUrl = baseUrl();
+  let created = 0;
 
-  const linksMap: Record<string, string> = {};
-  links?.forEach(l => {
-    if (l.company_id) linksMap[l.company_id] = l.public_token;
-  });
-
-  const publicBaseUrl = (process.env.PUBLIC_APP_URL || 'https://seu-certificado-mei-digital.online').replace(/\/+$/, '');
-  const subject = 'RESTRIÇÃO NO SEU CNPJ MEI';
-  
-  const enqueued: any[] = [];
-
-  for (const company of pendingCompanies) {
-    let token = linksMap[company.id];
-    
-    // Se não tem link, cria um agora
-    if (!token) {
-      token = crypto.randomUUID().replace(/-/g, '');
-      await supabaseAdmin.from('company_links').insert({
-        company_id: company.id,
-        public_token: token,
-        token: token,
-        public_url: `${publicBaseUrl}/acesso/${token}`,
-        checkout_url: `${publicBaseUrl}/checkout/${token}`,
-        active: true,
-        status: 'active',
-        company_data: {
-          cnpj: company.cnpj,
-          nome: company.nome_titular_exibicao || company.razao_social_original
-        }
+  for (const c of pending) {
+    const token = crypto.randomUUID().replace(/-/g, '');
+    const { error } = await supabaseAdmin.from('company_links').insert({
+      company_id: c.companyId,
+      public_token: token,
+      token,
+      public_url: `${publicBaseUrl}/acesso/${token}`,
+      checkout_url: `${publicBaseUrl}/checkout/${token}`,
+      active: true,
+      status: 'active',
+      company_data: { cnpj: c.cnpj, nome: c.nome },
+    });
+    if (!error) {
+      created++;
+      await supabaseAdmin.from('automation_audit_logs').insert({
+        company_id: c.companyId,
+        cnpj: c.cnpj,
+        event_type: 'link_created',
+        details: { token },
       });
+    }
+  }
+
+  return { created };
+}
+
+/**
+ * Etapa 2 do pipeline: colocar na fila de envio todo link gerado que ainda
+ * não possui registro em `email_send_queue`.
+ *
+ * A fila (`email_send_queue`) é a ÚNICA fonte de verdade de "já foi enviado?".
+ * A chave `mass-email-<company_id>` garante idempotência.
+ */
+export async function syncMassEmailQueue(limit = 25) {
+  const pending = await listPendingSendTargets(supabaseAdmin as any, limit);
+  if (pending.length === 0) return { ok: true as const, enqueued: 0, semEmail: 0 };
+
+  const publicBaseUrl = baseUrl();
+  const rows: any[] = [];
+  let semEmail = 0;
+
+  // Dados completos para preencher as variáveis do template
+  const { data: companies } = await supabaseAdmin
+    .from('companies')
+    .select(
+      'id, cnpj, email, nome_titular_exibicao, razao_social_original, inicio_atividade, situacao_cadastral_desc',
+    )
+    .in(
+      'id',
+      pending.map((p) => p.companyId),
+    );
+  const byId = new Map<string, any>((companies ?? []).map((c: any) => [c.id, c]));
+
+  for (const p of pending) {
+    const c = byId.get(p.companyId);
+    const email = (c?.email ?? p.email ?? '').trim();
+    if (!email || !email.includes('@')) {
+      semEmail++;
+      continue;
     }
 
     const vars: Vars = {
-      NOME_TITULAR: company.nome_titular_exibicao || company.razao_social_original || '',
-      NOME_EMPRESARIAL: company.razao_social_original || '',
-      CNPJ: company.cnpj || '',
-      REFERENCIA: company.cnpj ? company.cnpj.slice(-8).toUpperCase() : 'CCMEI',
-      DATA_ABERTURA: company.inicio_atividade || '',
-      SITUACAO: company.situacao_cadastral_desc || 'PENDENTE',
-      LINK_PUBLICO: `${publicBaseUrl}/acesso/${token}`,
-      LINK_CHECKOUT: `${publicBaseUrl}/checkout/${token}`
+      NOME_TITULAR: c?.nome_titular_exibicao || c?.razao_social_original || p.nome || '',
+      NOME_EMPRESARIAL: c?.razao_social_original || '',
+      CNPJ: c?.cnpj || p.cnpj || '',
+      REFERENCIA: (c?.cnpj || p.cnpj || '').slice(-8).toUpperCase() || 'CCMEI',
+      DATA_ABERTURA: c?.inicio_atividade || '',
+      SITUACAO: c?.situacao_cadastral_desc || 'PENDENTE',
+      LINK_PUBLICO: `${publicBaseUrl}/acesso/${p.token}`,
+      LINK_CHECKOUT: `${publicBaseUrl}/checkout/${p.token}`,
     };
 
-    const html = renderHtml(DEFAULT_DESIGN, vars);
-    const text = renderText(DEFAULT_DESIGN, vars);
-
-    enqueued.push({
-      to_email: company.email,
-      subject: subject,
-      html,
-      text,
+    rows.push({
+      to_email: email.toLowerCase(),
+      subject: SUBJECT,
+      html: renderHtml(DEFAULT_DESIGN, vars),
+      text: renderText(DEFAULT_DESIGN, vars),
       status: 'queued',
-      idempotency_key: `mass-email-${company.id}`,
-      created_by: null
+      idempotency_key: `mass-email-${p.companyId}`,
+      created_by: null,
     });
 
-    // Registrar na auditoria
-    await supabaseAdmin.from('email_campaign_recipients').insert({
-      email: company.email?.trim().toLowerCase(),
-      cnpj: company.cnpj?.replace(/\D+/g, ''),
-      company_name: company.nome_titular_exibicao || company.razao_social_original,
-      status: 'queued',
-      sent_at: new Date().toISOString() // Marcamos como "enviado" para evitar dupla inserção se a fila demorar
-    });
-    // Log de auditoria: E-mail na Fila
     await supabaseAdmin.from('automation_audit_logs').insert({
-      company_id: company.id,
-      cnpj: company.cnpj,
+      company_id: p.companyId,
+      cnpj: c?.cnpj || p.cnpj,
       event_type: 'email_queued',
-      details: { subject: subject }
+      details: { subject: SUBJECT },
     });
   }
 
-  // 4. Inserir na fila de envio real
-  if (enqueued.length > 0) {
-    const { error: insErr } = await supabaseAdmin.from('email_send_queue').upsert(enqueued, {
-      onConflict: 'idempotency_key'
-    });
-    if (insErr) console.error('[MassEmailSync] Error enqueuing:', insErr);
+  if (rows.length > 0) {
+    const { error } = await supabaseAdmin
+      .from('email_send_queue')
+      .upsert(rows, { onConflict: 'idempotency_key' });
+    if (error) {
+      console.error('[MassEmailSync] Error enqueuing:', error);
+      return { ok: false as const, enqueued: 0, semEmail, error: error.message };
+    }
   }
 
-  // 5. Limpeza automática: se houver empresas marcadas com erro/bounce, remove do banco
-  await supabaseAdmin
-    .from('companies')
-    .delete()
-    .in('id', pendingCompanies.map(c => c.id))
-    .or('email.ilike.%bounce%,email.ilike.%error%,email.ilike.%invalid%');
-
-  return { ok: true, enqueued: enqueued.length };
-
+  return { ok: true as const, enqueued: rows.length, semEmail };
 }
