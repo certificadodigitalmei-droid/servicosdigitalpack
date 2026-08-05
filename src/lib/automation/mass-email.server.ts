@@ -5,18 +5,57 @@ import { DEFAULT_DESIGN, renderHtml, renderText, type Vars } from '@/lib/email-c
 /**
  * Pega empresas que ainda não receberam o e-mail da campanha e as adiciona na fila de envio do servidor.
  */
-export async function syncMassEmailQueue(limit = 50) {
-  // 1. Buscar empresas recentes que possuem e-mail
+export async function syncMassEmailQueue(limit = 50, priorityOnly = false) {
+  // 1. Prioridade: Buscar empresas que já possuem link (company_links) mas não estão na campanha
+  if (priorityOnly) {
+    const { data: links, error: linkErr } = await supabaseAdmin
+      .from('company_links')
+      .select('company_id')
+      .eq('active', true)
+      .limit(limit * 2);
+
+    if (!linkErr && links && links.length > 0) {
+      const companyIds = links.map(l => l.company_id).filter((id): id is string => !!id);
+      
+      const { data: priorityCompanies } = await supabaseAdmin
+        .from('companies')
+        .select('id, cnpj, email, nome_titular_exibicao, razao_social_original, inicio_atividade, situacao_cadastral_desc')
+        .in('id', companyIds)
+        .not('email', 'is', null);
+      
+      if (priorityCompanies && priorityCompanies.length > 0) {
+        // Filtrar as que já foram enviadas
+        const cnpjs = priorityCompanies.map(c => c.cnpj?.replace(/\D+/g, '')).filter((cnpj): cnpj is string => !!cnpj);
+        const { data: sentRecipients } = await supabaseAdmin
+          .from('email_campaign_recipients')
+          .select('cnpj')
+          .in('cnpj', cnpjs)
+          .not('sent_at', 'is', null);
+
+        const sentCnpjs = new Set(sentRecipients?.map(r => r.cnpj?.replace(/\D+/g, '')) || []);
+
+        const trulyPending = priorityCompanies.filter(c => !sentCnpjs.has(c.cnpj?.replace(/\D+/g, '') || ''));
+
+        if (trulyPending.length > 0) {
+          return await processPendingCompanies(trulyPending.slice(0, limit));
+        }
+      }
+    }
+    // Se não houver nada prioritário, continua para o fluxo normal
+  }
+
+  // 2. Fluxo Normal: Buscar empresas recentes que possuem e-mail
   const { data: companies, error: fetchErr } = await supabaseAdmin
     .from('companies')
     .select('id, cnpj, email, nome_titular_exibicao, razao_social_original, inicio_atividade, situacao_cadastral_desc')
     .not('email', 'is', null)
     .order('created_at', { ascending: false })
-    .limit(limit * 3); // buscamos um pouco mais para compensar deduplicação
+    .limit(limit * 3);
+
 
   if (fetchErr || !companies) return { ok: false, error: fetchErr?.message };
 
-  // 2. Filtrar as que já foram enviadas (pela tabela email_campaign_recipients)
+  // 3. Filtrar as que já foram enviadas (pela tabela email_campaign_recipients)
   const emails = companies.map(c => c.email?.trim().toLowerCase()).filter(Boolean) as string[];
   const cnpjs = companies.map(c => c.cnpj?.replace(/\D+/g, '')).filter(Boolean) as string[];
 
@@ -37,6 +76,13 @@ export async function syncMassEmailQueue(limit = 50) {
 
   if (pendingCompanies.length === 0) return { ok: true, enqueued: 0 };
 
+  return await processPendingCompanies(pendingCompanies);
+}
+
+/**
+ * Função interna para processar a lista de empresas e colocar na fila
+ */
+async function processPendingCompanies(pendingCompanies: any[]) {
   // 3. Garantir que tenham links públicos
   const pendingIds = pendingCompanies.map(c => c.id);
   const { data: links } = await supabaseAdmin
@@ -44,6 +90,7 @@ export async function syncMassEmailQueue(limit = 50) {
     .select('company_id, public_token')
     .in('company_id', pendingIds)
     .eq('active', true);
+
 
   const linksMap: Record<string, string> = {};
   links?.forEach(l => {

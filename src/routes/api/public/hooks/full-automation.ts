@@ -72,8 +72,10 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
           }
 
           // 2. Sincronizar Fila de Campanha (Transforma empresas em itens na fila de e-mail)
+          // Agora com flag de prioridade: termina de enviar os que já têm links antes de processar novos imports lineares
           const { syncMassEmailQueue } = await import('@/lib/automation/mass-email.server');
-          stats.sync = await syncMassEmailQueue(10);
+          stats.sync = await syncMassEmailQueue(10, true);
+
 
           // 3. Processar Régua de Cobrança (PIX reminders, etc)
           const { runNotificationCadence } = await import('@/lib/emails/order-emails.server');
