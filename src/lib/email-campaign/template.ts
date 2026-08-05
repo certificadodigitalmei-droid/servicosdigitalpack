@@ -151,29 +151,13 @@ export const DEFAULT_DESIGN: CampaignDesign = {
     'Prezado(a) *{{NOME_TITULAR}}*,\n\nSeu CNPJ consta como *PENDENTE*: sem Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
   cardTitle: 'DADOS DO REQUERENTE',
   showCard: true,
-  buttonLabel: 'Verificar meu CNPJ',
+  buttonLabel: 'REGULARIZAR MEU CNPJ',
   buttonHref: '{{LINK_PUBLICO}}',
 
   showWarning: true,
-  warningTitle: 'ENQUANTO A PENDÊNCIA CONTINUAR',
+  warningTitle: 'ATENÇÃO · RISCOS ATIVOS NO SEU CNPJ',
   warningItems:
-    'Impossibilitado de emitir nota fiscal.\nImpossibilitado de assinatura de contratos digitais e físicos com CNPJ.\nImpossibilitado de limites de créditos empresariais perante bancos e afiliadas de crédito PJ.\nAlém de multa e restrição perante a Receita Federal.',
-  warningBg: '#fef2f2',
-  warningBorder: '#dc2626',
-  warningTitleColor: '#991b1b',
-  warningTextColor: '#dc2626',
-
-
-  showSignature: true,
-  signature:
-    'Após o pagamento, o certificado é *vinculado automaticamente ao CNPJ*.\n\nAtenciosamente,\n*Central de Emissão*',
-
-  footer: 'Atenciosamente,\nCentral de Emissão',
-  disclaimer:
-    'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nE-mail automático; não responda.',
-  showFooter: true,
-  unsubText: '',
-  unsubHref: '#',
+    'Impossibilitado de emitir nota fiscal (NFS-e).\nImpossibilitado de assinar contratos digitais e físicos com CNPJ.\nBloqueio de limites de crédito empresar
 
   // Sem logo no topo: a imagem fica apenas na foto de perfil do remetente.
   showAvatar: false,
