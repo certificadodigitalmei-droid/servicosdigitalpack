@@ -35,6 +35,7 @@ type EventType = 'view_link' | 'view_checkout' | 'click_certificado' | 'click_gu
 
 type Stats = {
   total: number;
+  emails_sent: number;
   view_link: number;
   view_checkout: number;
   click_certificado: number;
@@ -44,7 +45,7 @@ type Stats = {
 };
 
 const emptyStats = (): Stats => ({
-  total: 0, view_link: 0, view_checkout: 0,
+  total: 0, emails_sent: 0, view_link: 0, view_checkout: 0,
   click_certificado: 0, click_guia: 0, devices: {}, unique_visitors: 0,
 });
 
@@ -158,6 +159,19 @@ function LinksGeradosPage() {
       // ===== KPIs AGREGADOS: TODOS os eventos no período (não só os da página) =====
       const agg = emptyStats();
       const visitorsGlobal = new Set<string>();
+      
+      // Contagem de e-mails enviados
+      {
+        let eqEmail = supabase
+          .from('email_campaign_recipients')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'sent');
+        if (range.gte) eqEmail = eqEmail.gte('created_at', range.gte);
+        if (range.lte) eqEmail = eqEmail.lte('created_at', range.lte);
+        const { count: eCount } = await eqEmail;
+        agg.emails_sent = eCount ?? 0;
+      }
+
       {
         const size = 1000;
         let offset = 0;
@@ -361,14 +375,14 @@ function LinksGeradosPage() {
       </Card>
 
       {/* Aggregate KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
-
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         <KPI icon={<ExternalLink className="h-4 w-4" />} label="Links no filtro" value={total} tone="slate" />
-        <KPI icon={<Eye className="h-4 w-4" />} label="Cliques totais" value={aggregate.total} tone="blue" />
-        <KPI icon={<Eye className="h-4 w-4" />} label="Abriu página" value={aggregate.view_link} tone="indigo" />
-        <KPI icon={<ShoppingCart className="h-4 w-4" />} label="Foi ao checkout" value={aggregate.view_checkout} tone="violet" />
-        <KPI icon={<FileCheck2 className="h-4 w-4" />} label="Emitir certificado" value={aggregate.click_certificado} tone="emerald" />
-        <KPI icon={<Receipt className="h-4 w-4" />} label="Gerar guia" value={aggregate.click_guia} tone="amber" />
+        <KPI icon={<CheckCircle2 className="h-4 w-4" />} label="E-mails enviados" value={agg.emails_sent} tone="emerald" />
+        <KPI icon={<Eye className="h-4 w-4" />} label="Cliques totais" value={agg.total} tone="blue" />
+        <KPI icon={<Eye className="h-4 w-4" />} label="Abriu página" value={agg.view_link} tone="indigo" />
+        <KPI icon={<ShoppingCart className="h-4 w-4" />} label="Checkout" value={agg.view_checkout} tone="violet" />
+        <KPI icon={<FileCheck2 className="h-4 w-4" />} label="Emitir cert." value={agg.click_certificado} tone="emerald" />
+        <KPI icon={<Receipt className="h-4 w-4" />} label="Gerar guia" value={agg.click_guia} tone="amber" />
         <KPI icon={<CheckCircle2 className="h-4 w-4" />} label={`Pagos • R$ ${totalPaidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} value={totalPaid} tone="green" />
       </div>
 
