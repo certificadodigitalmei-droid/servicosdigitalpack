@@ -271,26 +271,11 @@ function EnvioMassa() {
 
   return (
     <div className="space-y-6">
-      {/* Alerta de Configuração de Cota */}
-      <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
-            <Activity className="h-6 w-6" />
-          </div>
-          <div>
-            <h3 className="font-bold text-indigo-900">Envio Automático (100 e-mails/h)</h3>
-            <p className="mt-1 text-sm text-indigo-700 leading-relaxed">
-              Sistema configurado para **100 e-mails por hora** (1 a cada 36s).
-              O motor de envio garante o ritmo exato e limpa erros automaticamente.
-            </p>
-          </div>
-        </div>
-      </div>
-
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Envio em Massa</h1>
         <p className="text-sm text-slate-500">
-          Dispara e-mails via Lovable Emails (domínio profissional) com controle de delay, pausa e modo teste.
+          Janela de 1 hora ancorada no primeiro envio, perfis de disparo e fila única de empresas
+          com link aguardando envio.
         </p>
         {running && (
           <p className="mt-1 text-xs font-semibold text-emerald-700">
@@ -299,13 +284,16 @@ function EnvioMassa() {
         )}
       </div>
 
-      <PipelineStrip />
+      <SendWindowCard />
+
+      <SendProfileCard />
 
       <SendHealthCard />
 
-      <FlowSettingsCard />
-
       <FilaUnicaCard />
+
+      <PipelineStrip />
+
 
 
 
