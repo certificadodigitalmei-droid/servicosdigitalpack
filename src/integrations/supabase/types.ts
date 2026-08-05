@@ -531,24 +531,36 @@ export type Database = {
         Row: {
           created_at: string
           enabled: boolean
+          hourly_batch_size: number
           id: number
+          import_batch_size: number
           last_run_at: string | null
+          paced_delay_sec: number
+          send_mode: string
           status: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           enabled?: boolean
+          hourly_batch_size?: number
           id?: number
+          import_batch_size?: number
           last_run_at?: string | null
+          paced_delay_sec?: number
+          send_mode?: string
           status?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           enabled?: boolean
+          hourly_batch_size?: number
           id?: number
+          import_batch_size?: number
           last_run_at?: string | null
+          paced_delay_sec?: number
+          send_mode?: string
           status?: string
           updated_at?: string
         }
