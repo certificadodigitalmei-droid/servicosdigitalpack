@@ -103,12 +103,14 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
       .gte('created_at', fromISO);
     const falhasPeriodoFinal = toISO ? falhasPeriodoQ.lte('created_at', toISO) : falhasPeriodoQ;
 
-    const [{ count: enviadosHoje }, { count: filaEnvio }, { count: falhas24h }, { data: workers }] = await Promise.all([
+    const [enviadosRes, { count: filaEnvio }, falhasRes, { data: workers }] = await Promise.all([
       enviadosPeriodoFinal,
       supabase.from('email_campaign_recipients').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       falhasPeriodoFinal,
       supabase.from('email_workers').select('id,is_active,last_success_at').limit(1),
     ]);
+    const enviadosHoje = enviadosRes.count ?? 0;
+    const falhas24h = falhasRes.count ?? 0;
     const workersAtivos = (workers ?? []).filter((w: any) => w.is_active).length;
 
     // ------ Links + eventos ------

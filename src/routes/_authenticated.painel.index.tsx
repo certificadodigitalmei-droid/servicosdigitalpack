@@ -159,7 +159,7 @@ function DashboardPage() {
         ordersQ = ordersQ.lte('paid_at', iso);
       }
 
-      const [{ count: linksTotal }, { count: emailsSent }, evRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
+      const [{ count: linksTotal }, emailsSentRes, evRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
         linksCountQ,
         supabase
           .from('email_campaign_recipients')
@@ -171,6 +171,8 @@ function DashboardPage() {
         ordersQ,
         supabase.from('link_events').select('id', { count: 'exact', head: true }).eq('event_type', 'copy_pix'),
       ]);
+
+      const emailsSent = emailsSentRes.count ?? 0;
 
       if (evRes.error) throw evRes.error;
       if (ordersRes.error) throw ordersRes.error;
