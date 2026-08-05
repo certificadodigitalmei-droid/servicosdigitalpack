@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: bom agora que vc entendeu\n\nfaça o painel e projeto funcionar perfeitamente certinho</div>
+<div className="hidden">Execute esta instrucao no projeto: eu ativo o modo nuvem quando entro de novo está desativada e o envio em massa para, corrija isso ele so pode parar si eu para os envios.</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
