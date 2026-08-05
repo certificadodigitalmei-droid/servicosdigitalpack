@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: remova a aba: Campanhas de E-mail\n\nacho que não precisa seila mostra no painel naõ tem função para isso</div>
+<div className="hidden">Execute esta instrucao no projeto: bom agora que vc entendeu\n\nfaça o painel e projeto funcionar perfeitamente certinho</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
