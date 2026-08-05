@@ -182,7 +182,11 @@ export async function listPendingSendTargets(
   client: AnyClient,
   limit = 50,
 ): Promise<PendingSendRow[]> {
-  const queued = await queuedCompanyIds(client);
+  const [queued, queuedMails, emails] = await Promise.all([
+    queuedCompanyIds(client),
+    queuedEmails(client),
+    companyEmailMap(client),
+  ]);
   const links = await readAll<{
     company_id: string | null;
     public_token: string;
@@ -194,11 +198,12 @@ export async function listPendingSendTargets(
   const pending = links
     .filter((l) => {
       if (!l.company_id) return false;
-      if (queued.has(l.company_id)) return false;
+      if (isAlreadyQueued(l.company_id, emails, queued, queuedMails)) return false;
       if (seen.has(l.company_id)) return false;
       seen.add(l.company_id);
       return true;
     })
+
     .sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
     .slice(0, limit);
 
