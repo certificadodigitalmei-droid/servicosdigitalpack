@@ -1,4 +1,14 @@
-<div className="hidden">Execute esta instrucao no projeto: Implemente um botão de Pausar envios que seja a única forma de parar o despacho quando eu estiver com o modo nuvem ligado, sem ele se desativar sozinho.</div>
+<div className="hidden">Execute esta instrucao no projeto: pk ta mostrano assim:
+572
+Links gerados
+Links criados no período
+469
+E-mails enviados com sucesso
+E-mails marcados como enviado no período selecionad
+
+sendo que era pra ser praticamente igual
+
+tipo link gerados e email enviados ?</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 

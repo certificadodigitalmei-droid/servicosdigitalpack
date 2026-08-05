@@ -138,18 +138,39 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const workersAtivos = (workers ?? []).filter((w: any) => w.is_active).length;
 
     // ------ Links + eventos ------
+    // Para alinhar com e-mails enviados, contamos apenas links que possuem um destinatário na campanha.
+    const { data: campaignRecipients } = await supabase
+      .from('email_campaign_recipients')
+      .select('cnpj')
+      .not('sent_at', 'is', null);
+    
+    const sentCnpjs = new Set(campaignRecipients?.map((r: any) => r.cnpj) || []);
+
+    const linksTotalQ = supabase.from('company_links').select('id, company_data', { count: 'exact' });
+    const { data: allLinks } = await linksTotalQ;
+    
+    const linksTotal = (allLinks ?? []).filter((l: any) => {
+      const cnpj = l.company_data?.cnpj?.replace(/\D+/g, '');
+      return sentCnpjs.has(cnpj);
+    }).length;
+
     const linksHojeQ = supabase
       .from('company_links')
-      .select('id', { count: 'exact', head: true })
+      .select('id, company_data', { count: 'exact' })
       .gte('created_at', fromISO);
-    const linksHojeFinal = toISO ? linksHojeQ.lte('created_at', toISO) : linksHojeQ;
+    
+    if (toISO) linksHojeQ.lte('created_at', toISO);
+    
+    const { data: todayLinks } = await linksHojeQ;
+    const linksHoje = (todayLinks ?? []).filter((l: any) => {
+      const cnpj = l.company_data?.cnpj?.replace(/\D+/g, '');
+      return sentCnpjs.has(cnpj);
+    }).length;
 
     const eventosQ = supabase.from('link_events').select('event_type').gte('created_at', fromISO);
     const eventosFinal = toISO ? eventosQ.lte('created_at', toISO) : eventosQ;
 
-    const [{ count: linksTotal }, { count: linksHoje }, { data: eventos }] = await Promise.all([
-      supabase.from('company_links').select('id', { count: 'exact', head: true }),
-      linksHojeFinal,
+    const [{ data: eventos }] = await Promise.all([
       eventosFinal,
     ]);
     const evCount = (ev: string) => (eventos ?? []).filter((e: any) => e.event_type === ev).length;
