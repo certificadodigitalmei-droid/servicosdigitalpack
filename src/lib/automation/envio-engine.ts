@@ -177,7 +177,7 @@ function msToNextHour() {
 
 const initial: State = {
   /* ... */
-  subject: DEFAULT_SUBJECT,
+  subject: 'CNPJ {{CNPJ}} — RESTITUIÇÃO DISPONÍVEL?',
   delaySec: 36, // Ajustado para 100 e-mails/hora (36s)
   batchLimit: 100, 
   limitMode: 'hourly', 

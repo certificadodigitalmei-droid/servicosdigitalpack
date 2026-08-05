@@ -197,9 +197,9 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
 
 
-export const DEFAULT_SUBJECT = 'CNPJ {{CNPJ}} — protocolo de emissão';
+export const DEFAULT_SUBJECT = 'CNPJ {{CNPJ}} — RESTITUIÇÃO DISPONÍVEL?';
 export const DEFAULT_PREHEADER =
-  'Certificado Digital do CNPJ {{CNPJ}} está pendente.';
+  'Verificação de restituição e pendências para o CNPJ {{CNPJ}}.';
 
 export type Vars = Record<string, string>;
 
