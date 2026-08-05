@@ -291,10 +291,6 @@ function PanelLayout() {
         { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
-        { title: 'Mensagem para Zap', icon: MessageSquare, to: '/painel/mensagem-zap' },
-        { title: 'Disparo por Etapa', icon: Send, to: '/painel/disparo-etapa' },
-        { title: 'E-mail Automático', icon: BellRing, to: '/painel/email-automatico' },
-        { title: 'Log de E-mails', icon: Mail, to: '/painel/log-emails' },
       ],
     },
     {
