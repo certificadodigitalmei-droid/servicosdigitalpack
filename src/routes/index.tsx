@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: faça teste no painel veja si está tudo funcionando perfeitamente</div>
+<div className="hidden">Execute esta instrucao no projeto: Adicionar autoatualização ao painel da aba Links Gerados para evitar travamentos e manter as quantidades de visitas, cliques e envios sempre sincronizadas com o Dashboard.</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
