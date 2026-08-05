@@ -123,7 +123,7 @@ function PanelLayout() {
     const next = !autoEnabled;
     setAutoEnabled(next);
     try {
-      await doToggleAuto({ enabled: next });
+      await doToggleAuto({ data: { enabled: next } });
       toast.success(next ? 'Automação 24/7 ativada na nuvem.' : 'Automação desativada.');
     } catch (e: any) {
       setAutoEnabled(!next);
