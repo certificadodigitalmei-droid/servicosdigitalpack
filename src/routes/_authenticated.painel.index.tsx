@@ -344,6 +344,8 @@ function DashboardPage() {
 
   return (
     <div className="space-y-8 pb-12">
+      <PipelineStrip />
+
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-2">
