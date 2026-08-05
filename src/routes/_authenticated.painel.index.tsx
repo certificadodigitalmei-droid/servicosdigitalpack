@@ -40,6 +40,7 @@ type EventRow = {
 
 type Stats = {
   linksTotal: number;
+  emailsSent: number;
   viewLink: number;
   viewCheckout: number;
   clickCert: number;
@@ -61,6 +62,7 @@ type Stats = {
 
 const EMPTY: Stats = {
   linksTotal: 0,
+  emailsSent: 0,
   viewLink: 0,
   viewCheckout: 0,
   clickCert: 0,
@@ -157,8 +159,14 @@ function DashboardPage() {
         ordersQ = ordersQ.lte('paid_at', iso);
       }
 
-      const [{ count: linksTotal }, evRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
+      const [{ count: linksTotal }, { count: emailsSent }, evRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
         linksCountQ,
+        supabase
+          .from('email_campaign_recipients')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'sent')
+          .gte('created_at', range.from?.toISOString() || '2000-01-01')
+          .lte('created_at', range.to?.toISOString() || new Date().toISOString()),
         evQ.limit(50000),
         ordersQ,
         supabase.from('link_events').select('id', { count: 'exact', head: true }).eq('event_type', 'copy_pix'),
@@ -188,7 +196,7 @@ function DashboardPage() {
       const ALL_OS = ['Windows', 'Android', 'iOS', 'macOS', 'Linux', 'Outro'];
       const ALL_DEVICES = ['Desktop', 'Mobile', 'iOS', 'iPad', 'Android', 'Android Tablet'];
       const seed = (keys: string[]) => Object.fromEntries(keys.map(k => [k, 0]));
-      const s: Stats = { ...EMPTY, linksTotal: linksTotal ?? 0, copyPixAllTime: copyPixAllTime ?? 0, byBrowser: seed(ALL_BROWSERS), byDevice: seed(ALL_DEVICES), byOS: seed(ALL_OS) };
+      const s: Stats = { ...EMPTY, linksTotal: linksTotal ?? 0, emailsSent: emailsSent ?? 0, copyPixAllTime: copyPixAllTime ?? 0, byBrowser: seed(ALL_BROWSERS), byDevice: seed(ALL_DEVICES), byOS: seed(ALL_OS) };
       const uniq: Record<string, Set<string>> = {
         view_link: new Set(),
         view_checkout: new Set(),
@@ -398,11 +406,12 @@ function DashboardPage() {
 
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <MetricCard icon={<LinkIcon className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-slate-100 text-slate-700" hint="Links criados no período (mesma contagem da aba Links Gerados)" />
+        <MetricCard icon={<LinkIcon className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-slate-100 text-slate-700" hint="Links criados no período" />
+        <MetricCard icon={<CheckCircle2 className="h-5 w-5" />} label="E-mails enviados com sucesso" value={stats.emailsSent} color="bg-emerald-50 text-emerald-600" hint="E-mails marcados como enviado no período" />
         <MetricCard icon={<Link2 className="h-5 w-5" />} label="Acessos na primeira página" value={stats.viewLink} total={stats.viewLinkTotal} color="bg-blue-50 text-brand-blue" hint="Únicos por navegador/dispositivo" />
-        <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label='Cliques "Emitir Certificado"' value={stats.clickCert} total={stats.clickCertTotal} color="bg-amber-50 text-amber-600" hint="Únicos por navegador/dispositivo" />
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <MetricCard icon={<MousePointerClick className="h-5 w-5" />} label='Cliques "Emitir"' value={stats.clickCert} total={stats.clickCertTotal} color="bg-amber-50 text-amber-600" />
         <MetricCard icon={<ShoppingCart className="h-5 w-5" />} label="Acessos no checkout" value={stats.viewCheckout} total={stats.viewCheckoutTotal} color="bg-purple-50 text-purple-600" hint="Únicos por navegador/dispositivo" />
         <MetricCard icon={<FileSignature className="h-5 w-5" />} label='Cliques "Gerar Guia"' value={stats.clickGuia} total={stats.clickGuiaTotal} color="bg-rose-50 text-rose-600" hint="Únicos por navegador/dispositivo" />
         <MetricCard
