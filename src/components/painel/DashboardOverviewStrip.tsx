@@ -119,6 +119,20 @@ export function DashboardOverviewStrip({
           </div>
         </ModuleCard>
 
+        {/* Envio */}
+        <ModuleCard
+          icon={<Activity className="h-4 w-4 text-emerald-600" />}
+          title="Envio de E-mails"
+          to="/painel/envio-em-massa"
+          badge={`${envio.enviadosHoje} hoje`}
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <Kpi label={`Enviados ${periodLabel}`} value={envio.enviadosPeriodo} />
+            <Kpi label="Fila pendente" value={envio.fila} />
+            <Kpi label="Falhas (período)" value={envio.falhas24h} />
+            <Kpi label="Workers ativos" value={envio.workersAtivos} />
+          </div>
+        </ModuleCard>
 
         {/* Links */}
         <ModuleCard
