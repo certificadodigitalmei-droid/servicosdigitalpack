@@ -181,8 +181,8 @@ function DashboardPage() {
           .from('email_send_queue')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'sent')
-          .gte('created_at', range.from ? range.from.toISOString() : '2000-01-01')
-          .lte('created_at', range.to ? range.to.toISOString() : new Date().toISOString()),
+          .gte('updated_at', range.from ? range.from.toISOString() : '2000-01-01')
+          .lte('updated_at', range.to ? range.to.toISOString() : new Date().toISOString()),
         evQ.limit(50000),
         ordersQ,
         supabase.from('link_events').select('id', { count: 'exact', head: true }).eq('event_type', 'copy_pix'),

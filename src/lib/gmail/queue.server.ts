@@ -64,17 +64,43 @@ export async function sendOneNow(row: QueueRow) {
   }
 }
 
-/** Processa até `maxBatch` e-mails pendentes da fila. */
-export async function processQueueInternal(maxBatch = 10) {
+/** Teto rígido de envios por hora. */
+export const HOURLY_LIMIT = 100;
+
+/** Quantos e-mails já saíram na última hora (janela deslizante). */
+export async function sentInLastHour(): Promise<number> {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count } = await supabaseAdmin
+    .from('email_send_queue')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'sent')
+    .gte('updated_at', since);
+  return count ?? 0;
+}
+
+/**
+ * Processa até `maxBatch` e-mails pendentes da fila, respeitando o teto de
+ * `HOURLY_LIMIT` envios na janela de 60 minutos.
+ */
+export async function processQueueInternal(maxBatch = 10, hourlyLimit = HOURLY_LIMIT) {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+
+  const lastHour = await sentInLastHour();
+  const remaining = Math.max(0, hourlyLimit - lastHour);
+  if (remaining === 0) {
+    return { processed: 0, sent: 0, failed: 0, lastHour, remaining: 0, throttled: true };
+  }
+  const batch = Math.min(maxBatch, remaining);
+
   const nowIso = new Date().toISOString();
   const { data: rows, error } = await supabaseAdmin
     .from('email_send_queue')
     .select('id, to_email, subject, html, text, attempts')
-    .eq('status', 'queued')
+    .in('status', ['queued', 'pending'])
     .or(`next_retry_at.is.null,next_retry_at.lte.${nowIso}`)
     .order('created_at', { ascending: true })
-    .limit(maxBatch);
+    .limit(batch);
   if (error) throw new Error(error.message);
 
   let sent = 0;
@@ -84,5 +110,12 @@ export async function processQueueInternal(maxBatch = 10) {
     if (r.ok) sent++;
     else failed++;
   }
-  return { processed: rows?.length ?? 0, sent, failed };
+  return {
+    processed: rows?.length ?? 0,
+    sent,
+    failed,
+    lastHour: lastHour + sent,
+    remaining: Math.max(0, remaining - sent),
+    throttled: false,
+  };
 }

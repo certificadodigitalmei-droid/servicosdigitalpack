@@ -160,14 +160,14 @@ function LinksGeradosPage() {
       const agg = emptyStats();
       const visitorsGlobal = new Set<string>();
       
-      // Contagem de e-mails enviados
+      // Contagem de e-mails enviados (mesma regra do Dashboard: status 'sent' por data de confirmação)
       {
         let eqEmail = supabase
           .from('email_send_queue')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'sent');
-        if (range.gte) eqEmail = eqEmail.gte('created_at', range.gte);
-        if (range.lte) eqEmail = eqEmail.lte('created_at', range.lte);
+        if (range.gte) eqEmail = eqEmail.gte('updated_at', range.gte);
+        if (range.lte) eqEmail = eqEmail.lte('updated_at', range.lte);
         const { count: eCount } = await eqEmail;
         agg.emails_sent = eCount ?? 0;
       }

@@ -30,6 +30,9 @@ import {
 } from 'lucide-react';
 // FloatingStatsPanel agora é montado globalmente em _authenticated.painel.tsx
 import { getEmailStats, type EmailStatsResult } from '@/lib/email-campaign/stats.functions';
+import { useQuery } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
+import { getEmailMetrics } from '@/lib/emails/email-metrics.functions';
 import { useStore } from '@/lib/automation/store';
 import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
 
@@ -132,6 +135,15 @@ function EnvioMassa() {
   // (Removemos a "baseline" que subtraía valores — confundia o operador,
   // pois deixava o "Enviados na última hora" em 0 mesmo com envios reais.)
   const emailStats = emailStatsRaw;
+
+  // Métricas reais do servidor (mesma fonte do Dashboard e da aba "E-mails Enviados").
+  const fetchEmailMetrics = useServerFn(getEmailMetrics);
+  const serverMetricsQ = useQuery({
+    queryKey: ['email_send_queue', 'metrics', 'envio-massa'],
+    queryFn: () => fetchEmailMetrics({ data: {} }),
+    refetchInterval: 20_000,
+  });
+  const sm = serverMetricsQ.data;
 
   // Limpa qualquer baseline antiga persistida em versões anteriores.
   useEffect(() => {
@@ -359,6 +371,24 @@ function EnvioMassa() {
               <MiniStat label="Retries (Rate Limit)" value={queue.filter(q => q.status === 'pending' && q.message?.includes('429')).length} color="text-amber-600" />
               <MiniStat label="Bounces / Suprimidos" value={emailStats?.last24h.bounced || 0} color="text-red-700" />
               <MiniStat label="Falhas Definitivas" value={queue.filter(q => q.status === 'error').length} color="text-red-900" />
+          </div>
+
+          {/* Números reais do servidor (valem também com a aba fechada) */}
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-800">
+              Servidor / Nuvem (fonte oficial — igual ao Dashboard)
+            </div>
+            <div className="grid gap-3 sm:grid-cols-5">
+              <MiniStat label="Enviados na última hora" value={sm?.ultimaHora ?? '—'} color="text-indigo-700" />
+              <MiniStat label="Saldo da hora (de 100)" value={sm?.saldoHora ?? '—'} color="text-emerald-700" />
+              <MiniStat label="Enviados hoje" value={sm?.hoje ?? '—'} color="text-slate-800" />
+              <MiniStat label="Na fila do servidor" value={sm?.fila ?? '—'} color="text-blue-700" />
+              <MiniStat
+                label="Falhas / suprimidos"
+                value={sm ? sm.falhas + sm.suprimidos : '—'}
+                color="text-red-700"
+              />
+            </div>
           </div>
 
           {/* Como funciona / regras */}
