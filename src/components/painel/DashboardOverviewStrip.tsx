@@ -85,6 +85,72 @@ export function DashboardOverviewStrip({
 
   return (
     <div className="space-y-3">
+      {/* Painel de Progresso em Tempo Real */}
+      <Card className="border-slate-200 bg-gradient-to-br from-brand-navy/5 to-white overflow-hidden">
+        <div className="absolute top-0 right-0 p-2 opacity-10">
+          <Activity className="h-12 w-12 text-brand-navy" />
+        </div>
+        <CardContent className="py-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4 text-brand-navy" />
+                  <span className="text-sm font-bold text-slate-700">Empresas Importadas</span>
+                </div>
+                <span className="text-xs font-medium text-slate-500">{data.progresso.totalEncontradas} total</span>
+              </div>
+              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-slate-400" style={{ width: '100%' }} />
+              </div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider">Base de importação</p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Link2 className="h-4 w-4 text-brand-blue" />
+                  <span className="text-sm font-bold text-slate-700">Links Gerados</span>
+                </div>
+                <span className="text-xs font-medium text-brand-blue">
+                  {((data.progresso.comLinks / Math.max(data.progresso.totalEncontradas, 1)) * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-brand-blue transition-all duration-1000" 
+                  style={{ width: `${(data.progresso.comLinks / Math.max(data.progresso.totalEncontradas, 1)) * 100}%` }} 
+                />
+              </div>
+              <p className="text-[10px] text-slate-500 font-medium">
+                {data.progresso.comLinks} de {data.progresso.totalEncontradas} processadas
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  <span className="text-sm font-bold text-slate-700">E-mails Enviados</span>
+                </div>
+                <span className="text-xs font-medium text-emerald-600">
+                  {((data.progresso.comEnvios / Math.max(data.progresso.totalEncontradas, 1)) * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-emerald-500 transition-all duration-1000" 
+                  style={{ width: `${(data.progresso.comEnvios / Math.max(data.progresso.totalEncontradas, 1)) * 100}%` }} 
+                />
+              </div>
+              <p className="text-[10px] text-emerald-600 font-medium">
+                {data.progresso.comEnvios} entregues com sucesso
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Barra de status geral */}
       <Card className="border-slate-200 bg-gradient-to-r from-slate-50 to-white">
         <CardContent className="flex flex-wrap items-center justify-between gap-3 py-3">
