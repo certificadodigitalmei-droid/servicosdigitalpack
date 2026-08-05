@@ -492,6 +492,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cloud_automation_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: number
+          last_run_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: number
+          last_run_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: number
+          last_run_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           bairro: string | null
