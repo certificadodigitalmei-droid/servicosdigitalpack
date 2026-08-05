@@ -114,9 +114,11 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
                 .from('automatic_company_queries')
                 .update({
                   last_run_at: nowIso,
-                  next_run_at: new Date(
-                    Date.now() + (cfg.interval_minutes || 60) * 60000,
-                  ).toISOString(),
+                  // A trava do pipeline já controla o ritmo: liberamos a
+                  // próxima checagem em 1 minuto e ela só importa se a fila
+                  // estiver realmente vazia.
+                  next_run_at: new Date(Date.now() + 60_000).toISOString(),
+
                   status: 'active',
                 })
                 .eq('id', cfg.id);
