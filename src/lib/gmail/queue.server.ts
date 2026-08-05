@@ -171,5 +171,9 @@ export async function processQueueInternal(
     lastHour: lastHour + sent,
     remaining: Math.max(0, remaining - sent),
     throttled: false,
+    windowStart: win.windowStart,
+    windowEnd: win.windowEnd,
+    secondsToReset: win.secondsToReset,
   };
+
 }
