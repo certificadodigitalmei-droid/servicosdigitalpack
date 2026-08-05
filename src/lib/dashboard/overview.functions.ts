@@ -200,16 +200,11 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const ticketMedio = pagosHoje > 0 ? valorHoje / pagosHoje : 0;
     const conversao = (pixGerados ?? 0) > 0 ? ((pagos ?? 0) / (pixGerados ?? 1)) * 100 : 0;
 
-    // ------ Progresso do Fluxo Real-time ------
-    const totalEncontradas = allFoundCompanies?.length ?? 0;
-    
-    // Contagem de empresas únicas que já possuem link (independente de envio)
-    const { data: linkCnpjs } = await supabase.from('company_links').select('company_data');
-    const uniqueLinkCnpjs = new Set((linkCnpjs ?? []).map(l => (l.company_data as any)?.cnpj?.replace(/\D+/g, '')).filter(Boolean));
-    const comLinks = (allFoundCompanies ?? []).filter(c => uniqueLinkCnpjs.has(c.cnpj?.replace(/\D+/g, ''))).length;
+    // ------ Progresso do Fluxo Real-time (fonte única: pipeline) ------
+    const totalEncontradas = pipeline.importadas;
+    const comLinks = pipeline.links;
+    const comEnvios = pipeline.enviados;
 
-    // Contagem de empresas únicas que já tiveram e-mail enviado
-    const comEnvios = (allFoundCompanies ?? []).filter(c => allProcessedCnpjs.has(c.cnpj?.replace(/\D+/g, ''))).length;
 
     // ------ Status semáforos ------
     const status = {
