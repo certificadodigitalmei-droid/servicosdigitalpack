@@ -44,19 +44,32 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
             });
           }
 
+          const { readFlowSettings } = await import('@/lib/pipeline/pipeline.server');
+          const flow = await readFlowSettings(supabaseAdmin as any);
+          stats.flow = flow;
+
           const { ensureLinksForImported, syncMassEmailQueue } = await import(
             '@/lib/automation/mass-email.server'
           );
 
           // 1. Empresas importadas sem link -> gerar link
-          stats.links = await ensureLinksForImported(25);
+          stats.links = await ensureLinksForImported(Math.max(25, flow.importBatchSize));
 
           // 2. Links sem envio -> entrar na fila
-          stats.sync = await syncMassEmailQueue(25);
+          stats.sync = await syncMassEmailQueue(Math.max(25, flow.importBatchSize));
 
-          // 3. Despachar fila (teto de 100/h garantido pela janela deslizante)
+          // 3. Despachar fila
+          //    burst: manda o lote inteiro da hora o mais rápido possível
+          //    paced: 1 e-mail a cada `pacedDelaySec`
           const { processQueueInternal } = await import('@/lib/gmail/queue.server');
-          stats.queue = await processQueueInternal(3);
+          const burst = flow.sendMode === 'burst';
+          const perTick = burst
+            ? flow.hourlyBatchSize
+            : Math.max(1, Math.round(60 / Math.max(1, flow.pacedDelaySec)));
+          stats.queue = await processQueueInternal(perTick, flow.hourlyBatchSize, {
+            burst,
+            concurrency: 10,
+          });
 
           // 4. Régua de cobrança (PIX pendente etc.)
           const { runNotificationCadence } = await import('@/lib/emails/order-emails.server');
@@ -92,9 +105,10 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
                   only_matriz: false,
                   require_email: true,
                 },
-                limit: Math.min(5, cfg.quantity_per_run || 5),
+                limit: flow.importBatchSize,
                 skipExisting: true,
               });
+
 
               await supabaseAdmin
                 .from('automatic_company_queries')
