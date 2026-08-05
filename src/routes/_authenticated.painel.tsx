@@ -48,6 +48,8 @@ import { cn } from '@/lib/utils';
 import { GlobalFloatingPanels } from '@/components/painel/GlobalFloatingPanels';
 import { getCloudState, saveCloudState } from '@/lib/cloud-state.functions';
 import { SidebarPlanInfo } from '@/components/painel/SidebarPlanInfo';
+import { getAutomationStatus, toggleGlobalAutomation } from '@/lib/automation/global-status.functions';
+import { Power, PowerOff } from 'lucide-react';
 
 // Chaves de localStorage que compõem o "estado do painel" salvo na nuvem.
 const CLOUD_PREFIXES = ['automation:', 'campanha:', 'envio:', 'consulta:', 'monitor:', 'painel:'];
@@ -96,6 +98,38 @@ function PanelLayout() {
   const doLoad = useServerFn(getCloudState);
   const doCleanup = useServerFn(cleanupUnsentCompanies);
   const [cleaning, setCleaning] = useState(false);
+
+  // Status da automação global na nuvem
+  const [autoEnabled, setAutoEnabled] = useState(false);
+  const [loadingAuto, setLoadingAuto] = useState(true);
+  const fetchAuto = useServerFn(getAutomationStatus);
+  const doToggleAuto = useServerFn(toggleGlobalAutomation);
+
+  const refreshAutoStatus = async () => {
+    try {
+      const status = await fetchAuto();
+      setAutoEnabled(status.isAutoEnabled);
+    } catch { /* ignore */ }
+    finally { setLoadingAuto(false); }
+  };
+
+  useEffect(() => {
+    refreshAutoStatus();
+    const id = setInterval(refreshAutoStatus, 15000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleToggleAuto = async () => {
+    const next = !autoEnabled;
+    setAutoEnabled(next);
+    try {
+      await doToggleAuto({ data: { enabled: next } });
+      toast.success(next ? 'Automação 24/7 ativada na nuvem.' : 'Automação desativada.');
+    } catch (e: any) {
+      setAutoEnabled(!next);
+      toast.error('Erro ao mudar status: ' + (e?.message || 'erro'));
+    }
+  };
 
   const lastSnapshotJsonRef = useRef<string>('');
   const persistNow = async () => {
@@ -396,15 +430,38 @@ function PanelLayout() {
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
+                <div className="flex items-center gap-2 mr-2 bg-slate-50 p-1 rounded-lg border border-slate-200">
+                  <div className={cn(
+                    "h-2 w-2 rounded-full animate-pulse",
+                    autoEnabled ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-300"
+                  )} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-1">
+                    {autoEnabled ? "Nuvem: Ativo" : "Nuvem: Off"}
+                  </span>
+                  <Button
+                    size="icon"
+                    variant={autoEnabled ? "default" : "outline"}
+                    className={cn(
+                      "h-8 w-8 rounded-md transition-all",
+                      autoEnabled ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-400"
+                    )}
+                    onClick={handleToggleAuto}
+                    disabled={loadingAuto}
+                    title={autoEnabled ? "Desativar automação 24/7" : "Ativar automação 24/7 (Cloud)"}
+                  >
+                    {loadingAuto ? <Loader2 className="h-4 w-4 animate-spin" /> : (autoEnabled ? <Power className="h-4 w-4" /> : <PowerOff className="h-4 w-4" />)}
+                  </Button>
+                </div>
+
                 <Button
                   size="sm"
                   onClick={saveAll}
                   disabled={saving}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-                  title="Salva TODAS as configurações do site (modelo, envio, filtros, pop-ups…) na nuvem."
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-sm"
+                  title="Salva TODAS as configurações (modelos, intervalos, filtros) para que o servidor use no automático."
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cloud className="h-4 w-4" />}
-                  <span className="hidden sm:inline">Salvar tudo na nuvem</span>
+                  <span className="hidden sm:inline">Salvar Configurações</span>
                   <span className="sm:hidden">Salvar</span>
                 </Button>
                 <Button

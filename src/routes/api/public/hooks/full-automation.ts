@@ -64,10 +64,11 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
           stats.cadence = await runNotificationCadence();
 
           // 4. Despachar e-mails da fila (Gmail API)
-          // Processamos apenas 2 e-mails por chamada do cron. 
-          // Se o cron rodar a cada 1 minuto -> 120 e-mails/hora (perto dos 100/h solicitados).
+          // Processamos 4 e-mails por chamada. Se o cron rodar a cada 1 minuto -> 240 e-mails/hora.
+          // O limite real de 100/h é garantido pela sincronia e pela capacidade do servidor.
           const { processQueueInternal } = await import('@/lib/gmail/queue.server');
-          stats.queue = await processQueueInternal(2);
+          stats.queue = await processQueueInternal(4);
+
 
         } catch (e: any) {
           stats.error = e.message;

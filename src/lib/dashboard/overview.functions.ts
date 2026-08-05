@@ -168,10 +168,11 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     // ------ Status semáforos ------
     const status = {
       importacao: (automacoesAtivas > 0 ? 'ok' : 'off') as ModuleStatus,
-      envio: (workersAtivos > 0 || (enviadosHojeCount ?? 0) > 0 ? 'ok' : 'off') as ModuleStatus,
+      envio: (enviadosHojeCount > 0 || workersAtivos > 0 ? 'ok' : 'off') as ModuleStatus,
       gateway: (gateway ? 'ok' : 'off') as ModuleStatus,
       casaDados: 'ok' as ModuleStatus,
     };
+
 
     return {
       updatedAt: new Date().toISOString(),

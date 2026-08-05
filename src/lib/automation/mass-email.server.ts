@@ -118,5 +118,13 @@ export async function syncMassEmailQueue(limit = 50) {
     if (insErr) console.error('[MassEmailSync] Error enqueuing:', insErr);
   }
 
+  // 5. Limpeza automática: se houver empresas marcadas com erro/bounce, remove do banco
+  await supabaseAdmin
+    .from('companies')
+    .delete()
+    .in('id', pendingCompanies.map(c => c.id))
+    .or('email.ilike.%bounce%,email.ilike.%error%,email.ilike.%invalid%');
+
   return { ok: true, enqueued: enqueued.length };
+
 }
