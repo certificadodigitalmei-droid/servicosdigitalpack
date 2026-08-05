@@ -80,8 +80,20 @@ export async function syncMassEmailQueue(limit = 25) {
     const email = (c?.email ?? p.email ?? '').trim();
     if (!email || !email.includes('@')) {
       semEmail++;
+      // Marca como suprimido para não travar o pipeline indefinidamente.
+      rows.push({
+        to_email: `sem-email+${p.companyId}@invalido.local`,
+        subject: SUBJECT,
+        html: null,
+        text: null,
+        status: 'suppressed',
+        idempotency_key: `mass-email-${p.companyId}`,
+        last_error: 'empresa sem e-mail válido',
+        created_by: null,
+      });
       continue;
     }
+
 
     const vars: Vars = {
       NOME_TITULAR: c?.nome_titular_exibicao || c?.razao_social_original || p.nome || '',
