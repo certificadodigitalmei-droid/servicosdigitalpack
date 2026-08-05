@@ -288,7 +288,7 @@ function PanelLayout() {
         { title: 'Empresas Importadas', icon: Database, to: '/painel/empresas-importadas' },
         { title: 'Links Gerados', icon: LinkIcon, to: '/painel/links-gerados' },
         { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
-        { title: 'Campanhas de E-mail', icon: Mail, to: '/painel/campanhas-email' },
+        
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
       ],
@@ -330,7 +330,7 @@ function PanelLayout() {
     if (path === '/painel/importar-empresas') return 'Importar Empresas';
     if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
     if (path === '/painel/gerador-links') return 'Gerador de Links';
-    if (path === '/painel/campanhas-email') return 'Campanhas de E-mail';
+    
     if (path === '/painel/modelos-email') return 'Modelos de E-mail';
     if (path === '/painel/remetente-email') return 'Remetente de E-mail';
 
