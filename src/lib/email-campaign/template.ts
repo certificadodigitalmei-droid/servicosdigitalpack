@@ -157,11 +157,11 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   showWarning: true,
   warningTitle: 'ENQUANTO A PENDÊNCIA CONTINUAR',
   warningItems:
-    'Sem emissão de Nota Fiscal (NF-e)\nSem assinatura de contratos digitais\nRestrições na Receita Federal',
+    'Impossibilitado de emitir nota fiscal.\nImpossibilitado de assinatura de contratos digitais e físicos com CNPJ.\nImpossibilitado de limites de créditos empresariais perante bancos e afiliadas de crédito PJ.\nAlém de multa e restrição perante a Receita Federal.',
   warningBg: '#fef2f2',
   warningBorder: '#dc2626',
   warningTitleColor: '#991b1b',
-  warningTextColor: '#7f1d1d',
+  warningTextColor: '#dc2626',
 
 
   showSignature: true,
