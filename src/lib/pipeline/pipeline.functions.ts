@@ -139,6 +139,6 @@ export const updateFlowSettings = createServerFn({ method: 'POST' })
       .from('cloud_automation_settings')
       .upsert(patch as any, { onConflict: 'id' });
     if (error) throw new Error(error.message);
-    const { readFlowSettings } = await import('./pipeline.server');
     return readFlowSettings(context.supabase);
+
   });
