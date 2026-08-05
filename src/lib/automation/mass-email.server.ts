@@ -108,6 +108,13 @@ export async function syncMassEmailQueue(limit = 50) {
       status: 'queued',
       sent_at: new Date().toISOString() // Marcamos como "enviado" para evitar dupla inserção se a fila demorar
     });
+    // Log de auditoria: E-mail na Fila
+    await supabaseAdmin.from('automation_audit_logs').insert({
+      company_id: company.id,
+      cnpj: company.cnpj,
+      event_type: 'email_queued',
+      details: { subject: subject }
+    });
   }
 
   // 4. Inserir na fila de envio real

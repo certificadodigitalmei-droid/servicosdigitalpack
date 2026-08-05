@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: tem que funcionar em perfeita singronia empresas importadas, links gerados, e email enviados</div>
+<div className="hidden">Execute esta instrucao no projeto: Implemente um log de auditoria que registre a transição de cada empresa no fluxo, para eu conseguir rastrear a origem das contagens de empresas importadas, links gerados e e-mails enviados.</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
