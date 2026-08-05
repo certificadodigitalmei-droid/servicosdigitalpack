@@ -89,24 +89,24 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
       .filter(Boolean)
       .sort()[0] ?? null;
 
-    // ------ Envio ------
+    // ------ Envio (via email_send_queue) ------
     const enviadosPeriodoQ = supabase
-      .from('email_campaign_recipients')
+      .from('email_send_queue')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'sent')
       .gte('created_at', fromISO);
     const enviadosPeriodoFinal = toISO ? enviadosPeriodoQ.lte('created_at', toISO) : enviadosPeriodoQ;
 
     const falhasPeriodoQ = supabase
-      .from('email_campaign_recipients')
+      .from('email_send_queue')
       .select('id', { count: 'exact', head: true })
-      .eq('status', 'failed')
+      .in('status', ['failed', 'suppressed'])
       .gte('created_at', fromISO);
     const falhasPeriodoFinal = toISO ? falhasPeriodoQ.lte('created_at', toISO) : falhasPeriodoQ;
 
     const [enviadosRes, { count: filaEnvio }, falhasRes, { data: workers }] = await Promise.all([
       enviadosPeriodoFinal,
-      supabase.from('email_campaign_recipients').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabase.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       falhasPeriodoFinal,
       supabase.from('email_workers').select('id,is_active,last_success_at').limit(1),
     ]);
@@ -119,7 +119,7 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const brTodayISO = brToday.toISOString();
 
     const enviadosHojeCount = await supabase
-      .from('email_campaign_recipients')
+      .from('email_send_queue')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'sent')
       .gte('created_at', brTodayISO)
