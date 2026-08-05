@@ -35,7 +35,11 @@ export const Route = createFileRoute('/api/public/hooks/pix-reminders')({
           queue = { error: (e as Error).message };
         }
 
-        return new Response(JSON.stringify({ cadence, queue }), {
+        // Chamada da automação completa (importação + sincronia + disparos)
+        const { syncMassEmailQueue } = await import('@/lib/automation/mass-email.server');
+        const sync = await syncMassEmailQueue(5);
+
+        return new Response(JSON.stringify({ cadence, queue, sync }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });
