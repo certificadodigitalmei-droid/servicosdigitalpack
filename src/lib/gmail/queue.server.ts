@@ -104,8 +104,8 @@ export async function sentInLastHour(): Promise<number> {
 }
 
 /**
- * Processa até `maxBatch` e-mails pendentes da fila, respeitando o teto de
- * `HOURLY_LIMIT` envios na janela de 60 minutos.
+ * Processa até `maxBatch` e-mails pendentes da fila, respeitando a janela de
+ * 1 hora ancorada no primeiro e-mail enviado (`computeSendWindow`).
  */
 export async function processQueueInternal(
   maxBatch = 10,
@@ -113,13 +113,26 @@ export async function processQueueInternal(
   opts: { burst?: boolean; concurrency?: number } = {},
 ) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const { computeSendWindow } = await import('@/lib/pipeline/pipeline.server');
 
-  const lastHour = await sentInLastHour();
-  const remaining = Math.max(0, hourlyLimit - lastHour);
+  const win = await computeSendWindow(supabaseAdmin as any, hourlyLimit);
+  const lastHour = win.sentInWindow;
+  const remaining = win.remaining;
   if (remaining === 0) {
-    return { processed: 0, sent: 0, failed: 0, lastHour, remaining: 0, throttled: true };
+    return {
+      processed: 0,
+      sent: 0,
+      failed: 0,
+      lastHour,
+      remaining: 0,
+      throttled: true,
+      windowStart: win.windowStart,
+      windowEnd: win.windowEnd,
+      secondsToReset: win.secondsToReset,
+    };
   }
   const batch = Math.min(maxBatch, remaining);
+
 
   const nowIso = new Date().toISOString();
   const { data: rows, error } = await supabaseAdmin
