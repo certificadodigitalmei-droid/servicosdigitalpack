@@ -95,42 +95,44 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
       .sort()[0] ?? null;
 
     // ------ Envio (via email_send_queue) ------
+    // "enviado" = status 'sent'; a data considerada é updated_at (confirmação do envio).
     const enviadosPeriodoQ = supabase
       .from('email_send_queue')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'sent');
 
-    if (data?.from) enviadosPeriodoQ.gte('created_at', data.from);
-    if (data?.to) enviadosPeriodoQ.lte('created_at', data.to);
+    if (data?.from) enviadosPeriodoQ.gte('updated_at', data.from);
+    if (data?.to) enviadosPeriodoQ.lte('updated_at', data.to);
 
     const falhasPeriodoQ = supabase
       .from('email_send_queue')
       .select('id', { count: 'exact', head: true })
       .in('status', ['failed', 'suppressed']);
 
-    if (data?.from) falhasPeriodoQ.gte('created_at', data.from);
-    if (data?.to) falhasPeriodoQ.lte('created_at', data.to);
+    if (data?.from) falhasPeriodoQ.gte('updated_at', data.from);
+    if (data?.to) falhasPeriodoQ.lte('updated_at', data.to);
 
     const [enviadosRes, { count: filaEnvio }, falhasRes, { data: workers }] = await Promise.all([
       enviadosPeriodoQ,
-      supabase.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabase
+        .from('email_send_queue')
+        .select('id', { count: 'exact', head: true })
+        .in('status', ['queued', 'pending', 'sending']),
       falhasPeriodoQ,
       supabase.from('email_workers').select('id,is_active,last_success_at').limit(1),
     ]);
-    
+
     const enviadosPeriodo = enviadosRes.count ?? 0;
-    
-    // Calcula o "Hoje" absoluto em horário de Brasília para o semáforo/status
-    const brToday = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-    brToday.setHours(0, 0, 0, 0);
-    const brTodayISO = brToday.toISOString();
+
+    // "Hoje" sempre em horário de Brasília
+    const brTodayISO = startOfDayISO();
 
     const enviadosHojeCount = await supabase
       .from('email_send_queue')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'sent')
-      .gte('created_at', brTodayISO)
-      .then(r => r.count ?? 0);
+      .gte('updated_at', brTodayISO)
+      .then((r: any) => r.count ?? 0);
 
     const falhas24h = falhasRes.count ?? 0;
     const workersAtivos = (workers ?? []).filter((w: any) => w.is_active).length;
