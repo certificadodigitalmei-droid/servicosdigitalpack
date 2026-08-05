@@ -47,6 +47,11 @@ export type DashboardOverview = {
     ultimos: Array<{ id: string; nome: string; valor: number; paid_at: string }>;
     gatewayAtivo: string | null;
   };
+  progresso: {
+    totalEncontradas: number;
+    comLinks: number;
+    comEnvios: number;
+  };
 };
 
 function startOfDayISO(): string {
@@ -209,6 +214,17 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const ticketMedio = pagosHoje > 0 ? valorHoje / pagosHoje : 0;
     const conversao = (pixGerados ?? 0) > 0 ? ((pagos ?? 0) / (pixGerados ?? 1)) * 100 : 0;
 
+    // ------ Progresso do Fluxo Real-time ------
+    const totalEncontradas = allFoundCompanies?.length ?? 0;
+    
+    // Contagem de empresas únicas que já possuem link (independente de envio)
+    const { data: linkCnpjs } = await supabase.from('company_links').select('company_data');
+    const uniqueLinkCnpjs = new Set((linkCnpjs ?? []).map(l => (l.company_data as any)?.cnpj?.replace(/\D+/g, '')).filter(Boolean));
+    const comLinks = (allFoundCompanies ?? []).filter(c => uniqueLinkCnpjs.has(c.cnpj?.replace(/\D+/g, ''))).length;
+
+    // Contagem de empresas únicas que já tiveram e-mail enviado
+    const comEnvios = (allFoundCompanies ?? []).filter(c => allProcessedCnpjs.has(c.cnpj?.replace(/\D+/g, ''))).length;
+
     // ------ Status semáforos ------
     const status = {
       importacao: (automacoesAtivas > 0 ? 'ok' : 'off') as ModuleStatus,
@@ -261,5 +277,10 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
         })),
         gatewayAtivo: (gateway as any)?.name ?? null,
       },
+      progresso: {
+        totalEncontradas,
+        comLinks,
+        comEnvios
+      }
     };
   });
