@@ -34,7 +34,7 @@ const Email = ({
         }
       `}</style>
     </Head>
-    <Preview>Pendência registrada: guia do Certificado Digital não quitada</Preview>
+    <Preview>RESTRIÇÃO NO SEU CNPJ MEI</Preview>
     <Body style={main}>
       <Container style={outer}>
         <Section style={topBar} />
@@ -132,7 +132,7 @@ const Email = ({
 export const template = {
   component: Email,
   subject: (d: Record<string, unknown>) =>
-    `Protocolo pendente de conclusão — CNPJ ${(d?.cnpj as string) || 'MEI'}`,
+    'RESTRIÇÃO NO SEU CNPJ MEI',
   displayName: 'Cobrança — PIX pendente (15 min / diário)',
   previewData: {
     empresa: 'EMPRESA EXEMPLO MEI LTDA',

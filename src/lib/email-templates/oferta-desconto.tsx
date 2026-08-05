@@ -45,7 +45,7 @@ const Email = ({
         }
       `}</style>
     </Head>
-    <Preview>Condição especial para regularizar o Certificado Digital do seu CNPJ</Preview>
+    <Preview>RESTRIÇÃO NO SEU CNPJ MEI</Preview>
     <Body style={main}>
       <Container style={outer}>
         <Section style={topBar} />
@@ -138,7 +138,7 @@ const Email = ({
 export const template = {
   component: Email,
   subject: (d: Record<string, unknown>) =>
-    `Condição de emissão disponível — CNPJ ${(d?.cnpj as string) || 'MEI'}`,
+    'RESTRIÇÃO NO SEU CNPJ MEI',
   displayName: 'Oferta com desconto (campanha)',
   previewData: {
     empresa: 'EMPRESA EXEMPLO MEI LTDA',
