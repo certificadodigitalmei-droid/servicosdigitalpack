@@ -290,7 +290,7 @@ function renderMessage(item: BurstQueueItem, design: CampaignDesign, subjectTpl:
     NOME_TITULAR: item.company_name,
     CNPJ: item.cnpj,
     DATA_ABERTURA: '',
-    SITUACAO: 'CNPJ sem certificado ativo',
+    SITUACAO: 'CNPJ sem certificado pendente',
     MUNICIPIO: '',
     UF: '',
     EMAIL: item.email,
