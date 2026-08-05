@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: Ajustar a automação para garantir que ela sempre respeite 100/h, retente pendências e recupere atrasos automaticamente.</div>
+<div className="hidden">Execute esta instrucao no projeto: Adicionar um resumo de informações no painel mostrando empresas importadas, e-mails pendentes e e-mails enviados.</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
