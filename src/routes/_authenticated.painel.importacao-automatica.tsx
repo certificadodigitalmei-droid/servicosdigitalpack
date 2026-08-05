@@ -235,6 +235,15 @@ function ImportacaoAutomaticaPage() {
         />
       </div>
 
+      <PipelineStrip />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AguardandoLinkCard />
+        <AguardandoEnvioCard />
+      </div>
+
+
+
       <DateRangeFilter
         preset={preset}
         onPresetChange={setPreset}
