@@ -36,7 +36,7 @@ function AcessoPage() {
     if (!isMobile) {
       // Desktop: marca como visto (para evitar redirect loop na /c) e redireciona sem animação.
       markLinkLoaderShown({ data: { token } }).catch(() => {});
-      navigate({ to: '/c/$token', params: { token }, replace: true });
+      navigate({ to: '/c/$token', params: { token }, search: { issuing: undefined }, replace: true });
       return;
     }
     // Mobile: mostra a animação; onFinish marca e redireciona.
@@ -57,7 +57,7 @@ function AcessoPage() {
       nome={nome}
       onFinish={() => {
         markLinkLoaderShown({ data: { token } }).catch(() => {});
-        navigate({ to: '/c/$token', params: { token }, replace: true });
+        navigate({ to: '/c/$token', params: { token }, search: { issuing: undefined }, replace: true });
       }}
     />
   );
