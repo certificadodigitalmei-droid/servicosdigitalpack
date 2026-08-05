@@ -100,22 +100,28 @@ function PanelLayout() {
   const [cleaning, setCleaning] = useState(false);
 
   // Status da automação global na nuvem
-  const [autoEnabled, setAutoEnabled] = useState(false);
+  const [autoEnabled, setAutoEnabled] = useState<boolean | null>(null);
   const [loadingAuto, setLoadingAuto] = useState(true);
   const fetchAuto = useServerFn(getAutomationStatus);
   const doToggleAuto = useServerFn(toggleGlobalAutomation);
 
-  const refreshAutoStatus = async () => {
+  const refreshAutoStatus = async (isInitial = false) => {
     try {
       const status = await fetchAuto();
       setAutoEnabled(status.isAutoEnabled);
-    } catch { /* ignore */ }
-    finally { setLoadingAuto(false); }
+      if (isInitial) {
+        console.log('Status inicial da nuvem carregado:', status.isAutoEnabled);
+      }
+    } catch (e) { 
+      console.error('Erro ao buscar status da nuvem:', e);
+    } finally { 
+      setLoadingAuto(false); 
+    }
   };
 
   useEffect(() => {
-    refreshAutoStatus();
-    const id = setInterval(refreshAutoStatus, 15000);
+    refreshAutoStatus(true);
+    const id = setInterval(() => refreshAutoStatus(), 15000);
     return () => clearInterval(id);
   }, []);
 
@@ -429,7 +435,7 @@ function PanelLayout() {
                     autoEnabled ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-300"
                   )} />
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-1">
-                    {autoEnabled ? "Nuvem: Ativo" : "Nuvem: Off"}
+                    {autoEnabled === null ? "Nuvem: Carregando..." : autoEnabled ? "Nuvem: Ativo" : "Nuvem: Off"}
                   </span>
                   <Button
                     size="icon"

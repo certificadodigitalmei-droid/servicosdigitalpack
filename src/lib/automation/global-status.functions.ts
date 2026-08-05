@@ -7,10 +7,12 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 export const getAutomationStatus = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    // Busca qualquer registro (o primeiro que encontrar) para ver o estado global.
+    // O sistema usa uma única flag global que não depende da empresa importada.
     const { data: config } = await context.supabase
       .from('automatic_company_queries')
       .select('enabled, last_run_at, status')
-      .eq('enabled', true)
+      .limit(1)
       .maybeSingle();
 
     const { data: lastEmail } = await context.supabase
