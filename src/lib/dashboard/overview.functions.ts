@@ -22,7 +22,7 @@ export type DashboardOverview = {
   };
   envio: {
     enviadosHoje: number;
-25:     enviadosPeriodo: number;
+    enviadosPeriodo: number;
     fila: number;
     falhas24h: number;
     workersAtivos: number;
@@ -110,7 +110,17 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
       falhasPeriodoFinal,
       supabase.from('email_workers').select('id,is_active,last_success_at').limit(1),
     ]);
-    const enviadosHoje = enviadosRes.count ?? 0;
+    
+    const enviadosPeriodo = enviadosRes.count ?? 0;
+    
+    // Query separada para "Hoje" absoluto caso o período seja customizado
+    const enviadosHojeCount = await supabase
+      .from('email_campaign_recipients')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'sent')
+      .gte('created_at', startOfDayISO())
+      .then(r => r.count ?? 0);
+
     const falhas24h = falhasRes.count ?? 0;
     const workersAtivos = (workers ?? []).filter((w: any) => w.is_active).length;
 
@@ -154,7 +164,7 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     // ------ Status semáforos ------
     const status = {
       importacao: (automacoesAtivas > 0 ? 'ok' : 'off') as ModuleStatus,
-      envio: (workersAtivos > 0 || (enviadosHoje ?? 0) > 0 ? 'ok' : 'off') as ModuleStatus,
+      envio: (workersAtivos > 0 || (enviadosHojeCount ?? 0) > 0 ? 'ok' : 'off') as ModuleStatus,
       gateway: (gateway ? 'ok' : 'off') as ModuleStatus,
       casaDados: 'ok' as ModuleStatus,
     };
@@ -172,7 +182,7 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
       },
       envio: {
         enviadosHoje: enviadosHojeCount,
-174:         enviadosPeriodo: enviadosPeriodo,
+        enviadosPeriodo: enviadosPeriodo,
         fila: filaEnvio ?? 0,
         falhas24h: falhas24h ?? 0,
         workersAtivos,
