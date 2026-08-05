@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: Implementar sincronização automática do estado do painel entre abas para evitar inconsistências e travamentos.</div>
+<div className="hidden">Execute esta instrucao no projeto: Ajustar a automação para garantir que ela sempre respeite 100/h, retente pendências e recupere atrasos automaticamente.</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
