@@ -15,7 +15,7 @@ export async function syncMassEmailQueue(limit = 50, priorityOnly = false) {
       .limit(limit * 2);
 
     if (!linkErr && links && links.length > 0) {
-      const companyIds = links.map(l => l.company_id).filter(Boolean);
+      const companyIds = links.map(l => l.company_id).filter((id): id is string => !!id);
       
       const { data: priorityCompanies } = await supabaseAdmin
         .from('companies')
@@ -25,7 +25,7 @@ export async function syncMassEmailQueue(limit = 50, priorityOnly = false) {
       
       if (priorityCompanies && priorityCompanies.length > 0) {
         // Filtrar as que já foram enviadas
-        const cnpjs = priorityCompanies.map(c => c.cnpj?.replace(/\D+/g, '')).filter(Boolean) as string[];
+        const cnpjs = priorityCompanies.map(c => c.cnpj?.replace(/\D+/g, '')).filter((cnpj): cnpj is string => !!cnpj);
         const { data: sentRecipients } = await supabaseAdmin
           .from('email_campaign_recipients')
           .select('cnpj')
@@ -33,6 +33,7 @@ export async function syncMassEmailQueue(limit = 50, priorityOnly = false) {
           .not('sent_at', 'is', null);
 
         const sentCnpjs = new Set(sentRecipients?.map(r => r.cnpj?.replace(/\D+/g, '')) || []);
+
         const trulyPending = priorityCompanies.filter(c => !sentCnpjs.has(c.cnpj?.replace(/\D+/g, '') || ''));
 
         if (trulyPending.length > 0) {
