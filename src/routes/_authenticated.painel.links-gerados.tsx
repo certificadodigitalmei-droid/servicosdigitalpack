@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
+import { PipelineStrip } from '@/components/painel/PipelineStrip';
+
 import { formatCNPJ, cleanCompanyName } from '@/lib/format';
 import { toast } from 'sonner';
 
@@ -315,6 +317,8 @@ function LinksGeradosPage() {
 
   return (
     <div className="space-y-6">
+      <PipelineStrip />
+
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Links Gerados</h1>

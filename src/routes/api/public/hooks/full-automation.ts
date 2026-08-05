@@ -1,19 +1,22 @@
-
 import { createFileRoute } from '@tanstack/react-router';
 
 /**
- * Endpoint centralizado para automação completa na nuvem.
- * Deve ser chamado via Cron (ex: a cada 1 ou 2 minutos).
+ * Endpoint centralizado da automação em nuvem (chamado por cron a cada minuto).
+ *
+ * Pipeline linear e TRAVADO:
+ *   1. Gerar links para empresas importadas sem link
+ *   2. Enfileirar envio para links sem registro na fila
+ *   3. Despachar a fila (respeitando o teto por hora)
+ *   4. Importar novas empresas SOMENTE quando não sobrar nada pendente
  */
 export const Route = createFileRoute('/api/public/hooks/full-automation')({
   server: {
     handlers: {
       POST: async ({ request }) => {
         const providedKey = (request.headers.get('apikey') ?? '').trim();
-        const allowed = [
-          process.env.SUPABASE_ANON_KEY,
-          process.env.SUPABASE_PUBLISHABLE_KEY,
-        ].map(k => (k ?? '').trim()).filter(Boolean);
+        const allowed = [process.env.SUPABASE_ANON_KEY, process.env.SUPABASE_PUBLISHABLE_KEY]
+          .map((k) => (k ?? '').trim())
+          .filter(Boolean);
 
         if (!providedKey || !allowed.includes(providedKey)) {
           return new Response(JSON.stringify({ error: 'unauthorized' }), {
@@ -27,31 +30,46 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
         try {
           const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
-          // 0. Interruptor global (Nuvem: Ativo/Off) — estado persistente no banco.
+          // 0. Interruptor global (Nuvem: Ativo/Off)
           const { data: cloudCfg } = await supabaseAdmin
             .from('cloud_automation_settings')
             .select('enabled')
             .eq('id', 1)
             .maybeSingle();
-          const enabledCount = cloudCfg?.enabled ? 1 : 0;
 
-          if (!enabledCount) {
+          if (!cloudCfg?.enabled) {
             return new Response(JSON.stringify({ skipped: 'cloud_off' }), {
               status: 200,
               headers: { 'content-type': 'application/json' },
             });
           }
 
-          // 1. Verificar se temos saldo de empresas importadas com links mas sem envios
-          const { syncMassEmailQueue } = await import('@/lib/automation/mass-email.server');
-          const syncOutcome = await syncMassEmailQueue(10, true);
-          stats.sync = syncOutcome;
+          const { ensureLinksForImported, syncMassEmailQueue } = await import(
+            '@/lib/automation/mass-email.server'
+          );
 
-          // Se sincronizamos novos e-mails prioritários (que já tinham links), pulamos a importação para focar neles
-          const hasPriorityPending = (syncOutcome as any)?.enqueued > 0;
+          // 1. Empresas importadas sem link -> gerar link
+          stats.links = await ensureLinksForImported(25);
 
-          // 2. Auto-import de novas empresas (Casa dos Dados) apenas se não houver prioridade pendente
-          if (!hasPriorityPending) {
+          // 2. Links sem envio -> entrar na fila
+          stats.sync = await syncMassEmailQueue(25);
+
+          // 3. Despachar fila (teto de 100/h garantido pela janela deslizante)
+          const { processQueueInternal } = await import('@/lib/gmail/queue.server');
+          stats.queue = await processQueueInternal(3);
+
+          // 4. Régua de cobrança (PIX pendente etc.)
+          const { runNotificationCadence } = await import('@/lib/emails/order-emails.server');
+          stats.cadence = await runNotificationCadence();
+
+          // 5. TRAVA: só importa quando o estoque pendente estiver zerado
+          const { computePipelineState } = await import('@/lib/pipeline/pipeline.server');
+          const state = await computePipelineState(supabaseAdmin as any);
+          stats.pipeline = state;
+
+          if (!state.importacaoLiberada) {
+            stats.import = { skipped: true, reason: state.motivoBloqueio };
+          } else {
             const { runImportBatch } = await import('@/lib/casa-dos-dados/simple-flow.server');
 
             const nowIso = new Date().toISOString();
@@ -63,49 +81,50 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
               .limit(1);
 
             if (configs && configs.length > 0) {
-              const cfg = configs[0];
+              const cfg = configs[0] as any;
               const outcome = await runImportBatch({
-                date: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date()),
-                filters: (cfg.filters as any) || { only_mei: true, only_active: true, require_email: false },
-                limit: Math.min(5, (cfg as any).quantity_per_run || 1),
-                skipExisting: true
+                date: new Intl.DateTimeFormat('en-CA', {
+                  timeZone: 'America/Sao_Paulo',
+                }).format(new Date()),
+                filters: (cfg.filters as any) || {
+                  only_mei: true,
+                  only_active: true,
+                  only_matriz: false,
+                  require_email: true,
+                },
+                limit: Math.min(5, cfg.quantity_per_run || 5),
+                skipExisting: true,
               });
-              
-              await supabaseAdmin.from('automatic_company_queries').update({
-                last_run_at: nowIso,
-                next_run_at: new Date(Date.now() + ((cfg as any).interval_minutes || 60) * 60000).toISOString(),
-                status: 'active'
-              }).eq('id', cfg.id);
-              
+
+              await supabaseAdmin
+                .from('automatic_company_queries')
+                .update({
+                  last_run_at: nowIso,
+                  next_run_at: new Date(
+                    Date.now() + (cfg.interval_minutes || 60) * 60000,
+                  ).toISOString(),
+                  status: 'active',
+                })
+                .eq('id', cfg.id);
+
               stats.import = outcome;
+            } else {
+              stats.import = { skipped: true, reason: 'nenhuma automação ativa/vencida' };
             }
           }
 
-
-          // 3. Processar Régua de Cobrança (PIX reminders, etc)
-          const { runNotificationCadence } = await import('@/lib/emails/order-emails.server');
-          stats.cadence = await runNotificationCadence();
-
-          // 4. Despachar e-mails da fila (Gmail API)
-          // O cron roda a cada minuto; o teto de 100/h é garantido pela janela deslizante
-          // dentro de processQueueInternal. Até 3 por chamada distribui bem os 100.
-          const { processQueueInternal } = await import('@/lib/gmail/queue.server');
-          stats.queue = await processQueueInternal(3);
-          
-          // 5. Reconciliação de Métricas (Mantém Dashboard e Auditoria sincronizados)
+          // 6. Reconciliação de métricas
           const { reconcileMetrics } = await import('@/lib/automation/reconcile.server');
           stats.reconcile = await reconcileMetrics();
-
-
         } catch (e: any) {
-          stats.error = e.message;
+          stats.error = e?.message ?? String(e);
         }
 
         return new Response(JSON.stringify(stats), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });
-      }
-    }
-  }
+      },
+    },
+  },
 });

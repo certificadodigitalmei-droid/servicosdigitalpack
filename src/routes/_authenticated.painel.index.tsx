@@ -22,6 +22,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useServerFn } from '@tanstack/react-start';
 import { getSitePopup } from '@/lib/site-popup.functions';
 import { DashboardOverviewStrip } from '@/components/painel/DashboardOverviewStrip';
+import { PipelineStrip } from '@/components/painel/PipelineStrip';
+
 
 
 export const Route = createFileRoute('/_authenticated/painel/')({
@@ -344,6 +346,8 @@ function DashboardPage() {
 
   return (
     <div className="space-y-8 pb-12">
+      <PipelineStrip />
+
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-2">

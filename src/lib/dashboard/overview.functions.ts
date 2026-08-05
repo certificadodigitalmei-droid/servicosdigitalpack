@@ -1,6 +1,8 @@
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
+import type { PipelineState } from '@/lib/pipeline/pipeline.server';
+
 
 export type ModuleStatus = 'ok' | 'warn' | 'off';
 
@@ -52,7 +54,9 @@ export type DashboardOverview = {
     comLinks: number;
     comEnvios: number;
   };
+  pipeline: PipelineState;
 };
+
 
 function startOfDayISO(): string {
   // Recorte do dia em horário de Brasília (não UTC).
@@ -80,31 +84,28 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const fromISO = data?.from ?? startOfDayISO();
     const toISO = data?.to ?? null;
 
+    // ------ Pipeline (fonte única do funil) ------
+    const { computePipelineState } = await import('@/lib/pipeline/pipeline.server');
+    const pipeline = await computePipelineState(supabase);
+
     // ------ Importação ------
-    // "Fila Pronta" são empresas encontradas que AINDA NÃO possuem link gerado na campanha
-    const { data: campaignRecipientsAll } = await supabase
-      .from('email_campaign_recipients')
-      .select('cnpj');
-    const allProcessedCnpjs = new Set(campaignRecipientsAll?.map((r: any) => r.cnpj) || []);
+    // "Fila pronta" = tudo que ainda precisa ser processado antes de importar mais.
+    const filaPronta = pipeline.pendenteTotal;
 
-    const { data: allFoundCompanies } = await supabase
+    const { data: ultimaEmpresaRow } = await supabase
       .from('companies')
-      .select('id, cnpj, created_at')
-      .eq('status', 'encontrada');
+      .select('created_at')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const ultimaEmpresa = ultimaEmpresaRow;
 
-    const filaProntaCompanies = (allFoundCompanies ?? []).filter((c: any) => {
-      const cnpj = c.cnpj?.replace(/\D+/g, '');
-      return !allProcessedCnpjs.has(cnpj);
-    });
-
-    const filaPronta = filaProntaCompanies.length;
-    const ultimaEmpresa = allFoundCompanies?.sort((a: any, b: any) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )[0];
-
-    const empresasHoje = (allFoundCompanies ?? []).filter((c: any) => 
-      c.created_at >= fromISO && (!toISO || c.created_at <= toISO)
-    ).length;
+    const empresasHojeQ = supabase
+      .from('companies')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', fromISO);
+    if (toISO) empresasHojeQ.lte('created_at', toISO);
+    const empresasHoje = (await empresasHojeQ).count ?? 0;
 
     const { data: autos } = await supabase.from('automatic_company_queries').select('enabled,next_run_at,status');
     const automacoesAtivas = (autos ?? []).filter((a: any) => a.enabled).length;
@@ -112,6 +113,7 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
       .map((a: any) => a.next_run_at)
       .filter(Boolean)
       .sort()[0] ?? null;
+
 
     // ------ Envio (via email_send_queue) ------
     // "enviado" = status 'sent'; a data considerada é updated_at (confirmação do envio).
@@ -160,34 +162,18 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const workersAtivos = (workers ?? []).filter((w: any) => w.is_active).length;
 
     // ------ Links + eventos ------
-    // Para alinhar com e-mails enviados, contamos apenas links que possuem um destinatário na campanha.
-    const { data: campaignRecipients } = await supabase
-      .from('email_campaign_recipients')
-      .select('cnpj')
-      .not('sent_at', 'is', null);
-    
-    const sentCnpjs = new Set(campaignRecipients?.map((r: any) => r.cnpj) || []);
-
-    const linksTotalQ = supabase.from('company_links').select('id, company_data', { count: 'exact' });
-    const { data: allLinks } = await linksTotalQ;
-    
-    const linksTotal = (allLinks ?? []).filter((l: any) => {
-      const cnpj = l.company_data?.cnpj?.replace(/\D+/g, '');
-      return sentCnpjs.has(cnpj);
-    }).length;
+    // Contagem real de links (sem depender da tabela de campanha legada).
+    const linksTotal = pipeline.links;
 
     const linksHojeQ = supabase
       .from('company_links')
-      .select('id, company_data', { count: 'exact' })
+      .select('id', { count: 'exact', head: true })
       .gte('created_at', fromISO);
-    
+
     if (toISO) linksHojeQ.lte('created_at', toISO);
-    
-    const { data: todayLinks } = await linksHojeQ;
-    const linksHoje = (todayLinks ?? []).filter((l: any) => {
-      const cnpj = l.company_data?.cnpj?.replace(/\D+/g, '');
-      return sentCnpjs.has(cnpj);
-    }).length;
+
+    const linksHoje = (await linksHojeQ).count ?? 0;
+
 
     const eventosQ = supabase.from('link_events').select('event_type').gte('created_at', fromISO);
     if (toISO) eventosQ.lte('created_at', toISO);
@@ -218,16 +204,11 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const ticketMedio = pagosHoje > 0 ? valorHoje / pagosHoje : 0;
     const conversao = (pixGerados ?? 0) > 0 ? ((pagos ?? 0) / (pixGerados ?? 1)) * 100 : 0;
 
-    // ------ Progresso do Fluxo Real-time ------
-    const totalEncontradas = allFoundCompanies?.length ?? 0;
-    
-    // Contagem de empresas únicas que já possuem link (independente de envio)
-    const { data: linkCnpjs } = await supabase.from('company_links').select('company_data');
-    const uniqueLinkCnpjs = new Set((linkCnpjs ?? []).map(l => (l.company_data as any)?.cnpj?.replace(/\D+/g, '')).filter(Boolean));
-    const comLinks = (allFoundCompanies ?? []).filter(c => uniqueLinkCnpjs.has(c.cnpj?.replace(/\D+/g, ''))).length;
+    // ------ Progresso do Fluxo Real-time (fonte única: pipeline) ------
+    const totalEncontradas = pipeline.importadas;
+    const comLinks = pipeline.links;
+    const comEnvios = pipeline.enviados;
 
-    // Contagem de empresas únicas que já tiveram e-mail enviado
-    const comEnvios = (allFoundCompanies ?? []).filter(c => allProcessedCnpjs.has(c.cnpj?.replace(/\D+/g, ''))).length;
 
     // ------ Status semáforos ------
     const status = {
@@ -285,6 +266,8 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
         totalEncontradas,
         comLinks,
         comEnvios
-      }
+      },
+      pipeline,
     };
+
   });

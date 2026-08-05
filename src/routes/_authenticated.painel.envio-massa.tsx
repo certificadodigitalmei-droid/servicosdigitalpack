@@ -33,6 +33,9 @@ import { getEmailStats, type EmailStatsResult } from '@/lib/email-campaign/stats
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { getEmailMetrics } from '@/lib/emails/email-metrics.functions';
+import { PipelineStrip } from '@/components/painel/PipelineStrip';
+import { AguardandoEnvioCard } from '@/components/painel/PipelineQueues';
+
 import { useStore } from '@/lib/automation/store';
 import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
 
@@ -295,6 +298,12 @@ function EnvioMassa() {
           </p>
         )}
       </div>
+
+      <PipelineStrip />
+
+      <AguardandoEnvioCard />
+
+
 
       <DateRangeFilter
         preset={preset}
