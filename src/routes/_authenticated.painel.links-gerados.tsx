@@ -393,6 +393,7 @@ function LinksGeradosPage() {
           <CardDescription>Visitantes únicos: <b>{aggregate.unique_visitors}</b></CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
+          <FunnelRow label="E-mails enviados" value={aggregate.emails_sent} base={aggregate.emails_sent} color="bg-emerald-500" />
           <FunnelRow label="Abriu página" value={aggregate.view_link} base={aggregate.view_link} color="bg-indigo-500" />
           <FunnelRow label="Foi ao checkout" value={aggregate.view_checkout} base={aggregate.view_link} color="bg-violet-500" />
           <FunnelRow label="Emitir certificado" value={aggregate.click_certificado} base={aggregate.view_link} color="bg-emerald-500" />
