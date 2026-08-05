@@ -87,7 +87,6 @@ const EMPTY: Stats = {
 type Preset = 'hoje' | 'ontem' | '7d' | '15d' | '30d' | 'tudo' | 'custom';
 
 function computeRange(preset: Preset, customFrom?: string, customTo?: string): { from?: Date; to?: Date } {
-  // Ajusta para o fuso horário de Brasília (UTC-3)
   const getBrDate = () => {
     const d = new Date();
     return new Date(d.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
@@ -115,10 +114,7 @@ function computeRange(preset: Preset, customFrom?: string, customTo?: string): {
   if (preset === '7d' || preset === '15d' || preset === '30d') {
     const days = preset === '7d' ? 7 : preset === '15d' ? 15 : 30;
     const from = new Date(now);
-    from.setDate(now.getDate() - days);
-    return { from: startOfDay(from), to: endOfDay(now) };
-  }
-    const from = new Date(now); from.setDate(now.getDate() - (days - 1));
+    from.setDate(now.getDate() - (days - 1));
     return { from: startOfDay(from), to: endOfDay(now) };
   }
   // custom
