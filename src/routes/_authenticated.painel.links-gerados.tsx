@@ -377,7 +377,7 @@ function LinksGeradosPage() {
       {/* Aggregate KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         <KPI icon={<ExternalLink className="h-4 w-4" />} label="Links no filtro" value={total} tone="slate" />
-        <KPI icon={<CheckCircle2 className="h-4 w-4" />} label="E-mails enviados" value={aggregate.emails_sent} tone="emerald" />
+        <KPI icon={<CheckCircle2 className="h-4 w-4" />} label={`E-mails enviados (${preset === 'all' ? 'total' : preset})`} value={aggregate.emails_sent} tone="emerald" />
         <KPI icon={<Eye className="h-4 w-4" />} label="Cliques totais" value={aggregate.total} tone="blue" />
         <KPI icon={<Eye className="h-4 w-4" />} label="Abriu página" value={aggregate.view_link} tone="indigo" />
         <KPI icon={<ShoppingCart className="h-4 w-4" />} label="Checkout" value={aggregate.view_checkout} tone="violet" />

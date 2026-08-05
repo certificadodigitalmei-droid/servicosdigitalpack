@@ -22,6 +22,7 @@ export type DashboardOverview = {
   };
   envio: {
     enviadosHoje: number;
+25:     enviadosPeriodo: number;
     fila: number;
     falhas24h: number;
     workersAtivos: number;
@@ -170,7 +171,8 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
         proximaExecucao,
       },
       envio: {
-        enviadosHoje: enviadosHoje ?? 0,
+        enviadosHoje: enviadosHojeCount,
+174:         enviadosPeriodo: enviadosPeriodo,
         fila: filaEnvio ?? 0,
         falhas24h: falhas24h ?? 0,
         workersAtivos,
