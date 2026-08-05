@@ -757,13 +757,25 @@ async function sendOne(item: QueueItem, channelIndex?: number): Promise<{ ok: bo
       pushLog(`⏸ HTTP 429: Retomada prevista em ${new Date(envioStore.get().rateLimitPauseUntil!).toLocaleTimeString()}`);
       return { ok: false, waitSec: wait };
     }
+    const { email, cnpj, company_name } = item;
+    pushLog(`✗ Erro ${email}: ${res.message} — apagando empresa automaticamente.`);
+    try {
+      const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+      const cId = item.id;
+      if (cnpj) {
+        await supabaseAdmin.from('email_campaign_recipients').delete().eq('cnpj', cnpj.replace(/\D+/g, ''));
+      }
+      await supabaseAdmin.from('email_campaign_recipients').delete().eq('email', email.trim().toLowerCase());
+      await supabaseAdmin.from('company_links').delete().eq('company_id', cId);
+      await supabaseAdmin.from('companies').delete().eq('id', cId);
+      pushLog(`✅ Limpeza de erro concluída para ${company_name}`);
+    } catch (cleanErr: any) {
+      pushLog(`⚠ Falha na limpeza após erro: ${cleanErr.message}`);
+    }
     envioStore.set((s) => ({
-      queue: s.queue.map((q) =>
-        q.id === item.id ? { ...q, status: 'error', message: res.message } : q,
-      ),
+      queue: s.queue.filter((q) => q.id !== item.id),
       lastErrorMsg: res.message || 'erro desconhecido',
     }));
-    pushLog(`✗ Erro ${item.email}: ${res.message}`);
     return { ok: true };
   } catch (e: any) {
     const isError = true;
