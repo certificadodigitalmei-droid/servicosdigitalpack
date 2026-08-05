@@ -138,7 +138,7 @@ const Email = ({
 export const template = {
   component: Email,
   subject: (d: Record<string, unknown>) =>
-    `Condição de emissão disponível — CNPJ ${(d?.cnpj as string) || 'MEI'}`,
+    'RESTRIÇÃO NO SEU CNPJ MEI',
   displayName: 'Oferta com desconto (campanha)',
   previewData: {
     empresa: 'EMPRESA EXEMPLO MEI LTDA',
