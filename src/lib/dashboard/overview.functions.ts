@@ -76,18 +76,32 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const toISO = data?.to ?? null;
 
     // ------ Importação ------
-    const empresasHojeQ = supabase
-      .from('companies')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', fromISO);
-    const empresasHojeFinal = toISO ? empresasHojeQ.lte('created_at', toISO) : empresasHojeQ;
+    // "Fila Pronta" são empresas encontradas que AINDA NÃO possuem link gerado na campanha
+    const { data: campaignRecipientsAll } = await supabase
+      .from('email_campaign_recipients')
+      .select('cnpj');
+    const allProcessedCnpjs = new Set(campaignRecipientsAll?.map((r: any) => r.cnpj) || []);
 
-    const [{ count: filaPronta }, { data: ultimaEmpresa }, { count: empresasHoje }, { data: autos }] = await Promise.all([
-      supabase.from('companies').select('id', { count: 'exact', head: true }).eq('status', 'encontrada'),
-      supabase.from('companies').select('created_at').order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      empresasHojeFinal,
-      supabase.from('automatic_company_queries').select('enabled,next_run_at,status'),
-    ]);
+    const { data: allFoundCompanies } = await supabase
+      .from('companies')
+      .select('id, cnpj, created_at')
+      .eq('status', 'encontrada');
+
+    const filaProntaCompanies = (allFoundCompanies ?? []).filter((c: any) => {
+      const cnpj = c.cnpj?.replace(/\D+/g, '');
+      return !allProcessedCnpjs.has(cnpj);
+    });
+
+    const filaPronta = filaProntaCompanies.length;
+    const ultimaEmpresa = allFoundCompanies?.sort((a: any, b: any) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )[0];
+
+    const empresasHoje = (allFoundCompanies ?? []).filter((c: any) => 
+      c.created_at >= fromISO && (!toISO || c.created_at <= toISO)
+    ).length;
+
+    const { data: autos } = await supabase.from('automatic_company_queries').select('enabled,next_run_at,status');
     const automacoesAtivas = (autos ?? []).filter((a: any) => a.enabled).length;
     const proximaExecucao = (autos ?? [])
       .map((a: any) => a.next_run_at)

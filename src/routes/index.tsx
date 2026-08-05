@@ -1,14 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: pk ta mostrano assim:
-572
-Links gerados
-Links criados no período
-469
-E-mails enviados com sucesso
-E-mails marcados como enviado no período selecionad
-
-sendo que era pra ser praticamente igual
-
-tipo link gerados e email enviados ?</div>
+<div className="hidden">Execute esta instrucao no projeto: tem que funcionar em perfeita singronia empresas importadas, links gerados, e email enviados</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 
