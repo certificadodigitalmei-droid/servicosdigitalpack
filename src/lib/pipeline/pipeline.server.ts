@@ -427,7 +427,7 @@ export async function computeSendHealth(client: AnyClient): Promise<SendHealth> 
 
 export type SendWindow = {
   updatedAt: string;
-  /** Existe janela aberta (houve envio nos últimos 60 min). */
+  /** Existe lote aberto (houve envio recente). */
   open: boolean;
   windowStart: string | null;
   windowEnd: string | null;
@@ -435,11 +435,16 @@ export type SendWindow = {
   sentInWindow: number;
   remaining: number;
   secondsToReset: number;
+  /** Último e-mail enviado do lote atual. */
+  lastSentAt: string | null;
+  /** Cota do lote esgotada: aguardando 60 min após o último envio. */
+  cooldown: boolean;
 };
 
 /**
- * Janela de 1 hora que abre no primeiro e-mail enviado.
- * Enquanto aberta, contabiliza quantos e-mails saíram e quanto falta zerar.
+ * Lote de envio: começa no primeiro e-mail e conta até o limite.
+ * Ao bater o limite, o próximo lote só libera 60 minutos depois do
+ * ÚLTIMO e-mail enviado (a janela sempre fecha pelo último envio).
  */
 export async function computeSendWindow(
   client: AnyClient,
@@ -449,41 +454,58 @@ export async function computeSendWindow(
     ? { hourlyBatchSize: limitOverride }
     : await readFlowSettings(client);
   const limit = limitOverride ?? flow.hourlyBatchSize;
+  const HOUR = 60 * 60 * 1000;
+  const now = Date.now();
 
-  const sinceIso = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const empty: SendWindow = {
+    updatedAt: new Date().toISOString(),
+    open: false,
+    windowStart: null,
+    windowEnd: null,
+    limit,
+    sentInWindow: 0,
+    remaining: limit,
+    secondsToReset: 0,
+    lastSentAt: null,
+    cooldown: false,
+  };
 
-  const { data: firstRows } = await client
+  // Histórico recente de envios (desc). O lote é a sequência contínua de
+  // envios sem intervalo >= 60 min entre eles.
+  const sinceIso = new Date(now - 6 * HOUR).toISOString();
+  const { data: rows } = await client
     .from('email_send_queue')
     .select('updated_at')
     .eq('status', 'sent')
     .gte('updated_at', sinceIso)
-    .order('updated_at', { ascending: true })
-    .limit(1);
+    .order('updated_at', { ascending: false })
+    .limit(Math.max(200, limit * 3));
 
-  const first = (firstRows ?? [])[0];
-  if (!first?.updated_at) {
-    return {
-      updatedAt: new Date().toISOString(),
-      open: false,
-      windowStart: null,
-      windowEnd: null,
-      limit,
-      sentInWindow: 0,
-      remaining: limit,
-      secondsToReset: 0,
-    };
+  const times = (rows ?? [])
+    .map((r: any) => new Date(r.updated_at).getTime())
+    .filter((t: number) => Number.isFinite(t));
+
+  if (times.length === 0) return empty;
+
+  const lastMs = times[0];
+  // Nenhum envio na última hora e cota já liberada -> lote encerrado.
+  const batch: number[] = [lastMs];
+  for (let i = 1; i < times.length; i++) {
+    if (batch[batch.length - 1] - times[i] >= HOUR) break;
+    batch.push(times[i]);
   }
 
-  const startMs = new Date(first.updated_at).getTime();
-  const endMs = startMs + 60 * 60 * 1000;
+  const startMs = batch[batch.length - 1];
+  const sentInWindow = batch.length;
+  const capReached = sentInWindow >= limit;
 
-  const { count } = await client
-    .from('email_send_queue')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'sent')
-    .gte('updated_at', new Date(startMs).toISOString());
+  // Fecha sempre pelo último envio: libera 60 min após o último e-mail.
+  const endMs = lastMs + HOUR;
 
-  const sentInWindow = count ?? 0;
+  if (now >= endMs) {
+    // Passou 1h do último envio: lote encerrado, cota liberada.
+    return { ...empty, lastSentAt: new Date(lastMs).toISOString() };
+  }
 
   return {
     updatedAt: new Date().toISOString(),
@@ -493,9 +515,12 @@ export async function computeSendWindow(
     limit,
     sentInWindow,
     remaining: Math.max(0, limit - sentInWindow),
-    secondsToReset: Math.max(0, Math.round((endMs - Date.now()) / 1000)),
+    secondsToReset: Math.max(0, Math.round((endMs - now) / 1000)),
+    lastSentAt: new Date(lastMs).toISOString(),
+    cooldown: capReached,
   };
 }
+
 
 // ---------------------------------------------------------------------------
 // CONFIGURAÇÕES DO FLUXO
