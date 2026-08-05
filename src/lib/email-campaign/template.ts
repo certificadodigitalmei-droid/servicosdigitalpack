@@ -138,8 +138,9 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   heroTitleColor: '#0e3a70',
   cardTitleSize: 11,
   cardBodySize: 12,
-  warningTitleSize: 12,
-  warningItemsSize: 12,
+  warningTitleSize: 14,
+  warningItemsSize: 13,
+
   signatureSize: 12,
   disclaimerSize: 11,
 
