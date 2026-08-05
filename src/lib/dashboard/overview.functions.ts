@@ -158,34 +158,18 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const workersAtivos = (workers ?? []).filter((w: any) => w.is_active).length;
 
     // ------ Links + eventos ------
-    // Para alinhar com e-mails enviados, contamos apenas links que possuem um destinatário na campanha.
-    const { data: campaignRecipients } = await supabase
-      .from('email_campaign_recipients')
-      .select('cnpj')
-      .not('sent_at', 'is', null);
-    
-    const sentCnpjs = new Set(campaignRecipients?.map((r: any) => r.cnpj) || []);
-
-    const linksTotalQ = supabase.from('company_links').select('id, company_data', { count: 'exact' });
-    const { data: allLinks } = await linksTotalQ;
-    
-    const linksTotal = (allLinks ?? []).filter((l: any) => {
-      const cnpj = l.company_data?.cnpj?.replace(/\D+/g, '');
-      return sentCnpjs.has(cnpj);
-    }).length;
+    // Contagem real de links (sem depender da tabela de campanha legada).
+    const linksTotal = pipeline.links;
 
     const linksHojeQ = supabase
       .from('company_links')
-      .select('id, company_data', { count: 'exact' })
+      .select('id', { count: 'exact', head: true })
       .gte('created_at', fromISO);
-    
+
     if (toISO) linksHojeQ.lte('created_at', toISO);
-    
-    const { data: todayLinks } = await linksHojeQ;
-    const linksHoje = (todayLinks ?? []).filter((l: any) => {
-      const cnpj = l.company_data?.cnpj?.replace(/\D+/g, '');
-      return sentCnpjs.has(cnpj);
-    }).length;
+
+    const linksHoje = (await linksHojeQ).count ?? 0;
+
 
     const eventosQ = supabase.from('link_events').select('event_type').gte('created_at', fromISO);
     if (toISO) eventosQ.lte('created_at', toISO);
