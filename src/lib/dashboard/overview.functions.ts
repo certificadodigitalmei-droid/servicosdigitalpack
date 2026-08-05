@@ -80,31 +80,28 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
     const fromISO = data?.from ?? startOfDayISO();
     const toISO = data?.to ?? null;
 
+    // ------ Pipeline (fonte única do funil) ------
+    const { computePipelineState } = await import('@/lib/pipeline/pipeline.server');
+    const pipeline = await computePipelineState(supabase);
+
     // ------ Importação ------
-    // "Fila Pronta" são empresas encontradas que AINDA NÃO possuem link gerado na campanha
-    const { data: campaignRecipientsAll } = await supabase
-      .from('email_campaign_recipients')
-      .select('cnpj');
-    const allProcessedCnpjs = new Set(campaignRecipientsAll?.map((r: any) => r.cnpj) || []);
+    // "Fila pronta" = tudo que ainda precisa ser processado antes de importar mais.
+    const filaPronta = pipeline.pendenteTotal;
 
-    const { data: allFoundCompanies } = await supabase
+    const { data: ultimaEmpresaRow } = await supabase
       .from('companies')
-      .select('id, cnpj, created_at')
-      .eq('status', 'encontrada');
+      .select('created_at')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const ultimaEmpresa = ultimaEmpresaRow;
 
-    const filaProntaCompanies = (allFoundCompanies ?? []).filter((c: any) => {
-      const cnpj = c.cnpj?.replace(/\D+/g, '');
-      return !allProcessedCnpjs.has(cnpj);
-    });
-
-    const filaPronta = filaProntaCompanies.length;
-    const ultimaEmpresa = allFoundCompanies?.sort((a: any, b: any) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )[0];
-
-    const empresasHoje = (allFoundCompanies ?? []).filter((c: any) => 
-      c.created_at >= fromISO && (!toISO || c.created_at <= toISO)
-    ).length;
+    const empresasHojeQ = supabase
+      .from('companies')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', fromISO);
+    if (toISO) empresasHojeQ.lte('created_at', toISO);
+    const empresasHoje = (await empresasHojeQ).count ?? 0;
 
     const { data: autos } = await supabase.from('automatic_company_queries').select('enabled,next_run_at,status');
     const automacoesAtivas = (autos ?? []).filter((a: any) => a.enabled).length;
@@ -112,6 +109,7 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
       .map((a: any) => a.next_run_at)
       .filter(Boolean)
       .sort()[0] ?? null;
+
 
     // ------ Envio (via email_send_queue) ------
     // "enviado" = status 'sent'; a data considerada é updated_at (confirmação do envio).
