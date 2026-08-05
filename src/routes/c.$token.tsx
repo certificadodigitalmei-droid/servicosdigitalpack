@@ -74,7 +74,7 @@ function TokenHomePage() {
       const elapsed = Date.now() - started;
       if (paidAt && elapsed >= MIN_MS) {
         setIssuing(false);
-        navigate({ to: '/c/$token', params: { token }, search: {}, replace: true });
+        navigate({ to: '/c/$token', params: { token }, search: (prev: any) => prev, replace: true });
       }
     };
     check();

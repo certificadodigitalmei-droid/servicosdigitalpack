@@ -409,7 +409,7 @@ function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <MetricCard icon={<LinkIcon className="h-5 w-5" />} label="Links gerados" value={stats.linksTotal} color="bg-slate-100 text-slate-700" hint="Links criados no período" />
-        <MetricCard icon={<CheckCircle2 className="h-5 w-5" />} label="E-mails enviados com sucesso" value={stats.emailsSent} color="bg-emerald-50 text-emerald-600" hint="E-mails marcados como enviado no período" />
+        <MetricCard icon={<CheckCircle2 className="h-5 w-5" />} label="E-mails enviados com sucesso" value={stats.emailsSent} color="bg-emerald-50 text-emerald-600" hint="E-mails marcados como enviado no período selecionado" />
         <MetricCard icon={<Link2 className="h-5 w-5" />} label="Acessos na primeira página" value={stats.viewLink} total={stats.viewLinkTotal} color="bg-blue-50 text-brand-blue" hint="Únicos por navegador/dispositivo" />
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
