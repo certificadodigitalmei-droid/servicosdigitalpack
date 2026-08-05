@@ -130,7 +130,11 @@ function PanelLayout() {
     setAutoEnabled(next);
     try {
       await doToggleAuto({ data: { enabled: next } });
-      toast.success(next ? 'Automação 24/7 ativada na nuvem.' : 'Automação desativada.');
+      if (next) {
+        toast.success('Automação 24/7 ativada na nuvem.');
+      } else {
+        toast.info('Envios pausados pelo usuário.');
+      }
     } catch (e: any) {
       setAutoEnabled(!next);
       toast.error('Erro ao mudar status: ' + (e?.message || 'erro'));
@@ -435,20 +439,20 @@ function PanelLayout() {
                     autoEnabled ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-300"
                   )} />
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-1">
-                    {autoEnabled === null ? "Nuvem: Carregando..." : autoEnabled ? "Nuvem: Ativo" : "Nuvem: Off"}
+                    {autoEnabled === null ? "Nuvem: Carregando..." : autoEnabled ? "Nuvem: Ativo" : "Nuvem: Pausado"}
                   </span>
                   <Button
                     size="icon"
                     variant={autoEnabled ? "default" : "outline"}
                     className={cn(
                       "h-8 w-8 rounded-md transition-all",
-                      autoEnabled ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-slate-400"
+                      autoEnabled ? "bg-red-500 hover:bg-red-600 text-white" : "bg-emerald-500 hover:bg-emerald-600 text-white border-none"
                     )}
                     onClick={handleToggleAuto}
                     disabled={loadingAuto}
-                    title={autoEnabled ? "Desativar automação 24/7" : "Ativar automação 24/7 (Cloud)"}
+                    title={autoEnabled ? "Pausar envios na nuvem" : "Retomar envios na nuvem"}
                   >
-                    {loadingAuto ? <Loader2 className="h-4 w-4 animate-spin" /> : (autoEnabled ? <Power className="h-4 w-4" /> : <PowerOff className="h-4 w-4" />)}
+                    {loadingAuto ? <Loader2 className="h-4 w-4 animate-spin" /> : (autoEnabled ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />)}
                   </Button>
                 </div>
 
