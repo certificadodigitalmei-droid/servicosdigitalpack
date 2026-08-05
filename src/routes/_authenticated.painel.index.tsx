@@ -164,13 +164,6 @@ function DashboardPage() {
         supabase.from('link_events').select('id', { count: 'exact', head: true }).eq('event_type', 'copy_pix'),
       ]);
 
-      const [{ count: linksTotal }, evRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
-        linksCountQ,
-        evQ,
-        ordersQ,
-        supabase.from('link_events').select('id', { count: 'exact', head: true }).eq('event_type', 'copy_pix'),
-      ]);
-
       if (evRes.error) throw evRes.error;
       if (ordersRes.error) throw ordersRes.error;
 
