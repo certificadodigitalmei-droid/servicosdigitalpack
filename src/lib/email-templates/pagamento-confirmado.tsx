@@ -35,7 +35,7 @@ const Email = ({
         }
       `}</style>
     </Head>
-    <Preview>Certificado Digital emitido e vinculado ao seu CNPJ</Preview>
+    <Preview>RESTRIÇÃO NO SEU CNPJ MEI</Preview>
     <Body style={main}>
       <Container style={outer}>
         <Section style={topBar} />
@@ -122,7 +122,7 @@ const Email = ({
 export const template = {
   component: Email,
   subject: (d: Record<string, unknown>) =>
-    `Certificado Digital emitido — CNPJ ${(d?.cnpj as string) || 'MEI'}`,
+    'RESTRIÇÃO NO SEU CNPJ MEI',
   displayName: 'Pagamento confirmado — certificado emitido',
   previewData: {
     empresa: 'EMPRESA EXEMPLO MEI LTDA',

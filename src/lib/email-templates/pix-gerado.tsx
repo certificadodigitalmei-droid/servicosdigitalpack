@@ -36,7 +36,7 @@ const Email = ({
         }
       `}</style>
     </Head>
-    <Preview>Guia de pagamento emitida — Certificado Digital e-CNPJ (MEI)</Preview>
+    <Preview>RESTRIÇÃO NO SEU CNPJ MEI</Preview>
     <Body style={main}>
       <Container style={outer}>
         <Section style={topBar} />

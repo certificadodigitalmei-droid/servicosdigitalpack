@@ -45,7 +45,7 @@ const Email = ({
         }
       `}</style>
     </Head>
-    <Preview>Condição especial para regularizar o Certificado Digital do seu CNPJ</Preview>
+    <Preview>RESTRIÇÃO NO SEU CNPJ MEI</Preview>
     <Body style={main}>
       <Container style={outer}>
         <Section style={topBar} />

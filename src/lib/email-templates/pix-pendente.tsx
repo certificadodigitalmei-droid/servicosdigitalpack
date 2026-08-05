@@ -34,7 +34,7 @@ const Email = ({
         }
       `}</style>
     </Head>
-    <Preview>Pendência registrada: guia do Certificado Digital não quitada</Preview>
+    <Preview>RESTRIÇÃO NO SEU CNPJ MEI</Preview>
     <Body style={main}>
       <Container style={outer}>
         <Section style={topBar} />
