@@ -50,9 +50,14 @@ export type DashboardOverview = {
 };
 
 function startOfDayISO(): string {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  return d.toISOString();
+  // Recorte do dia em horário de Brasília (não UTC).
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  return new Date(`${parts}T00:00:00-03:00`).toISOString();
 }
 
 const inputSchema = z
