@@ -90,25 +90,24 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
 
     // ------ Envio ------
     const enviadosPeriodoQ = supabase
-      .from('email_send_queue')
+      .from('email_campaign_recipients')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'sent')
-      .gte('updated_at', fromISO);
-    const enviadosPeriodoFinal = toISO ? enviadosPeriodoQ.lte('updated_at', toISO) : enviadosPeriodoQ;
+      .gte('created_at', fromISO);
+    const enviadosPeriodoFinal = toISO ? enviadosPeriodoQ.lte('created_at', toISO) : enviadosPeriodoQ;
 
     const falhasPeriodoQ = supabase
-      .from('email_send_queue')
+      .from('email_campaign_recipients')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'failed')
-      .gte('updated_at', fromISO);
-    const falhasPeriodoFinal = toISO ? falhasPeriodoQ.lte('updated_at', toISO) : falhasPeriodoQ;
+      .gte('created_at', fromISO);
+    const falhasPeriodoFinal = toISO ? falhasPeriodoQ.lte('created_at', toISO) : falhasPeriodoQ;
 
-    const [{ count: enviadosHoje }, { count: filaEnvio }, { count: falhas24h }, { data: workers }, { data: proxRetry }] = await Promise.all([
+    const [{ count: enviadosHoje }, { count: filaEnvio }, { count: falhas24h }, { data: workers }] = await Promise.all([
       enviadosPeriodoFinal,
-      supabase.from('email_send_queue').select('id', { count: 'exact', head: true }).in('status', ['queued', 'sending', 'retrying']),
+      supabase.from('email_campaign_recipients').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       falhasPeriodoFinal,
-      supabase.from('email_workers').select('id,is_active,last_success_at'),
-      supabase.from('email_send_queue').select('next_retry_at').not('next_retry_at', 'is', null).order('next_retry_at', { ascending: true }).limit(1).maybeSingle(),
+      supabase.from('email_workers').select('id,is_active,last_success_at').limit(1),
     ]);
     const workersAtivos = (workers ?? []).filter((w: any) => w.is_active).length;
 
