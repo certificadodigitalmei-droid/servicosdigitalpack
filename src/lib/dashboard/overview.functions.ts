@@ -172,7 +172,7 @@ export const getDashboardOverview = createServerFn({ method: 'GET' })
         fila: filaEnvio ?? 0,
         falhas24h: falhas24h ?? 0,
         workersAtivos,
-        proximoRetry: (proxRetry as any)?.next_retry_at ?? null,
+        proximoRetry: null,
       },
       links: {
         total: linksTotal ?? 0,
