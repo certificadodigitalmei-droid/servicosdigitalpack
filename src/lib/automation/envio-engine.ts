@@ -183,12 +183,13 @@ function msToNextHour() {
 const initial: State = {
   /* ... */
   subject: 'RESTRIÇÃO NO SEU CNPJ MEI',
-  delaySec: 36, // Rigorosamente 100 e-mails/hora (3600s / 100 = 36s)
+  delaySec: 36, // Ritmo de 100/h (3600/100 = 36s)
   batchLimit: 100, 
   limitMode: 'hourly', 
   dailyLimit: 2400, 
-  hourlyLimit: 100, // Limite fixo em 100 por hora
+  hourlyLimit: 100,
   hourlyRestMin: 0, 
+
 
   stopAtDaily: 0,
 
