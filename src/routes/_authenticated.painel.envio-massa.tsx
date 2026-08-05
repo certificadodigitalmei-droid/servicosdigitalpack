@@ -34,7 +34,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { getEmailMetrics } from '@/lib/emails/email-metrics.functions';
 import { PipelineStrip } from '@/components/painel/PipelineStrip';
-import { AguardandoEnvioCard } from '@/components/painel/PipelineQueues';
+import { FilaUnicaCard, SendHealthCard, FlowSettingsCard } from '@/components/painel/FilaUnica';
 
 import { useStore } from '@/lib/automation/store';
 import { DateRangeFilter, computeDateRange, type DatePreset } from '@/components/painel/DateRangeFilter';
@@ -301,7 +301,11 @@ function EnvioMassa() {
 
       <PipelineStrip />
 
-      <AguardandoEnvioCard />
+      <SendHealthCard />
+
+      <FlowSettingsCard />
+
+      <FilaUnicaCard />
 
 
 
@@ -748,51 +752,6 @@ function EnvioMassa() {
               </div>
             </div>
 
-            {/* Fila logo abaixo do log, sem espaço em branco */}
-            <div>
-              <div className="mb-1 flex items-center justify-between">
-                <Label className="text-xs flex items-center gap-1">
-                  <Send className="h-3.5 w-3.5" /> Fila ({queue.length})
-                </Label>
-              </div>
-              <div className="max-h-[360px] overflow-auto rounded-md border">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-white">
-                    <tr className="border-b text-left text-xs text-slate-500">
-                      <th className="py-2 pl-2">#</th>
-                      <th>E-mail</th>
-                      <th>Empresa</th>
-                      <th>Status</th>
-                      <th className="text-right pr-2">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {queue.length === 0 ? (
-                      <tr><td colSpan={5} className="p-3 text-center text-xs text-slate-500">Sem destinatários na fila.</td></tr>
-                    ) : queue.map((q, i) => (
-                      <tr key={q.id} className="border-b last:border-0 hover:bg-slate-50">
-                        <td className="py-2 pl-2 text-slate-500">{i + 1}</td>
-                        <td className="truncate">{q.email}</td>
-                        <td className="max-w-[180px] truncate">{q.company_name}</td>
-                        <td><StatusBadge status={q.status} message={q.message} /></td>
-                        <td className="text-right pr-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2"
-                            disabled={running || q.status === 'sending'}
-                            onClick={() => sendSingle(q)}
-                            title="Enviar apenas este"
-                          >
-                            <Zap className="h-3.5 w-3.5" /> Enviar
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

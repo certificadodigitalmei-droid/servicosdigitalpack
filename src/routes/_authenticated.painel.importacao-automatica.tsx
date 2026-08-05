@@ -41,7 +41,7 @@ import {
 } from '@/components/painel/DateRangeFilter';
 import { WipeAllButton, EMPTY_UUID } from '@/components/painel/WipeAllButton';
 import { PipelineStrip } from '@/components/painel/PipelineStrip';
-import { AguardandoLinkCard, AguardandoEnvioCard } from '@/components/painel/PipelineQueues';
+import { FilaUnicaCard, FlowSettingsCard } from '@/components/painel/FilaUnica';
 
 
 export const Route = createFileRoute('/_authenticated/painel/importacao-automatica')({
@@ -240,10 +240,9 @@ function ImportacaoAutomaticaPage() {
 
       <PipelineStrip />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <AguardandoLinkCard />
-        <AguardandoEnvioCard />
-      </div>
+      <FlowSettingsCard />
+
+      <FilaUnicaCard />
 
 
 
@@ -499,108 +498,6 @@ function ImportacaoAutomaticaPage() {
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* 2. Fila em tempo real */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-emerald-600" />
-                2. Fila em tempo real
-                <Badge variant="outline" className="ml-2">
-                  {pendingQueue.length} aguardando envio
-                </Badge>
-              </CardTitle>
-              <CardDescription className="mt-1">
-                Empresas já importadas que ainda não tiveram o e-mail disparado. Assim que o
-                Envio em Massa confirmar o envio, o item some daqui e vai para
-                <strong> E-mails Enviados</strong> — só então a próxima importação é liberada.
-              </CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pendingQueue.length === 0}
-              onClick={() => {
-                if (!confirm(`Remover ${pendingQueue.length} pendente(s) da fila? O histórico de envios não é afetado.`)) return;
-                import('@/lib/automation/envio-engine').then((m) => m.clearPendingQueue());
-              }}
-            >
-              Limpar fila
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          {pendingQueue.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50 py-10 text-center">
-              <div className="grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-400">
-                <Inbox className="h-5 w-5" />
-              </div>
-              <div className="text-sm font-medium text-slate-700">
-                Nenhuma empresa aguardando envio
-              </div>
-              <div className="max-w-md text-xs text-slate-500">
-                {autoImport
-                  ? envioAtivo
-                    ? 'Buscando a próxima empresa na API…'
-                    : 'Ative o Envio em Massa em modo real para começar o ciclo.'
-                  : 'Ative a Importação automática acima para começar a alimentar a fila.'}
-              </div>
-            </div>
-          ) : (
-            <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
-              {pendingQueue.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-semibold text-slate-900 tabular-nums">
-                        {formatCNPJ(item.cnpj)}
-                      </span>
-                      {item.status === 'sending' ? (
-                        <Badge className="bg-amber-500">enviando…</Badge>
-                      ) : (
-                        <Badge variant="outline">pendente</Badge>
-                      )}
-                    </div>
-                    <div className="mt-0.5 truncate text-sm text-slate-700">
-                      {item.company_name || '—'}
-                    </div>
-                    <div className="mt-0.5 text-xs text-slate-500">
-                      {item.email}
-                      {(item.municipio || item.uf) && (
-                        <span className="ml-2">
-                          · 📍 {[item.municipio, item.uf].filter(Boolean).join(' / ')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 gap-1.5">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copy(item.cnpj)}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                    {item.publicUrl && (
-                      <a href={item.publicUrl} target="_blank" rel="noreferrer">
-                        <Button size="sm" variant="ghost">
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      </a>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
         </CardContent>
       </Card>
 
