@@ -21,7 +21,7 @@ import {
   MessageSquare,
   Cloud,
   CloudDownload,
-  
+  ClipboardList,
   Loader2,
   BellRing,
   Trash2,
@@ -313,6 +313,7 @@ function PanelLayout() {
         { title: 'Exibição do Site', icon: LayoutDashboard, to: '/painel/exibicao-site' },
         { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
         { title: 'API Casa dos Dados', icon: KeyRound, to: '/painel/api-casa-dos-dados' },
+        { title: 'Auditoria de Fluxo', icon: ClipboardList, to: '/painel/auditoria' },
         { title: 'Modelos de E-mail', icon: Mail, to: '/painel/modelos-email' },
         { title: 'Remetente de E-mail', icon: Send, to: '/painel/remetente-email' },
       ],

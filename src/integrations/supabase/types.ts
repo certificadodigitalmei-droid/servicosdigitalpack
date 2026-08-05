@@ -471,6 +471,41 @@ export type Database = {
           },
         ]
       }
+      automation_audit_logs: {
+        Row: {
+          cnpj: string | null
+          company_id: string | null
+          created_at: string | null
+          details: Json | null
+          event_type: string
+          id: string
+        }
+        Insert: {
+          cnpj?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          event_type: string
+          id?: string
+        }
+        Update: {
+          cnpj?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          event_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_audit_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       casa_dos_dados_settings: {
         Row: {
           api_base_url: string | null
@@ -1986,6 +2021,13 @@ export type Database = {
           owner_user_id: string
           quantity_per_run: number
         }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       recover_stale_automations: {
         Args: { _older_than?: string }

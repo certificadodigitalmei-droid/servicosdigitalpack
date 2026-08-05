@@ -42,6 +42,7 @@ import { Route as AuthenticatedPainelEnviadosRouteImport } from './routes/_authe
 import { Route as AuthenticatedPainelEmpresasImportadasRouteImport } from './routes/_authenticated.painel.empresas-importadas'
 import { Route as AuthenticatedPainelConsultaAutomaticaRouteImport } from './routes/_authenticated.painel.consulta-automatica'
 import { Route as AuthenticatedPainelConfiguracoesPagamentoRouteImport } from './routes/_authenticated.painel.configuracoes-pagamento'
+import { Route as AuthenticatedPainelAuditoriaRouteImport } from './routes/_authenticated.painel.auditoria'
 import { Route as AuthenticatedPainelApiCasaDosDadosRouteImport } from './routes/_authenticated.painel.api-casa-dos-dados'
 import { Route as AuthenticatedPainelEmpresasImportadasIndexRouteImport } from './routes/_authenticated.painel.empresas-importadas.index'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -243,6 +244,12 @@ const AuthenticatedPainelConfiguracoesPagamentoRoute =
     path: '/configuracoes-pagamento',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelAuditoriaRoute =
+  AuthenticatedPainelAuditoriaRouteImport.update({
+    id: '/auditoria',
+    path: '/auditoria',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 const AuthenticatedPainelApiCasaDosDadosRoute =
   AuthenticatedPainelApiCasaDosDadosRouteImport.update({
     id: '/api-casa-dos-dados',
@@ -336,6 +343,7 @@ export interface FileRoutesByFullPath {
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/api-casa-dos-dados': typeof AuthenticatedPainelApiCasaDosDadosRoute
+  '/painel/auditoria': typeof AuthenticatedPainelAuditoriaRoute
   '/painel/configuracoes-pagamento': typeof AuthenticatedPainelConfiguracoesPagamentoRoute
   '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
@@ -383,6 +391,7 @@ export interface FileRoutesByTo {
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
   '/painel/api-casa-dos-dados': typeof AuthenticatedPainelApiCasaDosDadosRoute
+  '/painel/auditoria': typeof AuthenticatedPainelAuditoriaRoute
   '/painel/configuracoes-pagamento': typeof AuthenticatedPainelConfiguracoesPagamentoRoute
   '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/painel/enviados': typeof AuthenticatedPainelEnviadosRoute
@@ -432,6 +441,7 @@ export interface FileRoutesById {
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout_/$token': typeof CheckoutTokenRoute
   '/_authenticated/painel/api-casa-dos-dados': typeof AuthenticatedPainelApiCasaDosDadosRoute
+  '/_authenticated/painel/auditoria': typeof AuthenticatedPainelAuditoriaRoute
   '/_authenticated/painel/configuracoes-pagamento': typeof AuthenticatedPainelConfiguracoesPagamentoRoute
   '/_authenticated/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/_authenticated/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
@@ -482,6 +492,7 @@ export interface FileRouteTypes {
     | '/certificado-mei/$token'
     | '/checkout/$token'
     | '/painel/api-casa-dos-dados'
+    | '/painel/auditoria'
     | '/painel/configuracoes-pagamento'
     | '/painel/consulta-automatica'
     | '/painel/empresas-importadas'
@@ -529,6 +540,7 @@ export interface FileRouteTypes {
     | '/certificado-mei/$token'
     | '/checkout/$token'
     | '/painel/api-casa-dos-dados'
+    | '/painel/auditoria'
     | '/painel/configuracoes-pagamento'
     | '/painel/consulta-automatica'
     | '/painel/enviados'
@@ -577,6 +589,7 @@ export interface FileRouteTypes {
     | '/certificado-mei/$token'
     | '/checkout_/$token'
     | '/_authenticated/painel/api-casa-dos-dados'
+    | '/_authenticated/painel/auditoria'
     | '/_authenticated/painel/configuracoes-pagamento'
     | '/_authenticated/painel/consulta-automatica'
     | '/_authenticated/painel/empresas-importadas'
@@ -871,6 +884,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelConfiguracoesPagamentoRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/auditoria': {
+      id: '/_authenticated/painel/auditoria'
+      path: '/auditoria'
+      fullPath: '/painel/auditoria'
+      preLoaderRoute: typeof AuthenticatedPainelAuditoriaRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
     '/_authenticated/painel/api-casa-dos-dados': {
       id: '/_authenticated/painel/api-casa-dos-dados'
       path: '/api-casa-dos-dados'
@@ -1007,6 +1027,7 @@ const AuthenticatedPainelGeradorLinksRouteWithChildren =
 
 interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelApiCasaDosDadosRoute: typeof AuthenticatedPainelApiCasaDosDadosRoute
+  AuthenticatedPainelAuditoriaRoute: typeof AuthenticatedPainelAuditoriaRoute
   AuthenticatedPainelConfiguracoesPagamentoRoute: typeof AuthenticatedPainelConfiguracoesPagamentoRoute
   AuthenticatedPainelConsultaAutomaticaRoute: typeof AuthenticatedPainelConsultaAutomaticaRoute
   AuthenticatedPainelEmpresasImportadasRoute: typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
@@ -1031,6 +1052,7 @@ interface AuthenticatedPainelRouteChildren {
 const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelApiCasaDosDadosRoute:
     AuthenticatedPainelApiCasaDosDadosRoute,
+  AuthenticatedPainelAuditoriaRoute: AuthenticatedPainelAuditoriaRoute,
   AuthenticatedPainelConfiguracoesPagamentoRoute:
     AuthenticatedPainelConfiguracoesPagamentoRoute,
   AuthenticatedPainelConsultaAutomaticaRoute:

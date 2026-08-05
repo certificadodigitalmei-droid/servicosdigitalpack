@@ -334,6 +334,14 @@ export async function runImportBatch(
         if (error) throw new Error(`insert company: ${error.message}`);
         companyId = ins.id as string;
         isNewCompany = true;
+        
+        // Log de auditoria: Importação
+        await supabaseAdmin.from('automation_audit_logs').insert({
+          company_id: companyId,
+          cnpj: cnpj,
+          event_type: 'import',
+          details: { source: 'casa_dos_dados', batch_date: input.date }
+        });
       }
 
       const { data: existingLink } = await supabaseAdmin
@@ -379,6 +387,14 @@ export async function runImportBatch(
         });
         if (lErr) throw new Error(`insert link: ${lErr.message}`);
         isNewLink = true;
+
+        // Log de auditoria: Link Criado
+        await supabaseAdmin.from('automation_audit_logs').insert({
+          company_id: companyId,
+          cnpj: cnpj,
+          event_type: 'link_created',
+          details: { token: publicToken, origin: 'simple_flow' }
+        });
       }
 
       imported.push({

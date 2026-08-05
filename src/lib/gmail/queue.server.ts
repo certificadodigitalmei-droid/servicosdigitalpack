@@ -26,6 +26,10 @@ export async function sendOneNow(row: QueueRow) {
     .update({ status: 'sending', attempts: row.attempts + 1 })
     .eq('id', row.id);
 
+  // Log de auditoria: Iniciando Envio
+  const { data: qRow } = await supabaseAdmin.from('email_send_queue').select('idempotency_key').eq('id', row.id).maybeSingle();
+  const companyCnpj = qRow?.idempotency_key?.replace('mass-email-', '');
+
   try {
     const result = await sendGmailMessage({
       to: row.to_email,
@@ -43,6 +47,15 @@ export async function sendOneNow(row: QueueRow) {
         next_retry_at: null,
       })
       .eq('id', row.id);
+    
+    // Log de auditoria: E-mail Enviado
+    if (companyCnpj) {
+      await supabaseAdmin.from('automation_audit_logs').insert({
+        cnpj: companyCnpj,
+        event_type: 'email_sent',
+        details: { message_id: result.messageId }
+      });
+    }
     return { ok: true as const };
   } catch (e) {
     const err = e as InstanceType<typeof GmailError>;
@@ -60,6 +73,15 @@ export async function sendOneNow(row: QueueRow) {
         next_retry_at: shouldGiveUp ? null : new Date(Date.now() + backoffSec * 1000).toISOString(),
       })
       .eq('id', row.id);
+
+    // Log de auditoria: Falha no Envio
+    if (companyCnpj) {
+      await supabaseAdmin.from('automation_audit_logs').insert({
+        cnpj: companyCnpj,
+        event_type: 'email_failed',
+        details: { error: err.message, code: err.code, final: shouldGiveUp }
+      });
+    }
     return { ok: false as const, retry: !shouldGiveUp };
   }
 }
