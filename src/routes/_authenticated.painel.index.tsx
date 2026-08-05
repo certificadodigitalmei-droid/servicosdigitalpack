@@ -178,7 +178,7 @@ function DashboardPage() {
       const [{ count: linksTotal }, emailsSentRes, evRes, ordersRes, { count: copyPixAllTime }] = await Promise.all([
         linksCountQ,
         supabase
-          .from('email_campaign_recipients')
+          .from('email_send_queue')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'sent')
           .gte('created_at', range.from ? range.from.toISOString() : '2000-01-01')
