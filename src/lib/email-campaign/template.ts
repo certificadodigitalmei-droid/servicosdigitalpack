@@ -297,7 +297,12 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   const logo = nl2br(S(D.logoText));
   const heroTitle = inlineFormat(S(D.heroTitle));
   const warningTitle = nl2br(S(D.warningTitle));
+  const warningItemsList = String(S(D.warningItems) || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
   const warningItems = inlineFormat(S(D.warningItems));
+
 
   const align = D.align;
   const px = D.contentPaddingX;
