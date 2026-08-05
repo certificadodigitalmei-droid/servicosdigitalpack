@@ -183,11 +183,11 @@ function msToNextHour() {
 const initial: State = {
   /* ... */
   subject: 'RESTRIÇÃO NO SEU CNPJ MEI',
-  delaySec: 36, // Ajustado para 100 e-mails/hora (36s)
+  delaySec: 36, // Rigorosamente 100 e-mails/hora (3600s / 100 = 36s)
   batchLimit: 100, 
   limitMode: 'hourly', 
-  dailyLimit: 2400, // 100 * 24
-  hourlyLimit: 100, // Limite ajustado para 100 por hora
+  dailyLimit: 2400, 
+  hourlyLimit: 100, // Limite fixo em 100 por hora
   hourlyRestMin: 0, 
 
   stopAtDaily: 0,
@@ -933,10 +933,9 @@ export async function startSending() {
     }
     if (stopFlag) break;
 
-    // Nunca ultrapassar 300 envios na janela de 60 minutos.
-    // Usamos sentThisHour como proxy simplificado, mas garantimos que 
-    // se throttleMode estiver on, o limite cai para 100/h.
-    const effectiveLimit = cur.throttleMode ? 50 : 100;
+    // Rigorosamente 100 e-mails por hora (3600s / 100 = 36s de intervalo).
+    // O effectiveLimit deve refletir o hourlyLimit configurado (100).
+    const effectiveLimit = cur.hourlyLimit || 100;
     if (cur.sentThisHour >= effectiveLimit) {
       const waitMs = msToNextHour();
       pushLog(`⏸ Limite ${effectiveLimit}/h atingido. Aguardando virada da hora...`);
