@@ -1,4 +1,4 @@
-<div className="hidden">Execute esta instrucao no projeto: remova exclua todas essas abas e suas funções:\nMensagem para Zap\nDisparo por Etapa\nE-mail Automático\nLog de E-mails</div>
+<div className="hidden">Execute esta instrucao no projeto: perfeito vamos deixa simples e funcional o sistema\n\naba de consulta altomatica\n\nconsutlando apenas empresas do dia atual que está e mostrando quantas disponiveis.\n\nimportação autoamtica iportando 5 e deixando na fila, sempre que estiver apoenas 1 ou 2 depois que o a aba de envio em massa puxar essas da fila que já foram inportadas e enviar o email, tras mais 5 etc assim funcinona, e envios em massa da mesma forma funcionando perfeitamente enviando os email para empresas</div>
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, FileCheck2, Lock, BadgeCheck, ArrowRight, Building2, Fingerprint, Clock } from "lucide-react";
 

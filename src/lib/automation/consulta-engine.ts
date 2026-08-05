@@ -66,7 +66,7 @@ type State = {
   autoImport: boolean;
   autoImportDelaySec: number;
   autoImportTarget: number; // 0 = infinito, senão para quando autoImportTotal >= alvo
-  bufferTarget: number; // quantas empresas manter prontas na fila
+  bufferTarget: number; // quantas empresas manter prontas na fila (alvo: 5)
   dateMode: 'today' | 'specific';
   selectedDate: string; // ISO yyyy-mm-dd
   filters: Filters;
@@ -102,9 +102,9 @@ const initial: State = {
   autoCount: false,
   autoIntervalSec: 30,
   autoImport: false,
-  autoImportDelaySec: 60,
+  autoImportDelaySec: 30,
   autoImportTarget: 0,
-  bufferTarget: 100,
+  bufferTarget: 5,
   dateMode: 'today',
   selectedDate: todayBRString(),
   filters: { only_mei: true, only_active: true, only_matriz: true, require_email: true },
@@ -493,11 +493,13 @@ function restartImportLoop() {
       (q) => q.status === 'pending' || q.status === 'sending',
     ).length;
 
-    // Sincronia 1:1: só importa se não houver nada pendente para enviar.
-    // Isso garante que o envio seja processado antes de puxar a próxima "mais recente".
-    if (pendingCount > 0) return;
+    // Regra: Importa 5 e deixa na fila. 
+    // Sempre que estiver apenas 1 ou 2, traz mais 5.
+    if (pendingCount > 2) return;
 
-    // Importa apenas 1 empresa (a mais recente disponível no topo da consulta)
+    const importBatchSize = 5;
+    // Importa o lote necessário para manter o fluxo
+    await runImportOnce({ silent: true, overrideLimit: importBatchSize });
     const r = await runImportOnce({ silent: true, overrideLimit: 1 });
     
     if (r.imported > 0) {
