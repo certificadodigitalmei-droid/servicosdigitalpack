@@ -163,7 +163,7 @@ function LinksGeradosPage() {
       // Contagem de e-mails enviados
       {
         let eqEmail = supabase
-          .from('email_campaign_recipients')
+          .from('email_send_queue')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'sent');
         if (range.gte) eqEmail = eqEmail.gte('created_at', range.gte);
