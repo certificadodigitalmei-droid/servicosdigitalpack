@@ -82,6 +82,16 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
       })
       .eq('id', row.id);
 
+    // Limite do provedor: pausa a fila INTEIRA até o horário indicado por ele.
+    if (isRateLimit) {
+      const until = new Date(Date.now() + backoffSec * 1000).toISOString();
+      await supabaseAdmin
+        .from('email_send_queue')
+        .update({ next_retry_at: until })
+        .in('status', ['queued', 'pending'])
+        .or(`next_retry_at.is.null,next_retry_at.lt.${until}`);
+    }
+
     // Log de auditoria: só registra falha real (rate limit não é falha)
     if (companyCnpj && !isRateLimit) {
       await supabaseAdmin.from('automation_audit_logs').insert({
@@ -90,8 +100,9 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
         details: { error: err.message, code: err.code, final: shouldGiveUp }
       });
     }
-    return { ok: false as const, retry: !shouldGiveUp };
+    return { ok: false as const, retry: !shouldGiveUp, rateLimited: isRateLimit, retryAfterSec: backoffSec };
   }
+
 }
 
 /** Teto rígido de envios por hora. */
@@ -110,16 +121,43 @@ export async function sentInLastHour(): Promise<number> {
 }
 
 /**
- * Processa até `maxBatch` e-mails pendentes da fila, respeitando a janela de
- * 1 hora ancorada no primeiro e-mail enviado (`computeSendWindow`).
+ * Devolve para a fila itens presos em "sending" há mais de 10 minutos
+ * (execução interrompida no meio do envio).
+ */
+export async function releaseStuckSending(minutes = 10): Promise<number> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const cutoff = new Date(Date.now() - minutes * 60 * 1000).toISOString();
+  const { data } = await supabaseAdmin
+    .from('email_send_queue')
+    .update({ status: 'queued' })
+    .eq('status', 'sending')
+    .lt('updated_at', cutoff)
+    .select('id');
+  return (data ?? []).length;
+}
+
+/** Máximo de e-mails disparados numa única execução do cron. */
+export const MAX_PER_TICK = 5;
+
+/** Espaçamento mínimo entre dois envios dentro da mesma execução. */
+const SPACING_MS = 1_200;
+
+/**
+ * Despacho por SALDO da janela deslizante de 1 hora.
+ *
+ * A cada execução calculamos quantos e-mails saíram nos últimos 60 minutos e
+ * enviamos o que falta para completar a cota (`hourlyLimit`), com no máximo
+ * `maxBatch` por execução. Assim, se uma execução do agendador falhar ou
+ * atrasar, a seguinte recupera o atraso — sem nunca ultrapassar o limite.
  */
 export async function processQueueInternal(
-  maxBatch = 10,
+  maxBatch = MAX_PER_TICK,
   hourlyLimit = HOURLY_LIMIT,
-  opts: { burst?: boolean; concurrency?: number } = {},
 ) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const { computeSendWindow } = await import('@/lib/pipeline/pipeline.server');
+
+  const released = await releaseStuckSending();
 
   const win = await computeSendWindow(supabaseAdmin as any, hourlyLimit);
   const lastHour = win.sentInWindow;
@@ -129,6 +167,7 @@ export async function processQueueInternal(
       processed: 0,
       sent: 0,
       failed: 0,
+      released,
       lastHour,
       remaining: 0,
       throttled: true,
@@ -137,8 +176,7 @@ export async function processQueueInternal(
       secondsToReset: win.secondsToReset,
     };
   }
-  const batch = Math.min(maxBatch, remaining);
-
+  const batch = Math.min(Math.max(1, maxBatch), remaining);
 
   const nowIso = new Date().toISOString();
   const { data: rows, error } = await supabaseAdmin
@@ -153,27 +191,32 @@ export async function processQueueInternal(
   const list = (rows ?? []) as QueueRow[];
   let sent = 0;
   let failed = 0;
+  let rateLimited = false;
+  let retryAfterSec = 0;
 
-  if (opts.burst) {
-    // Rajada: dispara em paralelo (blocos) até esgotar a cota da hora.
-    const concurrency = Math.max(1, Math.min(20, opts.concurrency ?? 10));
-    for (let i = 0; i < list.length; i += concurrency) {
-      const chunk = list.slice(i, i + concurrency);
-      const res = await Promise.all(chunk.map((row) => sendOneNow(row, { burst: true })));
-      for (const r of res) r.ok ? sent++ : failed++;
+  for (let i = 0; i < list.length; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, SPACING_MS));
+    const r = await sendOneNow(list[i]!);
+    if (r.ok) {
+      sent++;
+      continue;
     }
-  } else {
-    for (const row of list) {
-      const r = await sendOneNow(row);
-      if (r.ok) sent++;
-      else failed++;
+    if ((r as any).rateLimited) {
+      // O provedor pediu para esperar: encerra a execução agora.
+      rateLimited = true;
+      retryAfterSec = (r as any).retryAfterSec ?? 60;
+      break;
     }
+    failed++;
   }
 
   return {
     processed: list.length,
     sent,
     failed,
+    released,
+    rateLimited,
+    retryAfterSec,
     lastHour: lastHour + sent,
     remaining: Math.max(0, remaining - sent),
     throttled: false,
@@ -181,5 +224,5 @@ export async function processQueueInternal(
     windowEnd: win.windowEnd,
     secondsToReset: win.secondsToReset,
   };
-
 }
+

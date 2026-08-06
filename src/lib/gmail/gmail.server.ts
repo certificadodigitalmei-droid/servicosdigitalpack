@@ -177,9 +177,34 @@ export async function sendGmailMessage(opts: {
   );
 
   if (res.status === 429) {
-    const retryAfter = Number(res.headers.get('retry-after') || '60');
-    throw new GmailError('Rate limit da Gmail API', 429, 'rate_limited', retryAfter);
+    // A Google devolve "Retry after <ISO>" no corpo. Respeitamos esse horário
+    // em vez de tentar de novo em 60 s (o que só gera mais 429).
+    let reason = '';
+    let retryAfter = Number(res.headers.get('retry-after') || '0');
+    try {
+      const j: any = await res.json();
+      const msg: string = j?.error?.message ?? '';
+      reason = j?.error?.errors?.[0]?.reason || '';
+      const m = msg.match(/Retry after (\S+)/);
+      if (m?.[1]) {
+        const until = Date.parse(m[1]!);
+        if (Number.isFinite(until)) {
+          retryAfter = Math.max(retryAfter, Math.ceil((until - Date.now()) / 1000) + 5);
+        }
+      }
+    } catch {
+      /* corpo vazio */
+    }
+    if (!retryAfter || retryAfter < 30) retryAfter = 60;
+    throw new GmailError(
+      `Limite de envio do provedor${reason ? ` (${reason})` : ''} — nova tentativa em ${Math.ceil(retryAfter / 60)} min`,
+      429,
+      'rate_limited',
+      retryAfter,
+    );
   }
+
+
   if (res.status >= 500) {
     throw new GmailError(`Gmail 5xx (${res.status})`, res.status, 'server_error');
   }
