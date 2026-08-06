@@ -231,7 +231,7 @@ function PaymentGatewaysPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? 'Editar gateway' : 'Novo gateway SigiloPay'}</DialogTitle>
+            <DialogTitle>{editing ? 'Editar gateway' : `Novo gateway ${meta.label}`}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -239,36 +239,47 @@ function PaymentGatewaysPage() {
               <Input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Ex: SigiloPay Principal"
+                placeholder={`Ex: ${meta.label} Principal`}
               />
             </div>
             <div className="space-y-2">
               <Label>Provedor</Label>
-              <div className="rounded-md border bg-slate-50 px-3 py-2 text-sm text-slate-700">SigiloPay</div>
+              <Select
+                value={form.provider_type}
+                onValueChange={(v) => setForm({ ...form, provider_type: v as ProviderId })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="syncpay">SyncPay</SelectItem>
+                  <SelectItem value="sigilopay">SigiloPay</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>
-                Chave pública (x-public-key){' '}
+                {meta.publicLabel}{' '}
                 {editing && <span className="text-xs text-slate-500">(deixe em branco para manter)</span>}
               </Label>
               <Input
                 type="password"
                 value={form.public_key}
                 onChange={(e) => setForm({ ...form, public_key: e.target.value })}
-                placeholder="pk_..."
+                placeholder={meta.publicPlaceholder}
                 autoComplete="off"
               />
             </div>
             <div className="space-y-2">
               <Label>
-                Chave secreta (x-secret-key){' '}
+                {meta.secretLabel}{' '}
                 {editing && <span className="text-xs text-slate-500">(deixe em branco para manter)</span>}
               </Label>
               <Input
                 type="password"
                 value={form.secret_key}
                 onChange={(e) => setForm({ ...form, secret_key: e.target.value })}
-                placeholder="sk_..."
+                placeholder={meta.secretPlaceholder}
                 autoComplete="off"
               />
             </div>
@@ -277,7 +288,7 @@ function PaymentGatewaysPage() {
               <Input
                 value={form.base_url}
                 onChange={(e) => setForm({ ...form, base_url: e.target.value })}
-                placeholder={SIGILOPAY_META.defaultBase}
+                placeholder={meta.defaultBase}
               />
             </div>
             <div className="space-y-2">
