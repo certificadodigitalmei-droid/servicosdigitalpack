@@ -82,8 +82,8 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
       })
       .eq('id', row.id);
 
-    // Log de auditoria: Falha no Envio
-    if (companyCnpj) {
+    // Log de auditoria: só registra falha real (rate limit não é falha)
+    if (companyCnpj && !isRateLimit) {
       await supabaseAdmin.from('automation_audit_logs').insert({
         cnpj: companyCnpj,
         event_type: 'email_failed',
