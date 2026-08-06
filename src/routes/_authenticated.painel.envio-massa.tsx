@@ -16,7 +16,6 @@ import {
 import {
   Loader2,
   Play,
-  Pause,
   Square,
   RefreshCw,
   TestTube2,
@@ -174,9 +173,7 @@ function EnvioMassa() {
               className={`h-3 w-3 rounded-full ${
                 estado === 'enviando'
                   ? 'animate-pulse bg-emerald-500'
-                  : estado === 'pausado'
-                    ? 'bg-amber-500'
-                    : 'bg-slate-300'
+                  : 'bg-slate-300'
               }`}
             />
             <div>
