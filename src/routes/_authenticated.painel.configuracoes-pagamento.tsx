@@ -157,7 +157,9 @@ function PaymentGatewaysPage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {(gateways ?? []).map((g) => (
+          {(gateways ?? []).map((g) => {
+            const gm = PROVIDERS[(g.provider_type as ProviderId) ?? 'sigilopay'] ?? PROVIDERS.sigilopay;
+            return (
             <Card key={g.id} className={g.is_active ? 'border-emerald-400 shadow-sm' : ''}>
               <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
                 <div className="min-w-0">
@@ -170,9 +172,9 @@ function PaymentGatewaysPage() {
                     )}
                   </CardTitle>
                   <CardDescription>
-                    {SIGILOPAY_META.label}
+                    {gm.label}
                     <a
-                      href={SIGILOPAY_META.docsUrl}
+                      href={gm.docsUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="ml-2 inline-flex items-center gap-1 text-brand-blue underline"
@@ -203,19 +205,21 @@ function PaymentGatewaysPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-slate-600">
-                <div><span className="font-medium text-slate-700">Chave pública:</span> <code>{g.public_key_masked || '—'}</code></div>
-                <div><span className="font-medium text-slate-700">Chave secreta:</span> <code>{g.secret_key_masked || '—'}</code></div>
-                <div><span className="font-medium text-slate-700">Base URL:</span> {g.base_url || SIGILOPAY_META.defaultBase}</div>
-                {origin && (
-                  <div>
-                    <span className="font-medium text-slate-700">Webhook (colar no painel SigiloPay):</span>{' '}
-                    <code className="break-all">{origin}{SIGILOPAY_META.webhookPath}</code>
-                  </div>
-                )}
+                <div><span className="font-medium text-slate-700">{gm.publicLabel}:</span> <code>{g.public_key_masked || '—'}</code></div>
+                <div><span className="font-medium text-slate-700">{gm.secretLabel}:</span> <code>{g.secret_key_masked || '—'}</code></div>
+                <div><span className="font-medium text-slate-700">Base URL:</span> {g.base_url || gm.defaultBase}</div>
+                <div>
+                  <span className="font-medium text-slate-700">Webhook (colar no painel {gm.label}):</span>{' '}
+                  <code className="break-all">
+                    {g.provider_type === 'syncpay'
+                      ? `https://servicosdigitalpack.lovable.app${gm.webhookPath}`
+                      : `${origin}${gm.webhookPath}`}
+                  </code>
+                </div>
                 {g.notes && <div className="text-slate-500">{g.notes}</div>}
               </CardContent>
             </Card>
-          ))}
+          );})}
           {(gateways ?? []).length === 0 && (
             <div className="rounded-lg border border-dashed p-8 text-center text-sm text-slate-500">
               Nenhum gateway cadastrado.
