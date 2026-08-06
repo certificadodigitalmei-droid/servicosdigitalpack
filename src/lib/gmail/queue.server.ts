@@ -132,7 +132,7 @@ export async function releaseStuckSending(minutes = 10): Promise<number> {
 }
 
 /** Modo único: no máximo 1 e-mail por execução do agendador. */
-export const MAX_PER_TICK = 1;
+export const MAX_PER_TICK = 3;
 
 /** Espaçamento padrão entre dois envios (36 s = 100 e-mails por hora). */
 export const DEFAULT_SPACING_SEC = 36;
@@ -145,7 +145,7 @@ async function lastSentAt(): Promise<number | null> {
     .select('updated_at')
     .eq('status', 'sent')
     .order('updated_at', { ascending: false })
-    .limit(1)
+    .limit(_maxBatch)
     .maybeSingle();
   return data?.updated_at ? new Date(data.updated_at).getTime() : null;
 }
@@ -212,7 +212,7 @@ export async function processQueueInternal(
     .eq('last_status_code', 429)
     .gt('next_retry_at', new Date().toISOString())
     .order('next_retry_at', { ascending: false })
-    .limit(1)
+    .limit(_maxBatch)
     .maybeSingle();
   if (activeRateLimit?.next_retry_at) {
     const retryAt = new Date(activeRateLimit.next_retry_at).getTime();
@@ -238,7 +238,7 @@ export async function processQueueInternal(
     .in('status', ['queued', 'pending'])
     .or(`next_retry_at.is.null,next_retry_at.lte.${nowIso}`)
     .order('created_at', { ascending: true })
-    .limit(1);
+    .limit(_maxBatch);
   if (error) throw new Error(error.message);
 
   const row = (rows ?? [])[0] as QueueRow | undefined;
