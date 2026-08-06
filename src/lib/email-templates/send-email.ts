@@ -58,6 +58,17 @@ export async function sendTemplateEmail(
   to: string,
   options: SendTemplateEmailOptions = {}
 ): Promise<SendTemplateEmailResult> {
+  const disabledFollowUps = new Set([
+    'pix-gerado',
+    'pix-pendente',
+    'oferta-desconto',
+    'pagamento-confirmado',
+  ])
+  if (disabledFollowUps.has(templateName)) {
+    console.info(`[email] envio desativado por regra do produto: ${templateName}`)
+    return { sent: false, reason: 'recipient_suppressed' }
+  }
+
   const sender = await resolveSender();
   const apiKey = process.env.LOVABLE_API_KEY
   if (!apiKey) {

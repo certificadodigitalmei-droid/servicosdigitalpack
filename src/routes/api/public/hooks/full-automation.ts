@@ -58,8 +58,8 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
           // 2. Links sem envio -> entrar na fila
           stats.sync = await syncMassEmailQueue(Math.max(25, flow.importBatchSize));
 
-          // 3. Despachar fila — modo ÚNICO: 1 e-mail a cada `pacedDelaySec`
-          //    segundos (padrão 36 s = 100/h), com teto da janela de 1 hora.
+          // 3. Despachar fila — modo ÚNICO e contínuo: somente o e-mail
+          //    principal, 1 a cada `pacedDelaySec` segundos (padrão 36 s).
           const { processQueueInternal, MAX_PER_TICK } = await import('@/lib/gmail/queue.server');
           stats.queue = await processQueueInternal(
             MAX_PER_TICK,
@@ -69,11 +69,7 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
 
 
 
-          // 4. Régua de cobrança (PIX pendente etc.)
-          const { runNotificationCadence } = await import('@/lib/emails/order-emails.server');
-          stats.cadence = await runNotificationCadence();
-
-          // 5. TRAVA: só importa quando o estoque pendente estiver zerado
+          // 4. TRAVA: só importa quando o estoque pendente estiver zerado
           const { computePipelineState } = await import('@/lib/pipeline/pipeline.server');
           const state = await computePipelineState(supabaseAdmin as any);
           stats.pipeline = state;
@@ -135,7 +131,7 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
 
           }
 
-          // 6. Reconciliação de métricas
+          // 5. Reconciliação de métricas
           const { reconcileMetrics } = await import('@/lib/automation/reconcile.server');
           stats.reconcile = await reconcileMetrics();
 

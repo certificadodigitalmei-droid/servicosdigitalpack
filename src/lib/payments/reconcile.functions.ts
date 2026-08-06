@@ -79,27 +79,11 @@ export const reconcilePendingOrders = createServerFn({ method: "POST" })
             updated_at: new Date().toISOString(),
           })
           .eq("id", order.id);
-        const { sendPaidEmail } = await import("@/lib/emails/order-emails.server");
-        await sendPaidEmail(order.id);
         updated++;
       }
     }
 
-    // Aproveita o mesmo ciclo para rodar a régua oficial de cobrança
-    // (30 min + 1x por hora até as 22h, 1 e-mail por empresa).
-    let reminders: { sent: number; checked: number } = { sent: 0, checked: 0 };
-    try {
-      const { runNotificationCadence } = await import("@/lib/emails/order-emails.server");
-      const cadence = await runNotificationCadence();
-      reminders = {
-        sent: cadence.firstReminders + cadence.hourlyReminders,
-        checked: cadence.checked,
-      };
-    } catch (err) {
-      console.error("[reconcile] falha na régua de cobrança", err);
-    }
-
-    return { checked: pending.length, updated, reminders };
+    return { checked: pending.length, updated };
   });
 
 export const markOrderPaidManually = createServerFn({ method: "POST" })
@@ -121,7 +105,5 @@ export const markOrderPaidManually = createServerFn({ method: "POST" })
       .update({ status: "paid", paid_at: nowIso, updated_at: nowIso })
       .eq("id", data.orderId);
     if (error) throw error;
-    const { sendPaidEmail } = await import("@/lib/emails/order-emails.server");
-    await sendPaidEmail(data.orderId);
     return { ok: true, paid_at: nowIso };
   });

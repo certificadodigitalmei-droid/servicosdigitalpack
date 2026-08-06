@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,6 @@ import { formatCNPJ } from '@/lib/format';
 import {
   getUnifiedQueue,
   getSendHealth,
-  getSendWindow,
   getFlowSettings,
   updateFlowSettings,
   type QueueStage,
@@ -175,7 +174,7 @@ export function SendHealthCard() {
           label="Enviados na última hora"
           value={data?.enviadosUltimaHora ?? 0}
           cls="text-emerald-600"
-          hint="Aceitos pelo provedor nos últimos 60 minutos. É este número que consome a cota da janela."
+          hint="Aceitos pelo provedor nos últimos 60 minutos. É apenas uma medição do ritmo, não um bloqueio."
         />
         <Metric
           label="Enviados (total)"
@@ -223,114 +222,7 @@ export function SendHealthCard() {
 }
 
 
-/** Janela de 1 hora: abre no 1º envio, mostra restante e conta regressiva. */
-export function SendWindowCard() {
-  const fetchWindow = useServerFn(getSendWindow);
-  const { data } = useQuery({
-    queryKey: ['send-window'],
-    queryFn: () => fetchWindow(),
-    refetchInterval: 5_000,
-  });
-
-  // Countdown local entre os refetches (atualiza a cada segundo).
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  const endMs = data?.windowEnd ? new Date(data.windowEnd).getTime() : null;
-  const secondsLeft = endMs ? Math.max(0, Math.round((endMs - now) / 1000)) : 0;
-  const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
-  const ss = String(secondsLeft % 60).padStart(2, '0');
-
-  const limit = data?.limit ?? 100;
-  const sent = data?.open && secondsLeft > 0 ? (data?.sentInWindow ?? 0) : 0;
-  const remaining = Math.max(0, limit - sent);
-  const pct = limit > 0 ? Math.min(100, Math.round((sent / limit) * 100)) : 0;
-  const esgotada = remaining === 0 && secondsLeft > 0;
-
-  return (
-    <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50/60 to-white">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Timer className="h-4 w-4 text-indigo-600" />
-          Janela de envio (1 hora)
-        </CardTitle>
-        <CardDescription>
-          O lote começa no primeiro e-mail e nunca passa do limite. Ao bater o limite, o próximo
-          lote só libera 1 hora depois do <strong>último e-mail enviado</strong>.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Metric label={`Enviados (de ${limit})`} value={sent} cls="text-indigo-700" />
-          <Metric label="Restam nesta janela" value={remaining} cls="text-emerald-700" />
-          <div className="rounded-lg border border-slate-200 bg-white p-3">
-            <div className="text-[11px] uppercase tracking-wide text-slate-500">Libera em</div>
-            <div className="text-xl font-bold tabular-nums text-slate-900">
-              {data?.open && secondsLeft > 0 ? `${mm}:${ss}` : '--:--'}
-            </div>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-3">
-            <div className="text-[11px] uppercase tracking-wide text-slate-500">Último envio</div>
-            <div className="text-xl font-bold text-slate-900">
-              {data?.lastSentAt
-                ? new Date(data.lastSentAt).toLocaleTimeString('pt-BR', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : '—'}
-            </div>
-          </div>
-        </div>
-
-
-
-        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-          <div
-            className={`h-full transition-all ${esgotada ? 'bg-red-500' : 'bg-indigo-500'}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-
-        <p className="text-xs text-slate-600">
-          {!data?.open || secondsLeft === 0 ? (
-            <>Nenhuma janela aberta — ela começa automaticamente no próximo e-mail enviado.</>
-          ) : esgotada ? (
-            <>
-              Cota da janela esgotada. Novos disparos liberam às{' '}
-              <strong>
-                {endMs
-                  ? new Date(endMs).toLocaleTimeString('pt-BR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : '—'}
-              </strong>
-              .
-            </>
-          ) : (
-            <>
-              Pode enviar mais <strong>{remaining}</strong> e-mail(s) até{' '}
-              <strong>
-                {endMs
-                  ? new Date(endMs).toLocaleTimeString('pt-BR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : '—'}
-              </strong>
-              .
-            </>
-          )}
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-/** Ritmo de envio: modo único (espaçado) + tamanho dos lotes. */
+/** Ritmo fixo e contínuo: um único e-mail principal a cada 36 segundos. */
 export function SendProfileCard() {
   const fetchSettings = useServerFn(getFlowSettings);
   const save = useServerFn(updateFlowSettings);
@@ -347,7 +239,6 @@ export function SendProfileCard() {
     try {
       await save({ data: patch as any });
       await qc.invalidateQueries({ queryKey: ['flow-settings'] });
-      await qc.invalidateQueries({ queryKey: ['send-window'] });
       toast.success('Configuração salva');
     } catch (e: any) {
       toast.error(e?.message ?? 'Falha ao salvar');
@@ -364,8 +255,6 @@ export function SendProfileCard() {
     );
   }
 
-  const intervalo = Math.max(1, Math.round(3600 / Math.max(1, data.hourlyBatchSize)));
-
   return (
     <Card className="border-slate-200">
       <CardHeader className="pb-3">
@@ -374,8 +263,8 @@ export function SendProfileCard() {
           Ritmo de envio
         </CardTitle>
         <CardDescription>
-          Modo único: envio espaçado dentro de uma janela de 1 hora. Sem rajada e sem envios
-          paralelos — é o ritmo que o provedor aceita sem devolver HTTP 429.
+          Fluxo contínuo, sem lote e sem janela de bloqueio. Enquanto o modo nuvem estiver ativo,
+          o sistema tenta enviar somente o e-mail principal de cada empresa.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -383,46 +272,18 @@ export function SendProfileCard() {
           <Timer className="h-5 w-5 text-emerald-600" />
           <div>
             <p className="text-sm font-semibold text-emerald-900">
-              {data.hourlyBatchSize} e-mails por hora
+              1 e-mail a cada 36 segundos
             </p>
             <p className="text-xs text-emerald-800">
-              cerca de 1 a cada {intervalo}s — o sistema recupera sozinho qualquer atraso, sem
-              nunca passar do limite da janela.
+              Ritmo aproximado de 100 por hora. Se houver atraso ou HTTP 429, o item espera e volta
+              sozinho para a fila sem bloquear os demais.
             </p>
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label className="mb-2 block text-sm font-semibold">Lote por janela (e-mails/h)</Label>
-            <div className="flex flex-wrap items-center gap-2">
-              <Input
-                type="number"
-                min={1}
-                max={1000}
-                className="w-24"
-                value={data.hourlyBatchSize}
-                onChange={(e) =>
-                  void apply({ hourlyBatchSize: Math.max(1, Number(e.target.value) || 1) })
-                }
-                disabled={saving}
-              />
-              {[25, 50, 100, 200].map((n) => (
-                <Button
-                  key={n}
-                  size="sm"
-                  variant={data.hourlyBatchSize === n ? 'default' : 'outline'}
-                  onClick={() => void apply({ hourlyBatchSize: n })}
-                  disabled={saving}
-                >
-                  {n}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <Label className="mb-2 block text-sm font-semibold">Empresas por importação</Label>
+            <Label className="mb-2 block text-sm font-semibold">Empresas por ciclo de importação</Label>
             <div className="flex flex-wrap items-center gap-2">
               <Input
                 type="number"
@@ -448,20 +309,24 @@ export function SendProfileCard() {
               ))}
             </div>
           </div>
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+            <strong>Somente mensagem principal:</strong> e-mails de PIX gerado, cobrança,
+            pagamento e desconto estão desativados.
+          </div>
         </div>
 
         <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            Se o provedor responder <strong>HTTP 429</strong>, os e-mails voltam para a fila com
-            espera automática e aparecem em “Retries (HTTP 429)” — ninguém é perdido.
+            Se o provedor responder <strong>HTTP 429</strong>, somente aquele e-mail espera o prazo
+            solicitado. Depois ele é tentado novamente automaticamente — ninguém é perdido.
           </span>
         </div>
 
         <p className="flex items-center gap-1.5 text-xs text-slate-500">
           <Send className="h-3.5 w-3.5" />
-          Fluxo travado: importar {data.importBatchSize} → gerar links → enviar todos (
-          {data.hourlyBatchSize}/h) → só então importar mais.
+          Fluxo travado: importar {data.importBatchSize} → gerar links → enviar todos, um a cada
+          36 segundos → só então importar mais.
         </p>
       </CardContent>
     </Card>

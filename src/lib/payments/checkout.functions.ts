@@ -235,14 +235,6 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
         .eq("id", order.id),
     ]);
 
-    // E-mail imediato com a guia de pagamento (não bloqueia a resposta em caso de falha).
-    try {
-      const { sendPixCreatedEmail } = await import('@/lib/emails/order-emails.server');
-      await sendPixCreatedEmail(order.id);
-    } catch (e) {
-      console.error('[Payments] falha ao enviar e-mail de guia gerada', e);
-    }
-
     return {
       orderId: order.id,
       pix_code: pix.pix_code,

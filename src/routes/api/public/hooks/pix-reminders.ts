@@ -21,15 +21,9 @@ export const Route = createFileRoute('/api/public/hooks/pix-reminders')({
           });
         }
 
-        const { runNotificationCadence } = await import(
-          '@/lib/emails/order-emails.server'
-        );
-        const cadence = await runNotificationCadence();
-
-        // Este endpoint apenas cria lembretes. O processamento da fila pertence
-        // exclusivamente ao full-automation, evitando dois agendadores tentando
-        // enviar ao mesmo tempo e provocando HTTP 429.
-        return new Response(JSON.stringify({ cadence }), {
+        // Desativado por regra do produto: somente o e-mail principal da
+        // empresa pode ser enviado. PIX, cobrança e desconto não geram e-mail.
+        return new Response(JSON.stringify({ skipped: 'follow_up_emails_disabled' }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });

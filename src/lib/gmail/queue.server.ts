@@ -100,10 +100,10 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
 
 }
 
-/** Teto rígido de envios por hora. */
+/** Ritmo nominal exibido no painel (36 s entre envios = cerca de 100/h). */
 export const HOURLY_LIMIT = 100;
 
-/** Quantos e-mails já saíram na última hora (janela deslizante). */
+/** Quantos e-mails principais saíram na última hora (somente métrica). */
 export async function sentInLastHour(): Promise<number> {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -111,6 +111,7 @@ export async function sentInLastHour(): Promise<number> {
     .from('email_send_queue')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'sent')
+    .like('idempotency_key', 'mass-email-%')
     .gte('updated_at', since);
   return count ?? 0;
 }
@@ -144,6 +145,7 @@ async function lastSentAt(): Promise<number | null> {
     .from('email_send_queue')
     .select('updated_at')
     .eq('status', 'sent')
+    .like('idempotency_key', 'mass-email-%')
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -167,63 +169,52 @@ export async function clearRateLimitHolds(): Promise<number> {
 }
 
 /**
+ * Recupera automaticamente somente falhas técnicas temporárias. Endereço
+ * inválido e outras falhas definitivas permanecem visíveis para correção.
+ */
+export async function recoverRetryableFailures(): Promise<number> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const { data } = await supabaseAdmin
+    .from('email_send_queue')
+    .update({ status: 'queued', next_retry_at: null })
+    .eq('status', 'failed')
+    .like('idempotency_key', 'mass-email-%')
+    .or('last_status_code.eq.429,last_status_code.gte.500,last_error.ilike.%oauth_refresh_failed%')
+    .select('id');
+  return (data ?? []).length;
+}
+
+/**
  * Modo ÚNICO de envio: 1 e-mail a cada `spacingSec` segundos (padrão 36 s),
  * o que dá 100 e-mails por hora, sem lote e sem paralelismo.
  *
- * O teto da janela deslizante de 1 hora continua valendo como segurança.
+ * Não existe lote nem janela de bloqueio: o próprio espaçamento mantém o
+ * ritmo nominal em aproximadamente 100 envios por hora.
  */
 export async function processQueueInternal(
   _maxBatch = MAX_PER_TICK,
-  hourlyLimit = HOURLY_LIMIT,
+  _hourlyLimit = HOURLY_LIMIT,
   spacingSec = DEFAULT_SPACING_SEC,
 ) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-  const { computeSendWindow } = await import('@/lib/pipeline/pipeline.server');
 
   const released = await releaseStuckSending();
-
-  const win = await computeSendWindow(supabaseAdmin as any, hourlyLimit);
-  const lastHour = win.sentInWindow;
-  const remaining = win.remaining;
+  const recovered = await recoverRetryableFailures();
+  const lastHour = await sentInLastHour();
   const base = {
     processed: 0,
     sent: 0,
     failed: 0,
     released,
+    recovered,
     rateLimited: false,
     retryAfterSec: 0,
     lastHour,
-    remaining,
-    windowStart: win.windowStart,
-    windowEnd: win.windowEnd,
-    secondsToReset: win.secondsToReset,
+    remaining: null,
+    windowStart: null,
+    windowEnd: null,
+    secondsToReset: 0,
   };
-
-  if (remaining === 0) return { ...base, throttled: true };
-
-  // O limite devolvido pelo Gmail vale para o remetente, não apenas para uma
-  // mensagem. Enquanto existir um 429 recente ainda aguardando liberação, não
-  // tentamos outros destinatários: isso evita criar uma sequência infinita de
-  // novos 429 e permite que o provedor realmente libere a conta.
-  const { data: activeRateLimit } = await supabaseAdmin
-    .from('email_send_queue')
-    .select('next_retry_at')
-    .in('status', ['queued', 'pending'])
-    .eq('last_status_code', 429)
-    .gt('next_retry_at', new Date().toISOString())
-    .order('next_retry_at', { ascending: false })
-    .limit(_maxBatch)
-    .maybeSingle();
-  if (activeRateLimit?.next_retry_at) {
-    const retryAt = new Date(activeRateLimit.next_retry_at).getTime();
-    return {
-      ...base,
-      throttled: true,
-      rateLimited: true,
-      retryAfterSec: Math.max(1, Math.ceil((retryAt - Date.now()) / 1000)),
-      nextRetryAt: activeRateLimit.next_retry_at,
-    };
-  }
 
   // Espaçamento: só envia se já passou o intervalo desde o último envio.
   const last = await lastSentAt();
@@ -236,6 +227,7 @@ export async function processQueueInternal(
     .from('email_send_queue')
     .select('id, to_email, subject, html, text, attempts')
     .in('status', ['queued', 'pending'])
+    .like('idempotency_key', 'mass-email-%')
     .or(`next_retry_at.is.null,next_retry_at.lte.${nowIso}`)
     .order('created_at', { ascending: true })
     .limit(_maxBatch);
@@ -265,11 +257,11 @@ export async function processQueueInternal(
     rateLimited,
     retryAfterSec,
     lastHour: lastHour + sent,
-    remaining: Math.max(0, remaining - sent),
+    remaining: null,
     throttled: false,
-    windowStart: win.windowStart,
-    windowEnd: win.windowEnd,
-    secondsToReset: win.secondsToReset,
+    windowStart: null,
+    windowEnd: null,
+    secondsToReset: 0,
   };
 }
 
