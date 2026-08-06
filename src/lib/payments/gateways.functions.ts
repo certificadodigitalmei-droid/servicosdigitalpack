@@ -17,7 +17,7 @@ async function assertAdmin(supabase: any, userId: string) {
 export type PaymentGateway = {
   id: string;
   name: string;
-  provider_type: 'sigilopay';
+  provider_type: 'sigilopay' | 'syncpay';
   public_key_masked: string;
   secret_key_masked: string;
   base_url: string | null;
@@ -72,6 +72,7 @@ export const upsertPaymentGateway = createServerFn({ method: 'POST' })
       .object({
         id: z.string().uuid().optional(),
         name: z.string().min(2).max(120),
+        provider_type: z.enum(['sigilopay', 'syncpay']).default('sigilopay'),
         public_key: z.string().min(4).max(300).optional(),
         secret_key: z.string().min(4).max(300).optional(),
         base_url: z.string().url().max(300).optional().or(z.literal('')),
@@ -86,7 +87,7 @@ export const upsertPaymentGateway = createServerFn({ method: 'POST' })
     if (data.id) {
       const patch: any = {
         name: data.name,
-        provider_type: 'sigilopay',
+        provider_type: data.provider_type,
         base_url: data.base_url && data.base_url.length > 0 ? data.base_url : null,
         notes: data.notes ?? null,
       };
@@ -100,7 +101,7 @@ export const upsertPaymentGateway = createServerFn({ method: 'POST' })
         const current = splitKeys(existing?.api_key || '');
         const pub = data.public_key?.trim() || current.publicKey;
         const sec = data.secret_key?.trim() || current.secretKey;
-        if (!pub || !sec) throw new Error('Informe a chave pública e a chave secreta');
+        if (!pub || !sec) throw new Error('Informe as duas credenciais');
         patch.api_key = `${pub}|${sec}`;
       }
       const { error } = await supabaseAdmin.from('payment_gateways').update(patch).eq('id', data.id);
@@ -109,14 +110,14 @@ export const upsertPaymentGateway = createServerFn({ method: 'POST' })
     }
 
     if (!data.public_key || !data.secret_key) {
-      throw new Error('Informe a chave pública e a chave secreta');
+      throw new Error('Informe as duas credenciais');
     }
     const combined = `${data.public_key.trim()}|${data.secret_key.trim()}`;
     const { data: inserted, error } = await supabaseAdmin
       .from('payment_gateways')
       .insert({
         name: data.name,
-        provider_type: 'sigilopay',
+        provider_type: data.provider_type,
         api_key: combined,
         base_url: data.base_url && data.base_url.length > 0 ? data.base_url : null,
         notes: data.notes ?? null,

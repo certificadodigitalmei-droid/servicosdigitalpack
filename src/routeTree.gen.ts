@@ -22,6 +22,7 @@ import { Route as AcessoTokenRouteImport } from './routes/acesso.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedMonitorEnvioRouteImport } from './routes/_authenticated.monitor-envio'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
+import { Route as ApiPublicWebhookSyncpayRouteImport } from './routes/api/public/webhook-syncpay'
 import { Route as ApiPublicWebhookSigilopayRouteImport } from './routes/api/public/webhook-sigilopay'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
 import { Route as AuthenticatedPainelWorkspaceEnvioRouteImport } from './routes/_authenticated.painel.workspace-envio'
@@ -124,6 +125,11 @@ const AuthenticatedPainelIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const ApiPublicWebhookSyncpayRoute = ApiPublicWebhookSyncpayRouteImport.update({
+  id: '/api/public/webhook-syncpay',
+  path: '/api/public/webhook-syncpay',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhookSigilopayRoute =
   ApiPublicWebhookSigilopayRouteImport.update({
     id: '/api/public/webhook-sigilopay',
@@ -364,6 +370,7 @@ export interface FileRoutesByFullPath {
   '/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-sigilopay': typeof ApiPublicWebhookSigilopayRoute
+  '/api/public/webhook-syncpay': typeof ApiPublicWebhookSyncpayRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
@@ -411,6 +418,7 @@ export interface FileRoutesByTo {
   '/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-sigilopay': typeof ApiPublicWebhookSigilopayRoute
+  '/api/public/webhook-syncpay': typeof ApiPublicWebhookSyncpayRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
@@ -462,6 +470,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-sigilopay': typeof ApiPublicWebhookSigilopayRoute
+  '/api/public/webhook-syncpay': typeof ApiPublicWebhookSyncpayRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
   '/_authenticated/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/_authenticated/painel/gerador-links/historico': typeof AuthenticatedPainelGeradorLinksHistoricoRoute
@@ -513,6 +522,7 @@ export interface FileRouteTypes {
     | '/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-sigilopay'
+    | '/api/public/webhook-syncpay'
     | '/painel/'
     | '/painel/empresas-importadas/$companyId'
     | '/painel/gerador-links/historico'
@@ -560,6 +570,7 @@ export interface FileRouteTypes {
     | '/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-sigilopay'
+    | '/api/public/webhook-syncpay'
     | '/painel'
     | '/painel/empresas-importadas/$companyId'
     | '/painel/gerador-links/historico'
@@ -610,6 +621,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-sigilopay'
+    | '/api/public/webhook-syncpay'
     | '/_authenticated/painel/'
     | '/_authenticated/painel/empresas-importadas/$companyId'
     | '/_authenticated/painel/gerador-links/historico'
@@ -639,6 +651,7 @@ export interface RootRouteChildren {
   CheckoutTokenRoute: typeof CheckoutTokenRoute
   ApiInternalCasaDosDadosWorkerRoute: typeof ApiInternalCasaDosDadosWorkerRoute
   ApiPublicWebhookSigilopayRoute: typeof ApiPublicWebhookSigilopayRoute
+  ApiPublicWebhookSyncpayRoute: typeof ApiPublicWebhookSyncpayRoute
   ApiPublicEmailAssetKeyRoute: typeof ApiPublicEmailAssetKeyRoute
   ApiPublicHooksAutoImportMeiRoute: typeof ApiPublicHooksAutoImportMeiRoute
   ApiPublicHooksFullAutomationRoute: typeof ApiPublicHooksFullAutomationRoute
@@ -743,6 +756,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/painel/'
       preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/api/public/webhook-syncpay': {
+      id: '/api/public/webhook-syncpay'
+      path: '/api/public/webhook-syncpay'
+      fullPath: '/api/public/webhook-syncpay'
+      preLoaderRoute: typeof ApiPublicWebhookSyncpayRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/webhook-sigilopay': {
       id: '/api/public/webhook-sigilopay'
@@ -1113,6 +1133,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutTokenRoute: CheckoutTokenRoute,
   ApiInternalCasaDosDadosWorkerRoute: ApiInternalCasaDosDadosWorkerRoute,
   ApiPublicWebhookSigilopayRoute: ApiPublicWebhookSigilopayRoute,
+  ApiPublicWebhookSyncpayRoute: ApiPublicWebhookSyncpayRoute,
   ApiPublicEmailAssetKeyRoute: ApiPublicEmailAssetKeyRoute,
   ApiPublicHooksAutoImportMeiRoute: ApiPublicHooksAutoImportMeiRoute,
   ApiPublicHooksFullAutomationRoute: ApiPublicHooksFullAutomationRoute,
