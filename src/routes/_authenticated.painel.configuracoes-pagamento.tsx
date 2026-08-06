@@ -78,11 +78,12 @@ function PaymentGatewaysPage() {
 
   const meta = PROVIDERS[form.provider_type];
 
-  const openNew = () => {
+  const openNew = (provider: ProviderId = 'syncpay') => {
     setEditing(null);
-    setForm({ name: '', provider_type: 'syncpay', public_key: '', secret_key: '', base_url: '', notes: '' });
+    setForm({ name: '', provider_type: provider, public_key: '', secret_key: '', base_url: '', notes: '' });
     setDialogOpen(true);
   };
+
 
   const openEdit = (g: PaymentGateway) => {
     setEditing(g);
