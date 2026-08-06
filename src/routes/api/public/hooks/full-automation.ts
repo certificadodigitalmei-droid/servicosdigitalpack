@@ -109,7 +109,7 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
                 date: new Intl.DateTimeFormat('en-CA', {
                   timeZone: 'America/Sao_Paulo',
                 }).format(new Date()),
-                filters: (cfg.filters as any) || {
+                filters: (cfg?.filters as any) || {
                   only_mei: true,
                   only_active: true,
                   only_matriz: false,
@@ -119,24 +119,23 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
                 skipExisting: true,
               });
 
-
-              await supabaseAdmin
-                .from('automatic_company_queries')
-                .update({
-                  last_run_at: nowIso,
-                  // A trava do pipeline já controla o ritmo: liberamos a
-                  // próxima checagem em 1 minuto e ela só importa se a fila
-                  // estiver realmente vazia.
-                  next_run_at: new Date(Date.now() + 60_000).toISOString(),
-
-                  status: 'active',
-                })
-                .eq('id', cfg.id);
+              if (cfg?.id) {
+                await supabaseAdmin
+                  .from('automatic_company_queries')
+                  .update({
+                    last_run_at: nowIso,
+                    // A trava do pipeline já controla o ritmo: liberamos a
+                    // próxima checagem em 1 minuto e ela só importa se a fila
+                    // estiver realmente vazia.
+                    next_run_at: new Date(Date.now() + 60_000).toISOString(),
+                    status: 'active',
+                  })
+                  .eq('id', cfg.id);
+              }
 
               stats.import = outcome;
-            } else {
-              stats.import = { skipped: true, reason: 'nenhuma automação ativa/vencida' };
             }
+
           }
 
           // 6. Reconciliação de métricas
