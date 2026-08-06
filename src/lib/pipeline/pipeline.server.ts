@@ -454,9 +454,9 @@ export type SendWindow = {
 };
 
 /**
- * Lote de envio: começa no primeiro e-mail e conta até o limite.
- * Ao bater o limite, o próximo lote só libera 60 minutos depois do
- * ÚLTIMO e-mail enviado (a janela sempre fecha pelo último envio).
+ * Janela DESLIZANTE de 60 minutos: conta quantos e-mails saíram na última
+ * hora e libera o saldo restante continuamente. Nunca passa do limite por
+ * hora e nunca fica parado sem necessidade (o ritmo é constante).
  */
 export async function computeSendWindow(
   client: AnyClient,
