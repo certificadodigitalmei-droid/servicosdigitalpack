@@ -155,11 +155,39 @@ function PaymentGatewaysPage() {
 
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-2">
+        {(Object.keys(PROVIDERS) as ProviderId[]).map((pid) => {
+          const p = PROVIDERS[pid];
+          const count = (gateways ?? []).filter((g) => g.provider_type === pid).length;
+          return (
+            <Card key={pid} className="border-slate-200">
+              <CardHeader className="space-y-1 pb-3">
+                <CardTitle className="flex items-center justify-between text-base">
+                  {p.label}
+                  <Badge variant={count > 0 ? 'secondary' : 'outline'}>
+                    {count > 0 ? `${count} conta(s)` : 'nenhuma conta'}
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="break-all text-xs">
+                  Webhook: {pid === 'syncpay' ? `https://servicosdigitalpack.lovable.app${p.webhookPath}` : `${origin}${p.webhookPath}`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button size="sm" variant="outline" onClick={() => openNew(pid)}>
+                  <Plus className="mr-2 h-4 w-4" /> Adicionar conta {p.label}
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
         </div>
       ) : (
+
         <div className="grid gap-4">
           {(gateways ?? []).map((g) => {
             const gm = PROVIDERS[(g.provider_type as ProviderId) ?? 'sigilopay'] ?? PROVIDERS.sigilopay;
