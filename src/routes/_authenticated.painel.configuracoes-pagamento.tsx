@@ -149,9 +149,10 @@ function PaymentGatewaysPage() {
             Cadastre suas contas SyncPay ou SigiloPay e escolha qual será usada para gerar as cobranças.
           </p>
         </div>
-        <Button onClick={openNew} className="bg-brand-blue hover:bg-brand-navy">
+        <Button onClick={() => openNew('syncpay')} className="bg-brand-blue hover:bg-brand-navy">
           <Plus className="mr-2 h-4 w-4" /> Novo gateway
         </Button>
+
       </div>
 
       {isLoading ? (
