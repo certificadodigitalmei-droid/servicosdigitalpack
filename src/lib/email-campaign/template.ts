@@ -138,8 +138,9 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   heroTitleColor: '#0e3a70',
   cardTitleSize: 11,
   cardBodySize: 12,
-  warningTitleSize: 12,
-  warningItemsSize: 12,
+  warningTitleSize: 14,
+  warningItemsSize: 13,
+
   signatureSize: 12,
   disclaimerSize: 11,
 
@@ -151,29 +152,28 @@ export const DEFAULT_DESIGN: CampaignDesign = {
     'Prezado(a) *{{NOME_TITULAR}}*,\n\nSeu CNPJ consta como *PENDENTE*: sem Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
   cardTitle: 'DADOS DO REQUERENTE',
   showCard: true,
-  buttonLabel: 'Verificar meu CNPJ',
+  buttonLabel: 'REGULARIZAR MEU CNPJ',
   buttonHref: '{{LINK_PUBLICO}}',
 
   showWarning: true,
-  warningTitle: 'ENQUANTO A PENDÊNCIA CONTINUAR',
+  warningTitle: 'ATENÇÃO · RISCOS ATIVOS NO SEU CNPJ',
   warningItems:
-    'Impossibilitado de emitir nota fiscal.\nImpossibilitado de assinatura de contratos digitais e físicos com CNPJ.\nImpossibilitado de limites de créditos empresariais perante bancos e afiliadas de crédito PJ.\nAlém de multa e restrição perante a Receita Federal.',
+    'Impossibilitado de emitir nota fiscal (NFS-e).\nImpossibilitado de assinar contratos digitais e físicos com CNPJ.\nBloqueio de limites de crédito empresarial em bancos e financeiras PJ.\nSujeito a multa e restrição perante a Receita Federal.',
   warningBg: '#fef2f2',
   warningBorder: '#dc2626',
   warningTitleColor: '#991b1b',
-  warningTextColor: '#dc2626',
+  warningTextColor: '#b91c1c',
 
+  showSignature: false,
+  signature: '',
 
-  showSignature: true,
-  signature:
-    'Após o pagamento, o certificado é *vinculado automaticamente ao CNPJ*.\n\nAtenciosamente,\n*Central de Emissão*',
-
-  footer: 'Atenciosamente,\nCentral de Emissão',
+  footer: '',
   disclaimer:
     'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nE-mail automático; não responda.',
   showFooter: true,
   unsubText: '',
   unsubHref: '#',
+
 
   // Sem logo no topo: a imagem fica apenas na foto de perfil do remetente.
   showAvatar: false,
@@ -297,7 +297,12 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   const logo = nl2br(S(D.logoText));
   const heroTitle = inlineFormat(S(D.heroTitle));
   const warningTitle = nl2br(S(D.warningTitle));
+  const warningItemsList = String(S(D.warningItems) || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
   const warningItems = inlineFormat(S(D.warningItems));
+
 
   const align = D.align;
   const px = D.contentPaddingX;
@@ -442,13 +447,22 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     </td></tr>` : ''}
 
     ${D.showWarning ? `
-    <tr><td class="l-pad" style="padding:0 ${px}px 32px ${px}px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${D.warningBg};border-left:4px solid ${D.warningBorder};padding:20px 22px;border-radius:4px;">
-        <tr><td style="color:${D.warningTitleColor};font-size:${D.warningTitleSize || D.bodySize}px;font-weight:700;padding-bottom:10px;">${warningTitle}</td></tr>
-        <tr><td style="color:${D.warningTextColor};font-size:${D.warningItemsSize || Math.max(13, D.bodySize - 2)}px;line-height:1.65;">${warningItems}</td></tr>
-
+    <tr><td class="l-pad" style="padding:0 ${px}px 30px ${px}px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${D.warningBg}" style="background:${D.warningBg};background-color:${D.warningBg};border:1px solid #fecaca;border-left:5px solid ${D.warningBorder};border-radius:6px;">
+        <tr><td style="padding:16px 22px 8px 22px;font-family:Arial,sans-serif;">
+          <div style="color:${D.warningTitleColor};font-size:${D.warningTitleSize || 14}px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;line-height:1.35;">
+            <span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:${D.warningBorder};color:#ffffff;border-radius:50%;font-size:13px;font-weight:900;margin-right:8px;vertical-align:middle;">!</span>${warningTitle}
+          </div>
+        </td></tr>
+        <tr><td style="padding:6px 22px 18px 22px;font-family:Arial,sans-serif;">
+          ${warningItemsList.map((item) => `
+            <div style="color:${D.warningTextColor};font-size:${D.warningItemsSize || 13}px;line-height:1.6;font-weight:700;padding:6px 0;border-top:1px dashed #fecaca;">
+              <span style="color:${D.warningBorder};font-weight:900;margin-right:8px;">✕</span>${inlineFormat(item)}
+            </div>`).join('')}
+        </td></tr>
       </table>
     </td></tr>` : ''}
+
 
     <tr><td align="center" class="l-pad" style="padding:0 ${px}px 44px ${px}px;">
       <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);white-space:normal;mso-padding-alt:0;line-height:1.2;">${buttonLabel}</a>

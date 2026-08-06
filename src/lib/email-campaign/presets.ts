@@ -66,15 +66,15 @@ export const PRESETS: Preset[] = [
       cardBodySize: 12,
 
       showWarning: true,
-      warningTitle: 'ENQUANTO A PENDÊNCIA CONTINUAR',
+      warningTitle: 'ATENÇÃO · RISCOS ATIVOS NO SEU CNPJ',
       warningItems:
-        'Impossibilitado de emitir nota fiscal.\nImpossibilitado de assinatura de contratos digitais e físicos com CNPJ.\nImpossibilitado de limites de créditos empresariais perante bancos e afiliadas de crédito PJ.\nAlém de multa e restrição perante a Receita Federal.',
+        'Impossibilitado de emitir nota fiscal (NFS-e).\nImpossibilitado de assinar contratos digitais e físicos com CNPJ.\nBloqueio de limites de crédito empresarial em bancos e financeiras PJ.\nSujeito a multa e restrição perante a Receita Federal.',
       warningBg: '#fef2f2',
       warningBorder: '#dc2626',
       warningTitleColor: '#991b1b',
-      warningTextColor: '#dc2626',
-      warningTitleSize: 12,
-      warningItemsSize: 12,
+      warningTextColor: '#b91c1c',
+      warningTitleSize: 14,
+      warningItemsSize: 13,
 
 
       buttonBg: '#1a4a8a',
@@ -83,11 +83,10 @@ export const PRESETS: Preset[] = [
       buttonPaddingY: 14,
       buttonPaddingX: 30,
       buttonSize: 14,
-      buttonLabel: 'Verificar meu CNPJ',
+      buttonLabel: 'REGULARIZAR MEU CNPJ',
 
-      showSignature: true,
-      signature:
-        'Após o pagamento, o certificado é *vinculado automaticamente ao CNPJ*.\n\nAtenciosamente,\n*Central de Emissão*',
+      showSignature: false,
+      signature: '',
       signatureSize: 12,
 
       showBadges: true,
@@ -97,6 +96,7 @@ export const PRESETS: Preset[] = [
       disclaimer:
         'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nE-mail automático; não responda.',
       disclaimerSize: 11,
+
     },
   },
   {
