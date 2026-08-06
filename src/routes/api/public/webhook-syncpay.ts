@@ -1,61 +1,48 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { supabaseAdmin } from '@/integrations/supabase/client.server';
 
-// Webhook de pagamentos da SyncPay.
-// Evento relevante: event = "cashin.update" com status = "completed".
+// Webhook de pagamentos da SyncPay (Cashin OnCreate/OnUpdate).
+// A SyncPay envia o tipo do evento no cabeçalho `event` (ex.: cashin.update)
+// e o corpo em { data: { id, status, ... } }.
+// Marcamos o pedido como pago quando status = "completed".
+// Nenhum dado do cliente recebido aqui é armazenado ou registrado em log.
 export const Route = createFileRoute('/api/public/webhook-syncpay')({
   server: {
     handlers: {
       POST: async ({ request }) => {
         try {
           const body: any = await request.json();
-          const data = body?.data ?? body?.transaction ?? body ?? {};
+          const data = body?.data ?? body ?? {};
 
-          const event = String(body?.event || body?.type || '').toLowerCase();
+          const event = String(
+            request.headers.get('event') || body?.event || body?.type || '',
+          ).toLowerCase();
           const status = String(data?.status || body?.status || '').toLowerCase();
 
-          console.log('[webhook-syncpay] evento recebido:', JSON.stringify({ event, status }));
+          console.log('[webhook-syncpay] evento:', JSON.stringify({ event, status }));
 
-          const isPaid =
-            (event === 'cashin.update' || event === '' || event.startsWith('cashin')) &&
-            (status === 'completed' || status === 'paid');
-
-          if (!isPaid) return new Response('OK', { status: 200 });
-
-          const transactionId: string | undefined =
-            data?.id || data?.transaction_id || body?.id ? String(data?.id || data?.transaction_id || body?.id) : undefined;
-          const identifier: string | undefined =
-            data?.external_id || data?.identifier || body?.external_id;
-
-          if (!transactionId && !identifier) {
-            console.warn('[webhook-syncpay] payload sem identificadores');
+          const isCashin = event === '' || event.startsWith('cashin');
+          if (!isCashin || status !== 'completed') {
             return new Response('OK', { status: 200 });
           }
 
+          const transactionId = data?.id ? String(data.id) : '';
+          if (!transactionId) {
+            console.warn('[webhook-syncpay] payload sem identificador');
+            return new Response('OK', { status: 200 });
+          }
+
+          const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
           const nowIso = new Date().toISOString();
           const patch = { status: 'paid', paid_at: nowIso, updated_at: nowIso } as const;
 
-          let updated = 0;
-          if (identifier) {
-            const { data: rows } = await supabaseAdmin
-              .from('orders')
-              .update(patch)
-              .eq('id', identifier)
-              .select('id');
-            updated = rows?.length ?? 0;
-          }
+          const { data: rows } = await supabaseAdmin
+            .from('orders')
+            .update(patch)
+            .eq('external_transaction_id', transactionId)
+            .select('id');
 
-          if (updated === 0 && transactionId) {
-            const { data: rows } = await supabaseAdmin
-              .from('orders')
-              .update(patch)
-              .eq('external_transaction_id', transactionId)
-              .select('id');
-            updated = rows?.length ?? 0;
-          }
-
-          if (updated === 0) {
-            console.warn('[webhook-syncpay] nenhum pedido encontrado', { transactionId, identifier });
+          if (!rows?.length) {
+            console.warn('[webhook-syncpay] nenhum pedido para a transação informada');
           }
 
           return new Response('OK', { status: 200 });
