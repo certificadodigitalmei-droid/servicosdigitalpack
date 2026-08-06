@@ -62,22 +62,28 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
   } catch (e) {
     const err = e as InstanceType<typeof GmailError>;
     const attempts = row.attempts + 1;
-    const isRetryable =
-      err.status === 429 || err.status >= 500 || err.code === 'oauth_refresh_failed';
-    const shouldGiveUp = attempts >= 5 || !isRetryable;
-    const backoffSec = err.retryAfterSeconds ?? Math.min(3600, 30 * Math.pow(2, attempts));
+    // 429 (rate limit) NÃO é falha do e-mail: é só "tente mais tarde".
+    // Não gasta tentativa e nunca vira "failed".
+    const isRateLimit = err.status === 429 || err.code === 'rate_limited';
+    const isRetryable = err.status >= 500 || err.code === 'oauth_refresh_failed';
+    const shouldGiveUp = !isRateLimit && (attempts >= 5 || !isRetryable);
+    const backoffSec = isRateLimit
+      ? (err.retryAfterSeconds ?? 60)
+      : (err.retryAfterSeconds ?? Math.min(3600, 30 * Math.pow(2, attempts)));
     await supabaseAdmin
       .from('email_send_queue')
       .update({
         status: shouldGiveUp ? 'failed' : 'queued',
+        // devolve a tentativa quando foi apenas limite de taxa
+        attempts: isRateLimit ? row.attempts : attempts,
         last_error: `${err.code ?? 'error'}: ${err.message}`.slice(0, 500),
         last_status_code: err.status || null,
         next_retry_at: shouldGiveUp ? null : new Date(Date.now() + backoffSec * 1000).toISOString(),
       })
       .eq('id', row.id);
 
-    // Log de auditoria: Falha no Envio
-    if (companyCnpj) {
+    // Log de auditoria: só registra falha real (rate limit não é falha)
+    if (companyCnpj && !isRateLimit) {
       await supabaseAdmin.from('automation_audit_logs').insert({
         cnpj: companyCnpj,
         event_type: 'email_failed',
