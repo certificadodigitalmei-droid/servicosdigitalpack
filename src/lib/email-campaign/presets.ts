@@ -44,7 +44,7 @@ export const PRESETS: Preset[] = [
       showAvatar: false,
       logoText: 'PORTAL CERTIFICADO DIGITAL MEI',
       logoSize: 12,
-      title: 'Emissão e-CNPJ',
+      title: 'CNPJ COM RESTRIÇÃO - PENDENTE',
       subtitle: 'Central de Emissão · MEI',
       titleSize: 20,
       subtitleSize: 12,
