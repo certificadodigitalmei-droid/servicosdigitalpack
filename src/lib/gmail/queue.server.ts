@@ -191,12 +191,23 @@ export async function processQueueInternal(
   const list = (rows ?? []) as QueueRow[];
   let sent = 0;
   let failed = 0;
+  let rateLimited = false;
+  let retryAfterSec = 0;
 
   for (let i = 0; i < list.length; i++) {
     if (i > 0) await new Promise((r) => setTimeout(r, SPACING_MS));
     const r = await sendOneNow(list[i]!);
-    if (r.ok) sent++;
-    else failed++;
+    if (r.ok) {
+      sent++;
+      continue;
+    }
+    if ((r as any).rateLimited) {
+      // O provedor pediu para esperar: encerra a execução agora.
+      rateLimited = true;
+      retryAfterSec = (r as any).retryAfterSec ?? 60;
+      break;
+    }
+    failed++;
   }
 
   return {
@@ -204,6 +215,8 @@ export async function processQueueInternal(
     sent,
     failed,
     released,
+    rateLimited,
+    retryAfterSec,
     lastHour: lastHour + sent,
     remaining: Math.max(0, remaining - sent),
     throttled: false,
@@ -212,3 +225,4 @@ export async function processQueueInternal(
     secondsToReset: win.secondsToReset,
   };
 }
+
