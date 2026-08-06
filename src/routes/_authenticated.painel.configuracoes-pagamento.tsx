@@ -23,11 +23,38 @@ export const Route = createFileRoute('/_authenticated/painel/configuracoes-pagam
   component: PaymentGatewaysPage,
 });
 
-const SIGILOPAY_META = {
-  label: 'SigiloPay',
-  docsUrl: 'https://app.sigilopay.com.br/docs',
-  defaultBase: 'https://app.sigilopay.com.br/api/v1',
-  webhookPath: '/api/public/webhook-sigilopay',
+type ProviderId = 'sigilopay' | 'syncpay';
+
+const PROVIDERS: Record<ProviderId, {
+  label: string;
+  docsUrl: string;
+  defaultBase: string;
+  webhookPath: string;
+  publicLabel: string;
+  secretLabel: string;
+  publicPlaceholder: string;
+  secretPlaceholder: string;
+}> = {
+  sigilopay: {
+    label: 'SigiloPay',
+    docsUrl: 'https://app.sigilopay.com.br/docs',
+    defaultBase: 'https://app.sigilopay.com.br/api/v1',
+    webhookPath: '/api/public/webhook-sigilopay',
+    publicLabel: 'Chave pública (x-public-key)',
+    secretLabel: 'Chave secreta (x-secret-key)',
+    publicPlaceholder: 'pk_...',
+    secretPlaceholder: 'sk_...',
+  },
+  syncpay: {
+    label: 'SyncPay',
+    docsUrl: 'https://api.syncpayments.com.br',
+    defaultBase: 'https://api.syncpayments.com.br',
+    webhookPath: '/api/public/webhook-syncpay',
+    publicLabel: 'Client ID',
+    secretLabel: 'Client Secret',
+    publicPlaceholder: 'client_id',
+    secretPlaceholder: 'client_secret',
+  },
 };
 
 function PaymentGatewaysPage() {
@@ -41,15 +68,18 @@ function PaymentGatewaysPage() {
   const [editing, setEditing] = useState<PaymentGateway | null>(null);
   const [form, setForm] = useState({
     name: '',
+    provider_type: 'syncpay' as ProviderId,
     public_key: '',
     secret_key: '',
     base_url: '',
     notes: '',
   });
 
+  const meta = PROVIDERS[form.provider_type];
+
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', public_key: '', secret_key: '', base_url: '', notes: '' });
+    setForm({ name: '', provider_type: 'syncpay', public_key: '', secret_key: '', base_url: '', notes: '' });
     setDialogOpen(true);
   };
 
@@ -57,6 +87,7 @@ function PaymentGatewaysPage() {
     setEditing(g);
     setForm({
       name: g.name,
+      provider_type: (g.provider_type as ProviderId) ?? 'sigilopay',
       public_key: '',
       secret_key: '',
       base_url: g.base_url ?? '',
