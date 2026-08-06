@@ -34,21 +34,6 @@ const MODELOS = [
     when: 'Usado no envio em massa, campanhas de e-mail e disparo por etapa.',
   },
   {
-    name: 'pix-gerado',
-    label: 'Guia gerada (PIX criado)',
-    when: 'Enviado na hora em que o cliente gera o PIX.',
-  },
-  {
-    name: 'pix-pendente',
-    label: 'Cobrança / recuperação',
-    when: 'Enviado 15 minutos após gerar o PIX e depois 1x por dia até o pagamento.',
-  },
-  {
-    name: 'oferta-desconto',
-    label: 'Oferta com desconto',
-    when: 'Enviado no disparo por etapa quando você ativa desconto por tempo limitado.',
-  },
-  {
     name: 'pagamento-confirmado',
     label: 'Pagamento confirmado',
     when: 'Enviado assim que o pagamento é confirmado (certificado emitido).',

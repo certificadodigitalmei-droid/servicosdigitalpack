@@ -1,8 +1,6 @@
 import type { ComponentType } from 'react'
-import { template as pixGeradoTemplate } from './pix-gerado'
 import { template as pagamentoConfirmadoTemplate } from './pagamento-confirmado'
-import { template as pixPendenteTemplate } from './pix-pendente'
-import { template as ofertaDescontoTemplate } from './oferta-desconto'
+
 
 export interface TemplateEntry {
   component: ComponentType<any>
@@ -22,8 +20,5 @@ export interface TemplateEntry {
  *   // then add to TEMPLATES: 'welcome': welcomeTemplate
  */
 export const TEMPLATES: Record<string, TemplateEntry> = {
-  'pix-gerado': pixGeradoTemplate,
   'pagamento-confirmado': pagamentoConfirmadoTemplate,
-  'pix-pendente': pixPendenteTemplate,
-  'oferta-desconto': ofertaDescontoTemplate,
 }
