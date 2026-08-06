@@ -305,7 +305,8 @@ function LinksGeradosPage() {
       }
 
       setRows(list);
-      setTotal(count ?? list.length);
+      setTotal(list.length);
+
       setStatsByToken(per);
       setAggregate(agg);
       setPaidByLinkId(paidMap);
