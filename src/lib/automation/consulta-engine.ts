@@ -81,6 +81,7 @@ type State = {
   autoStats: AutoStats;
   autoImportRuns: number;
   autoImportTotal: number;
+  autoImportBlockReason: string | null;
   countResult: CountResult | null;
   saldo: string | null;
   isCounting: boolean;
@@ -125,6 +126,7 @@ const initial: State = {
   },
   autoImportRuns: 0,
   autoImportTotal: 0,
+  autoImportBlockReason: null,
   countResult: null,
   saldo: null,
   isCounting: false,
@@ -475,33 +477,45 @@ function restartImportLoop() {
   const s = consultaStore.get();
   if (!s.autoImport) return;
 
-  // Regra de Sincronia Perfeita:
-  // Só importa se o Envio em Massa estiver rodando e a fila estiver vazia.
-  // Importa apenas 1 empresa por vez (a mais recente do dia), disparando o envio
-  // imediato e mantendo o fluxo 1:1.
+  // Regra estrita: NUNCA importa/gera links enquanto houver qualquer pendência
+  // no funil (empresas sem link, links não enfileirados ou e-mails na fila).
+  // A verificação é feita no banco (fonte da verdade), não na fila local.
   const tick = async () => {
     if (consultaStore.get().isImporting) return;
 
-    const cur0 = consultaStore.get();
     const env = envioStore.get();
     const envioAtivo = isEnvioRunning() && env.running && !env.testMode;
-    
+
     if (!envioAtivo || env.paused) return;
 
-    // Conta empresas pendentes na fila
-    const pendingCount = env.queue.filter(
+    // Pendências locais (fila em memória) — atalho barato
+    const pendingLocal = env.queue.filter(
       (q) => q.status === 'pending' || q.status === 'sending',
     ).length;
+    if (pendingLocal > 0) return;
 
-    // Regra: Importa 5 e deixa na fila. 
-    // Sempre que estiver apenas 1 ou 2, traz mais 5.
-    if (pendingCount > 2) return;
+    // Trava real: estado do pipeline no banco
+    let liberada = false;
+    let motivo: string | null = null;
+    try {
+      const { getPipelineState } = await import('@/lib/pipeline/pipeline.functions');
+      const state = await getPipelineState();
+      liberada = state.importacaoLiberada;
+      motivo = state.motivoBloqueio;
+    } catch {
+      // Sem confirmação do servidor, não importa nada (fail-safe).
+      return;
+    }
 
-    const importBatchSize = 5;
-    // Importa o lote necessário para manter o fluxo
-    await runImportOnce({ silent: true, overrideLimit: importBatchSize });
-    const r = await runImportOnce({ silent: true, overrideLimit: 1 });
-    
+    if (!liberada) {
+      consultaStore.set({ autoImportBlockReason: motivo });
+      return;
+    }
+    consultaStore.set({ autoImportBlockReason: null });
+
+    const importBatchSize = Math.max(1, consultaStore.get().bufferTarget || 1);
+    const r = await runImportOnce({ silent: true, overrideLimit: importBatchSize });
+
     if (r.imported > 0) {
       consultaStore.set((c) => ({ autoImportTotal: c.autoImportTotal + r.imported }));
       pushFlash(r.imported);
@@ -511,6 +525,7 @@ function restartImportLoop() {
         await mod.loadRecipients({ limit: r.imported });
       } catch { /* noop */ }
     }
+
     consultaStore.set((c) => ({ autoImportRuns: c.autoImportRuns + 1 }));
   };
 
