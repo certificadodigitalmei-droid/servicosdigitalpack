@@ -82,11 +82,19 @@ export function FilaUnicaCard({ limit = 100 }: { limit?: number }) {
                       {r.email ?? 'sem e-mail'}
                     </td>
                     <td className="pr-2">
-                      <Badge className={STAGE_UI[r.stage].cls}>{STAGE_UI[r.stage].label}</Badge>
-                      {r.lastStatusCode === 429 && (
-                        <span className="ml-1 text-[10px] font-semibold text-orange-600">429</span>
+                      {r.nextRetryAt && new Date(r.nextRetryAt).getTime() > Date.now() ? (
+                        <Badge className="bg-orange-100 text-orange-700">
+                          aguardando envio ·{' '}
+                          {new Date(r.nextRetryAt).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </Badge>
+                      ) : (
+                        <Badge className={STAGE_UI[r.stage].cls}>{STAGE_UI[r.stage].label}</Badge>
                       )}
                     </td>
+
                   </tr>
                 ))}
               </tbody>
