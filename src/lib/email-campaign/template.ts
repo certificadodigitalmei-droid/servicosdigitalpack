@@ -324,7 +324,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     ['CNPJ', formatCnpj(vars.CNPJ || '')],
     ['Protocolo', vars.REFERENCIA],
     ['Data de Abertura', vars.DATA_ABERTURA],
-    ['Validade', '12 meses'],
+    ['Validade', 'Expirado'],
     ['Situação', vars.SITUACAO || 'Certificado Digital não localizado'],
   ] as Array<[string, string]>).filter(([, v]) => !!v);
 
@@ -333,16 +333,21 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     .map(([k, v], i) => {
       const last = i === cardRows.length - 1;
       const border = last ? '' : 'border-bottom:1px solid #e6eaef;';
-      const isSituacao = k === 'Situação';
-      const valStyle = isSituacao
+      const isAlert = k === 'Situação' || k === 'Validade';
+      const valStyle = isAlert
         ? 'color:#b91c1c;font-weight:700;'
         : `color:${D.textColor};font-weight:700;`;
+      const icon = isAlert
+        ? '<span style="color:#b91c1c;font-weight:700;font-size:15px;">&#10007;</span>'
+        : '<span style="color:#16a34a;font-weight:700;font-size:15px;">&#10003;</span>';
       return `<tr>
-        <td class="rowKey" style="${border}padding:10px 16px;width:38%;font-family:Arial,sans-serif;font-size:${keySize}px;color:#64748b;vertical-align:top;line-height:1.45;">${esc(String(k))}</td>
-        <td class="rowVal" style="${border}padding:10px 16px;font-family:Arial,sans-serif;font-size:${D.cardBodySize || D.bodySize}px;${valStyle}line-height:1.45;">${esc(String(v))}</td>
+        <td class="rowKey" style="${border}padding:10px 16px;width:34%;font-family:Arial,sans-serif;font-size:${keySize}px;color:#64748b;vertical-align:top;line-height:1.45;">${esc(String(k))}</td>
+        <td class="rowVal" style="${border}padding:10px 8px 10px 16px;font-family:Arial,sans-serif;font-size:${D.cardBodySize || D.bodySize}px;${valStyle}line-height:1.45;">${esc(String(v))}</td>
+        <td style="${border}padding:10px 16px 10px 0;width:28px;text-align:right;vertical-align:middle;font-family:Arial,sans-serif;">${icon}</td>
       </tr>`;
     })
     .join('');
+
 
 
 
