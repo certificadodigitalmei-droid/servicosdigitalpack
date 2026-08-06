@@ -49,17 +49,33 @@ export const checkOrderStatus = createServerFn({ method: "POST" })
 
     const { data: gateway } = await supabaseAdmin
       .from("payment_gateways")
-      .select("api_key, base_url")
+      .select("api_key, base_url, provider_type")
       .eq("is_active", true)
       .maybeSingle();
 
     if (!gateway) return { status: order.status, paid: false };
 
-    const remote = await fetchSigiloStatus(
-      gateway.api_key,
-      gateway.base_url || SIGILOPAY_DEFAULT_BASE,
-      order.external_transaction_id,
-    );
+    const providerType = (order.payment_provider || gateway.provider_type || "sigilopay") as string;
+
+    let remote: string | null = null;
+    if (providerType === "syncpay") {
+      try {
+        const { getSyncPayTransactionStatus } = await import("@/lib/payments/syncpay.server");
+        remote = await getSyncPayTransactionStatus(
+          gateway.api_key,
+          gateway.base_url,
+          order.external_transaction_id,
+        );
+      } catch (err) {
+        console.error("[status] syncpay fetch error", err);
+      }
+    } else {
+      remote = await fetchSigiloStatus(
+        gateway.api_key,
+        gateway.base_url || SIGILOPAY_DEFAULT_BASE,
+        order.external_transaction_id,
+      );
+    }
 
     const paidStatuses = ["paid", "ok", "completed", "confirmed", "approved", "success"];
     const isPaid = !!remote && paidStatuses.includes(remote);
