@@ -56,7 +56,8 @@ async function countMetrics(supabase: any, from?: string | null, to?: string | n
     let q = supabase
       .from('email_send_queue')
       .select('id', { count: 'exact', head: true })
-      .eq('status', 'sent');
+      .eq('status', 'sent')
+      .like('idempotency_key', 'mass-email-%');
     if (gte) q = q.gte('updated_at', gte);
     if (lte) q = q.lte('updated_at', lte);
     return q;
@@ -71,19 +72,22 @@ async function countMetrics(supabase: any, from?: string | null, to?: string | n
       supabase
         .from('email_send_queue')
         .select('id', { count: 'exact', head: true })
+        .like('idempotency_key', 'mass-email-%')
         .in('status', ['queued', 'pending', 'sending']),
-      supabase.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'failed'),
-      supabase.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'suppressed'),
+      supabase.from('email_send_queue').select('id', { count: 'exact', head: true }).like('idempotency_key', 'mass-email-%').eq('status', 'failed'),
+      supabase.from('email_send_queue').select('id', { count: 'exact', head: true }).like('idempotency_key', 'mass-email-%').eq('status', 'suppressed'),
       supabase
         .from('email_send_queue')
         .select('updated_at')
         .eq('status', 'sent')
+        .like('idempotency_key', 'mass-email-%')
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle(),
       supabase
         .from('email_send_queue')
         .select('next_retry_at')
+        .like('idempotency_key', 'mass-email-%')
         .not('next_retry_at', 'is', null)
         .order('next_retry_at', { ascending: true })
         .limit(1)

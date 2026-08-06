@@ -125,9 +125,10 @@ export async function computePipelineState(client: AnyClient): Promise<PipelineS
       client
         .from('email_send_queue')
         .select('id', { count: 'exact', head: true })
+        .like('idempotency_key', `${QUEUE_KEY_PREFIX}%`)
         .in('status', ['queued', 'pending', 'sending']),
-      client.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'sent'),
-      client.from('email_send_queue').select('id', { count: 'exact', head: true }).eq('status', 'failed'),
+      client.from('email_send_queue').select('id', { count: 'exact', head: true }).like('idempotency_key', `${QUEUE_KEY_PREFIX}%`).eq('status', 'sent'),
+      client.from('email_send_queue').select('id', { count: 'exact', head: true }).like('idempotency_key', `${QUEUE_KEY_PREFIX}%`).eq('status', 'failed'),
     ]);
 
   const companyIds = [...emails.keys()];
@@ -309,6 +310,7 @@ export async function listUnifiedQueue(
   const { data: qrows } = await client
     .from('email_send_queue')
     .select('id, to_email, status, attempts, last_error, last_status_code, next_retry_at, idempotency_key, created_at')
+    .like('idempotency_key', `${QUEUE_KEY_PREFIX}%`)
     .in('status', ['queued', 'pending', 'sending', 'failed'])
     .order('created_at', { ascending: true })
     .limit(limit);
@@ -406,7 +408,12 @@ export type SendHealth = {
 export async function computeSendHealth(client: AnyClient): Promise<SendHealth> {
   const sinceHour = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const head = (apply: (q: any) => any) =>
-    apply(client.from('email_send_queue').select('id', { count: 'exact', head: true }));
+    apply(
+      client
+        .from('email_send_queue')
+        .select('id', { count: 'exact', head: true })
+        .like('idempotency_key', `${QUEUE_KEY_PREFIX}%`),
+    );
 
   const [fila, enviando, enviados, hora, falhas, r429, esperando429, supr] = await Promise.all([
     head((q) => q.in('status', ['queued', 'pending'])),

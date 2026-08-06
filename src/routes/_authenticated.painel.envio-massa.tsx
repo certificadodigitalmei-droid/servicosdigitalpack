@@ -32,7 +32,6 @@ import { getAutomationStatus, toggleGlobalAutomation } from '@/lib/automation/gl
 import {
   FilaUnicaCard,
   SendHealthCard,
-  SendWindowCard,
   SendProfileCard,
 } from '@/components/painel/FilaUnica';
 
@@ -220,16 +219,13 @@ function EnvioMassa() {
         <Num label="Falhas / suprimidos" value={(sm?.falhas ?? 0) + (sm?.suprimidos ?? 0)} tone="red" />
       </div>
 
-      {/* 3 — Janela de 1 hora */}
-      <SendWindowCard />
-
-      {/* 4 — Velocidade / lotes */}
+      {/* 3 — Ritmo contínuo */}
       <SendProfileCard />
 
-      {/* 5 — Fila única */}
+      {/* 4 — Fila única */}
       <FilaUnicaCard />
 
-      {/* 6 — Detalhes (fechado por padrão) */}
+      {/* 5 — Detalhes (fechado por padrão) */}
       <Section title="Saúde do envio (erros, 429, bounces)">
         <SendHealthCard />
       </Section>

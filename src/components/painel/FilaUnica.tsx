@@ -10,7 +10,6 @@ import { formatCNPJ } from '@/lib/format';
 import {
   getUnifiedQueue,
   getSendHealth,
-  getSendWindow,
   getFlowSettings,
   updateFlowSettings,
   type QueueStage,
@@ -175,7 +174,7 @@ export function SendHealthCard() {
           label="Enviados na última hora"
           value={data?.enviadosUltimaHora ?? 0}
           cls="text-emerald-600"
-          hint="Aceitos pelo provedor nos últimos 60 minutos. É este número que consome a cota da janela."
+          hint="Aceitos pelo provedor nos últimos 60 minutos. É apenas uma medição do ritmo, não um bloqueio."
         />
         <Metric
           label="Enviados (total)"
@@ -330,7 +329,7 @@ export function SendWindowCard() {
   );
 }
 
-/** Ritmo de envio: modo único (espaçado) + tamanho dos lotes. */
+/** Ritmo fixo e contínuo: um único e-mail principal a cada 36 segundos. */
 export function SendProfileCard() {
   const fetchSettings = useServerFn(getFlowSettings);
   const save = useServerFn(updateFlowSettings);
@@ -347,7 +346,6 @@ export function SendProfileCard() {
     try {
       await save({ data: patch as any });
       await qc.invalidateQueries({ queryKey: ['flow-settings'] });
-      await qc.invalidateQueries({ queryKey: ['send-window'] });
       toast.success('Configuração salva');
     } catch (e: any) {
       toast.error(e?.message ?? 'Falha ao salvar');
@@ -364,8 +362,6 @@ export function SendProfileCard() {
     );
   }
 
-  const intervalo = Math.max(1, Math.round(3600 / Math.max(1, data.hourlyBatchSize)));
-
   return (
     <Card className="border-slate-200">
       <CardHeader className="pb-3">
@@ -374,8 +370,8 @@ export function SendProfileCard() {
           Ritmo de envio
         </CardTitle>
         <CardDescription>
-          Modo único: envio espaçado dentro de uma janela de 1 hora. Sem rajada e sem envios
-          paralelos — é o ritmo que o provedor aceita sem devolver HTTP 429.
+          Fluxo contínuo, sem lote e sem janela de bloqueio. Enquanto o modo nuvem estiver ativo,
+          o sistema tenta enviar somente o e-mail principal de cada empresa.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -383,46 +379,18 @@ export function SendProfileCard() {
           <Timer className="h-5 w-5 text-emerald-600" />
           <div>
             <p className="text-sm font-semibold text-emerald-900">
-              {data.hourlyBatchSize} e-mails por hora
+              1 e-mail a cada 36 segundos
             </p>
             <p className="text-xs text-emerald-800">
-              cerca de 1 a cada {intervalo}s — o sistema recupera sozinho qualquer atraso, sem
-              nunca passar do limite da janela.
+              Ritmo aproximado de 100 por hora. Se houver atraso ou HTTP 429, o item espera e volta
+              sozinho para a fila sem bloquear os demais.
             </p>
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label className="mb-2 block text-sm font-semibold">Lote por janela (e-mails/h)</Label>
-            <div className="flex flex-wrap items-center gap-2">
-              <Input
-                type="number"
-                min={1}
-                max={1000}
-                className="w-24"
-                value={data.hourlyBatchSize}
-                onChange={(e) =>
-                  void apply({ hourlyBatchSize: Math.max(1, Number(e.target.value) || 1) })
-                }
-                disabled={saving}
-              />
-              {[25, 50, 100, 200].map((n) => (
-                <Button
-                  key={n}
-                  size="sm"
-                  variant={data.hourlyBatchSize === n ? 'default' : 'outline'}
-                  onClick={() => void apply({ hourlyBatchSize: n })}
-                  disabled={saving}
-                >
-                  {n}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <Label className="mb-2 block text-sm font-semibold">Empresas por importação</Label>
+            <Label className="mb-2 block text-sm font-semibold">Empresas por ciclo de importação</Label>
             <div className="flex flex-wrap items-center gap-2">
               <Input
                 type="number"
@@ -448,20 +416,24 @@ export function SendProfileCard() {
               ))}
             </div>
           </div>
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+            <strong>Somente mensagem principal:</strong> e-mails de PIX gerado, cobrança,
+            pagamento e desconto estão desativados.
+          </div>
         </div>
 
         <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            Se o provedor responder <strong>HTTP 429</strong>, os e-mails voltam para a fila com
-            espera automática e aparecem em “Retries (HTTP 429)” — ninguém é perdido.
+            Se o provedor responder <strong>HTTP 429</strong>, somente aquele e-mail espera o prazo
+            solicitado. Depois ele é tentado novamente automaticamente — ninguém é perdido.
           </span>
         </div>
 
         <p className="flex items-center gap-1.5 text-xs text-slate-500">
           <Send className="h-3.5 w-3.5" />
-          Fluxo travado: importar {data.importBatchSize} → gerar links → enviar todos (
-          {data.hourlyBatchSize}/h) → só então importar mais.
+          Fluxo travado: importar {data.importBatchSize} → gerar links → enviar todos, um a cada
+          36 segundos → só então importar mais.
         </p>
       </CardContent>
     </Card>
