@@ -388,8 +388,12 @@ export type SendHealth = {
   enviando: number;
   enviados: number;
   enviadosUltimaHora: number;
+  /** Falhas definitivas (desistimos do envio). Rate limit NÃO entra aqui. */
   falhas: number;
+  /** E-mails que já bateram 429 alguma vez (histórico, não é erro). */
   retries429: number;
+  /** Ainda na fila e reagendados por causa do 429 (aguardando liberar). */
+  aguardando429: number;
   suprimidos: number;
 };
 
@@ -399,13 +403,14 @@ export async function computeSendHealth(client: AnyClient): Promise<SendHealth> 
   const head = (apply: (q: any) => any) =>
     apply(client.from('email_send_queue').select('id', { count: 'exact', head: true }));
 
-  const [fila, enviando, enviados, hora, falhas, r429, supr] = await Promise.all([
+  const [fila, enviando, enviados, hora, falhas, r429, esperando429, supr] = await Promise.all([
     head((q) => q.in('status', ['queued', 'pending'])),
     head((q) => q.eq('status', 'sending')),
     head((q) => q.eq('status', 'sent')),
     head((q) => q.eq('status', 'sent').gte('updated_at', sinceHour)),
     head((q) => q.eq('status', 'failed')),
     head((q) => q.eq('last_status_code', 429)),
+    head((q) => q.in('status', ['queued', 'pending']).eq('last_status_code', 429)),
     head((q) => q.eq('status', 'suppressed')),
   ]);
 
@@ -417,9 +422,11 @@ export async function computeSendHealth(client: AnyClient): Promise<SendHealth> 
     enviadosUltimaHora: hora.count ?? 0,
     falhas: falhas.count ?? 0,
     retries429: r429.count ?? 0,
+    aguardando429: esperando429.count ?? 0,
     suprimidos: supr.count ?? 0,
   };
 }
+
 
 // ---------------------------------------------------------------------------
 // JANELA DE ENVIO (1 hora, ancorada no 1º e-mail)
