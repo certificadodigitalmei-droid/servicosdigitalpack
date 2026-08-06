@@ -173,10 +173,12 @@ export const enqueueWorkspaceEmail = createServerFn({ method: 'POST' })
 
 export const processWorkspaceQueue = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ maxBatch: z.number().int().min(1).max(50).default(10) }).parse(data ?? {}))
-  .handler(async ({ data, context }) => {
+  .inputValidator((data) => z.object({ maxBatch: z.number().int().min(1).max(50).default(1) }).parse(data ?? {}))
+  .handler(async ({ context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { processQueueInternal } = await import('./queue.server');
-    return await processQueueInternal(data.maxBatch);
+    // Modo único: 1 e-mail por acionamento, respeitando o espaçamento de 36 s.
+    return await processQueueInternal();
   });
+
 
