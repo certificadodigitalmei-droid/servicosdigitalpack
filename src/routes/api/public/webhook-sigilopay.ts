@@ -75,9 +75,6 @@ export const Route = createFileRoute('/api/public/webhook-sigilopay')({
 
           if (updated === 0) {
             console.warn('[webhook-sigilopay] nenhum pedido encontrado', { transactionId, identifier });
-          } else {
-            const { sendPaidEmail } = await import('@/lib/emails/order-emails.server');
-            for (const id of paidIds) await sendPaidEmail(id);
           }
 
           return new Response('OK', { status: 200 });
