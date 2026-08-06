@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { createStore } from './store';
 import { sendCampaignEmail } from '@/lib/email-campaign/send.functions';
+import { getLatestTestEmailCompany } from '@/lib/company-links.functions';
 import {
   DEFAULT_SUBJECT,
   rowToVars,
@@ -1043,8 +1044,8 @@ export async function sendSingle(item: QueueItem) {
 
 /**
  * Dispara UM único e-mail de teste para `testRecipient`, sem depender da fila.
- * Usa o primeiro item da fila para preencher variáveis (nome, CNPJ etc.)
- * — se a fila estiver vazia, usa dados fictícios.
+ * Busca no backend a empresa real mais recente com link ativo. Não usa a fila
+ * local, pois ela pode manter tokens antigos depois de uma limpeza/importação.
  */
 export async function sendTestOnce() {
   if (running) {
@@ -1057,65 +1058,39 @@ export async function sendTestOnce() {
     toast.error('Informe um e-mail de teste primeiro.');
     return;
   }
-  // Preferimos SEMPRE uma empresa real com link gerado, para o teste sair
-  // idêntico ao e-mail de produção (dados + botão apontando para /acesso/<token>).
-  let sample: QueueItem | null =
-    cfg.queue.find((q) => q.publicToken || (q as any).publicUrl) || cfg.queue[0] || null;
-
-  if (!sample || !(sample.publicToken || (sample as any).publicUrl)) {
-    try {
-      const { data: link } = await supabase
-        .from('company_links')
-        .select('public_token, public_url, company_id')
-        .eq('active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (link?.company_id) {
-        const { data: c } = await supabase
-          .from('companies')
-          .select(
-            'id, cnpj, email, razao_social_original, nome_titular_exibicao, inicio_atividade, uf, municipio_descricao',
-          )
-          .eq('id', link.company_id)
-          .maybeSingle();
-
-        if (c) {
-          sample = {
-            id: c.id,
-            email: c.email || to,
-            cnpj: c.cnpj || '',
-            company_name: c.nome_titular_exibicao || c.razao_social_original || '',
-            data_abertura: c.inicio_atividade || '',
-            situacao: 'CNPJ sem certificado pendente',
-            uf: c.uf || '',
-            municipio: c.municipio_descricao || '',
-            status: 'pending',
-            publicToken: link.public_token,
-            publicUrl: link.public_url,
-          } as QueueItem;
-        }
-      }
-    } catch {
-      /* segue com o exemplo abaixo */
-    }
-  }
-
-  if (!sample) {
-    toast.error('Nenhuma empresa com link gerado para usar no teste.');
+  let realCompany;
+  try {
+    realCompany = await getLatestTestEmailCompany();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Falha ao buscar empresa real';
+    pushLog(`✗ Teste cancelado: ${message}`);
+    toast.error(message);
     return;
   }
 
-  if (!sample.publicToken && !(sample as any).publicUrl) {
-    toast.error('A empresa do teste ainda não tem link gerado. Gere os links antes.');
+  if (!realCompany) {
+    toast.error('Nenhuma empresa real com e-mail e link ativo foi encontrada.');
     return;
   }
+
+  const sample: QueueItem = {
+    id: realCompany.id,
+    email: realCompany.email,
+    cnpj: realCompany.cnpj,
+    company_name: realCompany.company_name,
+    data_abertura: realCompany.data_abertura,
+    situacao: 'CNPJ sem certificado pendente',
+    uf: realCompany.uf,
+    municipio: realCompany.municipio,
+    status: 'pending',
+    publicToken: realCompany.public_token,
+    publicUrl: realCompany.public_url,
+  };
 
   const vars = buildVarsFor(sample);
 
   const subj = substitute(loadSavedSubject() || cfg.subject, vars);
-  pushLog(`🧪 Enviando 1 e-mail de teste para ${to}...`);
+  pushLog(`🧪 Teste com empresa real ${sample.company_name} (${sample.cnpj}) para ${to}...`);
   try {
     const res: any = await sendCampaignEmail({
       data: {

@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
+import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 
 export type ResolvedCompany = {
   cnpj: string | null;
@@ -15,6 +16,72 @@ export type ResolvedCompany = {
   natureza_juridica: string | null;
   amount_cents: number | null;
 };
+
+export type TestEmailCompany = {
+  id: string;
+  cnpj: string;
+  email: string;
+  company_name: string;
+  data_abertura: string;
+  uf: string;
+  municipio: string;
+  public_token: string;
+  public_url: string;
+};
+
+/**
+ * Retorna uma empresa importada real cujo link público ainda está ativo.
+ * O envio de teste usa esta fonte em vez da fila persistida no navegador,
+ * que pode conter tokens antigos após limpezas ou novas importações.
+ */
+export const getLatestTestEmailCompany = createServerFn({ method: 'GET' })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<TestEmailCompany | null> => {
+    const { data: role } = await context.supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', context.userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+    if (!role) throw new Error('Acesso não autorizado');
+
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const now = new Date().toISOString();
+    const { data: links, error: linksError } = await supabaseAdmin
+      .from('company_links')
+      .select('company_id, public_token, created_at')
+      .eq('active', true)
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
+      .not('company_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(25);
+    if (linksError) throw new Error('Falha ao localizar link real: ' + linksError.message);
+
+    for (const link of links ?? []) {
+      if (!link.company_id || !link.public_token) continue;
+      const { data: company } = await supabaseAdmin
+        .from('companies')
+        .select('id, cnpj, email, nome_fantasia, razao_social_original, nome_titular_exibicao, inicio_atividade, uf, municipio_descricao')
+        .eq('id', link.company_id)
+        .maybeSingle();
+      if (!company || !company.email || !/.+@.+\..+/.test(company.email)) continue;
+
+      return {
+        id: company.id,
+        cnpj: company.cnpj || '',
+        email: company.email,
+        company_name:
+          company.nome_fantasia || company.razao_social_original || company.nome_titular_exibicao || '',
+        data_abertura: company.inicio_atividade || '',
+        uf: company.uf || '',
+        municipio: company.municipio_descricao || '',
+        public_token: link.public_token,
+        public_url: `https://seu-certificado-mei-digital.online/acesso/${link.public_token}`,
+      };
+    }
+
+    return null;
+  });
 
 
 export const resolveCompanyLink = createServerFn({ method: 'GET' })
