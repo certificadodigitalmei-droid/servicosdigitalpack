@@ -98,13 +98,24 @@ export function FilaUnicaCard({ limit = 100 }: { limit?: number }) {
   );
 }
 
-function Metric({ label, value, cls }: { label: string; value: number; cls?: string }) {
+function Metric({
+  label,
+  value,
+  cls,
+  hint,
+}: {
+  label: string;
+  value: number;
+  cls?: string;
+  hint?: string;
+}) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-3">
       <div className="text-[11px] uppercase tracking-wide text-slate-500">{label}</div>
       <div className={`text-xl font-bold ${cls ?? 'text-slate-900'}`}>
         {value.toLocaleString('pt-BR')}
       </div>
+      {hint && <p className="mt-1 text-[11px] leading-snug text-slate-500">{hint}</p>}
     </div>
   );
 }
@@ -126,22 +137,75 @@ export function SendHealthCard() {
           Status dos disparos
         </CardTitle>
         <CardDescription>
-          Números reais da fila do servidor — enviados, erros e quantas vezes o provedor respondeu
-          rate limit (HTTP 429).
+          Números reais da fila do servidor. Cada caixa abaixo explica exatamente o que está
+          contando — <strong>rate limit (HTTP 429) não é erro</strong>, é só o provedor pedindo para
+          esperar; esses e-mails voltam sozinhos para a fila.
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Metric label="Na fila" value={data?.naFila ?? 0} cls="text-amber-600" />
-        <Metric label="Enviados (1h)" value={data?.enviadosUltimaHora ?? 0} cls="text-emerald-600" />
-        <Metric label="Enviados (total)" value={data?.enviados ?? 0} cls="text-emerald-700" />
-        <Metric label="Erros" value={data?.falhas ?? 0} cls="text-red-600" />
-        <Metric label="Retries (HTTP 429)" value={data?.retries429 ?? 0} cls="text-orange-600" />
-        <Metric label="Suprimidos" value={data?.suprimidos ?? 0} cls="text-slate-600" />
-        <Metric label="Enviando agora" value={data?.enviando ?? 0} cls="text-indigo-600" />
+      <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric
+          label="Na fila"
+          value={data?.naFila ?? 0}
+          cls="text-amber-600"
+          hint="E-mails prontos que ainda não foram disparados. Diminui conforme o envio acontece."
+        />
+        <Metric
+          label="Enviando agora"
+          value={data?.enviando ?? 0}
+          cls="text-indigo-600"
+          hint="E-mails em processamento neste exato momento (normalmente 0 entre os lotes)."
+        />
+        <Metric
+          label="Enviados na última hora"
+          value={data?.enviadosUltimaHora ?? 0}
+          cls="text-emerald-600"
+          hint="Aceitos pelo provedor nos últimos 60 minutos. É este número que consome a cota da janela."
+        />
+        <Metric
+          label="Enviados (total)"
+          value={data?.enviados ?? 0}
+          cls="text-emerald-700"
+          hint="Total histórico de e-mails entregues ao provedor desde o início."
+        />
+        <Metric
+          label="Falhas definitivas"
+          value={data?.falhas ?? 0}
+          cls="text-red-600"
+          hint="Desistimos do envio (e-mail inválido, caixa inexistente). A empresa é removida automaticamente."
+        />
+        <Metric
+          label="Esperando por 429"
+          value={data?.aguardando429 ?? 0}
+          cls="text-orange-600"
+          hint="Ainda na fila, só aguardando o tempo do rate limit passar. Serão enviados sozinhos."
+        />
+        <Metric
+          label="Já bateram 429 (histórico)"
+          value={data?.retries429 ?? 0}
+          cls="text-orange-500"
+          hint="Quantos e-mails em algum momento receberam rate limit. Não significa perda — é só contagem de reagendamentos."
+        />
+        <Metric
+          label="Suprimidos"
+          value={data?.suprimidos ?? 0}
+          cls="text-slate-600"
+          hint="Bloqueados de propósito: descadastro, reclamação de spam ou domínio que não recebe e-mail."
+        />
+      </CardContent>
+      <CardContent className="pt-0">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-[12px] leading-relaxed text-slate-600">
+          <p className="mb-1 font-semibold text-slate-700">Como ler estes números</p>
+          <p>
+            <strong>Na fila + Enviando + Enviados</strong> é o caminho normal de cada e-mail. Só
+            preocupe-se com <strong>Falhas definitivas</strong>: as outras caixas laranjas são
+            apenas espera técnica e se resolvem sozinhas.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
 }
+
 
 /** Janela de 1 hora: abre no 1º envio, mostra restante e conta regressiva. */
 export function SendWindowCard() {
