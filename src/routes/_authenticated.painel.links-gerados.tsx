@@ -154,9 +154,22 @@ function LinksGeradosPage() {
         });
       }
 
+      // 1 linha por empresa: mantém apenas o link mais recente (página principal).
+      // Checkout/PIX usam o mesmo token, então não são contados de novo.
+      {
+        const seen = new Set<string>();
+        list = list.filter((r) => {
+          const key = r.company_id ?? `link:${r.id}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
       // Marca cada link como Automática/Manual baseado no generation_id
       const autoSet = new Set<string>(list.filter((r) => !r.generation_id).map((r) => r.id));
       setAutoLinkIds(autoSet);
+
 
       // ===== KPIs AGREGADOS: TODOS os eventos no período (não só os da página) =====
       const agg = emptyStats();
