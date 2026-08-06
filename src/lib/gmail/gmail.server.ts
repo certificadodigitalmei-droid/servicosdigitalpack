@@ -178,8 +178,22 @@ export async function sendGmailMessage(opts: {
 
   if (res.status === 429) {
     const retryAfter = Number(res.headers.get('retry-after') || '60');
-    throw new GmailError('Rate limit da Gmail API', 429, 'rate_limited', retryAfter);
+    // Guarda apenas o "reason" da Google (rateLimitExceeded / dailyLimitExceeded / ...)
+    let reason = '';
+    try {
+      const j: any = await res.json();
+      reason = j?.error?.errors?.[0]?.reason || j?.error?.status || '';
+    } catch {
+      reason = '';
+    }
+    throw new GmailError(
+      `Rate limit da Gmail API${reason ? ` (${reason})` : ''}`,
+      429,
+      'rate_limited',
+      retryAfter,
+    );
   }
+
   if (res.status >= 500) {
     throw new GmailError(`Gmail 5xx (${res.status})`, res.status, 'server_error');
   }
