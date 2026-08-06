@@ -108,11 +108,11 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (!gateway || !gateway.api_key) {
-      throw new Error("Nenhum gateway SigiloPay ativo. Cadastre em Configurações de Pagamento.");
+      throw new Error("Nenhum gateway de pagamento ativo. Cadastre em Configurações de Pagamento.");
     }
-    const provider = "sigilopay";
+    const provider = (gateway.provider_type as string) || "sigilopay";
     const apiKey = gateway.api_key as string;
-    const baseUrl = gateway.base_url || SIGILOPAY_DEFAULT_BASE;
+    const baseUrl = gateway.base_url || null;
 
     // Resolve link → company
     let companyId: string | null = null;
