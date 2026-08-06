@@ -1,0 +1,1 @@
+UPDATE public.email_send_queue SET status = 'queued', next_retry_at = NULL WHERE status = 'sending' AND updated_at < now() - interval '10 minutes'; UPDATE public.email_send_queue SET next_retry_at = NULL WHERE status IN ('queued', 'pending') AND last_status_code = 429;

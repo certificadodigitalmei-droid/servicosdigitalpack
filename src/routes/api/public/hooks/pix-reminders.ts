@@ -26,20 +26,10 @@ export const Route = createFileRoute('/api/public/hooks/pix-reminders')({
         );
         const cadence = await runNotificationCadence();
 
-        // Processa automaticamente a fila do Google Workspace (sem ação manual).
-        let queue: { processed: number; sent: number; failed: number } | { error: string };
-        try {
-          const { processQueueInternal } = await import('@/lib/gmail/queue.server');
-          queue = await processQueueInternal();
-        } catch (e) {
-          queue = { error: (e as Error).message };
-        }
-
-        // Chamada da automação completa (importação + sincronia + disparos)
-        const { syncMassEmailQueue } = await import('@/lib/automation/mass-email.server');
-        const sync = await syncMassEmailQueue(5);
-
-        return new Response(JSON.stringify({ cadence, queue, sync }), {
+        // Este endpoint apenas cria lembretes. O processamento da fila pertence
+        // exclusivamente ao full-automation, evitando dois agendadores tentando
+        // enviar ao mesmo tempo e provocando HTTP 429.
+        return new Response(JSON.stringify({ cadence }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });

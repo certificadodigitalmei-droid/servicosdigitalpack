@@ -32,6 +32,16 @@ export function useRealtimeSync() {
         { event: '*', schema: 'public', table: t.table },
         () => {
           qc.invalidateQueries({ queryKey: [t.queryKey] });
+          qc.invalidateQueries({ queryKey: ["fila-unica"] });
+          qc.invalidateQueries({ queryKey: ["send-health"] });
+          qc.invalidateQueries({ queryKey: ["send-window"] });
+          qc.invalidateQueries({ queryKey: ["flow-settings"] });
+          qc.invalidateQueries({ queryKey: ["email-metrics"] });
+          if (t.table === 'email_send_queue') {
+            qc.invalidateQueries({ queryKey: ['fila-unica'] });
+            qc.invalidateQueries({ queryKey: ['send-health'] });
+            qc.invalidateQueries({ queryKey: ['send-window'] });
+          }
           qc.invalidateQueries({ queryKey: ['dashboard-overview'] });
           qc.invalidateQueries({ queryKey: ['pipeline-state'] });
           qc.invalidateQueries({ queryKey: ['pipeline-sem-link'] });

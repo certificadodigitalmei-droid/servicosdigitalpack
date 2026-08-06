@@ -201,6 +201,30 @@ export async function processQueueInternal(
 
   if (remaining === 0) return { ...base, throttled: true };
 
+  // O limite devolvido pelo Gmail vale para o remetente, não apenas para uma
+  // mensagem. Enquanto existir um 429 recente ainda aguardando liberação, não
+  // tentamos outros destinatários: isso evita criar uma sequência infinita de
+  // novos 429 e permite que o provedor realmente libere a conta.
+  const { data: activeRateLimit } = await supabaseAdmin
+    .from('email_send_queue')
+    .select('next_retry_at')
+    .in('status', ['queued', 'pending'])
+    .eq('last_status_code', 429)
+    .gt('next_retry_at', new Date().toISOString())
+    .order('next_retry_at', { ascending: false })
+    .limit(_maxBatch)
+    .maybeSingle();
+  if (activeRateLimit?.next_retry_at) {
+    const retryAt = new Date(activeRateLimit.next_retry_at).getTime();
+    return {
+      ...base,
+      throttled: true,
+      rateLimited: true,
+      retryAfterSec: Math.max(1, Math.ceil((retryAt - Date.now()) / 1000)),
+      nextRetryAt: activeRateLimit.next_retry_at,
+    };
+  }
+
   // Espaçamento: só envia se já passou o intervalo desde o último envio.
   const last = await lastSentAt();
   if (last !== null && Date.now() - last < spacingSec * 1000) {
@@ -214,7 +238,7 @@ export async function processQueueInternal(
     .in('status', ['queued', 'pending'])
     .or(`next_retry_at.is.null,next_retry_at.lte.${nowIso}`)
     .order('created_at', { ascending: true })
-    .limit(1);
+    .limit(_maxBatch);
   if (error) throw new Error(error.message);
 
   const row = (rows ?? [])[0] as QueueRow | undefined;
