@@ -86,21 +86,30 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
           } else {
             const { runImportBatch } = await import('@/lib/casa-dos-dados/simple-flow.server');
 
-            const nowIso = new Date().toISOString();
-            const { data: configs } = await supabaseAdmin
+            const now = Date.now();
+            const nowIso = new Date(now).toISOString();
+            const { data: allConfigs, error: cfgError } = await supabaseAdmin
               .from('automatic_company_queries')
               .select('*')
-              .eq('enabled', true)
-              .or(`next_run_at.is.null,next_run_at.lte.${nowIso}`)
-              .limit(1);
+              .eq('enabled', true);
 
-            if (configs && configs.length > 0) {
-              const cfg = configs[0] as any;
+            if (cfgError) stats.configError = cfgError.message;
+
+            // Filtro de vencimento feito em JS (mais tolerante que .or no PostgREST)
+            const configs = (allConfigs ?? []).filter((c: any) => {
+              if (!c.next_run_at) return true;
+              return new Date(c.next_run_at).getTime() <= now;
+            });
+
+            {
+              // Sem automação cadastrada, a nuvem ainda importa com o padrão MEI do dia
+              const cfg: any = configs[0] ?? null;
+
               const outcome = await runImportBatch({
                 date: new Intl.DateTimeFormat('en-CA', {
                   timeZone: 'America/Sao_Paulo',
                 }).format(new Date()),
-                filters: (cfg.filters as any) || {
+                filters: (cfg?.filters as any) || {
                   only_mei: true,
                   only_active: true,
                   only_matriz: false,
@@ -110,24 +119,23 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
                 skipExisting: true,
               });
 
-
-              await supabaseAdmin
-                .from('automatic_company_queries')
-                .update({
-                  last_run_at: nowIso,
-                  // A trava do pipeline já controla o ritmo: liberamos a
-                  // próxima checagem em 1 minuto e ela só importa se a fila
-                  // estiver realmente vazia.
-                  next_run_at: new Date(Date.now() + 60_000).toISOString(),
-
-                  status: 'active',
-                })
-                .eq('id', cfg.id);
+              if (cfg?.id) {
+                await supabaseAdmin
+                  .from('automatic_company_queries')
+                  .update({
+                    last_run_at: nowIso,
+                    // A trava do pipeline já controla o ritmo: liberamos a
+                    // próxima checagem em 1 minuto e ela só importa se a fila
+                    // estiver realmente vazia.
+                    next_run_at: new Date(Date.now() + 60_000).toISOString(),
+                    status: 'active',
+                  })
+                  .eq('id', cfg.id);
+              }
 
               stats.import = outcome;
-            } else {
-              stats.import = { skipped: true, reason: 'nenhuma automação ativa/vencida' };
             }
+
           }
 
           // 6. Reconciliação de métricas
