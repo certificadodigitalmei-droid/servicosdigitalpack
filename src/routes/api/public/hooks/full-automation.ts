@@ -58,10 +58,15 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
           // 2. Links sem envio -> entrar na fila
           stats.sync = await syncMassEmailQueue(Math.max(25, flow.importBatchSize));
 
-          // 3. Despachar fila — modo único (espaçado), por saldo da janela
-          //    deslizante de 1 hora. Recupera atrasos sem passar do limite.
+          // 3. Despachar fila — modo ÚNICO: 1 e-mail a cada `pacedDelaySec`
+          //    segundos (padrão 36 s = 100/h), com teto da janela de 1 hora.
           const { processQueueInternal, MAX_PER_TICK } = await import('@/lib/gmail/queue.server');
-          stats.queue = await processQueueInternal(MAX_PER_TICK, flow.hourlyBatchSize);
+          stats.queue = await processQueueInternal(
+            MAX_PER_TICK,
+            flow.hourlyBatchSize,
+            flow.pacedDelaySec,
+          );
+
 
 
           // 4. Régua de cobrança (PIX pendente etc.)

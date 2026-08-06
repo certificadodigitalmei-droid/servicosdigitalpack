@@ -82,15 +82,10 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
       })
       .eq('id', row.id);
 
-    // Limite do provedor: pausa a fila INTEIRA até o horário indicado por ele.
-    if (isRateLimit) {
-      const until = new Date(Date.now() + backoffSec * 1000).toISOString();
-      await supabaseAdmin
-        .from('email_send_queue')
-        .update({ next_retry_at: until })
-        .in('status', ['queued', 'pending'])
-        .or(`next_retry_at.is.null,next_retry_at.lt.${until}`);
-    }
+    // 429 afeta APENAS este item (já reagendado acima). A fila inteira
+    // não é mais congelada — isso derrubava o ritmo para bem menos de 100/h.
+
+
 
     // Log de auditoria: só registra falha real (rate limit não é falha)
     if (companyCnpj && !isRateLimit) {
@@ -136,23 +131,51 @@ export async function releaseStuckSending(minutes = 10): Promise<number> {
   return (data ?? []).length;
 }
 
-/** Máximo de e-mails disparados numa única execução do cron. */
-export const MAX_PER_TICK = 5;
+/** Modo único: no máximo 1 e-mail por execução do agendador. */
+export const MAX_PER_TICK = 1;
 
-/** Espaçamento mínimo entre dois envios dentro da mesma execução. */
-const SPACING_MS = 1_200;
+/** Espaçamento padrão entre dois envios (36 s = 100 e-mails por hora). */
+export const DEFAULT_SPACING_SEC = 36;
+
+/** Horário do último e-mail enviado com sucesso. */
+async function lastSentAt(): Promise<number | null> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const { data } = await supabaseAdmin
+    .from('email_send_queue')
+    .select('updated_at')
+    .eq('status', 'sent')
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.updated_at ? new Date(data.updated_at).getTime() : null;
+}
 
 /**
- * Despacho por SALDO da janela deslizante de 1 hora.
+ * Libera itens que ficaram com espera agendada por causa de 429 antigo
+ * (o congelamento em massa da fila foi removido).
+ */
+export async function clearRateLimitHolds(): Promise<number> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const { data } = await supabaseAdmin
+    .from('email_send_queue')
+    .update({ next_retry_at: null })
+    .in('status', ['queued', 'pending'])
+    .eq('last_status_code', 429)
+    .not('next_retry_at', 'is', null)
+    .select('id');
+  return (data ?? []).length;
+}
+
+/**
+ * Modo ÚNICO de envio: 1 e-mail a cada `spacingSec` segundos (padrão 36 s),
+ * o que dá 100 e-mails por hora, sem lote e sem paralelismo.
  *
- * A cada execução calculamos quantos e-mails saíram nos últimos 60 minutos e
- * enviamos o que falta para completar a cota (`hourlyLimit`), com no máximo
- * `maxBatch` por execução. Assim, se uma execução do agendador falhar ou
- * atrasar, a seguinte recupera o atraso — sem nunca ultrapassar o limite.
+ * O teto da janela deslizante de 1 hora continua valendo como segurança.
  */
 export async function processQueueInternal(
-  maxBatch = MAX_PER_TICK,
+  _maxBatch = MAX_PER_TICK,
   hourlyLimit = HOURLY_LIMIT,
+  spacingSec = DEFAULT_SPACING_SEC,
 ) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const { computeSendWindow } = await import('@/lib/pipeline/pipeline.server');
@@ -162,21 +185,27 @@ export async function processQueueInternal(
   const win = await computeSendWindow(supabaseAdmin as any, hourlyLimit);
   const lastHour = win.sentInWindow;
   const remaining = win.remaining;
-  if (remaining === 0) {
-    return {
-      processed: 0,
-      sent: 0,
-      failed: 0,
-      released,
-      lastHour,
-      remaining: 0,
-      throttled: true,
-      windowStart: win.windowStart,
-      windowEnd: win.windowEnd,
-      secondsToReset: win.secondsToReset,
-    };
+  const base = {
+    processed: 0,
+    sent: 0,
+    failed: 0,
+    released,
+    rateLimited: false,
+    retryAfterSec: 0,
+    lastHour,
+    remaining,
+    windowStart: win.windowStart,
+    windowEnd: win.windowEnd,
+    secondsToReset: win.secondsToReset,
+  };
+
+  if (remaining === 0) return { ...base, throttled: true };
+
+  // Espaçamento: só envia se já passou o intervalo desde o último envio.
+  const last = await lastSentAt();
+  if (last !== null && Date.now() - last < spacingSec * 1000) {
+    return { ...base, throttled: true, waitingSpacing: true };
   }
-  const batch = Math.min(Math.max(1, maxBatch), remaining);
 
   const nowIso = new Date().toISOString();
   const { data: rows, error } = await supabaseAdmin
@@ -185,33 +214,27 @@ export async function processQueueInternal(
     .in('status', ['queued', 'pending'])
     .or(`next_retry_at.is.null,next_retry_at.lte.${nowIso}`)
     .order('created_at', { ascending: true })
-    .limit(batch);
+    .limit(1);
   if (error) throw new Error(error.message);
 
-  const list = (rows ?? []) as QueueRow[];
+  const row = (rows ?? [])[0] as QueueRow | undefined;
+  if (!row) return { ...base, throttled: false };
+
   let sent = 0;
   let failed = 0;
   let rateLimited = false;
   let retryAfterSec = 0;
 
-  for (let i = 0; i < list.length; i++) {
-    if (i > 0) await new Promise((r) => setTimeout(r, SPACING_MS));
-    const r = await sendOneNow(list[i]!);
-    if (r.ok) {
-      sent++;
-      continue;
-    }
-    if ((r as any).rateLimited) {
-      // O provedor pediu para esperar: encerra a execução agora.
-      rateLimited = true;
-      retryAfterSec = (r as any).retryAfterSec ?? 60;
-      break;
-    }
-    failed++;
-  }
+  const r = await sendOneNow(row);
+  if (r.ok) sent++;
+  else if ((r as any).rateLimited) {
+    rateLimited = true;
+    retryAfterSec = (r as any).retryAfterSec ?? 60;
+  } else failed++;
+
 
   return {
-    processed: list.length,
+    processed: 1,
     sent,
     failed,
     released,
