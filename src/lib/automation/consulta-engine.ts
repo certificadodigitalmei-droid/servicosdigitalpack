@@ -81,6 +81,7 @@ type State = {
   autoStats: AutoStats;
   autoImportRuns: number;
   autoImportTotal: number;
+  autoImportBlockReason: string | null;
   countResult: CountResult | null;
   saldo: string | null;
   isCounting: boolean;
@@ -125,6 +126,7 @@ const initial: State = {
   },
   autoImportRuns: 0,
   autoImportTotal: 0,
+  autoImportBlockReason: null,
   countResult: null,
   saldo: null,
   isCounting: false,
