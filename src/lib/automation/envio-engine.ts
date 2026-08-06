@@ -622,11 +622,14 @@ function buildVarsFor(item: QueueItem) {
     MUNICIPIO: item.municipio || '',
     UF: item.uf || '',
     EMAIL: item.email,
-    LINK_PUBLICO: item.publicUrl
-      ? item.publicUrl
-      : item.publicToken
-        ? `${PUBLIC_BASE_URL}/acesso/${item.publicToken}`
+    // O link do e-mail precisa ser SEMPRE absoluto e apontar para /acesso/<token>.
+    // (public_url no banco é relativo, ex.: "/c/<token>" — não serve em e-mail.)
+    LINK_PUBLICO: item.publicToken
+      ? `${PUBLIC_BASE_URL}/acesso/${item.publicToken}`
+      : item.publicUrl && /^https?:\/\//i.test(item.publicUrl)
+        ? item.publicUrl
         : `${PUBLIC_BASE_URL}/modelo`,
+
     TOKEN: item.publicToken || '',
 
   };
