@@ -69,6 +69,7 @@ function ImportacaoAutomaticaPage() {
   const autoImportRuns = useStore(consultaStore, (s) => s.autoImportRuns);
   const autoImportTotal = useStore(consultaStore, (s) => s.autoImportTotal);
   const bufferTarget = useStore(consultaStore, (s) => s.bufferTarget);
+  const autoImportBlockReason = useStore(consultaStore, (s) => s.autoImportBlockReason);
 
   const importedRowsAll = useStore(consultaStore, (s) => s.importedRows);
   const failedRowsAll = useStore(consultaStore, (s) => s.failedRows);
@@ -472,6 +473,12 @@ function ImportacaoAutomaticaPage() {
                   ))}
                 </div>
               </div>
+              {autoImport && envioAtivo && autoImportBlockReason && (
+                <p className="rounded bg-sky-50 border border-sky-200 px-2 py-1.5 text-sky-800">
+                  ⛔ Importação bloqueada: {autoImportBlockReason}. Só importa depois
+                  que todas as pendências forem enviadas.
+                </p>
+              )}
               {autoImport && !envioAtivo && (
                 <p className="rounded bg-amber-50 border border-amber-200 px-2 py-1.5 text-amber-800">
                   ⏸ Aguardando o <strong>Envio em Massa</strong> ser iniciado em modo real
