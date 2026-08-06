@@ -16,7 +16,7 @@ import {
   type QueueStage,
 } from '@/lib/pipeline/pipeline.functions';
 import { toast } from 'sonner';
-import { Inbox, Send, AlertTriangle, Gauge, Zap, Timer, Settings2, Rocket } from 'lucide-react';
+import { Inbox, Send, AlertTriangle, Gauge, Timer, Settings2 } from 'lucide-react';
 
 
 const STAGE_UI: Record<QueueStage, { label: string; cls: string }> = {
@@ -322,51 +322,7 @@ export function SendWindowCard() {
   );
 }
 
-type ProfileKey = 'turbo' | 'rapido' | 'equilibrado' | 'moderado';
-
-const PROFILES: Array<{
-  key: ProfileKey;
-  nome: string;
-  desc: string;
-  ritmo: string;
-  icon: typeof Zap;
-  cls: string;
-}> = [
-  {
-    key: 'turbo',
-    nome: 'Turbo (máximo)',
-    desc: 'Esvazia o lote da janela o mais rápido possível',
-    ritmo: 'tudo de uma vez · 10 em paralelo',
-    icon: Rocket,
-    cls: 'text-red-600',
-  },
-  {
-    key: 'rapido',
-    nome: 'Rápido',
-    desc: 'Bem rápido, com margem de segurança',
-    ritmo: 'tudo de uma vez · 5 em paralelo',
-    icon: Zap,
-    cls: 'text-orange-600',
-  },
-  {
-    key: 'equilibrado',
-    nome: 'Equilibrado',
-    desc: 'Rápido, mas em blocos menores',
-    ritmo: 'blocos de 2 · pausa curta',
-    icon: Gauge,
-    cls: 'text-blue-600',
-  },
-  {
-    key: 'moderado',
-    nome: 'Moderado (uso normal)',
-    desc: 'Ritmo conservador, menor risco de bloqueio',
-    ritmo: '1 a cada 36s',
-    icon: Timer,
-    cls: 'text-emerald-600',
-  },
-];
-
-/** Perfis de disparo prontos + tamanho do lote. */
+/** Ritmo de envio: modo único (espaçado) + tamanho dos lotes. */
 export function SendProfileCard() {
   const fetchSettings = useServerFn(getFlowSettings);
   const save = useServerFn(updateFlowSettings);
@@ -400,57 +356,33 @@ export function SendProfileCard() {
     );
   }
 
+  const intervalo = Math.max(1, Math.round(3600 / Math.max(1, data.hourlyBatchSize)));
+
   return (
     <Card className="border-slate-200">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Settings2 className="h-4 w-4 text-brand-blue" />
-          Perfil de disparo
+          Ritmo de envio
         </CardTitle>
         <CardDescription>
-          Um clique aplica o ritmo inteiro. O lote é o máximo de e-mails por janela de 1 hora.
+          Modo único: envio espaçado dentro de uma janela de 1 hora. Sem rajada e sem envios
+          paralelos — é o ritmo que o provedor aceita sem devolver HTTP 429.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-3 sm:grid-cols-2">
-          {PROFILES.map((p) => {
-            const Icon = p.icon;
-            const active = data.sendProfile === p.key;
-            return (
-              <button
-                key={p.key}
-                type="button"
-                disabled={saving}
-                onClick={() => void apply({ sendProfile: p.key })}
-                className={`rounded-lg border p-3 text-left transition ${
-                  active
-                    ? 'border-brand-blue bg-blue-50 ring-1 ring-brand-blue'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Icon className={`h-4 w-4 ${p.cls}`} />
-                  <span className="text-sm font-semibold text-slate-900">{p.nome}</span>
-                  {active && <Badge className="ml-auto bg-brand-blue text-white">ativo</Badge>}
-                </div>
-                <p className="mt-1 text-xs text-slate-600">{p.desc}</p>
-                <p className="mt-0.5 text-xs font-medium text-slate-500">
-                  {data.hourlyBatchSize}/h · {p.ritmo}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-
-        {data.sendProfile === 'custom' && (
-          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-            Perfil <strong>personalizado</strong> — modo {data.sendMode === 'burst' ? 'rajada' : 'espaçado'},{' '}
-            {data.sendMode === 'burst'
-              ? `${data.burstConcurrency} em paralelo`
-              : `1 a cada ${data.pacedDelaySec}s`}
-            .
+        <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+          <Timer className="h-5 w-5 text-emerald-600" />
+          <div>
+            <p className="text-sm font-semibold text-emerald-900">
+              {data.hourlyBatchSize} e-mails por hora
+            </p>
+            <p className="text-xs text-emerald-800">
+              cerca de 1 a cada {intervalo}s — o sistema recupera sozinho qualquer atraso, sem
+              nunca passar do limite da janela.
+            </p>
           </div>
-        )}
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -495,7 +427,7 @@ export function SendProfileCard() {
                 }
                 disabled={saving}
               />
-              {[5, 20, 50, 100].map((n) => (
+              {[20, 50, 100, 200].map((n) => (
                 <Button
                   key={n}
                   size="sm"
@@ -510,23 +442,6 @@ export function SendProfileCard() {
           </div>
         </div>
 
-        {data.sendMode === 'paced' && (
-          <div>
-            <Label className="mb-2 block text-sm font-semibold">Intervalo entre e-mails (s)</Label>
-            <Input
-              type="number"
-              min={1}
-              max={3600}
-              className="w-24"
-              value={data.pacedDelaySec}
-              onChange={(e) =>
-                void apply({ pacedDelaySec: Math.max(1, Number(e.target.value) || 1) })
-              }
-              disabled={saving}
-            />
-          </div>
-        )}
-
         <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
@@ -537,8 +452,8 @@ export function SendProfileCard() {
 
         <p className="flex items-center gap-1.5 text-xs text-slate-500">
           <Send className="h-3.5 w-3.5" />
-          Fluxo: importar {data.importBatchSize} → gerar links → fila → enviar até{' '}
-          {data.hourlyBatchSize} por janela → importar de novo.
+          Fluxo travado: importar {data.importBatchSize} → gerar links → enviar todos (
+          {data.hourlyBatchSize}/h) → só então importar mais.
         </p>
       </CardContent>
     </Card>
@@ -547,4 +462,5 @@ export function SendProfileCard() {
 
 /** Compatibilidade: nome antigo usado em outras abas. */
 export const FlowSettingsCard = SendProfileCard;
+
 

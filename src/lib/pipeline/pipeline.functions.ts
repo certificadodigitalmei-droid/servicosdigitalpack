@@ -8,7 +8,6 @@ import type {
   QueueStage,
   SendHealth,
   SendWindow,
-  SendProfile,
   FlowSettings,
 } from './pipeline.server';
 
@@ -19,7 +18,6 @@ export type {
   QueueStage,
   SendHealth,
   SendWindow,
-  SendProfile,
   FlowSettings,
 };
 
@@ -96,49 +94,28 @@ export const updateFlowSettings = createServerFn({ method: 'POST' })
     z
       .object({
         importBatchSize: z.number().int().min(1).max(500).optional(),
-        sendMode: z.enum(['burst', 'paced']).optional(),
         hourlyBatchSize: z.number().int().min(1).max(1000).optional(),
         pacedDelaySec: z.number().int().min(1).max(3600).optional(),
-        burstConcurrency: z.number().int().min(1).max(20).optional(),
-        sendProfile: z.enum(['turbo', 'rapido', 'equilibrado', 'moderado', 'custom']).optional(),
       })
       .parse(data ?? {}),
   )
   .handler(async ({ context, data }) => {
-    const { readFlowSettings, SEND_PROFILE_PRESETS } = await import('./pipeline.server');
-    const patch: Record<string, unknown> = { id: 1 };
-
-    // Ao escolher um perfil pronto, aplicamos o preset inteiro de uma vez.
-    if (data.sendProfile && data.sendProfile !== 'custom') {
-      const preset = SEND_PROFILE_PRESETS[data.sendProfile];
-      patch.send_profile = data.sendProfile;
-      patch.send_mode = preset.sendMode;
-      patch.burst_concurrency = preset.burstConcurrency;
-      patch.paced_delay_sec = preset.pacedDelaySec;
-    } else if (data.sendProfile === 'custom') {
-      patch.send_profile = 'custom';
-    }
+    const { readFlowSettings } = await import('./pipeline.server');
+    const patch: Record<string, unknown> = {
+      id: 1,
+      // Modo único: espaçado, sem paralelismo.
+      send_mode: 'paced',
+      send_profile: 'moderado',
+      burst_concurrency: 1,
+    };
 
     if (data.importBatchSize !== undefined) patch.import_batch_size = data.importBatchSize;
     if (data.hourlyBatchSize !== undefined) patch.hourly_batch_size = data.hourlyBatchSize;
-    // Ajustes manuais de ritmo passam o perfil para "personalizado".
-    if (data.sendMode !== undefined) {
-      patch.send_mode = data.sendMode;
-      patch.send_profile = 'custom';
-    }
-    if (data.pacedDelaySec !== undefined) {
-      patch.paced_delay_sec = data.pacedDelaySec;
-      patch.send_profile = 'custom';
-    }
-    if (data.burstConcurrency !== undefined) {
-      patch.burst_concurrency = data.burstConcurrency;
-      patch.send_profile = 'custom';
-    }
+    if (data.pacedDelaySec !== undefined) patch.paced_delay_sec = data.pacedDelaySec;
 
     const { error } = await context.supabase
       .from('cloud_automation_settings')
       .upsert(patch as any, { onConflict: 'id' });
     if (error) throw new Error(error.message);
     return readFlowSettings(context.supabase);
-
   });

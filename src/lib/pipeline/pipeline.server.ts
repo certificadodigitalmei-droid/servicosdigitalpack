@@ -526,62 +526,38 @@ export async function computeSendWindow(
 // ---------------------------------------------------------------------------
 // CONFIGURAÇÕES DO FLUXO
 // ---------------------------------------------------------------------------
-
-export type SendProfile = 'turbo' | 'rapido' | 'equilibrado' | 'moderado' | 'custom';
+//
+// Existe UM único modo de envio: espaçado (padrão 100 e-mails por hora,
+// 1 a cada 36 s). Os perfis Turbo/Rápido/Equilibrado e o modo rajada foram
+// removidos porque provocavam HTTP 429.
 
 export type FlowSettings = {
   enabled: boolean;
   importBatchSize: number;
-  sendMode: 'burst' | 'paced';
   hourlyBatchSize: number;
   pacedDelaySec: number;
-  sendProfile: SendProfile;
-  burstConcurrency: number;
 };
 
 export const DEFAULT_FLOW_SETTINGS: FlowSettings = {
   enabled: false,
-  importBatchSize: 5,
-  sendMode: 'burst',
+  importBatchSize: 100,
   hourlyBatchSize: 100,
   pacedDelaySec: 36,
-  sendProfile: 'moderado',
-  burstConcurrency: 10,
 };
-
-/** Presets prontos de disparo (aplicados com 1 clique no painel). */
-export const SEND_PROFILE_PRESETS: Record<
-  Exclude<SendProfile, 'custom'>,
-  { sendMode: 'burst' | 'paced'; burstConcurrency: number; pacedDelaySec: number }
-> = {
-  turbo: { sendMode: 'burst', burstConcurrency: 10, pacedDelaySec: 1 },
-  rapido: { sendMode: 'burst', burstConcurrency: 5, pacedDelaySec: 1 },
-  equilibrado: { sendMode: 'burst', burstConcurrency: 2, pacedDelaySec: 5 },
-  moderado: { sendMode: 'paced', burstConcurrency: 1, pacedDelaySec: 36 },
-};
-
-const VALID_PROFILES: SendProfile[] = ['turbo', 'rapido', 'equilibrado', 'moderado', 'custom'];
 
 export async function readFlowSettings(client: AnyClient): Promise<FlowSettings> {
   const { data } = await client
     .from('cloud_automation_settings')
-    .select(
-      'enabled, import_batch_size, send_mode, hourly_batch_size, paced_delay_sec, send_profile, burst_concurrency',
-    )
+    .select('enabled, import_batch_size, hourly_batch_size, paced_delay_sec')
     .eq('id', 1)
     .maybeSingle();
   if (!data) return DEFAULT_FLOW_SETTINGS;
-  const profile = VALID_PROFILES.includes(data.send_profile)
-    ? (data.send_profile as SendProfile)
-    : 'custom';
   return {
     enabled: !!data.enabled,
-    importBatchSize: data.import_batch_size ?? 5,
-    sendMode: data.send_mode === 'paced' ? 'paced' : 'burst',
+    importBatchSize: data.import_batch_size ?? 100,
     hourlyBatchSize: data.hourly_batch_size ?? 100,
-    pacedDelaySec: data.paced_delay_sec ?? 36,
-    sendProfile: profile,
-    burstConcurrency: Math.max(1, Math.min(20, data.burst_concurrency ?? 10)),
+    pacedDelaySec: Math.max(1, data.paced_delay_sec ?? 36),
   };
 }
+
 
