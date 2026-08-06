@@ -138,7 +138,7 @@ function LinksGeradosPage() {
       q = q.range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 
 
-      const { data, error, count } = await q;
+      const { data, error } = await q;
       if (error) throw error;
       let list = (data ?? []) as any[];
 
