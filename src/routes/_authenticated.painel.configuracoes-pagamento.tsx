@@ -145,7 +145,7 @@ function PaymentGatewaysPage() {
         <div>
           <h1 className="text-2xl font-bold text-brand-navy">Configurações de Pagamento</h1>
           <p className="text-sm text-slate-500">
-            Cadastre suas contas SigiloPay e escolha qual será usada para gerar as cobranças.
+            Cadastre suas contas SyncPay ou SigiloPay e escolha qual será usada para gerar as cobranças.
           </p>
         </div>
         <Button onClick={openNew} className="bg-brand-blue hover:bg-brand-navy">
