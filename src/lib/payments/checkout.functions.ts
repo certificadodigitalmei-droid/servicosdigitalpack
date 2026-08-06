@@ -199,23 +199,29 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
 
     let pix: PixResult;
     try {
-      pix = await callSigiloPay(apiKey, baseUrl, {
-        identifier: order.id,
-        amount,
-        callbackUrl: data.webhookUrl,
-        // Dados pessoais do cliente e do domínio do site NÃO são enviados ao gateway.
-        // Usamos um pagador genérico e e-mail fixo; os dados reais ficam apenas no nosso banco.
-        client: {
-          name: "Pagador",
-          email: "servicos.digitais.on@gmail.com",
-          phone: "11999999999",
-          document: data.document,
-        },
+      if (provider === "syncpay") {
+        const { createSyncPayPix } = await import("@/lib/payments/syncpay.server");
+        const res = await createSyncPayPix(apiKey, baseUrl, { amount, identifier: order.id });
+        pix = { ...res, expiration: null };
+      } else {
+        pix = await callSigiloPay(apiKey, baseUrl || SIGILOPAY_DEFAULT_BASE, {
+          identifier: order.id,
+          amount,
+          callbackUrl: data.webhookUrl,
+          // Dados pessoais do cliente e do domínio do site NÃO são enviados ao gateway.
+          // Usamos um pagador genérico e e-mail fixo; os dados reais ficam apenas no nosso banco.
+          client: {
+            name: "Pagador",
+            email: "servicos.digitais.on@gmail.com",
+            phone: "11999999999",
+            document: data.document,
+          },
 
-        productName: "Servicos Digitais Online", // Nome genérico para ocultar a natureza da venda do gateway
-      });
+          productName: "Servicos Digitais Online", // Nome genérico para ocultar a natureza da venda do gateway
+        });
+      }
     } catch (e: any) {
-      console.error("[Payments] Falha ao gerar PIX SigiloPay", { error: e?.message });
+      console.error("[Payments] Falha ao gerar PIX", { provider, error: e?.message });
       throw e;
     }
 
