@@ -103,6 +103,7 @@ function PaymentGatewaysPage() {
         data: {
           id: editing?.id,
           name: form.name.trim(),
+          provider_type: form.provider_type,
           public_key: form.public_key.trim() || undefined,
           secret_key: form.secret_key.trim() || undefined,
           base_url: form.base_url.trim(),
