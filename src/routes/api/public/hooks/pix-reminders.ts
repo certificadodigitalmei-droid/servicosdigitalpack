@@ -30,7 +30,7 @@ export const Route = createFileRoute('/api/public/hooks/pix-reminders')({
         let queue: { processed: number; sent: number; failed: number } | { error: string };
         try {
           const { processQueueInternal } = await import('@/lib/gmail/queue.server');
-          queue = await processQueueInternal(25);
+          queue = await processQueueInternal();
         } catch (e) {
           queue = { error: (e as Error).message };
         }
