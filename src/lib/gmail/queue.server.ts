@@ -234,7 +234,7 @@ export async function processQueueInternal(
 
 
   return {
-    processed: list.length,
+    processed: 1,
     sent,
     failed,
     released,
