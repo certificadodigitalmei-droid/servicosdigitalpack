@@ -250,11 +250,10 @@ export const listNotifyFlow = createServerFn({ method: 'POST' })
     return { orders: list, stats, day, events };
   });
 
-/** Executa a régua agora (mesma lógica do robô agendado). */
+/** Régua desativada: o produto envia somente o e-mail principal da empresa. */
 export const runNotifyFlowNow = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { runNotificationCadence } = await import('@/lib/emails/order-emails.server');
-    return await runNotificationCadence();
+    return { skipped: true, reason: 'follow_up_emails_disabled' };
   });

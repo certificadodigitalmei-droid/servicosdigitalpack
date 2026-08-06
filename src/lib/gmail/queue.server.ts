@@ -168,6 +168,22 @@ export async function clearRateLimitHolds(): Promise<number> {
 }
 
 /**
+ * Recupera automaticamente somente falhas técnicas temporárias. Endereço
+ * inválido e outras falhas definitivas permanecem visíveis para correção.
+ */
+export async function recoverRetryableFailures(): Promise<number> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const { data } = await supabaseAdmin
+    .from('email_send_queue')
+    .update({ status: 'queued', next_retry_at: null })
+    .eq('status', 'failed')
+    .like('idempotency_key', 'mass-email-%')
+    .or('last_status_code.eq.429,last_status_code.gte.500,last_error.ilike.%oauth_refresh_failed%')
+    .select('id');
+  return (data ?? []).length;
+}
+
+/**
  * Modo ÚNICO de envio: 1 e-mail a cada `spacingSec` segundos (padrão 36 s),
  * o que dá 100 e-mails por hora, sem lote e sem paralelismo.
  *
@@ -182,12 +198,14 @@ export async function processQueueInternal(
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
   const released = await releaseStuckSending();
+  const recovered = await recoverRetryableFailures();
   const lastHour = await sentInLastHour();
   const base = {
     processed: 0,
     sent: 0,
     failed: 0,
     released,
+    recovered,
     rateLimited: false,
     retryAfterSec: 0,
     lastHour,

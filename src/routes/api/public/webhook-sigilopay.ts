@@ -50,8 +50,6 @@ export const Route = createFileRoute('/api/public/webhook-sigilopay')({
           const patch = { status: 'paid', paid_at: nowIso, updated_at: nowIso } as const;
 
           let updated = 0;
-          const paidIds: string[] = [];
-
           // Identifier é o order.id que geramos ao criar a cobrança.
           if (identifier) {
             const { data } = await supabaseAdmin
@@ -60,7 +58,6 @@ export const Route = createFileRoute('/api/public/webhook-sigilopay')({
               .eq('id', identifier)
               .select('id');
             updated = data?.length ?? 0;
-            for (const row of data ?? []) paidIds.push(row.id);
           }
 
           if (updated === 0 && transactionId) {
@@ -70,7 +67,6 @@ export const Route = createFileRoute('/api/public/webhook-sigilopay')({
               .eq('external_transaction_id', transactionId)
               .select('id');
             updated = data?.length ?? 0;
-            for (const row of data ?? []) paidIds.push(row.id);
           }
 
           if (updated === 0) {

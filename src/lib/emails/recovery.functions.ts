@@ -74,13 +74,12 @@ export const listRecoveryOrders = createServerFn({ method: 'POST' })
     };
   });
 
-/** Dispara imediatamente a rodada de recuperação (mesma lógica do robô diário). */
+/** Recuperação desativada: o produto envia somente o e-mail principal. */
 export const runRecoveryNow = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { sendDailyRecovery } = await import('@/lib/emails/order-emails.server');
-    return await sendDailyRecovery({ maxDays: 15 });
+    return { skipped: true, reason: 'follow_up_emails_disabled' };
   });
 
 /** Renderiza um modelo de e-mail em HTML para pré-visualização no painel. */
