@@ -82,6 +82,16 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
       })
       .eq('id', row.id);
 
+    // Limite do provedor: pausa a fila INTEIRA até o horário indicado por ele.
+    if (isRateLimit) {
+      const until = new Date(Date.now() + backoffSec * 1000).toISOString();
+      await supabaseAdmin
+        .from('email_send_queue')
+        .update({ next_retry_at: until })
+        .in('status', ['queued', 'pending'])
+        .or(`next_retry_at.is.null,next_retry_at.lt.${until}`);
+    }
+
     // Log de auditoria: só registra falha real (rate limit não é falha)
     if (companyCnpj && !isRateLimit) {
       await supabaseAdmin.from('automation_audit_logs').insert({
@@ -90,8 +100,9 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
         details: { error: err.message, code: err.code, final: shouldGiveUp }
       });
     }
-    return { ok: false as const, retry: !shouldGiveUp };
+    return { ok: false as const, retry: !shouldGiveUp, rateLimited: isRateLimit, retryAfterSec: backoffSec };
   }
+
 }
 
 /** Teto rígido de envios por hora. */
