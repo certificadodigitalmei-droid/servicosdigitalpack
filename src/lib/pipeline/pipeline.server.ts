@@ -283,6 +283,8 @@ export type UnifiedQueueRow = {
   attempts: number;
   lastError: string | null;
   lastStatusCode: number | null;
+  /** Quando o item volta a ser tentado (rate limit). Null = pronto agora. */
+  nextRetryAt: string | null;
 };
 
 const STAGE_LABEL: Record<QueueStage, string> = {
@@ -306,7 +308,7 @@ export async function listUnifiedQueue(
 
   const { data: qrows } = await client
     .from('email_send_queue')
-    .select('id, to_email, status, attempts, last_error, last_status_code, idempotency_key, created_at')
+    .select('id, to_email, status, attempts, last_error, last_status_code, next_retry_at, idempotency_key, created_at')
     .in('status', ['queued', 'pending', 'sending', 'failed'])
     .order('created_at', { ascending: true })
     .limit(limit);
@@ -342,6 +344,7 @@ export async function listUnifiedQueue(
       attempts: r.attempts ?? 0,
       lastError: r.last_error ?? null,
       lastStatusCode: r.last_status_code ?? null,
+      nextRetryAt: r.next_retry_at ?? null,
     });
   }
 
@@ -358,6 +361,7 @@ export async function listUnifiedQueue(
         attempts: 0,
         lastError: null,
         lastStatusCode: null,
+        nextRetryAt: null,
       });
     }
   }
@@ -375,6 +379,7 @@ export async function listUnifiedQueue(
         attempts: 0,
         lastError: null,
         lastStatusCode: null,
+        nextRetryAt: null,
       });
     }
   }
