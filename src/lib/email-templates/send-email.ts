@@ -62,7 +62,6 @@ export async function sendTemplateEmail(
     'pix-gerado',
     'pix-pendente',
     'oferta-desconto',
-    'pagamento-confirmado',
   ])
   if (disabledFollowUps.has(templateName)) {
     console.info(`[email] envio desativado por regra do produto: ${templateName}`)
