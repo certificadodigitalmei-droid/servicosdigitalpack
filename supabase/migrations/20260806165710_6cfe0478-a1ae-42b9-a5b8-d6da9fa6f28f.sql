@@ -1,0 +1,1 @@
+UPDATE public.cloud_automation_settings SET enabled = true, status = 'active', hourly_batch_size = 100, paced_delay_sec = 36, import_batch_size = 100, send_mode = 'paced', send_profile = 'moderate', burst_concurrency = 1, updated_at = now() WHERE id = 1; UPDATE public.automatic_company_queries SET enabled = true WHERE enabled = false;
