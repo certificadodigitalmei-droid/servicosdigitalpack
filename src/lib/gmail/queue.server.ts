@@ -145,6 +145,7 @@ async function lastSentAt(): Promise<number | null> {
     .from('email_send_queue')
     .select('updated_at')
     .eq('status', 'sent')
+    .like('idempotency_key', 'mass-email-%')
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle();
