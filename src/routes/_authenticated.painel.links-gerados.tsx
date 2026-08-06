@@ -138,7 +138,7 @@ function LinksGeradosPage() {
       q = q.range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 
 
-      const { data, error, count } = await q;
+      const { data, error } = await q;
       if (error) throw error;
       let list = (data ?? []) as any[];
 
@@ -154,9 +154,22 @@ function LinksGeradosPage() {
         });
       }
 
+      // 1 linha por empresa: mantém apenas o link mais recente (página principal).
+      // Checkout/PIX usam o mesmo token, então não são contados de novo.
+      {
+        const seen = new Set<string>();
+        list = list.filter((r) => {
+          const key = r.company_id ?? `link:${r.id}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
       // Marca cada link como Automática/Manual baseado no generation_id
       const autoSet = new Set<string>(list.filter((r) => !r.generation_id).map((r) => r.id));
       setAutoLinkIds(autoSet);
+
 
       // ===== KPIs AGREGADOS: TODOS os eventos no período (não só os da página) =====
       const agg = emptyStats();
@@ -292,7 +305,8 @@ function LinksGeradosPage() {
       }
 
       setRows(list);
-      setTotal(count ?? list.length);
+      setTotal(list.length);
+
       setStatsByToken(per);
       setAggregate(agg);
       setPaidByLinkId(paidMap);
@@ -381,7 +395,7 @@ function LinksGeradosPage() {
 
       {/* Aggregate KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-        <KPI icon={<ExternalLink className="h-4 w-4" />} label="Links no filtro" value={total} tone="slate" />
+        <KPI icon={<ExternalLink className="h-4 w-4" />} label="Empresas com link" value={total} tone="slate" />
         <KPI icon={<CheckCircle2 className="h-4 w-4" />} label={`E-mails enviados (${preset === 'all' ? 'total' : preset})`} value={aggregate.emails_sent} tone="emerald" />
         <KPI icon={<Eye className="h-4 w-4" />} label="Cliques totais" value={aggregate.total} tone="blue" />
         <KPI icon={<Eye className="h-4 w-4" />} label="Abriu página" value={aggregate.view_link} tone="indigo" />
