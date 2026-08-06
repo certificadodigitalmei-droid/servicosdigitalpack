@@ -132,7 +132,7 @@ export async function releaseStuckSending(minutes = 10): Promise<number> {
 }
 
 /** Modo único: no máximo 1 e-mail por execução do agendador. */
-export const MAX_PER_TICK = 3;
+export const MAX_PER_TICK = 1;
 
 /** Espaçamento padrão entre dois envios (36 s = 100 e-mails por hora). */
 export const DEFAULT_SPACING_SEC = 36;
@@ -145,7 +145,7 @@ async function lastSentAt(): Promise<number | null> {
     .select('updated_at')
     .eq('status', 'sent')
     .order('updated_at', { ascending: false })
-    .limit(_maxBatch)
+    .limit(1)
     .maybeSingle();
   return data?.updated_at ? new Date(data.updated_at).getTime() : null;
 }
