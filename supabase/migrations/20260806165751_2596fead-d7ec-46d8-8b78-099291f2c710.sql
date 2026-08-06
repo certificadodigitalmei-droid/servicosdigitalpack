@@ -1,0 +1,1 @@
+UPDATE public.cloud_automation_settings SET last_run_at = now(), status = 'active', updated_at = now() WHERE id = 1;
