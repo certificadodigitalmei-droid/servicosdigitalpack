@@ -144,7 +144,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   signatureSize: 12,
   disclaimerSize: 11,
 
-  title: 'Emissão e-CNPJ',
+  title: 'CNPJ COM RESTRIÇÃO - PENDENTE',
   subtitle: 'Central de Emissão · MEI',
   heroTitle: 'Certificado Digital pendente',
   showHero: true,
