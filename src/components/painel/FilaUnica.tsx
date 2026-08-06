@@ -33,12 +33,19 @@ const STAGE_UI: Record<QueueStage, { label: string; cls: string }> = {
  */
 export function FilaUnicaCard({ limit = 100 }: { limit?: number }) {
   const fetchQueue = useServerFn(getUnifiedQueue);
+  const fetchHealth = useServerFn(getSendHealth);
   const { data, isLoading } = useQuery({
     queryKey: ['fila-unica', limit],
     queryFn: () => fetchQueue({ data: { limit } }),
-    refetchInterval: 10_000,
+    refetchInterval: 5_000,
+  });
+  const { data: health } = useQuery({
+    queryKey: ['send-health'],
+    queryFn: () => fetchHealth(),
+    refetchInterval: 5_000,
   });
   const rows = data ?? [];
+  const total = (health?.naFila ?? 0) + (health?.enviando ?? 0);
 
   return (
     <Card className="border-slate-200">
@@ -46,11 +53,12 @@ export function FilaUnicaCard({ limit = 100 }: { limit?: number }) {
         <CardTitle className="flex items-center gap-2 text-base">
           <Inbox className="h-4 w-4 text-amber-600" />
           Fila de envio (empresas importadas com link)
-          <Badge variant="secondary">{rows.length}</Badge>
+          <Badge variant="secondary">{total.toLocaleString('pt-BR')}</Badge>
         </CardTitle>
         <CardDescription>
           Fila única do sistema: empresas já importadas e com link criado, aguardando apenas o
-          disparo do e-mail. Só depois de esvaziar esta fila o sistema importa novas empresas.
+          disparo do e-mail. Mostrando até {limit} registros de {total.toLocaleString('pt-BR')}.
+          Só depois de esvaziar esta fila o sistema importa novas empresas.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -134,7 +142,7 @@ export function SendHealthCard() {
   const { data } = useQuery({
     queryKey: ['send-health'],
     queryFn: () => fetchHealth(),
-    refetchInterval: 10_000,
+    refetchInterval: 5_000,
   });
 
   return (

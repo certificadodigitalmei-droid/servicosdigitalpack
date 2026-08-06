@@ -138,8 +138,22 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
           // 6. Reconciliação de métricas
           const { reconcileMetrics } = await import('@/lib/automation/reconcile.server');
           stats.reconcile = await reconcileMetrics();
+
+          await supabaseAdmin
+            .from('cloud_automation_settings')
+            .update({ last_run_at: new Date().toISOString(), status: 'active' })
+            .eq('id', 1);
         } catch (e: any) {
           stats.error = e?.message ?? String(e);
+          try {
+            const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+            await supabaseAdmin
+              .from('cloud_automation_settings')
+              .update({ last_run_at: new Date().toISOString(), status: 'error' })
+              .eq('id', 1);
+          } catch {
+            // Mantém o erro original na resposta do agendador.
+          }
         }
 
         return new Response(JSON.stringify(stats), {
