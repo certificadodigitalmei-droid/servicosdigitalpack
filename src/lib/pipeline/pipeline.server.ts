@@ -482,54 +482,43 @@ export async function computeSendWindow(
     cooldown: false,
   };
 
-  // Histórico recente de envios (desc). O lote é a sequência contínua de
-  // envios sem intervalo >= 60 min entre eles.
-  const sinceIso = new Date(now - 6 * HOUR).toISOString();
+  // Envios da última hora (janela deslizante), do mais recente para o mais antigo.
+  const sinceIso = new Date(now - HOUR).toISOString();
   const { data: rows } = await client
     .from('email_send_queue')
     .select('updated_at')
     .eq('status', 'sent')
     .gte('updated_at', sinceIso)
     .order('updated_at', { ascending: false })
-    .limit(Math.max(200, limit * 3));
+    .limit(Math.max(500, limit * 3));
 
   const times = (rows ?? [])
     .map((r: any) => new Date(r.updated_at).getTime())
-    .filter((t: number) => Number.isFinite(t));
+    .filter((t: number) => Number.isFinite(t))
+    .sort((a: number, b: number) => b - a);
 
   if (times.length === 0) return empty;
 
   const lastMs = times[0];
-  // Nenhum envio na última hora e cota já liberada -> lote encerrado.
-  const batch: number[] = [lastMs];
-  for (let i = 1; i < times.length; i++) {
-    if (batch[batch.length - 1] - times[i] >= HOUR) break;
-    batch.push(times[i]);
-  }
+  const oldestMs = times[times.length - 1];
+  const sentInWindow = times.length;
+  const remaining = Math.max(0, limit - sentInWindow);
 
-  const startMs = batch[batch.length - 1];
-  const sentInWindow = batch.length;
-  const capReached = sentInWindow >= limit;
-
-  // Fecha sempre pelo último envio: libera 60 min após o último e-mail.
-  const endMs = lastMs + HOUR;
-
-  if (now >= endMs) {
-    // Passou 1h do último envio: lote encerrado, cota liberada.
-    return { ...empty, lastSentAt: new Date(lastMs).toISOString() };
-  }
+  // Quando a cota está cheia, o próximo slot abre assim que o e-mail mais
+  // antigo da janela completar 60 min (libera de pouco em pouco, sem parada longa).
+  const releaseMs = remaining > 0 ? now : oldestMs + HOUR;
 
   return {
     updatedAt: new Date().toISOString(),
     open: true,
-    windowStart: new Date(startMs).toISOString(),
-    windowEnd: new Date(endMs).toISOString(),
+    windowStart: new Date(oldestMs).toISOString(),
+    windowEnd: new Date(oldestMs + HOUR).toISOString(),
     limit,
     sentInWindow,
-    remaining: Math.max(0, limit - sentInWindow),
-    secondsToReset: Math.max(0, Math.round((endMs - now) / 1000)),
+    remaining,
+    secondsToReset: Math.max(0, Math.round((releaseMs - now) / 1000)),
     lastSentAt: new Date(lastMs).toISOString(),
-    cooldown: capReached,
+    cooldown: remaining === 0,
   };
 }
 
