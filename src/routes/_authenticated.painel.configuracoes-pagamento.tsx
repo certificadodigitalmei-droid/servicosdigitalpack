@@ -81,7 +81,7 @@ function PaymentGatewaysPage() {
   const [editing, setEditing] = useState<PaymentGateway | null>(null);
   const [form, setForm] = useState({
     name: '',
-    provider_type: 'syncpay' as ProviderId,
+    provider_type: 'mercadopago' as ProviderId,
     environment: 'test' as Environment,
     public_key: '',
     secret_key: '',
@@ -92,7 +92,7 @@ function PaymentGatewaysPage() {
 
   const meta = PROVIDERS[form.provider_type];
 
-  const openNew = (provider: ProviderId = 'syncpay') => {
+  const openNew = (provider: ProviderId = 'mercadopago') => {
     setEditing(null);
     setForm({
       name: '',
@@ -113,7 +113,7 @@ function PaymentGatewaysPage() {
     setEditing(g);
     setForm({
       name: g.name,
-      provider_type: (g.provider_type as ProviderId) ?? 'sigilopay',
+      provider_type: (g.provider_type as ProviderId) ?? 'mercadopago',
       environment: (g.environment as Environment) ?? 'test',
       public_key: '',
       secret_key: '',
@@ -218,7 +218,7 @@ function PaymentGatewaysPage() {
           </p>
 
         </div>
-        <Button onClick={() => openNew('syncpay')} className="bg-brand-blue hover:bg-brand-navy">
+        <Button onClick={() => openNew('mercadopago')} className="bg-brand-blue hover:bg-brand-navy">
           <Plus className="mr-2 h-4 w-4" /> Novo gateway
         </Button>
 
@@ -336,7 +336,7 @@ function PaymentGatewaysPage() {
 
         <div className="grid gap-4">
           {(gateways ?? []).map((g) => {
-            const gm = PROVIDERS[(g.provider_type as ProviderId) ?? 'sigilopay'] ?? PROVIDERS.sigilopay;
+            const gm = PROVIDERS[(g.provider_type as ProviderId) ?? 'mercadopago'] ?? PROVIDERS.sigilopay;
             return (
             <Card key={g.id} className={g.is_active ? 'border-emerald-400 shadow-sm' : ''}>
               <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
@@ -408,7 +408,7 @@ function PaymentGatewaysPage() {
                 <div>
                   <span className="font-medium text-slate-700">Webhook (colar no painel {gm.label}):</span>{' '}
                   <code className="break-all">
-                    {webhookUrlFor((g.provider_type as ProviderId) ?? 'sigilopay', origin)}
+                    {webhookUrlFor((g.provider_type as ProviderId) ?? 'mercadopago', origin)}
                   </code>
                 </div>
                 {g.notes && <div className="text-slate-500">{g.notes}</div>}
