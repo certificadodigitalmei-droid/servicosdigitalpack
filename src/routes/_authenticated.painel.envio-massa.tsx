@@ -150,8 +150,11 @@ function EnvioMassa() {
         {testMode && <Badge className="bg-amber-100 text-amber-800">MODO TESTE</Badge>}
       </div>
 
+      <PreviewEnvWarning />
+
       {/* 1 — Motor único do fluxo (consulta → importação → links → envio) */}
       <MotorFluxoCard />
+
 
 
       {/* 2 — Números essenciais */}
