@@ -25,6 +25,16 @@ import {
   deleteTestCompanies,
   type TestCompanyResult,
 } from '@/lib/payments/test-company.functions';
+import { PUBLIC_BASE_URL } from '@/lib/public-base-url';
+import { rowToVars, substitute } from '@/lib/email-campaign/template';
+import { sendCampaignEmail } from '@/lib/email-campaign/send.functions';
+import {
+  mergedDesign,
+  loadSavedSubject,
+  loadSavedFromName,
+  loadSavedFromAddress,
+  loadSavedReplyTo,
+} from '@/lib/automation/envio-engine';
 
 
 export const Route = createFileRoute('/_authenticated/painel/configuracoes-pagamento')({
