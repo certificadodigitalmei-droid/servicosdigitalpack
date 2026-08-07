@@ -74,7 +74,7 @@ export const pipelineStore = createStore<PipelineEngineState>(
     healthPauses: 0,
   },
 
-  { storageKey: 'pipeline:engine', persistKeys: ['batchSize'] },
+  { storageKey: 'pipeline:engine', persistKeys: ['batchSize', 'running', 'pausedUntil', 'pauseReason'] },
 );
 
 function log(msg: string) {
