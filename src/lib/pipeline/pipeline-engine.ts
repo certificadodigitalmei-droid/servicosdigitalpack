@@ -167,6 +167,7 @@ async function tick() {
       snapshot: r.pipeline,
       sentInWindow: r.sentInWindow,
       remainingInWindow: r.remainingInWindow,
+      health: r.health,
     }));
 
     if (r.linksCreated > 0) log(`${r.linksCreated} link(s) gerado(s)`);
@@ -193,6 +194,20 @@ async function tick() {
       return;
     }
 
+    // --- saúde do envio: só continua enviando com tudo ok -------------------
+    if (r.health.status === 'blocked') {
+      const n = pipelineStore.get().healthPauses + 1;
+      const ladder = [5 * 60_000, 15 * 60_000, 30 * 60_000, 60 * 60_000];
+      const waitMs = Math.max(
+        (r.health.waitSec || 300) * 1000,
+        ladder[Math.min(n - 1, ladder.length - 1)],
+      );
+      pipelineStore.set({ healthPauses: n });
+      log(`Saúde do envio: ${r.health.reason ?? 'instável'} — aguardando normalizar`);
+      pauseFor(waitMs, 'unhealthy');
+      return;
+    }
+
     // --- falhas seguidas de envio (credencial, provedor recusando) ----------
     if (r.failed > 0 && r.sent === 0) {
       const n = pipelineStore.get().consecutiveFailures + 1;
@@ -204,10 +219,12 @@ async function tick() {
       }
     } else if (r.sent > 0) {
       clearPause(pipelineStore.get().pauseReason !== null);
-      pipelineStore.set({ rateLimitHits: 0 });
+      pipelineStore.set({ rateLimitHits: 0, healthPauses: 0 });
     } else {
       pipelineStore.set({ consecutiveErrors: 0 });
+      if (r.health.status === 'healthy') pipelineStore.set({ healthPauses: 0 });
     }
+
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const n = pipelineStore.get().consecutiveErrors + 1;
