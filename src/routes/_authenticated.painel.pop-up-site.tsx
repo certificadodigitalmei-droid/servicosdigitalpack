@@ -171,7 +171,7 @@ function Field({
 }
 
 function FormattingHelp() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   return (
     <div className="rounded-lg border border-[#1351b4]/20 bg-[#1351b4]/5">
       <button
