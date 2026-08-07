@@ -244,6 +244,82 @@ function PaymentGatewaysPage() {
         })}
       </div>
 
+      <Card className="border-amber-300 bg-amber-50/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-brand-navy">Empresa de teste (gateway)</CardTitle>
+          <CardDescription>
+            Cria uma empresa fictícia com link próprio para você enviar o e-mail de teste e pagar,
+            conferindo o gateway de ponta a ponta. Os dados são falsos e marcados como teste.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-1">
+              <Label>E-mail que vai receber o teste</Label>
+              <Input
+                type="email"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                placeholder="seu-email@exemplo.com"
+              />
+            </div>
+            <Button
+              onClick={() => createTestMut.mutate()}
+              disabled={createTestMut.isPending || !testEmail}
+              className="bg-brand-blue hover:bg-brand-navy"
+            >
+              {createTestMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Criar empresa de teste
+            </Button>
+          </div>
+
+          {testCompany && (
+            <div className="space-y-2 rounded-lg border border-amber-300 bg-white p-3 text-sm">
+              <div className="font-medium text-brand-navy">
+                {testCompany.company_name} — CNPJ {testCompany.cnpj}
+              </div>
+              <div className="text-slate-500">E-mail: {testCompany.email}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <code className="break-all rounded bg-slate-100 px-2 py-1 text-xs">
+                  {testCompany.public_url}
+                </code>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(testCompany.public_url);
+                    toast.success('Link copiado');
+                  }}
+                >
+                  Copiar link
+                </Button>
+                <a href={testCompany.public_url} target="_blank" rel="noreferrer">
+                  <Button size="sm" variant="outline">
+                    <ExternalLink className="mr-2 h-4 w-4" /> Abrir
+                  </Button>
+                </a>
+              </div>
+              <p className="text-xs text-slate-500">
+                O envio de teste na aba "Envio em Massa" usa a empresa com link mais recente — como
+                esta acabou de ser criada, é ela que será usada.
+              </p>
+            </div>
+          )}
+
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-slate-500"
+            onClick={() => deleteTestMut.mutate()}
+            disabled={deleteTestMut.isPending}
+          >
+            {deleteTestMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Remover empresas de teste
+          </Button>
+        </CardContent>
+      </Card>
+
+
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
