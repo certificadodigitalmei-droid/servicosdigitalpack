@@ -33,7 +33,11 @@ export type PipelineEngineState = {
   consecutiveFailures: number;
   rateLimitHits: number;
   rateLimitWindowStart: string | null;
+  /** Saúde do envio na última avaliação. */
+  health: PipelineTickResult['health'];
+  healthPauses: number;
 };
+
 
 export const pipelineStore = createStore<PipelineEngineState>(
   {
