@@ -91,8 +91,8 @@ function PanelLayout() {
 
   // Salvar tudo na nuvem (todas as configurações do painel).
   const [saving, setSaving] = useState(false);
-  const [restoring, setRestoring] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+
   const [hydrated, setHydrated] = useState(false);
   const doSave = useServerFn(saveCloudState);
   const doLoad = useServerFn(getCloudState);
