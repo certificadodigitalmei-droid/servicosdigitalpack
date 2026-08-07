@@ -109,9 +109,14 @@ export const updateFlowSettings = createServerFn({ method: 'POST' })
       burst_concurrency: 1,
     };
 
-    if (data.importBatchSize !== undefined) patch.import_batch_size = data.importBatchSize;
-    if (data.hourlyBatchSize !== undefined) patch.hourly_batch_size = data.hourlyBatchSize;
-    if (data.pacedDelaySec !== undefined) patch.paced_delay_sec = data.pacedDelaySec;
+    // Lote e envio são o MESMO número; o intervalo é derivado (3600/lote).
+    const batch = data.hourlyBatchSize ?? data.importBatchSize;
+    if (batch !== undefined) {
+      patch.hourly_batch_size = batch;
+      patch.import_batch_size = batch;
+      patch.paced_delay_sec = Math.max(1, Math.round(3600 / batch));
+    }
+
 
     const { error } = await context.supabase
       .from('cloud_automation_settings')
