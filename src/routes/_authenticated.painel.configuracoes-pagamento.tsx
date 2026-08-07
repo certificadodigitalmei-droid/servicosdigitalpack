@@ -214,7 +214,7 @@ function PaymentGatewaysPage() {
         <div>
           <h1 className="text-2xl font-bold text-brand-navy">Configurações de Pagamento</h1>
           <p className="text-sm text-slate-500">
-            Cadastre suas contas Mercado Pago, SyncPay ou SigiloPay e escolha qual será usada para gerar as cobranças.
+            Cadastre sua conta Mercado Pago e escolha qual será usada para gerar as cobranças.
           </p>
 
         </div>
