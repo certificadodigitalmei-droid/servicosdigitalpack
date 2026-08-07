@@ -100,16 +100,15 @@ export async function verifyAndSettleOrder(orderId: string): Promise<VerifyResul
     return { paid: false, paid_at: null, status: order.status };
   }
 
-  const providerType = (order.payment_provider || 'sigilopay') as string;
-  const gateway = await getGateway(providerType);
+  const gateway = await getGateway();
   if (!gateway) return { paid: false, paid_at: null, status: order.status };
 
   const remote = await fetchRemoteStatus(
-    providerType,
     gateway.api_key,
     gateway.base_url,
     order.external_transaction_id,
   );
+
 
   if (isPaidStatus(remote)) {
     const paidAt = await settleOrderPaid(order.id);
