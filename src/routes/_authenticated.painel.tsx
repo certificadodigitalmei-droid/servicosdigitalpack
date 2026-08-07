@@ -168,29 +168,8 @@ function PanelLayout() {
     }
   };
 
-  const restoreAll = async () => {
-    if (!confirm('Restaurar todas as configurações salvas na nuvem? A página será recarregada.')) return;
-    setRestoring(true);
-    try {
-      const r = await doLoad();
-      if (!r.snapshot) {
-        toast.info('Nada salvo na nuvem ainda.');
-        setRestoring(false);
-        return;
-      }
-      applyLocalSnapshot(r.snapshot as Record<string, string>);
-      if (r.updatedAt) {
-        try { window.localStorage.setItem('painel:cloudSyncedAt', r.updatedAt); } catch {}
-      }
-      toast.success('Configurações restauradas. Recarregando…');
-      setTimeout(() => window.location.reload(), 600);
-    } catch (e: any) {
-      toast.error('Falha ao restaurar: ' + (e?.message ?? 'erro'));
-      setRestoring(false);
-    }
-  };
-
   const handleCleanup = async () => {
+
     if (!confirm('Deseja apagar TODOS os dados (empresas, links, pedidos pendentes, clientes sem compra) e deixar o painel limpo? Apenas vendas confirmadas serão preservadas.')) return;
     
     setCleaning(true);
