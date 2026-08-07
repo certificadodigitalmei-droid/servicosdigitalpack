@@ -97,7 +97,9 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
       html,
       text,
       purpose: 'transactional' as const,
-      label: data.testMode ? 'campaign-test' : 'campaign',
+      // Mesmo caminho/rotulagem do envio real, para que o teste reproduza
+      // exatamente a entrega das empresas.
+      label: 'campaign',
       idempotency_key: idempotencyKey,
       reply_to: data.replyTo ?? fromAddress ?? "contato@seu-certificado-mei-digital.online",
     };

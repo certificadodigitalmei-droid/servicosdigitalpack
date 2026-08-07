@@ -240,8 +240,15 @@ function EnvioMassa() {
               <TestTube2 className="h-4 w-4" /> Enviar 1 teste
             </Button>
           </div>
+          <p className="text-xs text-slate-500">
+            O teste usa exatamente o mesmo remetente, domínio, template e infraestrutura dos
+            envios reais. Para que ele realmente chegue na caixa de entrada, dispare pelo{' '}
+            <strong>site publicado</strong> (seu domínio) — na janela de pré-visualização o envio
+            é tratado como teste e não é entregue.
+          </p>
         </div>
       </Section>
+
 
       <Section title="Mensagem e prévia">
         <div className="space-y-3">
