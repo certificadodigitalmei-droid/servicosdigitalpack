@@ -237,29 +237,6 @@ function PanelLayout() {
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
-                <div className="flex items-center gap-2 mr-2 bg-slate-50 p-1 rounded-lg border border-slate-200">
-                  <div className={cn(
-                    "h-2 w-2 rounded-full animate-pulse",
-                    autoEnabled ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-300"
-                  )} />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-1">
-                    {autoEnabled === null ? "Nuvem: Carregando..." : autoEnabled ? "Nuvem: Ativo" : "Nuvem: Pausado"}
-                  </span>
-                  <Button
-                    size="icon"
-                    variant={autoEnabled ? "default" : "outline"}
-                    className={cn(
-                      "h-8 w-8 rounded-md transition-all",
-                      autoEnabled ? "bg-red-500 hover:bg-red-600 text-white" : "bg-emerald-500 hover:bg-emerald-600 text-white border-none"
-                    )}
-                    onClick={handleToggleAuto}
-                    disabled={loadingAuto}
-                    title={autoEnabled ? "Pausar envios na nuvem" : "Retomar envios na nuvem"}
-                  >
-                    {loadingAuto ? <Loader2 className="h-4 w-4 animate-spin" /> : (autoEnabled ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />)}
-                  </Button>
-                </div>
-
                 <Button
 
                   size="sm"
