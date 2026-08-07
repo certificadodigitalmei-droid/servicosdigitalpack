@@ -41,11 +41,9 @@ function money(amount: number): string {
 // o ambiente vem exclusivamente da configuração do gateway ("test" | "production").
 export type MercadoPagoEnvironment = "test" | "production";
 
-// Dados predefinidos de sandbox exigidos pela documentação oficial para aprovar o Pix.
+// Pagador de sandbox exigido pela documentação oficial da Orders API para Pix.
 const SANDBOX_PAYER = {
-  email: "test_user_pix@testuser.com",
-  first_name: "APRO",
-  last_name: "Test",
+  email: "test_user_br@testuser.com",
 };
 
 /** Valida o par de credenciais chamando um endpoint autenticado leve. */
@@ -88,16 +86,11 @@ export async function createMercadoPagoPix(
     throw new Error("Configure o Access Token do Mercado Pago em Configurações de Pagamento.");
   }
 
-  // Regra do Mercado Pago: o pagador precisa pertencer ao MESMO ambiente do Access Token.
-  // Usar um e-mail @testuser.com com credencial de produção (ou vice-versa) devolve
-  // 402 "invalid_users_involved". Por isso tentamos primeiro o e-mail real do pedido e,
-  // só se o MP recusar por incompatibilidade de usuários, repetimos com o pagador de sandbox.
+  // O pagador precisa pertencer ao mesmo ambiente do Access Token. Em teste, a Orders API
+  // exige o usuário oficial de sandbox; em produção, usa-se o e-mail real do pedido.
   const realPayer = { email: input.payerEmail || "pagador@exemplo.com" };
-  const sandboxPayer = {
-    email: SANDBOX_PAYER.email,
-    first_name: SANDBOX_PAYER.first_name,
-    last_name: SANDBOX_PAYER.last_name,
-  };
+  const sandboxPayer = { email: SANDBOX_PAYER.email };
+  const payer = input.environment === "production" ? realPayer : sandboxPayer;
 
   const buildBody = (payer: Record<string, string>) => ({
     type: "online",
@@ -110,6 +103,7 @@ export async function createMercadoPagoPix(
         {
           amount: money(input.amount),
           payment_method: { id: "pix", type: "bank_transfer" },
+          expiration_time: "P1D",
         },
       ],
     },
@@ -128,12 +122,12 @@ export async function createMercadoPagoPix(
       body: JSON.stringify(buildBody(payer)),
     });
 
-  let res = await post(realPayer, "");
+  let res = await post(payer, input.environment === "production" ? "" : "-sbx");
   let text = await res.text();
 
-  if (!res.ok && text.includes("invalid_users_involved")) {
-    // Provável credencial de teste: repete com o pagador oficial de sandbox.
-    res = await post(sandboxPayer, "-sbx");
+  if (!res.ok && input.environment === "production" && text.includes("invalid_users_involved")) {
+    // Proteção para uma configuração marcada como produção que ainda usa credencial de teste.
+    res = await post(sandboxPayer, "-environment-check");
     text = await res.text();
   }
 
@@ -149,6 +143,12 @@ export async function createMercadoPagoPix(
         "Mercado Pago recusou a cobrança (invalid_users_involved): o Access Token e o pagador " +
           "são de ambientes diferentes, ou a conta ainda não está habilitada para receber Pix. " +
           "Confira em Sua conta > Pix se a chave Pix está cadastrada e use as credenciais de produção.",
+      );
+    }
+    if (text.includes("processing_error")) {
+      throw new Error(
+        "Mercado Pago não conseguiu processar o Pix no ambiente selecionado. Confira se o " +
+          "Access Token pertence ao mesmo ambiente configurado e se a conta está habilitada para Pix.",
       );
     }
     throw new Error(`Mercado Pago ${res.status}: ${text.slice(0, 500) || "sem resposta"}`);
