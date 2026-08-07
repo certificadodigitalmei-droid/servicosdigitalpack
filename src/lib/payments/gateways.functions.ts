@@ -17,7 +17,7 @@ async function assertAdmin(supabase: any, userId: string) {
 export type PaymentGateway = {
   id: string;
   name: string;
-  provider_type: 'sigilopay' | 'syncpay' | 'mercadopago';
+  provider_type: 'mercadopago';
   environment: 'test' | 'production';
   public_key_masked: string;
   secret_key_masked: string;
