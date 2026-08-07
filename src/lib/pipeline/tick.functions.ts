@@ -170,7 +170,8 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
       const links = await ensureLinksForImported(batchSize);
 
       // 2) fila de envio para todo link ainda não enfileirado
-      const sync = await syncMassEmailQueue(batchSize);
+      const sync: any = await syncMassEmailQueue(batchSize);
+      if (sync.ok === false) throw new Error(`Falha ao enfileirar: ${sync.error}`);
 
       // 3) despacho espaçado (1 e-mail por ciclo, 3600/lote segundos entre eles)
       const queue: any = await processQueueInternal(MAX_PER_TICK, batchSize, spacingSec);
@@ -190,22 +191,31 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
           .eq('enabled', true)
           .limit(1);
 
-        const outcome: any = await runImportBatch({
-          date: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(
-            new Date(),
-          ),
-          filters: ((cfgs ?? [])[0]?.filters as any) || {
-            only_mei: true,
-            only_active: true,
-            only_matriz: false,
-            require_email: true,
-          },
-          limit: batchSize,
-          skipExisting: true,
-        });
-        imported = outcome?.imported ?? outcome?.created ?? 0;
+        const filters = ((cfgs ?? [])[0]?.filters as any) || {
+          only_mei: true,
+          only_active: true,
+          only_matriz: false,
+          require_email: true,
+        };
+
+        // Sempre as empresas MAIS RECENTES: começa em hoje e, quando o dia não
+        // tiver nenhum CNPJ novo, recua dia a dia (até 7 dias) em vez de parar.
+        const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' });
+        for (let back = 0; back < 7 && imported === 0; back++) {
+          const day = fmt.format(new Date(Date.now() - back * 86_400_000));
+          const outcome: any = await runImportBatch({
+            date: day,
+            filters,
+            limit: batchSize,
+            skipExisting: true,
+          });
+          imported = outcome?.imported ?? outcome?.created ?? 0;
+          if (Array.isArray(imported)) imported = imported.length;
+          imported = Number(imported) || 0;
+        }
         stage = imported > 0 ? `novo lote importado (${imported})` : 'sem empresas novas na consulta';
       }
+
 
       const { evaluateSendHealth } = await import('./pipeline.server');
       const report = await evaluateSendHealth(context.supabase, batchSize);
