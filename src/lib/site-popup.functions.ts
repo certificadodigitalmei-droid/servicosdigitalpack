@@ -72,7 +72,7 @@ const DEFAULTS: SitePopupSettings = {
   cancel_button_text: 'Voltar',
   payment_enabled: true,
   payment_badge_text: 'Informações sobre o pagamento',
-  payment_title: 'Atenção às informações',
+  payment_title: '*ATENÇÃO ÀS INFORMAÇÕES:*',
   payment_partner_text:
     'O pagamento para ativação do processo de certificado digital será feito pela empresa parceira credenciada *DIGITAL CERTIFICA A1 LTDA*, credenciada pelo *ICP-Brasil* e pela *AC INCP SP* para a prestação e processamento do serviço.',
   payment_alert_text:
@@ -84,6 +84,7 @@ const DEFAULTS: SitePopupSettings = {
   payment_loading_subtitle: 'Aguarde enquanto processamos sua solicitação com segurança...',
   payment_continue_button_text: 'Continuar',
   payment_cancel_button_text: 'Cancelar',
+
 };
 
 export const POPUP_DEFAULTS = DEFAULTS;
