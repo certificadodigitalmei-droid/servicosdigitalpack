@@ -47,7 +47,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { GlobalFloatingPanels } from '@/components/painel/GlobalFloatingPanels';
 import { getCloudState, saveCloudState } from '@/lib/cloud-state.functions';
-import { SidebarPlanInfo } from '@/components/painel/SidebarPlanInfo';
+
 import { getAutomationStatus, toggleGlobalAutomation } from '@/lib/automation/global-status.functions';
 import { Power, PowerOff } from 'lucide-react';
 
