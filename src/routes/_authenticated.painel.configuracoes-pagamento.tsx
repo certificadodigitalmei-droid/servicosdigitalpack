@@ -230,8 +230,9 @@ function PaymentGatewaysPage() {
                   </Badge>
                 </CardTitle>
                 <CardDescription className="break-all text-xs">
-                  Webhook: {pid === 'syncpay' ? `https://servicosdigitalpack.lovable.app${p.webhookPath}` : `${origin}${p.webhookPath}`}
+                  Webhook: {webhookUrlFor(pid, origin)}
                 </CardDescription>
+
               </CardHeader>
               <CardContent>
                 <Button size="sm" variant="outline" onClick={() => openNew(pid)}>
