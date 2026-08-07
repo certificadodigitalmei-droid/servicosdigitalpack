@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Play, Square, Loader2, AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Play, Square, Loader2, AlertTriangle, PauseCircle } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import {
   startPipelineEngine,
   stopPipelineEngine,
   setPipelineBatchSize,
+  PAUSE_LABEL,
 } from '@/lib/pipeline/pipeline-engine';
 
 /**
@@ -27,6 +28,16 @@ export function MotorFluxoCard() {
   const sentInWindow = useStore(pipelineStore, (s) => s.sentInWindow);
   const remaining = useStore(pipelineStore, (s) => s.remainingInWindow);
   const lastError = useStore(pipelineStore, (s) => s.lastError);
+  const pausedUntil = useStore(pipelineStore, (s) => s.pausedUntil);
+  const pauseReason = useStore(pipelineStore, (s) => s.pauseReason);
+
+  // Contagem regressiva da pausa automática.
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (!pausedUntil) return;
+    const id = window.setInterval(() => force((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [pausedUntil]);
 
   // Para o motor ao sair da página (evita dois motores em abas diferentes).
   useEffect(() => () => stopPipelineEngine(), []);
@@ -34,13 +45,28 @@ export function MotorFluxoCard() {
   const pendente = snapshot?.pendenteTotal ?? 0;
   const progresso = batchSize > 0 ? Math.min(100, Math.round((sentInWindow / batchSize) * 100)) : 0;
 
+  const pauseMsLeft = pausedUntil ? new Date(pausedUntil).getTime() - Date.now() : 0;
+  const isPaused = running && pauseMsLeft > 0;
+  const countdown = (() => {
+    const total = Math.max(0, Math.ceil(pauseMsLeft / 1000));
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  })();
+
   return (
     <Card className="border-slate-200">
       <CardContent className="space-y-4 p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <span
-              className={`h-3 w-3 rounded-full ${running ? 'animate-pulse bg-emerald-500' : 'bg-slate-300'}`}
+              className={`h-3 w-3 rounded-full ${
+                isPaused
+                  ? 'animate-pulse bg-amber-500'
+                  : running
+                    ? 'animate-pulse bg-emerald-500'
+                    : 'bg-slate-300'
+              }`}
             />
             <div>
               <h2 className="text-lg font-bold text-slate-900">Motor do fluxo</h2>
@@ -50,12 +76,18 @@ export function MotorFluxoCard() {
                   : 'Parado. Ative para consultar, importar, gerar links e enviar em ordem.'}
               </p>
             </div>
-            {running && (
-              <Badge className="bg-emerald-100 text-emerald-800">
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" /> ativo
-              </Badge>
-            )}
+            {running &&
+              (isPaused ? (
+                <Badge className="bg-amber-100 text-amber-800">
+                  <PauseCircle className="mr-1 h-3 w-3" /> em espera
+                </Badge>
+              ) : (
+                <Badge className="bg-emerald-100 text-emerald-800">
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" /> ativo
+                </Badge>
+              ))}
           </div>
+
 
           {running ? (
             <Button className="bg-red-600 text-white hover:bg-red-700" onClick={stopPipelineEngine}>
