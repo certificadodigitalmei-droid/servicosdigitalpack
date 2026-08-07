@@ -7,7 +7,9 @@
 import { createStore } from '@/lib/automation/store';
 import { runPipelineTick, type PipelineTickResult } from '@/lib/pipeline/tick.functions';
 
-export type PauseReason = 'rate_limit' | 'cycle_error' | 'send_failures';
+export type PauseReason = 'rate_limit' | 'cycle_error' | 'send_failures' | 'unhealthy';
+export type HealthStatus = 'healthy' | 'warning' | 'blocked';
+
 
 export type PipelineEngineState = {
   running: boolean;
