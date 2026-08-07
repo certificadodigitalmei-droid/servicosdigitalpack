@@ -1529,34 +1529,40 @@ export type Database = {
           api_key: string
           base_url: string | null
           created_at: string
+          environment: string
           id: string
           is_active: boolean
           name: string
           notes: string | null
           provider_type: string
           updated_at: string
+          webhook_secret: string | null
         }
         Insert: {
           api_key: string
           base_url?: string | null
           created_at?: string
+          environment?: string
           id?: string
           is_active?: boolean
           name: string
           notes?: string | null
           provider_type: string
           updated_at?: string
+          webhook_secret?: string | null
         }
         Update: {
           api_key?: string
           base_url?: string | null
           created_at?: string
+          environment?: string
           id?: string
           is_active?: boolean
           name?: string
           notes?: string | null
           provider_type?: string
           updated_at?: string
+          webhook_secret?: string | null
         }
         Relationships: []
       }
