@@ -30,6 +30,8 @@ export function MotorFluxoCard() {
   const lastError = useStore(pipelineStore, (s) => s.lastError);
   const pausedUntil = useStore(pipelineStore, (s) => s.pausedUntil);
   const pauseReason = useStore(pipelineStore, (s) => s.pauseReason);
+  const health = useStore(pipelineStore, (s) => s.health);
+
 
   // Contagem regressiva da pausa automática.
   const [, force] = useState(0);
