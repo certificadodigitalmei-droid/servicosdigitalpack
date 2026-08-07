@@ -160,56 +160,16 @@ function EnvioMassa() {
     return renderHtml(design, vars);
   }, [previewItem, fromName, fromAddress, subject, designTick]);
 
-  const estado = cloudEnabled ? 'enviando' : 'parado';
-
   return (
     <div className="mx-auto max-w-5xl space-y-5 pb-10">
-      {/* 1 — Estado + botão único */}
-      <Card className="border-slate-200">
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <span
-              className={`h-3 w-3 rounded-full ${
-                estado === 'enviando'
-                  ? 'animate-pulse bg-emerald-500'
-                  : 'bg-slate-300'
-              }`}
-            />
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">Envio em Massa</h1>
-              <p className="text-sm text-slate-500">
-                {estado === 'enviando'
-                  ? 'Modo nuvem ativo — continua mesmo se você fechar esta aba.'
-                  : 'Modo nuvem pausado. Ative para processar a fila no servidor.'}
-              </p>
-            </div>
-            {testMode && <Badge className="bg-amber-100 text-amber-800">MODO TESTE</Badge>}
-          </div>
+      <div className="flex items-center gap-2">
+        <h1 className="text-xl font-bold text-slate-900">Envio em Massa</h1>
+        {testMode && <Badge className="bg-amber-100 text-amber-800">MODO TESTE</Badge>}
+      </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {!cloudEnabled ? (
-              <Button
-                size="lg"
-                className="bg-emerald-600 text-white hover:bg-emerald-700"
-                onClick={() => toggleCloud.mutate(true)}
-                disabled={toggleCloud.isPending || automationQ.isLoading}
-              >
-                {toggleCloud.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                Ativar modo nuvem
-              </Button>
-            ) : (
-              <Button
-                className="bg-red-600 text-white hover:bg-red-700"
-                onClick={() => toggleCloud.mutate(false)}
-                disabled={toggleCloud.isPending}
-              >
-                {toggleCloud.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
-                Pausar modo nuvem
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* 1 — Motor único do fluxo (consulta → importação → links → envio) */}
+      <MotorFluxoCard />
+
 
       {/* 2 — Números essenciais */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
