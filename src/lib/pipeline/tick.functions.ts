@@ -252,6 +252,18 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
         remainingInWindow: win.remaining,
         rateLimited: !!queue?.rateLimited,
         retryAfterSec: queue?.retryAfterSec ?? 0,
+        quotaExhausted: !!queue?.quotaExhausted || report.quotaExhausted,
+        health: {
+          status: report.status,
+          reason: report.reason,
+          waitSec: report.waitSec,
+          naFila: report.health.naFila,
+          enviadosUltimaHora: report.health.enviadosUltimaHora,
+          aguardando429: report.health.aguardando429,
+          falhas: report.health.falhas,
+          failureRate: report.failureRate,
+        },
+
       };
     } catch (e) {
       await release('error');
