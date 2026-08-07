@@ -206,7 +206,7 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
           new Date(),
         );
         const day =
-          cfg0?.query_date_mode === 'selected' && cfg0?.selected_query_date
+          cfg0?.query_date_mode === 'specific' && cfg0?.selected_query_date
             ? String(cfg0.selected_query_date)
             : hoje;
 
