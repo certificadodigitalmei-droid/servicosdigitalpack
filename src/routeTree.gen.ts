@@ -25,6 +25,7 @@ import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenti
 import { Route as ApiWebhooksMercadopagoRouteImport } from './routes/api/webhooks/mercadopago'
 import { Route as ApiPublicWebhookSyncpayRouteImport } from './routes/api/public/webhook-syncpay'
 import { Route as ApiPublicWebhookSigilopayRouteImport } from './routes/api/public/webhook-sigilopay'
+import { Route as ApiPublicWebhookMercadopagoRouteImport } from './routes/api/public/webhook-mercadopago'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
 import { Route as AuthenticatedPainelWorkspaceEnvioRouteImport } from './routes/_authenticated.painel.workspace-envio'
 import { Route as AuthenticatedPainelRemetenteEmailRouteImport } from './routes/_authenticated.painel.remetente-email'
@@ -140,6 +141,12 @@ const ApiPublicWebhookSigilopayRoute =
   ApiPublicWebhookSigilopayRouteImport.update({
     id: '/api/public/webhook-sigilopay',
     path: '/api/public/webhook-sigilopay',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicWebhookMercadopagoRoute =
+  ApiPublicWebhookMercadopagoRouteImport.update({
+    id: '/api/public/webhook-mercadopago',
+    path: '/api/public/webhook-mercadopago',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiInternalCasaDosDadosWorkerRoute =
@@ -375,6 +382,7 @@ export interface FileRoutesByFullPath {
   '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
+  '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
   '/api/public/webhook-sigilopay': typeof ApiPublicWebhookSigilopayRoute
   '/api/public/webhook-syncpay': typeof ApiPublicWebhookSyncpayRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
@@ -424,6 +432,7 @@ export interface FileRoutesByTo {
   '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
+  '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
   '/api/public/webhook-sigilopay': typeof ApiPublicWebhookSigilopayRoute
   '/api/public/webhook-syncpay': typeof ApiPublicWebhookSyncpayRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
@@ -477,6 +486,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/_authenticated/painel/workspace-envio': typeof AuthenticatedPainelWorkspaceEnvioRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
+  '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
   '/api/public/webhook-sigilopay': typeof ApiPublicWebhookSigilopayRoute
   '/api/public/webhook-syncpay': typeof ApiPublicWebhookSyncpayRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
@@ -530,6 +540,7 @@ export interface FileRouteTypes {
     | '/painel/remetente-email'
     | '/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
+    | '/api/public/webhook-mercadopago'
     | '/api/public/webhook-sigilopay'
     | '/api/public/webhook-syncpay'
     | '/api/webhooks/mercadopago'
@@ -579,6 +590,7 @@ export interface FileRouteTypes {
     | '/painel/remetente-email'
     | '/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
+    | '/api/public/webhook-mercadopago'
     | '/api/public/webhook-sigilopay'
     | '/api/public/webhook-syncpay'
     | '/api/webhooks/mercadopago'
@@ -631,6 +643,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/remetente-email'
     | '/_authenticated/painel/workspace-envio'
     | '/api/internal/casa-dos-dados-worker'
+    | '/api/public/webhook-mercadopago'
     | '/api/public/webhook-sigilopay'
     | '/api/public/webhook-syncpay'
     | '/api/webhooks/mercadopago'
@@ -662,6 +675,7 @@ export interface RootRouteChildren {
   CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
   CheckoutTokenRoute: typeof CheckoutTokenRoute
   ApiInternalCasaDosDadosWorkerRoute: typeof ApiInternalCasaDosDadosWorkerRoute
+  ApiPublicWebhookMercadopagoRoute: typeof ApiPublicWebhookMercadopagoRoute
   ApiPublicWebhookSigilopayRoute: typeof ApiPublicWebhookSigilopayRoute
   ApiPublicWebhookSyncpayRoute: typeof ApiPublicWebhookSyncpayRoute
   ApiWebhooksMercadopagoRoute: typeof ApiWebhooksMercadopagoRoute
@@ -789,6 +803,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/webhook-sigilopay'
       fullPath: '/api/public/webhook-sigilopay'
       preLoaderRoute: typeof ApiPublicWebhookSigilopayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/webhook-mercadopago': {
+      id: '/api/public/webhook-mercadopago'
+      path: '/api/public/webhook-mercadopago'
+      fullPath: '/api/public/webhook-mercadopago'
+      preLoaderRoute: typeof ApiPublicWebhookMercadopagoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/internal/casa-dos-dados-worker': {
@@ -1152,6 +1173,7 @@ const rootRouteChildren: RootRouteChildren = {
   CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
   CheckoutTokenRoute: CheckoutTokenRoute,
   ApiInternalCasaDosDadosWorkerRoute: ApiInternalCasaDosDadosWorkerRoute,
+  ApiPublicWebhookMercadopagoRoute: ApiPublicWebhookMercadopagoRoute,
   ApiPublicWebhookSigilopayRoute: ApiPublicWebhookSigilopayRoute,
   ApiPublicWebhookSyncpayRoute: ApiPublicWebhookSyncpayRoute,
   ApiWebhooksMercadopagoRoute: ApiWebhooksMercadopagoRoute,
@@ -1169,3 +1191,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
