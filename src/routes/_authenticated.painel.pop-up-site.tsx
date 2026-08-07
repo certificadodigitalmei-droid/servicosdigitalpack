@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Eye, Save, Plus, Trash2, FileText, CreditCard } from 'lucide-react';
+import { Eye, Save, Plus, Trash2, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CertificatePopup } from '@/components/CertificatePopup';
+
 import { PaymentInfoPopup } from '@/components/checkout/PaymentInfoPopup';
 import { getSitePopup, saveSitePopup, POPUP_DEFAULTS, type SitePopupSettings } from '@/lib/site-popup.functions';
 import { RichField } from '@/components/admin/RichField';
@@ -22,8 +22,8 @@ function PopupSitePage() {
   const [s, setS] = useState<SitePopupSettings>(POPUP_DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [previewCert, setPreviewCert] = useState(false);
   const [previewPay, setPreviewPay] = useState(false);
+
 
   useEffect(() => {
     getSitePopup()
@@ -66,158 +66,14 @@ function PopupSitePage() {
       <FormattingHelp />
 
 
-      <Tabs defaultValue="certificado" className="space-y-4">
+      <Tabs defaultValue="pagamento" className="space-y-4">
         <TabsList className="w-full justify-start bg-slate-100 p-1">
-          <TabsTrigger value="certificado" className="gap-2 data-[state=active]:bg-white">
-            <FileText className="h-4 w-4" /> Pop-up Certificado
-          </TabsTrigger>
           <TabsTrigger value="pagamento" className="gap-2 data-[state=active]:bg-white">
             <CreditCard className="h-4 w-4" /> Pop-up Pagamento
           </TabsTrigger>
         </TabsList>
 
-        {/* =============== POP-UP 1: CERTIFICADO =============== */}
-        <TabsContent value="certificado" className="space-y-4">
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">Pop-up antes do checkout</h2>
-                <p className="text-xs text-slate-500">
-                  Aparece quando o cliente clica em <strong>Emitir Certificado Digital</strong>.
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-1.5">
-                  <Switch checked={s.enabled} onCheckedChange={(v) => set('enabled', v)} id="cert-enabled" />
-                  <Label htmlFor="cert-enabled" className="text-sm">Ativo</Label>
-                </div>
-                <Button variant="outline" onClick={() => setPreviewCert(true)}>
-                  <Eye className="mr-2 h-4 w-4" /> Prévia
-                </Button>
-              </div>
-            </div>
-          </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Cabeçalho e título</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <Field label="Selo do topo" value={s.badge_text} onChange={(v) => set('badge_text', v)} />
-                <RichField label="Título principal" value={s.title} onChange={(v) => set('title', v)} rows={3} />
-                <RichField label="Destaque (pendência)" value={s.highlight_text} onChange={(v) => set('highlight_text', v)} rows={2} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader><CardTitle className="text-base">Blocos informativos</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <Field label="Título — Obrigatório por lei" value={s.law_title} onChange={(v) => set('law_title', v)} />
-                <RichField label="Texto legal" value={s.law_text} onChange={(v) => set('law_text', v)} rows={3} />
-                <RichField label="Texto do emissor/parceiros" value={s.provider_text} onChange={(v) => set('provider_text', v)} rows={3} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader><CardTitle className="text-base">Riscos (bloco escuro)</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <RichField label="Título dos riscos" value={s.risks_title} onChange={(v) => set('risks_title', v)} singleLine />
-                <div className="space-y-2">
-                  <Label className="text-sm">Itens</Label>
-                  {s.risks.map((r, i) => (
-                    <div key={i} className="flex gap-2">
-                      <Input
-                        value={r}
-                        onChange={(e) => {
-                          const next = [...s.risks];
-                          next[i] = e.target.value;
-                          set('risks', next);
-                        }}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => set('risks', s.risks.filter((_, j) => j !== i))}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button variant="outline" size="sm" onClick={() => set('risks', [...s.risks, 'Novo risco'])}>
-                    <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar risco
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader><CardTitle className="text-base">Preços e validade</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Label principal" value={s.price_main_label} onChange={(v) => set('price_main_label', v)} />
-                  <Field label="Valor principal" value={s.price_main} onChange={(v) => set('price_main', v)} />
-                  <Field label="Nota (valor principal)" value={s.price_main_note} onChange={(v) => set('price_main_note', v)} />
-                  <Field label="Label parcelamento" value={s.price_installment_label} onChange={(v) => set('price_installment_label', v)} />
-                  <Field label="Valor parcela" value={s.price_installment} onChange={(v) => set('price_installment', v)} />
-                  <Field label="Nota (parcela)" value={s.price_installment_note} onChange={(v) => set('price_installment_note', v)} />
-                  <Field label="Título validade" value={s.validity_title} onChange={(v) => set('validity_title', v)} />
-                  <Field label="Subtítulo validade" value={s.validity_subtitle} onChange={(v) => set('validity_subtitle', v)} />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-2">
-              <CardHeader><CardTitle className="text-base">Rodapé e botões</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm">Itens do rodapé (ícone + texto)</Label>
-                  <p className="text-xs text-slate-500">Ícones disponíveis: lock, key, headset, shield, file</p>
-                  {s.footer_items.map((f, i) => (
-                    <div key={i} className="flex gap-2">
-                      <Input
-                        className="max-w-[140px]"
-                        placeholder="ícone"
-                        value={f.icon}
-                        onChange={(e) => {
-                          const next = [...s.footer_items];
-                          next[i] = { ...f, icon: e.target.value };
-                          set('footer_items', next);
-                        }}
-                      />
-                      <Input
-                        value={f.text}
-                        onChange={(e) => {
-                          const next = [...s.footer_items];
-                          next[i] = { ...f, text: e.target.value };
-                          set('footer_items', next);
-                        }}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => set('footer_items', s.footer_items.filter((_, j) => j !== i))}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => set('footer_items', [...s.footer_items, { icon: 'shield', text: 'Novo item' }])}
-                  >
-                    <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar item
-                  </Button>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Botão continuar" value={s.continue_button_text} onChange={(v) => set('continue_button_text', v)} />
-                  <Field label="Botão cancelar" value={s.cancel_button_text} onChange={(v) => set('cancel_button_text', v)} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* =============== POP-UP 2: PAGAMENTO =============== */}
         <TabsContent value="pagamento" className="space-y-4">
           <div className="rounded-lg border border-slate-200 bg-white p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -281,15 +137,8 @@ function PopupSitePage() {
         </TabsContent>
       </Tabs>
 
-      <CertificatePopup
-        open={previewCert}
-        onClose={() => setPreviewCert(false)}
-        onContinue={() => setPreviewCert(false)}
-        cnpj="00000000000100"
-        settings={s}
-      />
-
       <PaymentInfoPopup
+
         open={previewPay}
         onClose={() => setPreviewPay(false)}
         onContinue={() => setPreviewPay(false)}
