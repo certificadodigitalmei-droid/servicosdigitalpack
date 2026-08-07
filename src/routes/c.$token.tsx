@@ -407,11 +407,11 @@ function SuccessCard({ paidAt, cnpjFmt }: { paidAt: string; cnpjFmt: string }) {
 function CertVisual({ paidAt, cnpjFmt, nome }: { paidAt: string | null; cnpjFmt: string; nome: string }) {
   const active = !!paidAt;
   return (
-    <div className={`border-b p-4 lg:p-5 ${active ? 'border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/40' : 'border-border bg-gradient-to-br from-[#eaf1ff] via-white to-[#eaf1ff]'}`}>
+    <div className={`border-b p-4 lg:p-5 ${active ? 'border-[#004884]/20 bg-gradient-to-br from-[#004884]/8 via-white to-[#004884]/5' : 'border-border bg-gradient-to-br from-[#eaf1ff] via-white to-[#eaf1ff]'}`}>
       <div
         className={`relative overflow-hidden rounded-xl p-4 text-white shadow-lg lg:p-5 ${
           active
-            ? 'bg-[linear-gradient(135deg,#065f46_0%,#0f9d58_55%,#34d399_100%)] shadow-emerald-900/25'
+            ? 'bg-[linear-gradient(135deg,#00335f_0%,#004884_55%,#0063b1_100%)] shadow-[#004884]/25'
             : 'bg-[linear-gradient(135deg,#0b2545_0%,#12406f_55%,#1351b4_100%)] shadow-slate-900/25'
         }`}
       >
@@ -436,7 +436,7 @@ function CertVisual({ paidAt, cnpjFmt, nome }: { paidAt: string | null; cnpjFmt:
           </div>
           <span
             className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
-              active ? 'bg-white text-emerald-700' : 'bg-[#ffc107] text-[#5c4400]'
+              active ? 'bg-white text-[#004884]' : 'bg-[#ffc107] text-[#5c4400]'
             }`}
           >
             {active ? <CheckCircle2 className="h-3 w-3" /> : <span className="h-1.5 w-1.5 rounded-full bg-[#5c4400] animate-pulse" />}
@@ -456,7 +456,7 @@ function CertVisual({ paidAt, cnpjFmt, nome }: { paidAt: string | null; cnpjFmt:
             </div>
             <div
               className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg ring-1 ${
-                active ? 'bg-white/95 text-emerald-700 ring-white/60' : 'bg-white/15 text-white/70 ring-white/25'
+                active ? 'bg-white/95 text-[#004884] ring-white/60' : 'bg-white/15 text-white/70 ring-white/25'
               }`}
             >
               <ShieldCheck className="h-6 w-6" />
