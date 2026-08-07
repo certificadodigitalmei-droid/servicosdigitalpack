@@ -137,15 +137,8 @@ function PopupSitePage() {
         </TabsContent>
       </Tabs>
 
-      <CertificatePopup
-        open={previewCert}
-        onClose={() => setPreviewCert(false)}
-        onContinue={() => setPreviewCert(false)}
-        cnpj="00000000000100"
-        settings={s}
-      />
-
       <PaymentInfoPopup
+
         open={previewPay}
         onClose={() => setPreviewPay(false)}
         onContinue={() => setPreviewPay(false)}
