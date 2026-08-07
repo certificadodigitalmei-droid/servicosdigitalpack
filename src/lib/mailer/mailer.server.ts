@@ -93,7 +93,7 @@ export async function sendMailMessage(opts: {
       throw new MailError(
         `${e.code ?? 'email_error'}: ${e.message}`,
         e.status ?? 500,
-        e.status === 429 ? 'rate_limited' : e.code,
+        e.status === 429 ? 'rate_limited' : (e.code ?? undefined),
         retryAfter,
       );
     }
