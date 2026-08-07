@@ -309,5 +309,6 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       qr_code_base64: pix.qr_code_base64,
       transaction_id: pix.transaction_id,
       provider,
+      reused: false,
     };
   });
