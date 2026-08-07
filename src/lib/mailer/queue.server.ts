@@ -1,4 +1,4 @@
-// Server-only: processa a fila de e-mails do Google Workspace (Gmail API).
+// Server-only: processa a fila de e-mails pela infraestrutura da Lovable.
 // Usado tanto pelo painel (admin) quanto pelo cron automático.
 
 const RATE_WINDOW_MS = 1_000;
@@ -14,7 +14,7 @@ type QueueRow = {
 };
 
 export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) {
-  const { sendGmailMessage, GmailError } = await import('./gmail.server');
+  const { sendMailMessage, MailError } = await import('./mailer.server');
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
   if (!opts.burst) {
@@ -33,11 +33,13 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
   const companyCnpj = qRow?.idempotency_key?.replace('mass-email-', '');
 
   try {
-    const result = await sendGmailMessage({
+    const result = await sendMailMessage({
       to: row.to_email,
       subject: row.subject,
       html: row.html ?? undefined,
       text: row.text ?? undefined,
+      idempotencyKey: qRow?.idempotency_key ?? undefined,
+      label: 'campanha-massa',
     });
     await supabaseAdmin
       .from('email_send_queue')
@@ -60,7 +62,7 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
     }
     return { ok: true as const };
   } catch (e) {
-    const err = e as InstanceType<typeof GmailError>;
+    const err = e as InstanceType<typeof MailError>;
     const attempts = row.attempts + 1;
     // 429 (rate limit) NÃO é falha do e-mail: é só "tente mais tarde".
     // Não gasta tentativa e nunca vira "failed".

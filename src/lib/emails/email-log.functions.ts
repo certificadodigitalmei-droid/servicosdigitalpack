@@ -44,7 +44,7 @@ function classify(subject: string): string {
   return 'Campanha / outros';
 }
 
-/** Log real de todos os e-mails processados pelo sistema (fila do Workspace). */
+/** Log real de todos os e-mails processados pelo sistema (fila de envio). */
 export const listEmailLog = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator(
