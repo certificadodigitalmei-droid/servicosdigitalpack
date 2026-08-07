@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
+
 import { DraggableCnpjPanel } from './DraggableCnpjPanel';
 import { FloatingStatsPanel } from './FloatingStatsPanel';
 import { useStore } from '@/lib/automation/store';
+import { pipelineStore, resumePipelineEngine } from '@/lib/pipeline/pipeline-engine';
 import { envioStore, setShowFloating } from '@/lib/automation/envio-engine';
 
 /**
@@ -48,6 +51,7 @@ export function GlobalFloatingPanels() {
 
   return (
     <>
+      <PipelineEngineHost />
       <DraggableCnpjPanel />
       {showFloating && (
         <FloatingStatsPanel
@@ -63,3 +67,37 @@ export function GlobalFloatingPanels() {
     </>
   );
 }
+
+/**
+ * Mantém o motor do fluxo rodando em qualquer aba do painel e mostra um selo
+ * discreto de "motor ativo" com a etapa atual.
+ */
+function PipelineEngineHost() {
+  const running = useStore(pipelineStore, (s) => s.running);
+  const stage = useStore(pipelineStore, (s) => s.stage);
+  const pausedUntil = useStore(pipelineStore, (s) => s.pausedUntil);
+
+  useEffect(() => {
+    resumePipelineEngine();
+  }, []);
+
+  if (!running) return null;
+
+  const paused = !!pausedUntil && new Date(pausedUntil).getTime() > Date.now();
+
+  return (
+    <div className="pointer-events-none fixed bottom-3 left-3 z-40">
+      <span
+        className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium shadow-lg ${
+          paused ? 'bg-amber-100 text-amber-900' : 'bg-emerald-600 text-white'
+        }`}
+      >
+        <span
+          className={`h-2 w-2 animate-pulse rounded-full ${paused ? 'bg-amber-500' : 'bg-white'}`}
+        />
+        Motor {paused ? 'em espera' : 'ativo'} — {stage}
+      </span>
+    </div>
+  );
+}
+
