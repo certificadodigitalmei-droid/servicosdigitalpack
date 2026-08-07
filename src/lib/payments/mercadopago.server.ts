@@ -36,16 +36,17 @@ function money(amount: number): string {
   return amount.toFixed(2);
 }
 
-const TEST_CREDENTIALS_MESSAGE =
-  "O Mercado Pago não aceita credenciais de teste (TEST-...) no Checkout Transparente. " +
-  "Use o Access Token de produção (APP_USR-...) da sua aplicação; para simular pagamentos, " +
-  "faça o Pix com um usuário de teste.";
+// Atenção: no Checkout Transparente (Orders API) o Access Token de TESTE também
+// começa com "APP_USR-". Por isso NUNCA inferimos o ambiente pelo prefixo do token —
+// o ambiente vem exclusivamente da configuração do gateway ("test" | "production").
+export type MercadoPagoEnvironment = "test" | "production";
 
-function assertProductionToken(accessToken: string) {
-  if (accessToken.toUpperCase().startsWith("TEST-")) {
-    throw new Error(TEST_CREDENTIALS_MESSAGE);
-  }
-}
+// Dados predefinidos de sandbox exigidos pela documentação oficial para aprovar o Pix.
+const SANDBOX_PAYER = {
+  email: "test_user_pix@testuser.com",
+  first_name: "APRO",
+  last_name: "Test",
+};
 
 /** Valida o par de credenciais chamando um endpoint autenticado leve. */
 export async function testMercadoPagoCredentials(
@@ -54,37 +55,52 @@ export async function testMercadoPagoCredentials(
 ): Promise<{ ok: boolean; message: string }> {
   const { accessToken } = splitMercadoPagoKeys(apiKey);
   if (!accessToken) return { ok: false, message: "Access Token não configurado." };
-  if (accessToken.toUpperCase().startsWith("TEST-")) {
-    return { ok: false, message: TEST_CREDENTIALS_MESSAGE };
-  }
   const res = await fetch(`${cleanBase(baseUrl)}/users/me`, {
     headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
   });
   if (!res.ok) {
-    return { ok: false, message: `Mercado Pago respondeu ${res.status} ao validar o Access Token.` };
+    return {
+      ok: false,
+      message:
+        `Mercado Pago respondeu ${res.status} ao validar o Access Token. ` +
+        "Confira se copiou o token correto do ambiente selecionado " +
+        "(Minha aplicação > Testes > Credenciais de teste, ou Produção).",
+    };
   }
   const json = (await res.json().catch(() => ({}))) as any;
   const live = json?.site_id ? `conta ${json.site_id}` : "conta validada";
   return { ok: true, message: `Conexão bem-sucedida (${live}).` };
 }
 
+
 export async function createMercadoPagoPix(
   apiKey: string,
   baseUrl: string | null | undefined,
-  input: { amount: number; orderId: string; payerEmail: string },
+  input: {
+    amount: number;
+    orderId: string;
+    payerEmail: string;
+    environment?: MercadoPagoEnvironment;
+  },
 ): Promise<MercadoPagoPix> {
   const { accessToken } = splitMercadoPagoKeys(apiKey);
   if (!accessToken) {
     throw new Error("Configure o Access Token do Mercado Pago em Configurações de Pagamento.");
   }
-  assertProductionToken(accessToken);
+
+  const isSandbox = input.environment !== "production";
+  // Em teste usamos os dados predefinidos de sandbox (@testuser.com + APRO),
+  // que fazem o pagamento ser aprovado automaticamente pela Orders API.
+  const payer = isSandbox
+    ? { email: SANDBOX_PAYER.email, first_name: SANDBOX_PAYER.first_name, last_name: SANDBOX_PAYER.last_name }
+    : { email: input.payerEmail };
 
   const body = {
     type: "online",
     processing_mode: "automatic",
     external_reference: input.orderId,
     total_amount: money(input.amount),
-    payer: { email: input.payerEmail },
+    payer,
     transactions: {
       payments: [
         {
@@ -109,11 +125,15 @@ export async function createMercadoPagoPix(
 
   const text = await res.text();
   if (!res.ok) {
-    if (res.status === 401 && text.includes("invalid_credentials")) {
-      throw new Error(TEST_CREDENTIALS_MESSAGE);
+    if (res.status === 401) {
+      throw new Error(
+        "Mercado Pago recusou o Access Token (401). No ambiente de Teste, use o token de " +
+          "Minha aplicação > Testes > Credenciais de teste; em Produção, o token de produção.",
+      );
     }
     throw new Error(`Mercado Pago ${res.status}: ${text.slice(0, 500) || "sem resposta"}`);
   }
+
 
   const json = JSON.parse(text) as any;
   const payment = json?.transactions?.payments?.[0] ?? {};
