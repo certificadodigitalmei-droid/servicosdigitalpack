@@ -2,36 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const SIGILOPAY_DEFAULT_BASE = "https://app.sigilopay.com.br/api/v1";
-const PAID_STATUSES = ["paid", "ok", "completed", "confirmed", "approved", "success"];
-
-function splitKeys(apiKey: string): { publicKey: string; secretKey: string } {
-  const [publicKey = "", secretKey = ""] = (apiKey || "").split("|");
-  return { publicKey: publicKey.trim(), secretKey: secretKey.trim() };
-}
-
-async function fetchSigiloStatus(apiKey: string, baseUrl: string, txId: string): Promise<string | null> {
-  const { publicKey, secretKey } = splitKeys(apiKey);
-  if (!publicKey || !secretKey) return null;
-  const cleanBase = (baseUrl || SIGILOPAY_DEFAULT_BASE).replace(/\/+$/, "");
-  try {
-    const res = await fetch(`${cleanBase}/transactions?id=${encodeURIComponent(txId)}`, {
-      headers: { "x-public-key": publicKey, "x-secret-key": secretKey },
-    });
-    if (!res.ok) return null;
-    const json: any = await res.json().catch(() => null);
-    const raw =
-      json?.transaction?.status ??
-      json?.data?.status ??
-      json?.status ??
-      null;
-    return typeof raw === "string" ? raw.toLowerCase() : null;
-  } catch (err) {
-    console.error("[reconcile] sigilopay fetch error", err);
-    return null;
-  }
-}
-
 export const reconcilePendingOrders = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -43,62 +13,8 @@ export const reconcilePendingOrders = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!roleRow) throw new Error("Forbidden");
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    const { data: pending, error } = await supabaseAdmin
-      .from("orders")
-      .select("id, status, external_transaction_id, payment_provider")
-      .eq("status", "awaiting_payment")
-      .gte("created_at", since);
-
-    if (error) throw error;
-    if (!pending || pending.length === 0) return { checked: 0, updated: 0 };
-
-    const { data: gateway } = await supabaseAdmin
-      .from("payment_gateways")
-      .select("api_key, base_url, provider_type")
-      .eq("is_active", true)
-      .maybeSingle();
-    if (!gateway) return { checked: pending.length, updated: 0 };
-
-    let updated = 0;
-    for (const order of pending) {
-      if (!order.external_transaction_id) continue;
-      const providerType = (order.payment_provider || gateway.provider_type || "sigilopay") as string;
-      let remote: string | null = null;
-      if (providerType === "syncpay") {
-        try {
-          const { getSyncPayTransactionStatus } = await import("@/lib/payments/syncpay.server");
-          remote = await getSyncPayTransactionStatus(
-            gateway.api_key,
-            gateway.base_url,
-            order.external_transaction_id,
-          );
-        } catch (err) {
-          console.error("[reconcile] syncpay fetch error", err);
-        }
-      } else {
-        remote = await fetchSigiloStatus(
-          gateway.api_key,
-          gateway.base_url || SIGILOPAY_DEFAULT_BASE,
-          order.external_transaction_id,
-        );
-      }
-      if (remote && PAID_STATUSES.includes(remote)) {
-        await supabaseAdmin
-          .from("orders")
-          .update({
-            status: "paid",
-            paid_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", order.id);
-        updated++;
-      }
-    }
-
-    return { checked: pending.length, updated };
+    const { reconcileRecentPendingOrders } = await import("@/lib/payments/verify.server");
+    return await reconcileRecentPendingOrders(48);
   });
 
 export const markOrderPaidManually = createServerFn({ method: "POST" })
@@ -113,12 +29,7 @@ export const markOrderPaidManually = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!roleRow) throw new Error("Forbidden");
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const nowIso = new Date().toISOString();
-    const { error } = await supabaseAdmin
-      .from("orders")
-      .update({ status: "paid", paid_at: nowIso, updated_at: nowIso })
-      .eq("id", data.orderId);
-    if (error) throw error;
-    return { ok: true, paid_at: nowIso };
+    const { settleOrderPaid } = await import("@/lib/payments/verify.server");
+    const paid_at = await settleOrderPaid(data.orderId);
+    return { ok: true, paid_at };
   });
