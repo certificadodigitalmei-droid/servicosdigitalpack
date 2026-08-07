@@ -150,8 +150,11 @@ function EnvioMassa() {
         {testMode && <Badge className="bg-amber-100 text-amber-800">MODO TESTE</Badge>}
       </div>
 
+      <PreviewEnvWarning />
+
       {/* 1 — Motor único do fluxo (consulta → importação → links → envio) */}
       <MotorFluxoCard />
+
 
 
       {/* 2 — Números essenciais */}
@@ -332,6 +335,31 @@ function Num({
     <div className="rounded-lg border border-slate-200 bg-white p-4">
       <div className="text-[11px] uppercase tracking-wide text-slate-500">{label}</div>
       <div className={`mt-1 text-2xl font-bold ${map[tone]}`}>{value}</div>
+    </div>
+  );
+}
+
+/**
+ * Aviso: no ambiente de pré-visualização os e-mails são tratados como TESTE
+ * pela infraestrutura de e-mail e NÃO chegam na caixa de entrada real.
+ */
+function PreviewEnvWarning() {
+  const [isPreview, setIsPreview] = useState(false);
+  useEffect(() => {
+    const h = window.location.hostname;
+    setIsPreview(
+      h.includes('id-preview') || h.includes('-dev.lovable.app') || h === 'localhost',
+    );
+  }, []);
+  if (!isPreview) return null;
+  return (
+    <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+      <div className="font-semibold">Você está na pré-visualização — os envios NÃO chegam de verdade</div>
+      <p className="mt-1 text-amber-800">
+        Nesta janela os e-mails são tratados como teste: o painel marca “enviado”, mas nada é
+        entregue na caixa de entrada e não gera acessos nos links. Para disparar de verdade, publique
+        e rode o motor pelo site publicado (seu domínio) e não por esta aba.
+      </p>
     </div>
   );
 }
