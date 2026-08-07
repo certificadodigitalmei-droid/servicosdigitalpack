@@ -198,7 +198,7 @@ const initial: State = {
   sentThisHour: 0,
   sentDay: todayStr(),
   sentHour: hourStr(),
-  testMode: true,
+  testMode: false,
   testRecipient: '',
   fromName: 'Certificado Digital MEI',
   fromAddress: 'certificado.mei.estadual@seu-certificado-mei-digital.online',
@@ -238,7 +238,6 @@ export const envioStore = createStore<State>(initial, {
     'sentThisHour',
     'sentDay',
     'sentHour',
-    'testMode',
     'testRecipient',
     'fromName',
     'fromAddress',
@@ -1001,7 +1000,8 @@ export async function startSending() {
 
   running = false;
   paused = false;
-  envioStore.set({ running: false, paused: false });
+  // Modo teste nunca persiste entre sessões: ao entrar, sempre desligado.
+  envioStore.set({ running: false, paused: false, testMode: false });
   pushLog(stopFlag ? '■ Envio parado pelo operador.' : '■ Envio finalizado.');
 }
 
