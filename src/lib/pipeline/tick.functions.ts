@@ -35,8 +35,33 @@ export type PipelineTickResult = {
   rateLimited: boolean;
   /** Segundos sugeridos de espera quando rateLimited. */
   retryAfterSec: number;
+  /** Cota da hora esgotada (com margem de segurança). */
+  quotaExhausted: boolean;
+  /** Saúde do envio avaliada ao fim do ciclo. */
+  health: {
+    status: 'healthy' | 'warning' | 'blocked';
+    reason: string | null;
+    waitSec: number;
+    naFila: number;
+    enviadosUltimaHora: number;
+    aguardando429: number;
+    falhas: number;
+    failureRate: number;
+  };
   error?: string;
 };
+
+const EMPTY_HEALTH: PipelineTickResult['health'] = {
+  status: 'healthy',
+  reason: null,
+  waitSec: 0,
+  naFila: 0,
+  enviadosUltimaHora: 0,
+  aguardando429: 0,
+  falhas: 0,
+  failureRate: 0,
+};
+
 
 const LOCK_TTL_MS = 90_000;
 
