@@ -58,7 +58,18 @@ export const checkOrderStatus = createServerFn({ method: "POST" })
     const providerType = (order.payment_provider || gateway.provider_type || "sigilopay") as string;
 
     let remote: string | null = null;
-    if (providerType === "syncpay") {
+    if (providerType === "mercadopago") {
+      try {
+        const { getMercadoPagoOrderStatus } = await import("@/lib/payments/mercadopago.server");
+        remote = await getMercadoPagoOrderStatus(
+          gateway.api_key,
+          gateway.base_url,
+          order.external_transaction_id,
+        );
+      } catch (err) {
+        console.error("[status] mercadopago fetch error", err);
+      }
+    } else if (providerType === "syncpay") {
       try {
         const { getSyncPayTransactionStatus } = await import("@/lib/payments/syncpay.server");
         remote = await getSyncPayTransactionStatus(
@@ -76,6 +87,7 @@ export const checkOrderStatus = createServerFn({ method: "POST" })
         order.external_transaction_id,
       );
     }
+
 
     const paidStatuses = ["paid", "ok", "completed", "confirmed", "approved", "success"];
     const isPaid = !!remote && paidStatuses.includes(remote);
