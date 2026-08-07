@@ -83,7 +83,7 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
     const { ensureLinksForImported, syncMassEmailQueue } = await import(
       '@/lib/automation/mass-email.server'
     );
-    const { processQueueInternal, MAX_PER_TICK } = await import('@/lib/gmail/queue.server');
+    const { processQueueInternal, MAX_PER_TICK } = await import('@/lib/mailer/queue.server');
 
     const flow = await readFlowSettings(context.supabase);
     const batchSize = Math.max(1, data.batchSize ?? flow.hourlyBatchSize);
