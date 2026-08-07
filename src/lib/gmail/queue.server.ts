@@ -200,22 +200,27 @@ export async function recoverRetryableFailures(): Promise<number> {
 
 
 /**
- * Modo ÚNICO de envio: 1 e-mail a cada `spacingSec` segundos (padrão 36 s),
- * o que dá 100 e-mails por hora, sem lote e sem paralelismo.
+ * Modo ÚNICO de envio: 1 e-mail a cada `spacingSec` segundos (padrão 36 s).
  *
- * Não existe lote nem janela de bloqueio: o próprio espaçamento mantém o
- * ritmo nominal em aproximadamente 100 envios por hora.
+ * Duas travas garantem que o limite por hora NUNCA é ultrapassado:
+ *  1. espaçamento mínimo entre dois envios;
+ *  2. janela deslizante de 60 min lida do banco (vale para todas as abas),
+ *     com margem de segurança abaixo do teto do provedor.
  */
 export async function processQueueInternal(
   _maxBatch = MAX_PER_TICK,
-  _hourlyLimit = HOURLY_LIMIT,
+  hourlyLimit = HOURLY_LIMIT,
   spacingSec = DEFAULT_SPACING_SEC,
 ) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const { computeSendWindow, safeHourlyLimit } = await import('@/lib/pipeline/pipeline.server');
 
   const released = await releaseStuckSending();
   const recovered = await recoverRetryableFailures();
   const lastHour = await sentInLastHour();
+  const win = await computeSendWindow(supabaseAdmin as any, hourlyLimit);
+  const safeLimit = safeHourlyLimit(hourlyLimit);
+
   const base = {
     processed: 0,
     sent: 0,
@@ -225,17 +230,24 @@ export async function processQueueInternal(
     rateLimited: false,
     retryAfterSec: 0,
     lastHour,
-    remaining: null,
-    windowStart: null,
-    windowEnd: null,
-    secondsToReset: 0,
+    remaining: Math.max(0, safeLimit - win.sentInWindow),
+    windowStart: win.windowStart,
+    windowEnd: win.windowEnd,
+    secondsToReset: win.secondsToReset,
+    quotaExhausted: false,
   };
+
+  // Trava rígida: cota da hora (com margem) esgotada -> nada sai.
+  if (win.sentInWindow >= safeLimit) {
+    return { ...base, throttled: true, waitingSpacing: false, quotaExhausted: true };
+  }
 
   // Espaçamento: só envia se já passou o intervalo desde o último envio.
   const last = await lastSentAt();
   if (last !== null && Date.now() - last < spacingSec * 1000) {
     return { ...base, throttled: true, waitingSpacing: true };
   }
+
 
   const nowIso = new Date().toISOString();
   const { data: rows, error } = await supabaseAdmin
