@@ -385,8 +385,8 @@ function PanelLayout() {
             ))}
           </SidebarContent>
           <SidebarFooter className="border-t border-slate-200/70 p-3">
-            <SidebarPlanInfo />
             <Button
+
               variant="ghost"
               className="w-full justify-start gap-3 rounded-lg text-slate-600 transition hover:bg-red-50 hover:text-red-600"
               onClick={handleLogout}
