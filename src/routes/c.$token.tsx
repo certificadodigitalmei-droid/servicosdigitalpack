@@ -345,7 +345,7 @@ function SuccessCard({ paidAt, cnpjFmt }: { paidAt: string; cnpjFmt: string }) {
           Parabéns! Certificado emitido com sucesso
         </div>
         <p className="mt-1.5 text-[13px] leading-relaxed text-white/95">
-          Vinculado automaticamente ao seu <span className="font-bold">CNPJ {cnpjFmt}</span>.
+          Vinculado automaticamente ao seu <span className="font-bold">CNPJ <span className="whitespace-nowrap">{cnpjFmt}</span></span>.
         </p>
       </div>
 
