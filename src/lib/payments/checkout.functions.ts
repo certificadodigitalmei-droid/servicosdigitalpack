@@ -201,13 +201,14 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
     try {
       if (provider === "mercadopago") {
         const { createMercadoPagoPix } = await import("@/lib/payments/mercadopago.server");
-        // Checkout Transparente: o Mercado Pago exige o e-mail do pagador na Order.
-        // Usamos o e-mail já informado no pedido — nenhum dado é inventado.
+        // Em produção usamos o e-mail real do pedido; em teste, os dados de sandbox oficiais.
         pix = await createMercadoPagoPix(apiKey, baseUrl, {
           amount,
           orderId: order.id,
           payerEmail: data.email,
+          environment: (gateway.environment as "test" | "production") ?? "test",
         });
+
       } else if (provider === "syncpay") {
         const { createSyncPayPix } = await import("@/lib/payments/syncpay.server");
         const res = await createSyncPayPix(apiKey, baseUrl, { amount, identifier: order.id });
