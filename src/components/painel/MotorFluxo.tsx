@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Play, Square, Loader2, AlertTriangle, PauseCircle } from 'lucide-react';
+import { Play, Square, Loader2, AlertTriangle, PauseCircle, HeartPulse } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
