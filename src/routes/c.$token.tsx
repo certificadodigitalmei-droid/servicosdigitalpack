@@ -336,65 +336,53 @@ function SuccessCard({ paidAt, cnpjFmt }: { paidAt: string; cnpjFmt: string }) {
     d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   return (
-    <div className="overflow-hidden rounded-md border-2 border-[#004884] bg-white shadow-[0_20px_60px_-24px_rgba(0,72,132,0.45)]">
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#00335f] via-[#004884] to-[#0063b1] px-5 py-7 text-center text-white lg:px-8 lg:py-9">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
-        <div className="pointer-events-none absolute -bottom-14 -left-10 h-36 w-36 rounded-full bg-white/[0.07]" />
-        <div className="relative">
-          <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-white/15 ring-4 ring-white/20 backdrop-blur">
-            <CheckCircle2 className="h-9 w-9" />
-          </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/95 ring-1 ring-white/25">
-            Certificado ativo
-          </span>
-          <h2 className="mt-3 text-[19px] font-black leading-tight tracking-tight lg:text-[23px]">
-            Certificado emitido com sucesso
-          </h2>
-          <div className="mx-auto mt-4 max-w-[340px] rounded-lg bg-white/12 px-4 py-3 ring-1 ring-white/20 backdrop-blur">
-            <div className="text-[9.5px] font-semibold uppercase tracking-[0.16em] text-white/70">
-              Vinculado automaticamente ao CNPJ
-            </div>
-            <div className="mt-1 whitespace-nowrap text-[15px] font-black tabular-nums tracking-tight lg:text-[17px]">
-              {cnpjFmt}
-            </div>
-          </div>
+    <div className="overflow-hidden rounded-md border-2 border-emerald-500 bg-white shadow-[0_20px_60px_-24px_rgba(19,136,53,0.45)]">
+      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-6 text-center text-white lg:px-6 lg:py-7">
+        <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-white/20 backdrop-blur">
+          <CheckCircle2 className="h-8 w-8" />
         </div>
+        <div className="text-[18px] font-black leading-tight lg:text-[20px]">
+          Parabéns! Certificado emitido com sucesso
+        </div>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-white/95">
+          Vinculado automaticamente ao seu{' '}
+          <span className="whitespace-nowrap font-bold">CNPJ {cnpjFmt}</span>.
+        </p>
       </div>
 
-
-      <div className="border-b border-[#004884]/10 bg-[#004884]/5 px-5 py-3 text-center lg:px-6">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#004884] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+      <div className="border-b border-emerald-100 bg-emerald-50/60 px-5 py-3 text-center lg:px-6">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
           <BadgeCheck className="h-3.5 w-3.5" />
           Válido por 12 meses
         </span>
       </div>
 
-      <dl className="divide-y divide-[#004884]/10">
+      <dl className="divide-y divide-emerald-100/70">
         <div className="flex items-center gap-3 px-5 py-3 lg:px-6">
-          <div className="grid h-9 w-9 place-items-center rounded-md bg-[#004884]/10 text-[#004884]">
+          <div className="grid h-9 w-9 place-items-center rounded-md bg-emerald-100 text-emerald-700">
             <CalendarCheck className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
             <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
               Data de emissão
             </dt>
-            <dd className="text-[14px] font-bold text-[#004884]">{fmt(issued)}</dd>
+            <dd className="text-[14px] font-bold text-emerald-800">{fmt(issued)}</dd>
           </div>
         </div>
         <div className="flex items-center gap-3 px-5 py-3 lg:px-6">
-          <div className="grid h-9 w-9 place-items-center rounded-md bg-[#004884]/10 text-[#004884]">
+          <div className="grid h-9 w-9 place-items-center rounded-md bg-emerald-100 text-emerald-700">
             <CalendarClock className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
             <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
               Válido até
             </dt>
-            <dd className="text-[14px] font-bold text-[#004884]">{fmt(expires)}</dd>
+            <dd className="text-[14px] font-bold text-emerald-800">{fmt(expires)}</dd>
           </div>
         </div>
       </dl>
 
-      <div className="flex items-center justify-between gap-2 border-t border-[#004884]/10 bg-[#004884]/[0.03] px-5 py-3 text-[11px] text-[#004884] lg:px-6">
+      <div className="flex items-center justify-between gap-2 border-t border-emerald-100 bg-emerald-50/40 px-5 py-3 text-[11px] text-emerald-800 lg:px-6">
         <span className="flex items-center gap-1.5 font-semibold">
           <Lock className="h-3 w-3" /> ICP-Brasil
         </span>
@@ -403,6 +391,7 @@ function SuccessCard({ paidAt, cnpjFmt }: { paidAt: string; cnpjFmt: string }) {
     </div>
   );
 }
+
 
 function CertVisual({ paidAt, cnpjFmt, nome }: { paidAt: string | null; cnpjFmt: string; nome: string }) {
   const active = !!paidAt;
