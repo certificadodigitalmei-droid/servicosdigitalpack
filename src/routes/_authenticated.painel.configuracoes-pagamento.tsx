@@ -386,9 +386,11 @@ function PaymentGatewaysPage() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-slate-500">
-                  O Mercado Pago não aceita credenciais TEST-... na Orders API. Use sempre as
-                  credenciais de produção (APP_USR-...); para simular, pague com um usuário de teste.
+                  Em <strong>Teste</strong>, use o Access Token de Minha aplicação &gt; Testes &gt;
+                  Credenciais de teste (ele também começa com APP_USR-). O pagamento de teste usa os
+                  dados de sandbox oficiais (@testuser.com / APRO) e aprova automaticamente.
                 </p>
+
               </div>
             )}
 
