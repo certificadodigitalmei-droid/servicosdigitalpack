@@ -336,7 +336,7 @@ function PaymentGatewaysPage() {
 
         <div className="grid gap-4">
           {(gateways ?? []).map((g) => {
-            const gm = PROVIDERS[(g.provider_type as ProviderId) ?? 'mercadopago'] ?? PROVIDERS.sigilopay;
+            const gm = PROVIDERS.mercadopago;
             return (
             <Card key={g.id} className={g.is_active ? 'border-emerald-400 shadow-sm' : ''}>
               <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
