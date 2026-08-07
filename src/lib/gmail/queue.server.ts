@@ -169,38 +169,58 @@ export async function clearRateLimitHolds(): Promise<number> {
 }
 
 /**
- * Recupera automaticamente somente falhas técnicas temporárias. Endereço
+ * Recupera automaticamente somente falhas técnicas temporárias, com teto por
+ * ciclo e respeitando o tempo de espera pedido pelo provedor. Endereço
  * inválido e outras falhas definitivas permanecem visíveis para correção.
  */
+export const MAX_RECOVER_PER_TICK = 10;
+
 export async function recoverRetryableFailures(): Promise<number> {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const nowIso = new Date().toISOString();
+  const { data: candidates } = await supabaseAdmin
+    .from('email_send_queue')
+    .select('id')
+    .eq('status', 'failed')
+    .like('idempotency_key', 'mass-email-%')
+    .or(`next_retry_at.is.null,next_retry_at.lte.${nowIso}`)
+    .or('last_status_code.eq.429,last_status_code.gte.500,last_error.ilike.%oauth_refresh_failed%')
+    .limit(MAX_RECOVER_PER_TICK);
+
+  const ids = (candidates ?? []).map((r: any) => r.id);
+  if (ids.length === 0) return 0;
+
   const { data } = await supabaseAdmin
     .from('email_send_queue')
     .update({ status: 'queued', next_retry_at: null })
-    .eq('status', 'failed')
-    .like('idempotency_key', 'mass-email-%')
-    .or('last_status_code.eq.429,last_status_code.gte.500,last_error.ilike.%oauth_refresh_failed%')
+    .in('id', ids)
     .select('id');
   return (data ?? []).length;
 }
 
+
 /**
- * Modo ÚNICO de envio: 1 e-mail a cada `spacingSec` segundos (padrão 36 s),
- * o que dá 100 e-mails por hora, sem lote e sem paralelismo.
+ * Modo ÚNICO de envio: 1 e-mail a cada `spacingSec` segundos (padrão 36 s).
  *
- * Não existe lote nem janela de bloqueio: o próprio espaçamento mantém o
- * ritmo nominal em aproximadamente 100 envios por hora.
+ * Duas travas garantem que o limite por hora NUNCA é ultrapassado:
+ *  1. espaçamento mínimo entre dois envios;
+ *  2. janela deslizante de 60 min lida do banco (vale para todas as abas),
+ *     com margem de segurança abaixo do teto do provedor.
  */
 export async function processQueueInternal(
   _maxBatch = MAX_PER_TICK,
-  _hourlyLimit = HOURLY_LIMIT,
+  hourlyLimit = HOURLY_LIMIT,
   spacingSec = DEFAULT_SPACING_SEC,
 ) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const { computeSendWindow, safeHourlyLimit } = await import('@/lib/pipeline/pipeline.server');
 
   const released = await releaseStuckSending();
   const recovered = await recoverRetryableFailures();
   const lastHour = await sentInLastHour();
+  const win = await computeSendWindow(supabaseAdmin as any, hourlyLimit);
+  const safeLimit = safeHourlyLimit(hourlyLimit);
+
   const base = {
     processed: 0,
     sent: 0,
@@ -210,17 +230,24 @@ export async function processQueueInternal(
     rateLimited: false,
     retryAfterSec: 0,
     lastHour,
-    remaining: null,
-    windowStart: null,
-    windowEnd: null,
-    secondsToReset: 0,
+    remaining: Math.max(0, safeLimit - win.sentInWindow),
+    windowStart: win.windowStart,
+    windowEnd: win.windowEnd,
+    secondsToReset: win.secondsToReset,
+    quotaExhausted: false,
   };
+
+  // Trava rígida: cota da hora (com margem) esgotada -> nada sai.
+  if (win.sentInWindow >= safeLimit) {
+    return { ...base, throttled: true, waitingSpacing: false, quotaExhausted: true };
+  }
 
   // Espaçamento: só envia se já passou o intervalo desde o último envio.
   const last = await lastSentAt();
   if (last !== null && Date.now() - last < spacingSec * 1000) {
     return { ...base, throttled: true, waitingSpacing: true };
   }
+
 
   const nowIso = new Date().toISOString();
   const { data: rows, error } = await supabaseAdmin
@@ -254,14 +281,17 @@ export async function processQueueInternal(
     sent,
     failed,
     released,
+    recovered,
     rateLimited,
     retryAfterSec,
     lastHour: lastHour + sent,
-    remaining: null,
+    remaining: Math.max(0, safeLimit - (win.sentInWindow + sent)),
     throttled: false,
-    windowStart: null,
-    windowEnd: null,
-    secondsToReset: 0,
+    windowStart: win.windowStart,
+    windowEnd: win.windowEnd,
+    secondsToReset: win.secondsToReset,
+    quotaExhausted: false,
   };
+
 }
 

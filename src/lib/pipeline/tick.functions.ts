@@ -35,8 +35,33 @@ export type PipelineTickResult = {
   rateLimited: boolean;
   /** Segundos sugeridos de espera quando rateLimited. */
   retryAfterSec: number;
+  /** Cota da hora esgotada (com margem de segurança). */
+  quotaExhausted: boolean;
+  /** Saúde do envio avaliada ao fim do ciclo. */
+  health: {
+    status: 'healthy' | 'warning' | 'blocked';
+    reason: string | null;
+    waitSec: number;
+    naFila: number;
+    enviadosUltimaHora: number;
+    aguardando429: number;
+    falhas: number;
+    failureRate: number;
+  };
   error?: string;
 };
+
+const EMPTY_HEALTH: PipelineTickResult['health'] = {
+  status: 'healthy',
+  reason: null,
+  waitSec: 0,
+  naFila: 0,
+  enviadosUltimaHora: 0,
+  aguardando429: 0,
+  falhas: 0,
+  failureRate: 0,
+};
+
 
 const LOCK_TTL_MS = 90_000;
 
@@ -110,6 +135,9 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
         remainingInWindow: 0,
         rateLimited: false,
         retryAfterSec: 0,
+        quotaExhausted: false,
+        health: EMPTY_HEALTH,
+
       };
     }
 
@@ -179,13 +207,18 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
         stage = imported > 0 ? `novo lote importado (${imported})` : 'sem empresas novas na consulta';
       }
 
-      const { computeSendWindow } = await import('./pipeline.server');
-      const win = await computeSendWindow(context.supabase, batchSize);
+      const { evaluateSendHealth } = await import('./pipeline.server');
+      const report = await evaluateSendHealth(context.supabase, batchSize);
+      const win = report.window;
 
       if (!stage) stage = 'enviando lote';
       if (queue?.waitingSpacing) {
         stage = 'aguardando intervalo entre envios';
       }
+      if (queue?.quotaExhausted) {
+        stage = 'cota da hora atingida — aguardando liberar vaga';
+      }
+
 
       await release('active');
 
@@ -219,6 +252,18 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
         remainingInWindow: win.remaining,
         rateLimited: !!queue?.rateLimited,
         retryAfterSec: queue?.retryAfterSec ?? 0,
+        quotaExhausted: !!queue?.quotaExhausted || report.quotaExhausted,
+        health: {
+          status: report.status,
+          reason: report.reason,
+          waitSec: report.waitSec,
+          naFila: report.health.naFila,
+          enviadosUltimaHora: report.health.enviadosUltimaHora,
+          aguardando429: report.health.aguardando429,
+          falhas: report.health.falhas,
+          failureRate: report.failureRate,
+        },
+
       };
     } catch (e) {
       await release('error');
@@ -240,6 +285,9 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
         remainingInWindow: 0,
         rateLimited: false,
         retryAfterSec: 0,
+        quotaExhausted: false,
+        health: EMPTY_HEALTH,
+
         error: e instanceof Error ? e.message : String(e),
       };
     }

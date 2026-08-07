@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Play, Square, Loader2, AlertTriangle, PauseCircle } from 'lucide-react';
+import { Play, Square, Loader2, AlertTriangle, PauseCircle, HeartPulse } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,13 @@ import {
   setPipelineBatchSize,
   PAUSE_LABEL,
 } from '@/lib/pipeline/pipeline-engine';
+
+const HEALTH_LABEL: Record<'healthy' | 'warning' | 'blocked', string> = {
+  healthy: 'saudável',
+  warning: 'atenção',
+  blocked: 'em espera',
+};
+
 
 /**
  * Controle único do fluxo: Consulta -> Importação -> Links -> Envio.
@@ -30,6 +37,8 @@ export function MotorFluxoCard() {
   const lastError = useStore(pipelineStore, (s) => s.lastError);
   const pausedUntil = useStore(pipelineStore, (s) => s.pausedUntil);
   const pauseReason = useStore(pipelineStore, (s) => s.pauseReason);
+  const health = useStore(pipelineStore, (s) => s.health);
+
 
   // Contagem regressiva da pausa automática.
   const [, force] = useState(0);
@@ -114,6 +123,43 @@ export function MotorFluxoCard() {
           </div>
         )}
 
+        {/* Saúde do envio */}
+        <div
+          className={`rounded-lg border p-3 ${
+            health.status === 'blocked'
+              ? 'border-red-200 bg-red-50'
+              : health.status === 'warning'
+                ? 'border-amber-200 bg-amber-50'
+                : 'border-emerald-200 bg-emerald-50'
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <HeartPulse
+                className={`h-4 w-4 ${
+                  health.status === 'blocked'
+                    ? 'text-red-600'
+                    : health.status === 'warning'
+                      ? 'text-amber-600'
+                      : 'text-emerald-600'
+                }`}
+              />
+              <span className="text-sm font-semibold text-slate-900">
+                Saúde do envio: {HEALTH_LABEL[health.status]}
+              </span>
+            </div>
+            <span className="text-xs text-slate-600">
+              {health.enviadosUltimaHora}/{batchSize} nesta hora · limite respeitado
+            </span>
+          </div>
+          {health.reason && <p className="mt-1 text-xs text-slate-700">{health.reason}</p>}
+          <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600 sm:grid-cols-4">
+            <span>Na fila: <strong>{health.naFila}</strong></span>
+            <span>Enviados (1h): <strong>{health.enviadosUltimaHora}</strong></span>
+            <span>Aguardando limite: <strong>{health.aguardando429}</strong></span>
+            <span>Falhas: <strong>{health.falhas}</strong></span>
+          </div>
+        </div>
 
 
         {/* Lote por hora */}

@@ -7,7 +7,9 @@
 import { createStore } from '@/lib/automation/store';
 import { runPipelineTick, type PipelineTickResult } from '@/lib/pipeline/tick.functions';
 
-export type PauseReason = 'rate_limit' | 'cycle_error' | 'send_failures';
+export type PauseReason = 'rate_limit' | 'cycle_error' | 'send_failures' | 'unhealthy';
+export type HealthStatus = 'healthy' | 'warning' | 'blocked';
+
 
 export type PipelineEngineState = {
   running: boolean;
@@ -31,7 +33,11 @@ export type PipelineEngineState = {
   consecutiveFailures: number;
   rateLimitHits: number;
   rateLimitWindowStart: string | null;
+  /** Saúde do envio na última avaliação. */
+  health: PipelineTickResult['health'];
+  healthPauses: number;
 };
+
 
 export const pipelineStore = createStore<PipelineEngineState>(
   {
@@ -55,7 +61,19 @@ export const pipelineStore = createStore<PipelineEngineState>(
     consecutiveFailures: 0,
     rateLimitHits: 0,
     rateLimitWindowStart: null,
+    health: {
+      status: 'healthy',
+      reason: null,
+      waitSec: 0,
+      naFila: 0,
+      enviadosUltimaHora: 0,
+      aguardando429: 0,
+      falhas: 0,
+      failureRate: 0,
+    },
+    healthPauses: 0,
   },
+
   { storageKey: 'pipeline:engine', persistKeys: ['batchSize'] },
 );
 
@@ -68,7 +86,9 @@ export const PAUSE_LABEL: Record<PauseReason, string> = {
   rate_limit: 'limite de e-mail atingido',
   cycle_error: 'erro no ciclo',
   send_failures: 'falhas seguidas no envio',
+  unhealthy: 'saúde de envio comprometida',
 };
+
 
 function minutesLeft(untilIso: string) {
   return Math.max(1, Math.ceil((new Date(untilIso).getTime() - Date.now()) / 60000));
@@ -147,6 +167,7 @@ async function tick() {
       snapshot: r.pipeline,
       sentInWindow: r.sentInWindow,
       remainingInWindow: r.remainingInWindow,
+      health: r.health,
     }));
 
     if (r.linksCreated > 0) log(`${r.linksCreated} link(s) gerado(s)`);
@@ -173,6 +194,20 @@ async function tick() {
       return;
     }
 
+    // --- saúde do envio: só continua enviando com tudo ok -------------------
+    if (r.health.status === 'blocked') {
+      const n = pipelineStore.get().healthPauses + 1;
+      const ladder = [5 * 60_000, 15 * 60_000, 30 * 60_000, 60 * 60_000];
+      const waitMs = Math.max(
+        (r.health.waitSec || 300) * 1000,
+        ladder[Math.min(n - 1, ladder.length - 1)],
+      );
+      pipelineStore.set({ healthPauses: n });
+      log(`Saúde do envio: ${r.health.reason ?? 'instável'} — aguardando normalizar`);
+      pauseFor(waitMs, 'unhealthy');
+      return;
+    }
+
     // --- falhas seguidas de envio (credencial, provedor recusando) ----------
     if (r.failed > 0 && r.sent === 0) {
       const n = pipelineStore.get().consecutiveFailures + 1;
@@ -184,10 +219,12 @@ async function tick() {
       }
     } else if (r.sent > 0) {
       clearPause(pipelineStore.get().pauseReason !== null);
-      pipelineStore.set({ rateLimitHits: 0 });
+      pipelineStore.set({ rateLimitHits: 0, healthPauses: 0 });
     } else {
       pipelineStore.set({ consecutiveErrors: 0 });
+      if (r.health.status === 'healthy') pipelineStore.set({ healthPauses: 0 });
     }
+
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const n = pipelineStore.get().consecutiveErrors + 1;
