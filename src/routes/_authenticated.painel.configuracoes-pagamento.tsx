@@ -15,7 +15,9 @@ import {
   listPaymentGateways,
   upsertPaymentGateway,
   activatePaymentGateway,
+  deactivatePaymentGateway,
   deletePaymentGateway,
+  testPaymentGatewayConnection,
   type PaymentGateway,
 } from '@/lib/payments/gateways.functions';
 
@@ -24,17 +26,21 @@ export const Route = createFileRoute('/_authenticated/painel/configuracoes-pagam
   component: PaymentGatewaysPage,
 });
 
-type ProviderId = 'sigilopay' | 'syncpay';
+type ProviderId = 'sigilopay' | 'syncpay' | 'mercadopago';
+type Environment = 'test' | 'production';
 
 const PROVIDERS: Record<ProviderId, {
   label: string;
   docsUrl: string;
   defaultBase: string;
   webhookPath: string;
+  webhookOrigin?: string;
   publicLabel: string;
   secretLabel: string;
   publicPlaceholder: string;
   secretPlaceholder: string;
+  hasWebhookSecret?: boolean;
+  hasEnvironment?: boolean;
 }> = {
   sigilopay: {
     label: 'SigiloPay',
@@ -51,12 +57,32 @@ const PROVIDERS: Record<ProviderId, {
     docsUrl: 'https://api.syncpayments.com.br',
     defaultBase: 'https://api.syncpayments.com.br',
     webhookPath: '/api/public/webhook-syncpay',
+    webhookOrigin: 'https://servicosdigitalpack.lovable.app',
     publicLabel: 'Client ID',
     secretLabel: 'Client Secret',
     publicPlaceholder: 'client_id',
     secretPlaceholder: 'client_secret',
   },
+  mercadopago: {
+    label: 'Mercado Pago',
+    docsUrl: 'https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/overview',
+    defaultBase: 'https://api.mercadopago.com',
+    webhookPath: '/api/webhooks/mercadopago',
+    webhookOrigin: 'https://servicosdigitalpack.lovable.app',
+    publicLabel: 'Public Key',
+    secretLabel: 'Access Token',
+    publicPlaceholder: 'APP_USR-... (ou TEST-...)',
+    secretPlaceholder: 'APP_USR-... (ou TEST-...)',
+    hasWebhookSecret: true,
+    hasEnvironment: true,
+  },
 };
+
+function webhookUrlFor(pid: ProviderId, origin: string): string {
+  const p = PROVIDERS[pid];
+  return `${p.webhookOrigin ?? origin}${p.webhookPath}`;
+}
+
 
 function PaymentGatewaysPage() {
   const qc = useQueryClient();
@@ -70,8 +96,10 @@ function PaymentGatewaysPage() {
   const [form, setForm] = useState({
     name: '',
     provider_type: 'syncpay' as ProviderId,
+    environment: 'test' as Environment,
     public_key: '',
     secret_key: '',
+    webhook_secret: '',
     base_url: '',
     notes: '',
   });
@@ -80,7 +108,17 @@ function PaymentGatewaysPage() {
 
   const openNew = (provider: ProviderId = 'syncpay') => {
     setEditing(null);
-    setForm({ name: '', provider_type: provider, public_key: '', secret_key: '', base_url: '', notes: '' });
+    setForm({
+      name: '',
+      provider_type: provider,
+      // Mercado Pago começa sempre em ambiente de teste.
+      environment: 'test',
+      public_key: '',
+      secret_key: '',
+      webhook_secret: '',
+      base_url: '',
+      notes: '',
+    });
     setDialogOpen(true);
   };
 
@@ -90,8 +128,10 @@ function PaymentGatewaysPage() {
     setForm({
       name: g.name,
       provider_type: (g.provider_type as ProviderId) ?? 'sigilopay',
+      environment: (g.environment as Environment) ?? 'test',
       public_key: '',
       secret_key: '',
+      webhook_secret: '',
       base_url: g.base_url ?? '',
       notes: g.notes ?? '',
     });
@@ -99,21 +139,31 @@ function PaymentGatewaysPage() {
   };
 
   const upsertMut = useMutation({
-    mutationFn: async () => {
-      await upsertPaymentGateway({
+    mutationFn: async (opts?: { test?: boolean }) => {
+      const res = await upsertPaymentGateway({
         data: {
           id: editing?.id,
           name: form.name.trim(),
           provider_type: form.provider_type,
+          environment: form.environment,
           public_key: form.public_key.trim() || undefined,
           secret_key: form.secret_key.trim() || undefined,
+          webhook_secret: form.webhook_secret.trim() || undefined,
           base_url: form.base_url.trim(),
           notes: form.notes.trim() || undefined,
         },
       });
+      if (opts?.test && res?.id) {
+        return await testPaymentGatewayConnection({ data: { id: res.id } });
+      }
+      return null;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       toast.success(editing ? 'Gateway atualizado' : 'Gateway cadastrado');
+      if (result) {
+        if (result.ok) toast.success(result.message);
+        else toast.error(result.message);
+      }
       setDialogOpen(false);
       qc.invalidateQueries({ queryKey: ['payment-gateways'] });
     },
@@ -128,6 +178,16 @@ function PaymentGatewaysPage() {
     },
     onError: (e: any) => toast.error(e?.message || 'Erro ao ativar'),
   });
+
+  const deactivateMut = useMutation({
+    mutationFn: (id: string) => deactivatePaymentGateway({ data: { id } }),
+    onSuccess: () => {
+      toast.success('Gateway desativado');
+      qc.invalidateQueries({ queryKey: ['payment-gateways'] });
+    },
+    onError: (e: any) => toast.error(e?.message || 'Erro ao desativar'),
+  });
+
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deletePaymentGateway({ data: { id } }),
@@ -146,8 +206,9 @@ function PaymentGatewaysPage() {
         <div>
           <h1 className="text-2xl font-bold text-brand-navy">Configurações de Pagamento</h1>
           <p className="text-sm text-slate-500">
-            Cadastre suas contas SyncPay ou SigiloPay e escolha qual será usada para gerar as cobranças.
+            Cadastre suas contas Mercado Pago, SyncPay ou SigiloPay e escolha qual será usada para gerar as cobranças.
           </p>
+
         </div>
         <Button onClick={() => openNew('syncpay')} className="bg-brand-blue hover:bg-brand-navy">
           <Plus className="mr-2 h-4 w-4" /> Novo gateway
@@ -169,8 +230,9 @@ function PaymentGatewaysPage() {
                   </Badge>
                 </CardTitle>
                 <CardDescription className="break-all text-xs">
-                  Webhook: {pid === 'syncpay' ? `https://servicosdigitalpack.lovable.app${p.webhookPath}` : `${origin}${p.webhookPath}`}
+                  Webhook: {webhookUrlFor(pid, origin)}
                 </CardDescription>
+
               </CardHeader>
               <CardContent>
                 <Button size="sm" variant="outline" onClick={() => openNew(pid)}>
@@ -216,11 +278,16 @@ function PaymentGatewaysPage() {
                   </CardDescription>
                 </div>
                 <div className="flex flex-shrink-0 gap-2">
-                  {!g.is_active && (
+                  {g.is_active ? (
+                    <Button size="sm" variant="outline" onClick={() => deactivateMut.mutate(g.id)}>
+                      Desativar
+                    </Button>
+                  ) : (
                     <Button size="sm" variant="secondary" onClick={() => activateMut.mutate(g.id)}>
                       Ativar
                     </Button>
                   )}
+
                   <Button size="sm" variant="outline" onClick={() => openEdit(g)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -239,16 +306,29 @@ function PaymentGatewaysPage() {
               <CardContent className="space-y-2 text-sm text-slate-600">
                 <div><span className="font-medium text-slate-700">{gm.publicLabel}:</span> <code>{g.public_key_masked || '—'}</code></div>
                 <div><span className="font-medium text-slate-700">{gm.secretLabel}:</span> <code>{g.secret_key_masked || '—'}</code></div>
+                {gm.hasEnvironment && (
+                  <div>
+                    <span className="font-medium text-slate-700">Ambiente:</span>{' '}
+                    <Badge variant={g.environment === 'production' ? 'default' : 'outline'}>
+                      {g.environment === 'production' ? 'Produção' : 'Teste'}
+                    </Badge>
+                  </div>
+                )}
+                {gm.hasWebhookSecret && (
+                  <div>
+                    <span className="font-medium text-slate-700">Chave do webhook:</span>{' '}
+                    {g.has_webhook_secret ? 'configurada' : 'não configurada'}
+                  </div>
+                )}
                 <div><span className="font-medium text-slate-700">Base URL:</span> {g.base_url || gm.defaultBase}</div>
                 <div>
                   <span className="font-medium text-slate-700">Webhook (colar no painel {gm.label}):</span>{' '}
                   <code className="break-all">
-                    {g.provider_type === 'syncpay'
-                      ? `https://servicosdigitalpack.lovable.app${gm.webhookPath}`
-                      : `${origin}${gm.webhookPath}`}
+                    {webhookUrlFor((g.provider_type as ProviderId) ?? 'sigilopay', origin)}
                   </code>
                 </div>
                 {g.notes && <div className="text-slate-500">{g.notes}</div>}
+
               </CardContent>
             </Card>
           );})}
@@ -284,11 +364,33 @@ function PaymentGatewaysPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="mercadopago">Mercado Pago</SelectItem>
                   <SelectItem value="syncpay">SyncPay</SelectItem>
                   <SelectItem value="sigilopay">SigiloPay</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {meta.hasEnvironment && (
+              <div className="space-y-2">
+                <Label>Ambiente</Label>
+                <Select
+                  value={form.environment}
+                  onValueChange={(v) => setForm({ ...form, environment: v as Environment })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="test">Teste</SelectItem>
+                    <SelectItem value="production">Produção</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500">
+                  Use credenciais de teste (TEST-...) enquanto estiver homologando.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>
                 {meta.publicLabel}{' '}
@@ -315,6 +417,25 @@ function PaymentGatewaysPage() {
                 autoComplete="off"
               />
             </div>
+            {meta.hasWebhookSecret && (
+              <div className="space-y-2">
+                <Label>
+                  Chave secreta do Webhook{' '}
+                  {editing && <span className="text-xs text-slate-500">(deixe em branco para manter)</span>}
+                </Label>
+                <Input
+                  type="password"
+                  value={form.webhook_secret}
+                  onChange={(e) => setForm({ ...form, webhook_secret: e.target.value })}
+                  placeholder="Assinatura secreta gerada no painel do provedor"
+                  autoComplete="off"
+                />
+                <p className="break-all text-xs text-slate-500">
+                  URL do webhook: {webhookUrlFor(form.provider_type, origin)}
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Base URL <span className="text-xs text-slate-500">(opcional)</span></Label>
               <Input
@@ -333,8 +454,20 @@ function PaymentGatewaysPage() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <Button
+              variant="secondary"
+              disabled={
+                upsertMut.isPending ||
+                !form.name ||
+                (!editing && (!form.public_key || !form.secret_key))
+              }
+              onClick={() => upsertMut.mutate({ test: true })}
+            >
+              {upsertMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar e testar conexão
+            </Button>
             <Button
               className="bg-brand-blue hover:bg-brand-navy"
               disabled={
@@ -342,12 +475,13 @@ function PaymentGatewaysPage() {
                 !form.name ||
                 (!editing && (!form.public_key || !form.secret_key))
               }
-              onClick={() => upsertMut.mutate()}
+              onClick={() => upsertMut.mutate({})}
             >
               {upsertMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </div>

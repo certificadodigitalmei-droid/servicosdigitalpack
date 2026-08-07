@@ -199,7 +199,16 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
 
     let pix: PixResult;
     try {
-      if (provider === "syncpay") {
+      if (provider === "mercadopago") {
+        const { createMercadoPagoPix } = await import("@/lib/payments/mercadopago.server");
+        // Checkout Transparente: o Mercado Pago exige o e-mail do pagador na Order.
+        // Usamos o e-mail já informado no pedido — nenhum dado é inventado.
+        pix = await createMercadoPagoPix(apiKey, baseUrl, {
+          amount,
+          orderId: order.id,
+          payerEmail: data.email,
+        });
+      } else if (provider === "syncpay") {
         const { createSyncPayPix } = await import("@/lib/payments/syncpay.server");
         const res = await createSyncPayPix(apiKey, baseUrl, { amount, identifier: order.id });
         pix = { ...res, expiration: null };
@@ -224,6 +233,7 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       console.error("[Payments] Falha ao gerar PIX", { provider, error: e?.message });
       throw e;
     }
+
 
     await Promise.all([
       consentPromise,
