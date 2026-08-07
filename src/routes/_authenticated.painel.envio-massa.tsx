@@ -290,8 +290,13 @@ function EnvioMassa() {
         </div>
       </Section>
 
+      <Section title="Log do motor (ciclo do fluxo)">
+        <MotorFluxoLog />
+      </Section>
+
       <Section title="Log de eventos">
         <div className="space-y-2">
+
           <div className="h-48 overflow-auto rounded-md border bg-slate-950 p-3 font-mono text-xs text-slate-100">
             {logs.length === 0 ? (
               <div className="text-slate-500">Sem eventos ainda.</div>
