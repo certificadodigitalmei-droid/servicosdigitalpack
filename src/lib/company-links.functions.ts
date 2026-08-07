@@ -100,6 +100,11 @@ export type LinkPaymentStatus = {
   paid_at: string | null;
 };
 
+// Evita reconsultar o provedor a cada request: no máximo 1 checagem
+// remota a cada 20s por token (o cache vive na instância do servidor).
+const remoteCheckCache = new Map<string, number>();
+const REMOTE_CHECK_TTL_MS = 20_000;
+
 export const getLinkPaymentStatus = createServerFn({ method: 'GET' })
   .inputValidator((data) => z.object({ token: z.string().min(1).max(200) }).parse(data))
   .handler(async ({ data }): Promise<LinkPaymentStatus> => {
@@ -118,9 +123,23 @@ export const getLinkPaymentStatus = createServerFn({ method: 'GET' })
       .order('paid_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (!order?.paid_at) return { paid: false, paid_at: null };
-    return { paid: true, paid_at: order.paid_at };
+    if (order?.paid_at) return { paid: true, paid_at: order.paid_at };
+
+    // Nenhum pedido pago no banco: confirma direto no provedor (rede de
+    // segurança para quando o webhook não chega).
+    const last = remoteCheckCache.get(data.token) ?? 0;
+    if (Date.now() - last < REMOTE_CHECK_TTL_MS) return { paid: false, paid_at: null };
+    remoteCheckCache.set(data.token, Date.now());
+    try {
+      const { verifyLinkPayment } = await import('@/lib/payments/verify.server');
+      const res = await verifyLinkPayment(data.token);
+      return { paid: res.paid, paid_at: res.paid_at };
+    } catch (err) {
+      console.error('[link-payment] falha ao verificar no provedor', err);
+      return { paid: false, paid_at: null };
+    }
   });
+
 
 export const getLinkLoaderState = createServerFn({ method: 'GET' })
   .inputValidator((data) => z.object({ token: z.string().min(1).max(200) }).parse(data))
