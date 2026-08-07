@@ -1,48 +1,14 @@
-// Fonte única de verdade para confirmar pagamentos junto ao provedor.
+// Fonte única de verdade para confirmar pagamentos junto ao Mercado Pago.
 // Usada pela página do link (/c/:token), pelo modal do PIX, pela aba
 // Pagamentos e pelo cron de reconciliação — assim nenhuma cópia da lógica
 // fica desatualizada e um webhook perdido nunca deixa o cliente "pendente".
 
-const SIGILOPAY_DEFAULT_BASE = 'https://app.sigilopay.com.br/api/v1';
-
 const PAID_STATUSES = [
   'paid',
-  'ok',
-  'completed',
-  'confirmed',
   'approved',
-  'success',
-  // Mercado Pago (Orders API)
   'processed',
   'accredited',
 ];
-
-function splitKeys(apiKey: string): { publicKey: string; secretKey: string } {
-  const [publicKey = '', secretKey = ''] = (apiKey || '').split('|');
-  return { publicKey: publicKey.trim(), secretKey: secretKey.trim() };
-}
-
-async function fetchSigiloStatus(
-  apiKey: string,
-  baseUrl: string | null | undefined,
-  txId: string,
-): Promise<string | null> {
-  const { publicKey, secretKey } = splitKeys(apiKey);
-  if (!publicKey || !secretKey) return null;
-  const base = (baseUrl || SIGILOPAY_DEFAULT_BASE).replace(/\/+$/, '');
-  try {
-    const res = await fetch(`${base}/transactions?id=${encodeURIComponent(txId)}`, {
-      headers: { 'x-public-key': publicKey, 'x-secret-key': secretKey },
-    });
-    if (!res.ok) return null;
-    const json: any = await res.json().catch(() => null);
-    const raw = json?.transaction?.status ?? json?.data?.status ?? json?.status ?? null;
-    return typeof raw === 'string' ? raw.toLowerCase() : null;
-  } catch (err) {
-    console.error('[verify] sigilopay fetch error', err);
-    return null;
-  }
-}
 
 export type VerifyResult = {
   paid: boolean;
@@ -51,51 +17,35 @@ export type VerifyResult = {
   remote?: string | null;
 };
 
-/** Busca o gateway do provedor do pedido (nunca "qualquer gateway ativo"). */
-async function getGateway(providerType: string) {
+/** Busca a conta Mercado Pago ativa. */
+async function getGateway() {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const { data } = await supabaseAdmin
     .from('payment_gateways')
     .select('api_key, base_url, provider_type')
-    .eq('provider_type', providerType)
+    .eq('provider_type', 'mercadopago')
     .eq('is_active', true)
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (data) return data;
-  const { data: fallback } = await supabaseAdmin
-    .from('payment_gateways')
-    .select('api_key, base_url, provider_type')
-    .eq('is_active', true)
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return fallback ?? null;
+  return data ?? null;
 }
 
-/** Consulta o status remoto de uma cobrança conforme o provedor. */
+/** Consulta o status remoto de uma cobrança no Mercado Pago. */
 export async function fetchRemoteStatus(
-  providerType: string,
   apiKey: string,
   baseUrl: string | null | undefined,
   transactionId: string,
 ): Promise<string | null> {
   try {
-    if (providerType === 'mercadopago') {
-      const mp = await import('@/lib/payments/mercadopago.server');
-      if (transactionId.startsWith('ORD')) {
-        return (await mp.getMercadoPagoOrderStatus(apiKey, baseUrl, transactionId)) || null;
-      }
-      const res = await mp.getMercadoPagoPaymentStatus(apiKey, baseUrl, transactionId);
-      return res.status || null;
+    const mp = await import('@/lib/payments/mercadopago.server');
+    if (transactionId.startsWith('ORD')) {
+      return (await mp.getMercadoPagoOrderStatus(apiKey, baseUrl, transactionId)) || null;
     }
-    if (providerType === 'syncpay') {
-      const { getSyncPayTransactionStatus } = await import('@/lib/payments/syncpay.server');
-      return await getSyncPayTransactionStatus(apiKey, baseUrl, transactionId);
-    }
-    return await fetchSigiloStatus(apiKey, baseUrl, transactionId);
+    const res = await mp.getMercadoPagoPaymentStatus(apiKey, baseUrl, transactionId);
+    return res.status || null;
   } catch (err) {
-    console.error('[verify] erro ao consultar provedor', providerType, err);
+    console.error('[verify] erro ao consultar o Mercado Pago', err);
     return null;
   }
 }
@@ -103,6 +53,7 @@ export async function fetchRemoteStatus(
 export function isPaidStatus(remote: string | null | undefined): boolean {
   return !!remote && PAID_STATUSES.includes(remote.toLowerCase());
 }
+
 
 /**
  * Marca o pedido como pago (idempotente) e dispara o e-mail de confirmação
