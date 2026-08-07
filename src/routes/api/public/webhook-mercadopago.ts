@@ -3,25 +3,39 @@ import { createFileRoute } from '@tanstack/react-router';
 // Webhook do Mercado Pago (Orders API / Checkout Transparente Pix).
 // Doc: https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/notifications
 //
+// Fica em /api/public/* porque chamadas externas não passam pela autenticação do site.
 // Regras:
-//  - valida a assinatura secreta (x-signature) antes de qualquer processamento;
-//  - reconsulta a cobrança na API oficial antes de liberar o conteúdo;
+//  - valida a assinatura secreta (x-signature) quando um segredo estiver configurado;
+//  - reconsulta a cobrança na API oficial antes de liberar o conteúdo (fonte da verdade);
 //  - só marca como pago quando o pagamento está aprovado;
 //  - idempotente: pedidos já pagos não são reprocessados;
-//  - responde 200 rapidamente e nunca registra credenciais em log.
-export const Route = createFileRoute('/api/webhooks/mercadopago')({
+//  - responde 200 rapidamente e nunca registra credenciais nem dados do cliente em log.
+export const Route = createFileRoute('/api/public/webhook-mercadopago')({
   server: {
     handlers: {
       POST: async ({ request }) => {
         try {
           const url = new URL(request.url);
           const raw = await request.text();
-          const body: any = raw ? JSON.parse(raw) : {};
+          let body: any = {};
+          try {
+            body = raw ? JSON.parse(raw) : {};
+          } catch {
+            body = {};
+          }
 
-          const type = String(body?.type || body?.topic || '').toLowerCase();
-          const dataId = String(
-            body?.data?.id || body?.resource || url.searchParams.get('data.id') || '',
+          const type = String(
+            body?.type || body?.topic || url.searchParams.get('type') || url.searchParams.get('topic') || '',
+          ).toLowerCase();
+          const rawId = String(
+            body?.data?.id ||
+              body?.resource ||
+              url.searchParams.get('data.id') ||
+              url.searchParams.get('id') ||
+              '',
           );
+          // `resource` pode vir como URL completa em notificações antigas.
+          const dataId = rawId.includes('/') ? rawId.split('/').filter(Boolean).pop()! : rawId;
           if (!dataId) return new Response('OK', { status: 200 });
 
           const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
@@ -39,21 +53,26 @@ export const Route = createFileRoute('/api/webhooks/mercadopago')({
 
           const mp = await import('@/lib/payments/mercadopago.server');
 
-          const valid = await mp.verifyMercadoPagoSignature({
-            signatureHeader: request.headers.get('x-signature'),
-            requestId: request.headers.get('x-request-id'),
-            dataId,
-            secret: (gateway as any).webhook_secret || '',
-          });
-          if (!valid) {
-            console.warn('[webhook-mercadopago] assinatura inválida');
-            return new Response('Invalid signature', { status: 401 });
+          const secret = (gateway as any).webhook_secret || '';
+          if (secret) {
+            const valid = await mp.verifyMercadoPagoSignature({
+              signatureHeader: request.headers.get('x-signature'),
+              requestId: request.headers.get('x-request-id'),
+              dataId,
+              secret,
+            });
+            if (!valid) {
+              console.warn('[webhook-mercadopago] assinatura inválida');
+              return new Response('Invalid signature', { status: 401 });
+            }
           }
 
           // Reconsulta obrigatória na API oficial antes de liberar o conteúdo.
           let status = '';
           let externalReference: string | null = null;
-          if (type.includes('payment')) {
+          if (dataId.startsWith('ORD')) {
+            status = await mp.getMercadoPagoOrderStatus(gateway.api_key, gateway.base_url, dataId);
+          } else {
             const res = await mp.getMercadoPagoPaymentStatus(
               gateway.api_key,
               gateway.base_url,
@@ -61,8 +80,13 @@ export const Route = createFileRoute('/api/webhooks/mercadopago')({
             );
             status = res.status;
             externalReference = res.externalReference;
-          } else {
-            status = await mp.getMercadoPagoOrderStatus(gateway.api_key, gateway.base_url, dataId);
+            if (!status && type.includes('order')) {
+              status = await mp.getMercadoPagoOrderStatus(
+                gateway.api_key,
+                gateway.base_url,
+                dataId,
+              );
+            }
           }
 
           if (!mp.MERCADOPAGO_APPROVED_STATUSES.includes(status)) {
@@ -74,14 +98,13 @@ export const Route = createFileRoute('/api/webhooks/mercadopago')({
           const patch = { status: 'paid', paid_at: nowIso, updated_at: nowIso } as const;
 
           // Idempotência: só atualiza pedidos que ainda não estão pagos.
-          let updated = 0;
           const { data: byTx } = await supabaseAdmin
             .from('orders')
             .update(patch)
             .eq('external_transaction_id', dataId)
             .neq('status', 'paid')
             .select('id');
-          updated = byTx?.length ?? 0;
+          let updated = byTx?.length ?? 0;
 
           if (updated === 0 && externalReference) {
             const { data: byRef } = await supabaseAdmin
