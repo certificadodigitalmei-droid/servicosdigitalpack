@@ -1,4 +1,4 @@
-// Server-only: processa a fila de e-mails do Google Workspace (Gmail API).
+// Server-only: processa a fila de e-mails pela infraestrutura da Lovable.
 // Usado tanto pelo painel (admin) quanto pelo cron automático.
 
 const RATE_WINDOW_MS = 1_000;
