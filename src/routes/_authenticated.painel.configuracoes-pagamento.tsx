@@ -96,8 +96,10 @@ function PaymentGatewaysPage() {
   const [form, setForm] = useState({
     name: '',
     provider_type: 'syncpay' as ProviderId,
+    environment: 'test' as Environment,
     public_key: '',
     secret_key: '',
+    webhook_secret: '',
     base_url: '',
     notes: '',
   });
@@ -106,7 +108,17 @@ function PaymentGatewaysPage() {
 
   const openNew = (provider: ProviderId = 'syncpay') => {
     setEditing(null);
-    setForm({ name: '', provider_type: provider, public_key: '', secret_key: '', base_url: '', notes: '' });
+    setForm({
+      name: '',
+      provider_type: provider,
+      // Mercado Pago começa sempre em ambiente de teste.
+      environment: 'test',
+      public_key: '',
+      secret_key: '',
+      webhook_secret: '',
+      base_url: '',
+      notes: '',
+    });
     setDialogOpen(true);
   };
 
@@ -116,8 +128,10 @@ function PaymentGatewaysPage() {
     setForm({
       name: g.name,
       provider_type: (g.provider_type as ProviderId) ?? 'sigilopay',
+      environment: (g.environment as Environment) ?? 'test',
       public_key: '',
       secret_key: '',
+      webhook_secret: '',
       base_url: g.base_url ?? '',
       notes: g.notes ?? '',
     });
@@ -125,21 +139,31 @@ function PaymentGatewaysPage() {
   };
 
   const upsertMut = useMutation({
-    mutationFn: async () => {
-      await upsertPaymentGateway({
+    mutationFn: async (opts?: { test?: boolean }) => {
+      const res = await upsertPaymentGateway({
         data: {
           id: editing?.id,
           name: form.name.trim(),
           provider_type: form.provider_type,
+          environment: form.environment,
           public_key: form.public_key.trim() || undefined,
           secret_key: form.secret_key.trim() || undefined,
+          webhook_secret: form.webhook_secret.trim() || undefined,
           base_url: form.base_url.trim(),
           notes: form.notes.trim() || undefined,
         },
       });
+      if (opts?.test && res?.id) {
+        return await testPaymentGatewayConnection({ data: { id: res.id } });
+      }
+      return null;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       toast.success(editing ? 'Gateway atualizado' : 'Gateway cadastrado');
+      if (result) {
+        if (result.ok) toast.success(result.message);
+        else toast.error(result.message);
+      }
       setDialogOpen(false);
       qc.invalidateQueries({ queryKey: ['payment-gateways'] });
     },
@@ -154,6 +178,16 @@ function PaymentGatewaysPage() {
     },
     onError: (e: any) => toast.error(e?.message || 'Erro ao ativar'),
   });
+
+  const deactivateMut = useMutation({
+    mutationFn: (id: string) => deactivatePaymentGateway({ data: { id } }),
+    onSuccess: () => {
+      toast.success('Gateway desativado');
+      qc.invalidateQueries({ queryKey: ['payment-gateways'] });
+    },
+    onError: (e: any) => toast.error(e?.message || 'Erro ao desativar'),
+  });
+
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deletePaymentGateway({ data: { id } }),
