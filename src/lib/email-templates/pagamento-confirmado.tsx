@@ -60,9 +60,9 @@ const Email = ({
           <Heading style={h1}>Certificado emitido com sucesso</Heading>
 
           <Text style={text}>
-            Pagamento confirmado. O <strong>Certificado e-CNPJ</strong> foi
-            <strong> vinculado automaticamente</strong>
-            {cnpj ? ` ao CNPJ ${cnpj}` : ' ao CNPJ informado'}.
+            <strong>Pagamento confirmado!</strong>
+            <br />
+            O <strong>Certificado e-CNPJ</strong> foi vinculado automaticamente com sucesso.
           </Text>
 
           <Section style={dataBox}>
