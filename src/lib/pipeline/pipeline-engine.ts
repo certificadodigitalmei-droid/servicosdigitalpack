@@ -61,7 +61,19 @@ export const pipelineStore = createStore<PipelineEngineState>(
     consecutiveFailures: 0,
     rateLimitHits: 0,
     rateLimitWindowStart: null,
+    health: {
+      status: 'healthy',
+      reason: null,
+      waitSec: 0,
+      naFila: 0,
+      enviadosUltimaHora: 0,
+      aguardando429: 0,
+      falhas: 0,
+      failureRate: 0,
+    },
+    healthPauses: 0,
   },
+
   { storageKey: 'pipeline:engine', persistKeys: ['batchSize'] },
 );
 
