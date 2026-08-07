@@ -72,17 +72,17 @@ const DEFAULTS: SitePopupSettings = {
   cancel_button_text: 'Voltar',
   payment_enabled: true,
   payment_badge_text: 'Informações sobre o pagamento',
-  payment_title: 'Antes de continuar, leia com atenção',
+  payment_title: 'Atenção às informações',
   payment_partner_text:
-    'O pagamento poderá ser processado por uma das empresas parceiras responsáveis pela prestação e processamento do serviço. Por esse motivo, o nome empresarial ou CNPJ apresentado pelo seu banco poderá ser diferente do nome deste portal.',
+    'O pagamento para ativação do processo de certificado digital será feito pela empresa parceira credenciada *DIGITAL CERTIFICA A1 LTDA*, credenciada pelo *ICP-Brasil* e pela *AC INCP SP* para a prestação e processamento do serviço.',
   payment_alert_text:
-    'Em razão do volume de transações e da utilização de diferentes empresas parceiras para o processamento dos pagamentos, algumas instituições financeiras podem apresentar alertas automáticos de segurança ou prevenção a fraudes.',
+    'O processo de pagamento é simples, fácil e totalmente digital pelo portal, seguro e prático. Basta *copiar o código PIX* e *colar na área do seu banco*, copie e cole e realize o pagamento. O processo é feito 100% digital e em poucos minutos o certificado é vinculado automaticamente ao CNPJ.',
   payment_confirmation_text:
     'Após a confirmação do pagamento, o certificado contratado será emitido e vinculado ao CNPJ informado durante a solicitação, conforme as condições do serviço.',
-  payment_validity_text: 'Validade do certificado: 12 meses a partir da data de emissão.',
+  payment_validity_text: '*Validade do certificado: 12 meses a partir da data de emissão.*',
   payment_loading_title: 'Gerando guia de pagamento',
   payment_loading_subtitle: 'Aguarde enquanto processamos sua solicitação com segurança...',
-  payment_continue_button_text: 'Continuar para o PIX',
+  payment_continue_button_text: 'Continuar',
   payment_cancel_button_text: 'Cancelar',
 };
 
