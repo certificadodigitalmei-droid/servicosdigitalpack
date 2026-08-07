@@ -400,8 +400,20 @@ function PaymentGatewaysPage() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <Button
+              variant="secondary"
+              disabled={
+                upsertMut.isPending ||
+                !form.name ||
+                (!editing && (!form.public_key || !form.secret_key))
+              }
+              onClick={() => upsertMut.mutate({ test: true })}
+            >
+              {upsertMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar e testar conexão
+            </Button>
             <Button
               className="bg-brand-blue hover:bg-brand-navy"
               disabled={
@@ -409,12 +421,13 @@ function PaymentGatewaysPage() {
                 !form.name ||
                 (!editing && (!form.public_key || !form.secret_key))
               }
-              onClick={() => upsertMut.mutate()}
+              onClick={() => upsertMut.mutate({})}
             >
               {upsertMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </div>
