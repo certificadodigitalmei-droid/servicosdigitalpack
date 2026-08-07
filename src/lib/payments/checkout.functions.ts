@@ -153,7 +153,58 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
 
     }
 
+    // ---- Reaproveita a guia PIX já gerada -------------------------------
+    // A mesma empresa não pode gerar várias cobranças: enquanto o PIX anterior
+    // estiver válido, devolvemos exatamente o mesmo código. Só geramos outro
+    // quando ele expira (data do gateway ou, na falta dela, 3 dias).
+    const REUSE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+    const cnpjDigits = data.document.replace(/\D/g, "");
+
+    let reuseQuery = supabaseAdmin
+      .from("orders")
+      .select("id, pix_code, pix_qr_code, external_transaction_id, payment_provider, pix_expiration, created_at")
+      .in("status", ["pending", "awaiting_payment"])
+      .not("pix_code", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    reuseQuery = publicLinkId
+      ? reuseQuery.eq("public_link_id", publicLinkId)
+      : reuseQuery.eq("reference_cnpj", cnpjDigits);
+
+    const { data: existing } = await reuseQuery.maybeSingle();
+
+    if (existing?.pix_code) {
+      const expMs = existing.pix_expiration ? new Date(existing.pix_expiration).getTime() : null;
+      const createdMs = existing.created_at ? new Date(existing.created_at).getTime() : 0;
+      const stillValid = expMs
+        ? expMs > Date.now()
+        : Date.now() - createdMs < REUSE_WINDOW_MS;
+
+      if (stillValid) {
+        let qr = existing.pix_qr_code || "";
+        if (!qr) {
+          const QRCode = (await import("qrcode")).default;
+          const dataUrl = await QRCode.toDataURL(existing.pix_code, {
+            errorCorrectionLevel: "M",
+            margin: 1,
+            width: 320,
+          });
+          qr = dataUrl.replace(/^data:image\/png;base64,/, "");
+        }
+        return {
+          orderId: existing.id,
+          pix_code: existing.pix_code,
+          qr_code_base64: qr,
+          transaction_id: existing.external_transaction_id || "",
+          provider: (existing.payment_provider as string) || provider,
+          reused: true,
+        };
+      }
+    }
+
     // Cria cliente
+
     const { data: customer, error: custErr } = await supabaseAdmin
       .from("customers")
       .insert({
