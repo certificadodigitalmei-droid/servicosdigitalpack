@@ -15,6 +15,13 @@ import {
   PAUSE_LABEL,
 } from '@/lib/pipeline/pipeline-engine';
 
+const HEALTH_LABEL: Record<'healthy' | 'warning' | 'blocked', string> = {
+  healthy: 'saudável',
+  warning: 'atenção',
+  blocked: 'em espera',
+};
+
+
 /**
  * Controle único do fluxo: Consulta -> Importação -> Links -> Envio.
  * Roda enquanto esta aba estiver aberta; o estado real fica no banco.
