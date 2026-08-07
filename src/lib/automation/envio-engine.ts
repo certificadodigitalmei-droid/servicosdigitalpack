@@ -1058,34 +1058,44 @@ export async function sendTestOnce() {
     toast.error('Informe um e-mail de teste primeiro.');
     return;
   }
-  let realCompany;
+  // Usa uma empresa real quando existir. Com a base zerada, cai num
+  // exemplo de demonstração — o caminho de envio (remetente, domínio,
+  // template e API) é exatamente o mesmo do disparo real.
+  let realCompany: any = null;
   try {
     realCompany = await getLatestTestEmailCompany();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Falha ao buscar empresa real';
-    pushLog(`✗ Teste cancelado: ${message}`);
-    toast.error(message);
-    return;
+  } catch {
+    realCompany = null;
   }
 
-  if (!realCompany) {
-    toast.error('Nenhuma empresa real com e-mail e link ativo foi encontrada.');
-    return;
-  }
+  const sample: QueueItem = realCompany
+    ? {
+        id: realCompany.id,
+        email: realCompany.email,
+        cnpj: realCompany.cnpj,
+        company_name: realCompany.company_name,
+        data_abertura: realCompany.data_abertura,
+        situacao: 'CNPJ sem certificado pendente',
+        uf: realCompany.uf,
+        municipio: realCompany.municipio,
+        status: 'pending',
+        publicToken: realCompany.public_token,
+        publicUrl: realCompany.public_url,
+      }
+    : {
+        id: 'demo-test',
+        email: to,
+        cnpj: '12.345.678/0001-90',
+        company_name: 'EMPRESA DEMONSTRACAO MEI',
+        data_abertura: '01/01/2024',
+        situacao: 'CNPJ sem certificado pendente',
+        uf: 'SP',
+        municipio: 'São Paulo',
+        status: 'pending',
+        publicToken: 'demo',
+        publicUrl: `${typeof window !== 'undefined' ? window.location.origin : ''}/c/demo`,
+      };
 
-  const sample: QueueItem = {
-    id: realCompany.id,
-    email: realCompany.email,
-    cnpj: realCompany.cnpj,
-    company_name: realCompany.company_name,
-    data_abertura: realCompany.data_abertura,
-    situacao: 'CNPJ sem certificado pendente',
-    uf: realCompany.uf,
-    municipio: realCompany.municipio,
-    status: 'pending',
-    publicToken: realCompany.public_token,
-    publicUrl: realCompany.public_url,
-  };
 
   const vars = buildVarsFor(sample);
 
