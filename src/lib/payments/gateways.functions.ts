@@ -205,3 +205,18 @@ export const deletePaymentGateway = createServerFn({ method: 'POST' })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Desativa um gateway (nenhum provedor fica ativo até que outro seja escolhido). */
+export const deactivatePaymentGateway = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { error } = await supabaseAdmin
+      .from('payment_gateways')
+      .update({ is_active: false })
+      .eq('id', data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
