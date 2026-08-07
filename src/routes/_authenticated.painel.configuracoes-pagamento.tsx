@@ -278,11 +278,16 @@ function PaymentGatewaysPage() {
                   </CardDescription>
                 </div>
                 <div className="flex flex-shrink-0 gap-2">
-                  {!g.is_active && (
+                  {g.is_active ? (
+                    <Button size="sm" variant="outline" onClick={() => deactivateMut.mutate(g.id)}>
+                      Desativar
+                    </Button>
+                  ) : (
                     <Button size="sm" variant="secondary" onClick={() => activateMut.mutate(g.id)}>
                       Ativar
                     </Button>
                   )}
+
                   <Button size="sm" variant="outline" onClick={() => openEdit(g)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
