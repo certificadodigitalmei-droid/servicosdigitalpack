@@ -91,8 +91,8 @@ function PanelLayout() {
 
   // Salvar tudo na nuvem (todas as configurações do painel).
   const [saving, setSaving] = useState(false);
-  const [restoring, setRestoring] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+
   const [hydrated, setHydrated] = useState(false);
   const doSave = useServerFn(saveCloudState);
   const doLoad = useServerFn(getCloudState);
@@ -168,29 +168,8 @@ function PanelLayout() {
     }
   };
 
-  const restoreAll = async () => {
-    if (!confirm('Restaurar todas as configurações salvas na nuvem? A página será recarregada.')) return;
-    setRestoring(true);
-    try {
-      const r = await doLoad();
-      if (!r.snapshot) {
-        toast.info('Nada salvo na nuvem ainda.');
-        setRestoring(false);
-        return;
-      }
-      applyLocalSnapshot(r.snapshot as Record<string, string>);
-      if (r.updatedAt) {
-        try { window.localStorage.setItem('painel:cloudSyncedAt', r.updatedAt); } catch {}
-      }
-      toast.success('Configurações restauradas. Recarregando…');
-      setTimeout(() => window.location.reload(), 600);
-    } catch (e: any) {
-      toast.error('Falha ao restaurar: ' + (e?.message ?? 'erro'));
-      setRestoring(false);
-    }
-  };
-
   const handleCleanup = async () => {
+
     if (!confirm('Deseja apagar TODOS os dados (empresas, links, pedidos pendentes, clientes sem compra) e deixar o painel limpo? Apenas vendas confirmadas serão preservadas.')) return;
     
     setCleaning(true);
@@ -469,17 +448,7 @@ function PanelLayout() {
                   <span className="sm:hidden">Salvar</span>
                 </Button>
                 <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={restoreAll}
-                  disabled={restoring}
-                  className="gap-2"
-                  title="Restaura as configurações salvas na nuvem neste dispositivo."
-                >
-                  {restoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
-                  <span className="hidden md:inline">Restaurar</span>
-                </Button>
-                <Button
+
                   size="sm"
                   variant="ghost"
                   onClick={handleCleanup}
