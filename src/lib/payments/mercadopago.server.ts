@@ -88,14 +88,18 @@ export async function createMercadoPagoPix(
     throw new Error("Configure o Access Token do Mercado Pago em Configurações de Pagamento.");
   }
 
-  const isSandbox = input.environment !== "production";
-  // Em teste usamos os dados predefinidos de sandbox (@testuser.com + APRO),
-  // que fazem o pagamento ser aprovado automaticamente pela Orders API.
-  const payer = isSandbox
-    ? { email: SANDBOX_PAYER.email, first_name: SANDBOX_PAYER.first_name, last_name: SANDBOX_PAYER.last_name }
-    : { email: input.payerEmail };
+  // Regra do Mercado Pago: o pagador precisa pertencer ao MESMO ambiente do Access Token.
+  // Usar um e-mail @testuser.com com credencial de produção (ou vice-versa) devolve
+  // 402 "invalid_users_involved". Por isso tentamos primeiro o e-mail real do pedido e,
+  // só se o MP recusar por incompatibilidade de usuários, repetimos com o pagador de sandbox.
+  const realPayer = { email: input.payerEmail || "pagador@exemplo.com" };
+  const sandboxPayer = {
+    email: SANDBOX_PAYER.email,
+    first_name: SANDBOX_PAYER.first_name,
+    last_name: SANDBOX_PAYER.last_name,
+  };
 
-  const body = {
+  const buildBody = (payer: Record<string, string>) => ({
     type: "online",
     processing_mode: "automatic",
     external_reference: input.orderId,
@@ -109,21 +113,30 @@ export async function createMercadoPagoPix(
         },
       ],
     },
-  };
-
-  const res = await fetch(`${cleanBase(baseUrl)}/v1/orders`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: `Bearer ${accessToken}`,
-      // Idempotência: reenvios do mesmo pedido não criam cobranças duplicadas.
-      "X-Idempotency-Key": input.orderId,
-    },
-    body: JSON.stringify(body),
   });
 
-  const text = await res.text();
+  const post = async (payer: Record<string, string>, idemSuffix: string) =>
+    fetch(`${cleanBase(baseUrl)}/v1/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+        // Idempotência: reenvios do mesmo pedido não criam cobranças duplicadas.
+        "X-Idempotency-Key": `${input.orderId}${idemSuffix}`,
+      },
+      body: JSON.stringify(buildBody(payer)),
+    });
+
+  let res = await post(realPayer, "");
+  let text = await res.text();
+
+  if (!res.ok && text.includes("invalid_users_involved")) {
+    // Provável credencial de teste: repete com o pagador oficial de sandbox.
+    res = await post(sandboxPayer, "-sbx");
+    text = await res.text();
+  }
+
   if (!res.ok) {
     if (res.status === 401) {
       throw new Error(
@@ -131,9 +144,15 @@ export async function createMercadoPagoPix(
           "Minha aplicação > Testes > Credenciais de teste; em Produção, o token de produção.",
       );
     }
+    if (text.includes("invalid_users_involved")) {
+      throw new Error(
+        "Mercado Pago recusou a cobrança (invalid_users_involved): o Access Token e o pagador " +
+          "são de ambientes diferentes, ou a conta ainda não está habilitada para receber Pix. " +
+          "Confira em Sua conta > Pix se a chave Pix está cadastrada e use as credenciais de produção.",
+      );
+    }
     throw new Error(`Mercado Pago ${res.status}: ${text.slice(0, 500) || "sem resposta"}`);
   }
-
 
   const json = JSON.parse(text) as any;
   const payment = json?.transactions?.payments?.[0] ?? {};
