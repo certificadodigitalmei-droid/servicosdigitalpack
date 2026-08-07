@@ -236,9 +236,18 @@ async function tick() {
   }
 }
 
+function ensureTimer() {
+  if (typeof window === 'undefined') return;
+  if (timerId != null) clearInterval(timerId);
+  timerId = window.setInterval(() => void tick(), TICK_MS);
+}
+
 export function startPipelineEngine() {
   if (typeof window === 'undefined') return;
-  if (pipelineStore.get().running) return;
+  if (pipelineStore.get().running) {
+    ensureTimer();
+    return;
+  }
   pipelineStore.set({
     running: true,
     stage: 'iniciando…',
@@ -250,9 +259,20 @@ export function startPipelineEngine() {
   });
   log('Motor iniciado (pausa e retomada automáticas ativas)');
   void tick();
-  if (timerId != null) clearInterval(timerId);
-  timerId = window.setInterval(() => void tick(), TICK_MS);
+  ensureTimer();
 }
+
+/**
+ * Retoma o motor quando ele já estava ligado (troca de aba, recarregar a
+ * página). Chamado uma vez no layout do painel.
+ */
+export function resumePipelineEngine() {
+  if (typeof window === 'undefined') return;
+  if (!pipelineStore.get().running) return;
+  ensureTimer();
+  void tick();
+}
+
 
 export function stopPipelineEngine() {
   if (timerId != null) {
