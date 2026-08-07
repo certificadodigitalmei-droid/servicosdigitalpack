@@ -255,45 +255,9 @@ function TokenHomePage() {
             <aside className="lg:sticky lg:top-6 space-y-4">
               <div className={`rounded-md border bg-card p-0 overflow-hidden shadow-sm lg:shadow-[0_20px_60px_-24px_rgba(0,72,132,0.35)] ${paidAt ? 'border-emerald-500' : 'border-border'}`}>
                 {((!paidAt && display.show_cert_landing) || (paidAt && display.show_cert_success)) && (
-                <div className={`relative border-b ${paidAt ? 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-white' : 'border-border bg-[#f0f5ff]'}`}>
-                  <img
-                    src={certificadoA1Asset.url}
-                    alt="Certificado Digital A1 e-MEI"
-                    width={1200}
-                    height={800}
-                    decoding="async"
-                    fetchPriority="high"
-                    className={`block w-full h-auto select-none pointer-events-none transition-opacity duration-300 ${paidAt ? 'opacity-100' : 'opacity-60 grayscale-[30%]'}`}
-                    draggable={false}
-                  />
-                  {!paidAt && <div className="absolute inset-0 bg-slate-900/10" />}
-                  {paidAt ? (
-                    <>
-                      <div className="absolute inset-0 ring-2 ring-inset ring-emerald-400/40" />
-                      <div className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-md">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Ativo
-                      </div>
-                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 rounded-md bg-white/95 px-3 py-1.5 shadow backdrop-blur">
-                        <span className="text-[10.5px] font-bold uppercase tracking-wide text-emerald-700">
-                          Certificado emitido e vinculado
-                        </span>
-                        <span className="hidden sm:inline text-[10px] font-semibold text-muted-foreground">ICP-Brasil</span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-[#ffc107] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[#856404] shadow-md">
-                        <span className="h-2 w-2 rounded-full bg-[#856404] animate-pulse" />
-                        Pendente
-                      </div>
-                      <div className="absolute bottom-3 left-3 rounded-md bg-white/95 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-wide text-[#8a6d3b] shadow">
-                        Certificado desativado — aguardando emissão
-                      </div>
-                    </>
-                  )}
-                </div>
+                  <CertVisual paidAt={paidAt} cnpjFmt={cnpjFmt} nome={nomeFmt} />
                 )}
+
                 {!paidAt && (
                   <div className="flex items-start gap-4 p-5 lg:flex-col lg:items-center lg:text-center lg:p-6">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#f0f5ff] text-[#004884] lg:h-16 lg:w-16">
