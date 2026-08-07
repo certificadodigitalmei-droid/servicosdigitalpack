@@ -87,20 +87,7 @@ function EnvioMassa() {
     refetchInterval: 5_000,
   });
   const sm = metricsQ.data;
-  const automationQ = useQuery({
-    queryKey: ['automation-status'],
-    queryFn: () => fetchAutomationStatus(),
-    refetchInterval: 5_000,
-  });
-  const cloudEnabled = automationQ.data?.isAutoEnabled ?? false;
-  const toggleCloud = useMutation({
-    mutationFn: (enabled: boolean) => toggleAutomation({ data: { enabled } }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['automation-status'] });
-      await queryClient.invalidateQueries({ queryKey: ['flow-settings'] });
-    },
-    onError: (error) => toast.error(error instanceof Error ? error.message : 'Falha ao alterar modo nuvem'),
-  });
+
 
   // Auto-carregar fila (persistido)
   const [autoLoadQueue, setAutoLoadQueue] = useState<boolean>(() => {
