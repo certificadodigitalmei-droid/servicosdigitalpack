@@ -351,11 +351,33 @@ function PaymentGatewaysPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="mercadopago">Mercado Pago</SelectItem>
                   <SelectItem value="syncpay">SyncPay</SelectItem>
                   <SelectItem value="sigilopay">SigiloPay</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {meta.hasEnvironment && (
+              <div className="space-y-2">
+                <Label>Ambiente</Label>
+                <Select
+                  value={form.environment}
+                  onValueChange={(v) => setForm({ ...form, environment: v as Environment })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="test">Teste</SelectItem>
+                    <SelectItem value="production">Produção</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500">
+                  Use credenciais de teste (TEST-...) enquanto estiver homologando.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>
                 {meta.publicLabel}{' '}
