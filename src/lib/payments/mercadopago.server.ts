@@ -77,6 +77,7 @@ export async function createMercadoPagoPix(
   if (!accessToken) {
     throw new Error("Configure o Access Token do Mercado Pago em Configurações de Pagamento.");
   }
+  assertProductionToken(accessToken);
 
   const body = {
     type: "online",
