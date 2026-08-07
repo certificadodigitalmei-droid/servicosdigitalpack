@@ -339,6 +339,31 @@ function Num({
   );
 }
 
+/**
+ * Aviso: no ambiente de pré-visualização os e-mails são tratados como TESTE
+ * pela infraestrutura de e-mail e NÃO chegam na caixa de entrada real.
+ */
+function PreviewEnvWarning() {
+  const [isPreview, setIsPreview] = useState(false);
+  useEffect(() => {
+    const h = window.location.hostname;
+    setIsPreview(
+      h.includes('id-preview') || h.includes('-dev.lovable.app') || h === 'localhost',
+    );
+  }, []);
+  if (!isPreview) return null;
+  return (
+    <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+      <div className="font-semibold">Você está na pré-visualização — os envios NÃO chegam de verdade</div>
+      <p className="mt-1 text-amber-800">
+        Nesta janela os e-mails são tratados como teste: o painel marca “enviado”, mas nada é
+        entregue na caixa de entrada e não gera acessos nos links. Para disparar de verdade, publique
+        e rode o motor pelo site publicado (seu domínio) e não por esta aba.
+      </p>
+    </div>
+  );
+}
+
 /** Bloco recolhível — mantém a página limpa por padrão. */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
