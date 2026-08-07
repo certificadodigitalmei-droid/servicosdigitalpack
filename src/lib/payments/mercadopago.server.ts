@@ -36,6 +36,17 @@ function money(amount: number): string {
   return amount.toFixed(2);
 }
 
+const TEST_CREDENTIALS_MESSAGE =
+  "O Mercado Pago não aceita credenciais de teste (TEST-...) no Checkout Transparente. " +
+  "Use o Access Token de produção (APP_USR-...) da sua aplicação; para simular pagamentos, " +
+  "faça o Pix com um usuário de teste.";
+
+function assertProductionToken(accessToken: string) {
+  if (accessToken.toUpperCase().startsWith("TEST-")) {
+    throw new Error(TEST_CREDENTIALS_MESSAGE);
+  }
+}
+
 /** Valida o par de credenciais chamando um endpoint autenticado leve. */
 export async function testMercadoPagoCredentials(
   apiKey: string,
@@ -43,6 +54,9 @@ export async function testMercadoPagoCredentials(
 ): Promise<{ ok: boolean; message: string }> {
   const { accessToken } = splitMercadoPagoKeys(apiKey);
   if (!accessToken) return { ok: false, message: "Access Token não configurado." };
+  if (accessToken.toUpperCase().startsWith("TEST-")) {
+    return { ok: false, message: TEST_CREDENTIALS_MESSAGE };
+  }
   const res = await fetch(`${cleanBase(baseUrl)}/users/me`, {
     headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
   });
@@ -63,6 +77,7 @@ export async function createMercadoPagoPix(
   if (!accessToken) {
     throw new Error("Configure o Access Token do Mercado Pago em Configurações de Pagamento.");
   }
+  assertProductionToken(accessToken);
 
   const body = {
     type: "online",
@@ -94,6 +109,9 @@ export async function createMercadoPagoPix(
 
   const text = await res.text();
   if (!res.ok) {
+    if (res.status === 401 && text.includes("invalid_credentials")) {
+      throw new Error(TEST_CREDENTIALS_MESSAGE);
+    }
     throw new Error(`Mercado Pago ${res.status}: ${text.slice(0, 500) || "sem resposta"}`);
   }
 

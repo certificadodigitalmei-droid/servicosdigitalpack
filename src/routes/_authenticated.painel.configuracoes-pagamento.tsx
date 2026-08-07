@@ -386,7 +386,8 @@ function PaymentGatewaysPage() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-slate-500">
-                  Use credenciais de teste (TEST-...) enquanto estiver homologando.
+                  O Mercado Pago não aceita credenciais TEST-... na Orders API. Use sempre as
+                  credenciais de produção (APP_USR-...); para simular, pague com um usuário de teste.
                 </p>
               </div>
             )}
