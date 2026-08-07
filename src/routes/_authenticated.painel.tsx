@@ -42,9 +42,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { GlobalFloatingPanels } from '@/components/painel/GlobalFloatingPanels';
 
-import { getAutomationStatus, toggleGlobalAutomation } from '@/lib/automation/global-status.functions';
-import { Power, PowerOff } from 'lucide-react';
-
 export const Route = createFileRoute('/_authenticated/painel')({
   component: PanelLayout,
 });
