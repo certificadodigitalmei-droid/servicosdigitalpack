@@ -10,7 +10,6 @@ import { formatCNPJ, formatDateBR } from '@/lib/format';
 import { resolveCompanyLink, getLinkPaymentStatus, type ResolvedCompany } from '@/lib/company-links.functions';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
 import { getSiteDisplay, type SiteDisplaySettings } from '@/lib/site-display.functions';
-import certificadoA1Asset from '@/assets/certificado-a1-emei.png.asset.json';
 
 
 
@@ -34,9 +33,6 @@ export const Route = createFileRoute('/c/$token')({
     meta: [
       { title: 'Portal do Empreendedor — Certificado Digital MEI' },
       { name: 'description', content: 'Portal do Empreendedor — Certificado Digital MEI' },
-    ],
-    links: [
-      { rel: 'preload', as: 'image', href: certificadoA1Asset.url, fetchpriority: 'high' as const },
     ],
   }),
   notFoundComponent: NotFoundPage,
