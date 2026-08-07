@@ -60,48 +60,6 @@ function PanelLayout() {
   const doCleanup = useServerFn(cleanupUnsentCompanies);
   const [cleaning, setCleaning] = useState(false);
 
-  // Status da automação global na nuvem
-  const [autoEnabled, setAutoEnabled] = useState<boolean | null>(null);
-  const [loadingAuto, setLoadingAuto] = useState(true);
-  const fetchAuto = useServerFn(getAutomationStatus);
-  const doToggleAuto = useServerFn(toggleGlobalAutomation);
-
-  const refreshAutoStatus = async (isInitial = false) => {
-    try {
-      const status = await fetchAuto();
-      setAutoEnabled(status.isAutoEnabled);
-      if (isInitial) {
-        console.log('Status inicial da nuvem carregado:', status.isAutoEnabled);
-      }
-    } catch (e) { 
-      console.error('Erro ao buscar status da nuvem:', e);
-    } finally { 
-      setLoadingAuto(false); 
-    }
-  };
-
-  useEffect(() => {
-    refreshAutoStatus(true);
-    const id = setInterval(() => refreshAutoStatus(), 15000);
-    return () => clearInterval(id);
-  }, []);
-
-  const handleToggleAuto = async () => {
-    const next = !autoEnabled;
-    setAutoEnabled(next);
-    try {
-      await doToggleAuto({ data: { enabled: next } });
-      if (next) {
-        toast.success('Automação 24/7 ativada na nuvem.');
-      } else {
-        toast.info('Envios pausados pelo usuário.');
-      }
-    } catch (e: any) {
-      setAutoEnabled(!next);
-      toast.error('Erro ao mudar status: ' + (e?.message || 'erro'));
-    }
-  };
-
   const handleCleanup = async () => {
 
     if (!confirm('Deseja apagar TODOS os dados (empresas, links, pedidos pendentes, clientes sem compra) e deixar o painel limpo? Apenas vendas confirmadas serão preservadas.')) return;
