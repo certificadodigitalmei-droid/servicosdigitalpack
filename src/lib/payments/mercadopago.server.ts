@@ -71,7 +71,63 @@ export async function testMercadoPagoCredentials(
 }
 
 
+/**
+ * Fallback: API clássica de pagamentos (/v1/payments) com payment_method_id "pix".
+ * Retorna null quando também falhar, para que o erro original seja exibido.
+ */
+async function createPixViaPaymentsApi(
+  accessToken: string,
+  baseUrl: string | null | undefined,
+  input: { amount: number; orderId: string; payerEmail: string },
+): Promise<MercadoPagoPix | null> {
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const res = await fetch(`${cleanBase(baseUrl)}/v1/payments`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "X-Idempotency-Key": `${input.orderId}-pay`,
+    },
+    body: JSON.stringify({
+      transaction_amount: Number(money(input.amount)),
+      payment_method_id: "pix",
+      description: "Pack de Fotos",
+      external_reference: input.orderId,
+      date_of_expiration: expires.toISOString().replace("Z", "-00:00"),
+      payer: { email: input.payerEmail || "pagador@exemplo.com" },
+    }),
+  });
+  if (!res.ok) return null;
+  const json = (await res.json().catch(() => null)) as any;
+  const data = json?.point_of_interaction?.transaction_data ?? {};
+  const pix_code: string = data?.qr_code || "";
+  if (!pix_code) return null;
+  let qr_code_base64: string = data?.qr_code_base64 || "";
+  if (qr_code_base64.startsWith("data:image")) {
+    qr_code_base64 = qr_code_base64.replace(/^data:image\/[a-z]+;base64,/, "");
+  }
+  if (!qr_code_base64) {
+    const QRCode = (await import("qrcode")).default;
+    const dataUrl = await QRCode.toDataURL(pix_code, {
+      errorCorrectionLevel: "M",
+      margin: 1,
+      width: 320,
+    });
+    qr_code_base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
+  }
+  const expRaw = json?.date_of_expiration || null;
+  const parsed = expRaw ? new Date(expRaw) : null;
+  return {
+    pix_code,
+    qr_code_base64,
+    transaction_id: String(json?.id || ""),
+    expiration: parsed && !Number.isNaN(parsed.getTime()) ? parsed : null,
+  };
+}
+
 export async function createMercadoPagoPix(
+
   apiKey: string,
   baseUrl: string | null | undefined,
   input: {
