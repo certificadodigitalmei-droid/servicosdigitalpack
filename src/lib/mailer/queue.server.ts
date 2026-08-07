@@ -14,7 +14,7 @@ type QueueRow = {
 };
 
 export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) {
-  const { sendGmailMessage, GmailError } = await import('./gmail.server');
+  const { sendMailMessage, MailError } = await import('./mailer.server');
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
   if (!opts.burst) {
