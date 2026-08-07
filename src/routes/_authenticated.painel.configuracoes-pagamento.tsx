@@ -198,7 +198,29 @@ function PaymentGatewaysPage() {
     onError: (e: any) => toast.error(e?.message || 'Erro ao remover'),
   });
 
+  const [testEmail, setTestEmail] = useState('');
+  const [testCompany, setTestCompany] = useState<TestCompanyResult | null>(null);
+
+  const createTestMut = useMutation({
+    mutationFn: () => createTestCompanyLink({ data: { email: testEmail.trim() } }),
+    onSuccess: (res) => {
+      setTestCompany(res);
+      toast.success('Empresa de teste criada');
+    },
+    onError: (e: any) => toast.error(e?.message || 'Erro ao criar empresa de teste'),
+  });
+
+  const deleteTestMut = useMutation({
+    mutationFn: () => deleteTestCompanies({}),
+    onSuccess: (res) => {
+      setTestCompany(null);
+      toast.success(`${res.removed} empresa(s) de teste removida(s)`);
+    },
+    onError: (e: any) => toast.error(e?.message || 'Erro ao remover empresas de teste'),
+  });
+
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
+
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
