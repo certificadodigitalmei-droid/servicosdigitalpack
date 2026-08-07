@@ -306,17 +306,6 @@ function PanelLayout() {
                 </div>
 
                 <Button
-                  size="sm"
-                  onClick={saveAll}
-                  disabled={saving}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-sm"
-                  title="Salva TODAS as configurações (modelos, intervalos, filtros) para que o servidor use no automático."
-                >
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cloud className="h-4 w-4" />}
-                  <span className="hidden sm:inline">Salvar Configurações</span>
-                  <span className="sm:hidden">Salvar</span>
-                </Button>
-                <Button
 
                   size="sm"
                   variant="ghost"
@@ -328,11 +317,6 @@ function PanelLayout() {
                   {cleaning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                   <span className="hidden lg:inline text-xs">Limpar Banco</span>
                 </Button>
-                {lastSavedAt && (
-                  <span className="hidden lg:inline text-[10px] text-emerald-600">
-                    ☁ Sync auto · {new Date(lastSavedAt).toLocaleString('pt-BR')}
-                  </span>
-                )}
 
                 <div className="hidden text-right sm:block ml-2">
                   <div className="text-xs font-semibold text-slate-700">Administrador</div>
