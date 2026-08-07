@@ -38,6 +38,8 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
       subject: row.subject,
       html: row.html ?? undefined,
       text: row.text ?? undefined,
+      idempotencyKey: qRow?.idempotency_key ?? undefined,
+      label: 'campanha-massa',
     });
     await supabaseAdmin
       .from('email_send_queue')
