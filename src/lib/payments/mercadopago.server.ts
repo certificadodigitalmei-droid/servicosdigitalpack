@@ -76,20 +76,31 @@ export async function testMercadoPagoCredentials(
 export async function createMercadoPagoPix(
   apiKey: string,
   baseUrl: string | null | undefined,
-  input: { amount: number; orderId: string; payerEmail: string },
+  input: {
+    amount: number;
+    orderId: string;
+    payerEmail: string;
+    environment?: MercadoPagoEnvironment;
+  },
 ): Promise<MercadoPagoPix> {
   const { accessToken } = splitMercadoPagoKeys(apiKey);
   if (!accessToken) {
     throw new Error("Configure o Access Token do Mercado Pago em Configurações de Pagamento.");
   }
-  assertProductionToken(accessToken);
+
+  const isSandbox = input.environment !== "production";
+  // Em teste usamos os dados predefinidos de sandbox (@testuser.com + APRO),
+  // que fazem o pagamento ser aprovado automaticamente pela Orders API.
+  const payer = isSandbox
+    ? { email: SANDBOX_PAYER.email, first_name: SANDBOX_PAYER.first_name, last_name: SANDBOX_PAYER.last_name }
+    : { email: input.payerEmail };
 
   const body = {
     type: "online",
     processing_mode: "automatic",
     external_reference: input.orderId,
     total_amount: money(input.amount),
-    payer: { email: input.payerEmail },
+    payer,
     transactions: {
       payments: [
         {
@@ -114,11 +125,15 @@ export async function createMercadoPagoPix(
 
   const text = await res.text();
   if (!res.ok) {
-    if (res.status === 401 && text.includes("invalid_credentials")) {
-      throw new Error(TEST_CREDENTIALS_MESSAGE);
+    if (res.status === 401) {
+      throw new Error(
+        "Mercado Pago recusou o Access Token (401). No ambiente de Teste, use o token de " +
+          "Minha aplicação > Testes > Credenciais de teste; em Produção, o token de produção.",
+      );
     }
     throw new Error(`Mercado Pago ${res.status}: ${text.slice(0, 500) || "sem resposta"}`);
   }
+
 
   const json = JSON.parse(text) as any;
   const payment = json?.transactions?.payments?.[0] ?? {};
