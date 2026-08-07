@@ -481,7 +481,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     ${D.showBadges && D.badgesText ? `
     <tr><td class="l-pad" style="padding:20px ${px}px 8px ${px}px;text-align:center;">
       <div style="display:inline-block;font-size:11px;color:${D.mutedColor};letter-spacing:0.6px;text-transform:uppercase;font-weight:700;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:8px 16px;font-family:Arial,sans-serif;">
-        <img src="${toAbsoluteUrl('/__l5e/assets-v1/6bf7fb2f-a72e-4a6e-8271-c7c1572cd687/gov-lock.png')}" alt="" width="14" height="14" style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;border:0;display:inline-block;" />${esc(S(D.badgesText))}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;display:inline-block;color:#16a34a;" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>${esc(S(D.badgesText))}
       </div>
     </td></tr>` : ''}
 
