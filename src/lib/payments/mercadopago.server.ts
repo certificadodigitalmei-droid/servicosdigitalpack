@@ -268,12 +268,16 @@ export async function getMercadoPagoOrderStatus(
   if (!json) return "";
   const payment = json?.transactions?.payments?.[0] ?? {};
   const paymentStatus = String(payment?.status || "").toLowerCase();
+  const paymentDetail = String(payment?.status_detail || "").toLowerCase();
+  // Na Orders API o Pix pago aparece como status "processed" com detalhe "accredited".
+  if (paymentStatus === "processed" || paymentDetail === "accredited") return "approved";
   if (paymentStatus) return paymentStatus;
   const orderStatus = String(json?.status || "").toLowerCase();
   const detail = String(json?.status_detail || "").toLowerCase();
   if (orderStatus === "processed" && (detail === "accredited" || detail === "")) return "approved";
   return orderStatus;
 }
+
 
 /** Busca a Order pelo id do pagamento avulso (notificações type=payment). */
 export async function getMercadoPagoPaymentStatus(
