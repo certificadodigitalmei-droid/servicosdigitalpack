@@ -354,3 +354,20 @@ export async function verifyMercadoPagoSignature(params: {
   for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ v1.charCodeAt(i);
   return diff === 0;
 }
+
+/** Devolve o external_reference (id do nosso pedido) de uma Order. */
+export async function getMercadoPagoOrderExternalReference(
+  apiKey: string,
+  baseUrl: string | null | undefined,
+  orderId: string,
+): Promise<string | null> {
+  const { accessToken } = splitMercadoPagoKeys(apiKey);
+  if (!accessToken) return null;
+  const res = await fetch(`${cleanBase(baseUrl)}/v1/orders/${encodeURIComponent(orderId)}`, {
+    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+  });
+  if (!res.ok) return null;
+  const json = (await res.json().catch(() => null)) as any;
+  const ref = json?.external_reference;
+  return ref ? String(ref) : null;
+}

@@ -72,6 +72,11 @@ export const Route = createFileRoute('/api/public/webhook-mercadopago')({
           let externalReference: string | null = null;
           if (dataId.startsWith('ORD')) {
             status = await mp.getMercadoPagoOrderStatus(gateway.api_key, gateway.base_url, dataId);
+            externalReference = await mp.getMercadoPagoOrderExternalReference(
+              gateway.api_key,
+              gateway.base_url,
+              dataId,
+            );
           } else {
             const res = await mp.getMercadoPagoPaymentStatus(
               gateway.api_key,
@@ -94,43 +99,36 @@ export const Route = createFileRoute('/api/public/webhook-mercadopago')({
             return new Response('OK', { status: 200 });
           }
 
-          const nowIso = new Date().toISOString();
-          const patch = { status: 'paid', paid_at: nowIso, updated_at: nowIso } as const;
+          const { settleOrderPaid } = await import('@/lib/payments/verify.server');
 
-          // Idempotência: só atualiza pedidos que ainda não estão pagos.
+          // Idempotência: settleOrderPaid só atualiza/envia e-mail quando o
+          // pedido ainda não estava pago.
           const { data: byTx } = await supabaseAdmin
             .from('orders')
-            .update(patch)
+            .select('id')
             .eq('external_transaction_id', dataId)
-            .neq('status', 'paid')
-            .select('id');
-          let updated = byTx?.length ?? 0;
-          const paidIds: string[] = (byTx ?? []).map((r: any) => r.id);
+            .neq('status', 'paid');
+          const ids = new Set<string>((byTx ?? []).map((r: any) => r.id));
 
-          if (updated === 0 && externalReference) {
+          if (externalReference) {
             const { data: byRef } = await supabaseAdmin
               .from('orders')
-              .update(patch)
+              .select('id')
               .eq('id', externalReference)
-              .neq('status', 'paid')
-              .select('id');
-            updated = byRef?.length ?? 0;
-            paidIds.push(...((byRef ?? []).map((r: any) => r.id)));
+              .neq('status', 'paid');
+            for (const r of byRef ?? []) ids.add((r as any).id);
           }
 
-          for (const id of paidIds) {
-            try {
-              const { sendPaidEmail } = await import('@/lib/emails/order-emails.server');
-              await sendPaidEmail(id);
-            } catch (err) {
-              console.error('[webhook-mercadopago] falha ao enviar e-mail de confirmação', err);
-            }
+          for (const id of ids) {
+            await settleOrderPaid(id);
           }
 
-
-          if (updated === 0) {
-            console.log('[webhook-mercadopago] nenhum pedido pendente para atualizar');
+          if (ids.size === 0) {
+            console.log('[webhook-mercadopago] nenhum pedido pendente para atualizar', {
+              hasRef: Boolean(externalReference),
+            });
           }
+
 
           return new Response('OK', { status: 200 });
         } catch (err) {
