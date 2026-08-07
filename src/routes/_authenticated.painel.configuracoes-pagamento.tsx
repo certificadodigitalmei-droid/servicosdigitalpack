@@ -20,6 +20,12 @@ import {
   testPaymentGatewayConnection,
   type PaymentGateway,
 } from '@/lib/payments/gateways.functions';
+import {
+  createTestCompanyLink,
+  deleteTestCompanies,
+  type TestCompanyResult,
+} from '@/lib/payments/test-company.functions';
+
 
 export const Route = createFileRoute('/_authenticated/painel/configuracoes-pagamento')({
   head: () => ({ meta: [{ title: 'Configurações de Pagamento | Central MEI' }] }),
