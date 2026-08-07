@@ -15,8 +15,6 @@ import {
 } from '@/lib/email-campaign/template';
 import {
   Loader2,
-  Play,
-  Square,
   RefreshCw,
   TestTube2,
   Eye,
@@ -25,17 +23,18 @@ import {
   Activity,
   ChevronDown,
 } from 'lucide-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { getEmailMetrics } from '@/lib/emails/email-metrics.functions';
-import { getAutomationStatus, toggleGlobalAutomation } from '@/lib/automation/global-status.functions';
 import {
   FilaUnicaCard,
   SendHealthCard,
   SendProfileCard,
 } from '@/components/painel/FilaUnica';
+import { MotorFluxoCard, MotorFluxoLog } from '@/components/painel/MotorFluxo';
 
 import { useStore } from '@/lib/automation/store';
+
 
 import { toast } from 'sonner';
 import {
