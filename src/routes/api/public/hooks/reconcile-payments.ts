@@ -6,11 +6,15 @@ export const Route = createFileRoute('/api/public/hooks/reconcile-payments')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const expected = process.env['SUPABASE_ANON_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY'];
+        const accepted = [
+          process.env['SUPABASE_ANON_KEY'],
+          process.env['SUPABASE_PUBLISHABLE_KEY'],
+        ].filter(Boolean) as string[];
         const provided = request.headers.get('apikey') || '';
-        if (!expected || provided !== expected) {
+        if (accepted.length === 0 || !accepted.includes(provided)) {
           return new Response('Unauthorized', { status: 401 });
         }
+
         try {
           const { reconcileRecentPendingOrders } = await import('@/lib/payments/verify.server');
           const result = await reconcileRecentPendingOrders(48);
