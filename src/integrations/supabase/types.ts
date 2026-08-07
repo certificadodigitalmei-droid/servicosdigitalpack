@@ -536,6 +536,8 @@ export type Database = {
           id: number
           import_batch_size: number
           last_run_at: string | null
+          lock_heartbeat_at: string | null
+          lock_token: string | null
           paced_delay_sec: number
           send_mode: string
           send_profile: string
@@ -550,6 +552,8 @@ export type Database = {
           id?: number
           import_batch_size?: number
           last_run_at?: string | null
+          lock_heartbeat_at?: string | null
+          lock_token?: string | null
           paced_delay_sec?: number
           send_mode?: string
           send_profile?: string
@@ -564,6 +568,8 @@ export type Database = {
           id?: number
           import_batch_size?: number
           last_run_at?: string | null
+          lock_heartbeat_at?: string | null
+          lock_token?: string | null
           paced_delay_sec?: number
           send_mode?: string
           send_profile?: string

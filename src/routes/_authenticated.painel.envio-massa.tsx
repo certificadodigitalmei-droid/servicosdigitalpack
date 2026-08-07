@@ -15,8 +15,6 @@ import {
 } from '@/lib/email-campaign/template';
 import {
   Loader2,
-  Play,
-  Square,
   RefreshCw,
   TestTube2,
   Eye,
@@ -25,17 +23,18 @@ import {
   Activity,
   ChevronDown,
 } from 'lucide-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { getEmailMetrics } from '@/lib/emails/email-metrics.functions';
-import { getAutomationStatus, toggleGlobalAutomation } from '@/lib/automation/global-status.functions';
 import {
   FilaUnicaCard,
   SendHealthCard,
   SendProfileCard,
 } from '@/components/painel/FilaUnica';
+import { MotorFluxoCard, MotorFluxoLog } from '@/components/painel/MotorFluxo';
 
 import { useStore } from '@/lib/automation/store';
+
 
 import { toast } from 'sonner';
 import {
@@ -78,29 +77,13 @@ function EnvioMassa() {
 
   // Métricas oficiais do servidor (valem mesmo com o painel fechado).
   const fetchEmailMetrics = useServerFn(getEmailMetrics);
-  const fetchAutomationStatus = useServerFn(getAutomationStatus);
-  const toggleAutomation = useServerFn(toggleGlobalAutomation);
-  const queryClient = useQueryClient();
   const metricsQ = useQuery({
     queryKey: ['email_send_queue', 'metrics', 'envio-massa'],
     queryFn: () => fetchEmailMetrics({ data: {} }),
     refetchInterval: 5_000,
   });
   const sm = metricsQ.data;
-  const automationQ = useQuery({
-    queryKey: ['automation-status'],
-    queryFn: () => fetchAutomationStatus(),
-    refetchInterval: 5_000,
-  });
-  const cloudEnabled = automationQ.data?.isAutoEnabled ?? false;
-  const toggleCloud = useMutation({
-    mutationFn: (enabled: boolean) => toggleAutomation({ data: { enabled } }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['automation-status'] });
-      await queryClient.invalidateQueries({ queryKey: ['flow-settings'] });
-    },
-    onError: (error) => toast.error(error instanceof Error ? error.message : 'Falha ao alterar modo nuvem'),
-  });
+
 
   // Auto-carregar fila (persistido)
   const [autoLoadQueue, setAutoLoadQueue] = useState<boolean>(() => {
@@ -160,56 +143,16 @@ function EnvioMassa() {
     return renderHtml(design, vars);
   }, [previewItem, fromName, fromAddress, subject, designTick]);
 
-  const estado = cloudEnabled ? 'enviando' : 'parado';
-
   return (
     <div className="mx-auto max-w-5xl space-y-5 pb-10">
-      {/* 1 — Estado + botão único */}
-      <Card className="border-slate-200">
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <span
-              className={`h-3 w-3 rounded-full ${
-                estado === 'enviando'
-                  ? 'animate-pulse bg-emerald-500'
-                  : 'bg-slate-300'
-              }`}
-            />
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">Envio em Massa</h1>
-              <p className="text-sm text-slate-500">
-                {estado === 'enviando'
-                  ? 'Modo nuvem ativo — continua mesmo se você fechar esta aba.'
-                  : 'Modo nuvem pausado. Ative para processar a fila no servidor.'}
-              </p>
-            </div>
-            {testMode && <Badge className="bg-amber-100 text-amber-800">MODO TESTE</Badge>}
-          </div>
+      <div className="flex items-center gap-2">
+        <h1 className="text-xl font-bold text-slate-900">Envio em Massa</h1>
+        {testMode && <Badge className="bg-amber-100 text-amber-800">MODO TESTE</Badge>}
+      </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {!cloudEnabled ? (
-              <Button
-                size="lg"
-                className="bg-emerald-600 text-white hover:bg-emerald-700"
-                onClick={() => toggleCloud.mutate(true)}
-                disabled={toggleCloud.isPending || automationQ.isLoading}
-              >
-                {toggleCloud.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                Ativar modo nuvem
-              </Button>
-            ) : (
-              <Button
-                className="bg-red-600 text-white hover:bg-red-700"
-                onClick={() => toggleCloud.mutate(false)}
-                disabled={toggleCloud.isPending}
-              >
-                {toggleCloud.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
-                Pausar modo nuvem
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* 1 — Motor único do fluxo (consulta → importação → links → envio) */}
+      <MotorFluxoCard />
+
 
       {/* 2 — Números essenciais */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -347,8 +290,13 @@ function EnvioMassa() {
         </div>
       </Section>
 
+      <Section title="Log do motor (ciclo do fluxo)">
+        <MotorFluxoLog />
+      </Section>
+
       <Section title="Log de eventos">
         <div className="space-y-2">
+
           <div className="h-48 overflow-auto rounded-md border bg-slate-950 p-3 font-mono text-xs text-slate-100">
             {logs.length === 0 ? (
               <div className="text-slate-500">Sem eventos ainda.</div>

@@ -483,10 +483,20 @@ function restartImportLoop() {
   const tick = async () => {
     if (consultaStore.get().isImporting) return;
 
+    // O "Motor do fluxo" (aba Envio em Massa) é o único dono do ciclo quando
+    // está ligado: aqui nunca importamos em paralelo com ele.
+    try {
+      const { pipelineStore } = await import('@/lib/pipeline/pipeline-engine');
+      if (pipelineStore.get().running) return;
+    } catch {
+      /* motor indisponível: segue com as travas abaixo */
+    }
+
     const env = envioStore.get();
     const envioAtivo = isEnvioRunning() && env.running && !env.testMode;
 
     if (!envioAtivo || env.paused) return;
+
 
     // Pendências locais (fila em memória) — atalho barato
     const pendingLocal = env.queue.filter(

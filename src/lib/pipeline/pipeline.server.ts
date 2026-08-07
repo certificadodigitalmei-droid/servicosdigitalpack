@@ -559,12 +559,17 @@ export async function readFlowSettings(client: AnyClient): Promise<FlowSettings>
     .eq('id', 1)
     .maybeSingle();
   if (!data) return DEFAULT_FLOW_SETTINGS;
+  const hourlyBatchSize = Math.max(1, data.hourly_batch_size ?? 100);
   return {
     enabled: !!data.enabled,
-    importBatchSize: data.import_batch_size ?? 100,
-    hourlyBatchSize: data.hourly_batch_size ?? 100,
-    pacedDelaySec: Math.max(1, data.paced_delay_sec ?? 36),
+    // Importação e envio usam SEMPRE o mesmo número: é impossível importar
+    // mais do que se envia dentro da hora.
+    importBatchSize: hourlyBatchSize,
+    hourlyBatchSize,
+    // Ritmo derivado do lote: 3600 s / lote (ex.: 100/h -> 1 a cada 36 s).
+    pacedDelaySec: Math.max(1, Math.round(3600 / hourlyBatchSize)),
   };
 }
+
 
 
