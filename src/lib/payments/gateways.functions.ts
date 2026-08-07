@@ -160,12 +160,8 @@ export const testPaymentGatewayConnection = createServerFn({ method: 'POST' })
       const { testMercadoPagoCredentials } = await import('@/lib/payments/mercadopago.server');
       return await testMercadoPagoCredentials(row.api_key, row.base_url);
     }
-    if (row.provider_type === 'syncpay') {
-      const { getSyncPayToken } = await import('@/lib/payments/syncpay.server');
-      await getSyncPayToken(row.api_key, row.base_url);
-      return { ok: true, message: 'Conexão bem-sucedida (token gerado).' };
-    }
-    return { ok: true, message: 'Credenciais salvas. Este provedor não possui teste automático.' };
+    return { ok: false, message: 'Provedor não suportado. Use o Mercado Pago.' };
+
   });
 
 
