@@ -50,7 +50,7 @@ function PopupSitePage() {
   if (loading) return <div className="p-8 text-center text-slate-500">Carregando…</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="flex h-[calc(100vh-7rem)] flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-slate-900">Pop-ups do Site</h1>
@@ -65,80 +65,79 @@ function PopupSitePage() {
 
       <FormattingHelp />
 
-
-      <Tabs defaultValue="pagamento" className="space-y-4">
+      <Tabs defaultValue="pagamento" className="flex min-h-0 flex-col">
         <TabsList className="w-full justify-start bg-slate-100 p-1">
           <TabsTrigger value="pagamento" className="gap-2 data-[state=active]:bg-white">
             <CreditCard className="h-4 w-4" /> Pop-up Pagamento
           </TabsTrigger>
         </TabsList>
 
-
-        <TabsContent value="pagamento" className="space-y-4">
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">Pop-up de informações do pagamento</h2>
-                <p className="text-xs text-slate-500">
-                  Aparece após o cliente clicar em <strong>Gerar Guia</strong>, antes de mostrar o PIX.
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-1.5">
-                  <Switch
-                    checked={s.payment_enabled}
-                    onCheckedChange={(v) => set('payment_enabled', v)}
-                    id="pay-enabled"
-                  />
-                  <Label htmlFor="pay-enabled" className="text-sm">Ativo</Label>
+        <TabsContent value="pagamento" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
+          <div className="space-y-3">
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Pop-up de informações do pagamento</h2>
+                  <p className="text-xs text-slate-500">
+                    Aparece após o cliente clicar em <strong>Gerar Guia</strong>, antes de mostrar o PIX.
+                  </p>
                 </div>
-                <Button variant="outline" onClick={() => setPreviewPay(true)}>
-                  <Eye className="mr-2 h-4 w-4" /> Prévia
-                </Button>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-1.5">
+                    <Switch
+                      checked={s.payment_enabled}
+                      onCheckedChange={(v) => set('payment_enabled', v)}
+                      id="pay-enabled"
+                    />
+                    <Label htmlFor="pay-enabled" className="text-sm">Ativo</Label>
+                  </div>
+                  <Button variant="outline" onClick={() => setPreviewPay(true)}>
+                    <Eye className="mr-2 h-4 w-4" /> Prévia
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Cabeçalho e título</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <Field label="Selo do topo" value={s.payment_badge_text} onChange={(v) => set('payment_badge_text', v)} />
-                <RichField label="Título principal" value={s.payment_title} onChange={(v) => set('payment_title', v)} rows={2} />
-              </CardContent>
-            </Card>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader className="py-3"><CardTitle className="text-base">Cabeçalho e título</CardTitle></CardHeader>
+                <CardContent className="space-y-3 pb-4">
+                  <Field label="Selo do topo" value={s.payment_badge_text} onChange={(v) => set('payment_badge_text', v)} />
+                  <RichField label="Título principal" value={s.payment_title} onChange={(v) => set('payment_title', v)} rows={2} />
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader><CardTitle className="text-base">Animação de carregamento</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <Field label="Título do carregamento" value={s.payment_loading_title} onChange={(v) => set('payment_loading_title', v)} />
-                <Field label="Subtítulo do carregamento" value={s.payment_loading_subtitle} onChange={(v) => set('payment_loading_subtitle', v)} textarea />
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader className="py-3"><CardTitle className="text-base">Animação de carregamento</CardTitle></CardHeader>
+                <CardContent className="space-y-3 pb-4">
+                  <Field label="Título do carregamento" value={s.payment_loading_title} onChange={(v) => set('payment_loading_title', v)} />
+                  <Field label="Subtítulo do carregamento" value={s.payment_loading_subtitle} onChange={(v) => set('payment_loading_subtitle', v)} textarea />
+                </CardContent>
+              </Card>
 
-            <Card className="lg:col-span-2">
-              <CardHeader><CardTitle className="text-base">Blocos informativos</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <RichField label="Empresas parceiras (bloco cinza)" value={s.payment_partner_text} onChange={(v) => set('payment_partner_text', v)} rows={4} />
-                <RichField label="Alerta do banco (bloco amarelo)" value={s.payment_alert_text} onChange={(v) => set('payment_alert_text', v)} rows={4} />
-                <RichField label="Confirmação/emissão (bloco verde)" value={s.payment_confirmation_text} onChange={(v) => set('payment_confirmation_text', v)} rows={4} />
-                <RichField label="Validade do certificado" value={s.payment_validity_text} onChange={(v) => set('payment_validity_text', v)} singleLine />
-              </CardContent>
-            </Card>
+              <Card className="lg:col-span-2">
+                <CardHeader className="py-3"><CardTitle className="text-base">Blocos informativos</CardTitle></CardHeader>
+                <CardContent className="space-y-3 pb-4">
+                  <RichField label="Empresas parceiras (bloco cinza)" value={s.payment_partner_text} onChange={(v) => set('payment_partner_text', v)} rows={2} />
+                  <RichField label="Alerta do banco (bloco amarelo)" value={s.payment_alert_text} onChange={(v) => set('payment_alert_text', v)} rows={2} />
+                  <RichField label="Confirmação/emissão (bloco verde)" value={s.payment_confirmation_text} onChange={(v) => set('payment_confirmation_text', v)} rows={2} />
+                  <RichField label="Validade do certificado" value={s.payment_validity_text} onChange={(v) => set('payment_validity_text', v)} singleLine />
+                </CardContent>
+              </Card>
 
-            <Card className="lg:col-span-2">
-              <CardHeader><CardTitle className="text-base">Botões</CardTitle></CardHeader>
-              <CardContent className="grid grid-cols-2 gap-3">
-                <Field label="Botão continuar" value={s.payment_continue_button_text} onChange={(v) => set('payment_continue_button_text', v)} />
-                <Field label="Botão cancelar" value={s.payment_cancel_button_text} onChange={(v) => set('payment_cancel_button_text', v)} />
-              </CardContent>
-            </Card>
+              <Card className="lg:col-span-2">
+                <CardHeader className="py-3"><CardTitle className="text-base">Botões</CardTitle></CardHeader>
+                <CardContent className="grid grid-cols-2 gap-3 pb-4">
+                  <Field label="Botão continuar" value={s.payment_continue_button_text} onChange={(v) => set('payment_continue_button_text', v)} />
+                  <Field label="Botão cancelar" value={s.payment_cancel_button_text} onChange={(v) => set('payment_cancel_button_text', v)} />
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
 
       <PaymentInfoPopup
-
         open={previewPay}
         onClose={() => setPreviewPay(false)}
         onContinue={() => setPreviewPay(false)}
