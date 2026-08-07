@@ -337,30 +337,40 @@ function SuccessCard({ paidAt, cnpjFmt }: { paidAt: string; cnpjFmt: string }) {
 
   return (
     <div className="overflow-hidden rounded-md border-2 border-emerald-500 bg-white shadow-[0_20px_60px_-24px_rgba(19,136,53,0.45)]">
-      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-6 text-center text-white lg:px-6 lg:py-7">
-        <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-white/20 backdrop-blur">
-          <CheckCircle2 className="h-8 w-8" />
+      <div className="relative bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 px-5 py-7 text-center text-white lg:px-6 lg:py-8">
+        {/* textura sutil */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.12]"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(135deg, rgba(255,255,255,.7) 0 1px, transparent 1px 9px)',
+          }}
+        />
+        <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/15 blur-2xl" />
+
+        <div className="relative mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full bg-white/20 ring-2 ring-white/30 backdrop-blur-sm">
+          <CheckCircle2 className="h-9 w-9" />
         </div>
-        <div className="text-[18px] font-black leading-tight lg:text-[20px]">
+        <div className="relative text-[18px] font-black leading-tight lg:text-[21px]">
           Parabéns! Certificado emitido com sucesso
         </div>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-white/95">
+        <p className="relative mt-2 text-[13px] leading-relaxed text-white/95">
           Vinculado automaticamente ao seu{' '}
           <span className="whitespace-nowrap font-bold">CNPJ {cnpjFmt}</span>.
         </p>
       </div>
 
-      <div className="border-b border-emerald-100 bg-emerald-50/60 px-5 py-3 text-center lg:px-6">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+      <div className="border-b border-emerald-100 bg-emerald-50/70 px-5 py-3.5 text-center lg:px-6">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm">
           <BadgeCheck className="h-3.5 w-3.5" />
-          Válido por 12 meses
+          Certificado ativo · Válido por 12 meses
         </span>
       </div>
 
       <dl className="divide-y divide-emerald-100/70">
-        <div className="flex items-center gap-3 px-5 py-3 lg:px-6">
-          <div className="grid h-9 w-9 place-items-center rounded-md bg-emerald-100 text-emerald-700">
-            <CalendarCheck className="h-4 w-4" />
+        <div className="flex items-center gap-3 px-5 py-3.5 lg:px-6">
+          <div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-100 text-emerald-700">
+            <CalendarCheck className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
             <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -369,9 +379,9 @@ function SuccessCard({ paidAt, cnpjFmt }: { paidAt: string; cnpjFmt: string }) {
             <dd className="text-[14px] font-bold text-emerald-800">{fmt(issued)}</dd>
           </div>
         </div>
-        <div className="flex items-center gap-3 px-5 py-3 lg:px-6">
-          <div className="grid h-9 w-9 place-items-center rounded-md bg-emerald-100 text-emerald-700">
-            <CalendarClock className="h-4 w-4" />
+        <div className="flex items-center gap-3 px-5 py-3.5 lg:px-6">
+          <div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-100 text-emerald-700">
+            <CalendarClock className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
             <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -382,11 +392,14 @@ function SuccessCard({ paidAt, cnpjFmt }: { paidAt: string; cnpjFmt: string }) {
         </div>
       </dl>
 
-      <div className="flex items-center justify-between gap-2 border-t border-emerald-100 bg-emerald-50/40 px-5 py-3 text-[11px] text-emerald-800 lg:px-6">
+      <div className="flex items-center justify-between gap-2 border-t border-emerald-100 bg-emerald-50/50 px-5 py-3.5 text-[11px] text-emerald-800 lg:px-6">
         <span className="flex items-center gap-1.5 font-semibold">
-          <Lock className="h-3 w-3" /> ICP-Brasil
+          <Lock className="h-3.5 w-3.5" /> ICP-Brasil
         </span>
-        <span className="font-bold uppercase tracking-wide">Ativo</span>
+        <span className="inline-flex items-center gap-1 font-bold uppercase tracking-wide">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          Ativo
+        </span>
       </div>
     </div>
   );
