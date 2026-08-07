@@ -138,21 +138,20 @@ export async function createMercadoPagoPix(
           "Minha aplicação > Testes > Credenciais de teste; em Produção, o token de produção.",
       );
     }
-    if (text.includes("invalid_users_involved")) {
-      throw new Error(
-        "Mercado Pago recusou a cobrança (invalid_users_involved): o Access Token e o pagador " +
-          "são de ambientes diferentes, ou a conta ainda não está habilitada para receber Pix. " +
-          "Confira em Sua conta > Pix se a chave Pix está cadastrada e use as credenciais de produção.",
-      );
-    }
-    if (text.includes("processing_error")) {
-      throw new Error(
-        "Mercado Pago não conseguiu processar o Pix no ambiente selecionado. Confira se o " +
-          "Access Token pertence ao mesmo ambiente configurado e se a conta está habilitada para Pix.",
-      );
-    }
+
+    // A Orders API ainda não está liberada em todas as contas. Nesses casos o Mercado Pago
+    // devolve "processing_error"/"invalid_users_involved"; caímos então para a API clássica
+    // de pagamentos (/v1/payments), que é a rota padrão de Pix do Checkout Transparente.
+    const fallback = await createPixViaPaymentsApi(accessToken, baseUrl, {
+      amount: input.amount,
+      orderId: input.orderId,
+      payerEmail: payer.email,
+    });
+    if (fallback) return fallback;
+
     throw new Error(`Mercado Pago ${res.status}: ${text.slice(0, 500) || "sem resposta"}`);
   }
+
 
   const json = JSON.parse(text) as any;
   const payment = json?.transactions?.payments?.[0] ?? {};
