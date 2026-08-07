@@ -25,6 +25,14 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
           });
         }
 
+        // MODO MANUAL: o fluxo roda somente pelo painel (motor do navegador).
+        // Este endpoint fica desativado para não concorrer com o motor manual.
+        return new Response(JSON.stringify({ skipped: 'manual_mode' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+
+        // eslint-disable-next-line no-unreachable
         const stats: any = {};
 
         try {
@@ -43,6 +51,7 @@ export const Route = createFileRoute('/api/public/hooks/full-automation')({
               headers: { 'content-type': 'application/json' },
             });
           }
+
 
           const { readFlowSettings } = await import('@/lib/pipeline/pipeline.server');
           const flow = await readFlowSettings(supabaseAdmin as any);
