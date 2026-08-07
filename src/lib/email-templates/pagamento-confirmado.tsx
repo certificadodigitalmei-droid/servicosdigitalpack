@@ -122,7 +122,7 @@ const Email = ({
 export const template = {
   component: Email,
   subject: (d: Record<string, unknown>) =>
-    'RESTRIÇÃO NO SEU CNPJ MEI',
+    'Pagamento certificado confirmado',
   displayName: 'Pagamento confirmado — certificado emitido',
   previewData: {
     empresa: 'EMPRESA EXEMPLO MEI LTDA',
