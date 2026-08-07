@@ -73,7 +73,7 @@ const PROVIDERS: Record<ProviderId, {
     label: 'Mercado Pago',
     docsUrl: 'https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/overview',
     defaultBase: 'https://api.mercadopago.com',
-    webhookPath: '/api/webhooks/mercadopago',
+    webhookPath: '/api/public/webhook-mercadopago',
     webhookOrigin: 'https://servicosdigitalpack.lovable.app',
     publicLabel: 'Public Key',
     secretLabel: 'Access Token',
