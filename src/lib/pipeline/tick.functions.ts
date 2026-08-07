@@ -187,33 +187,44 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
         const { runImportBatch } = await import('@/lib/casa-dos-dados/simple-flow.server');
         const { data: cfgs } = await supabaseAdmin
           .from('automatic_company_queries')
-          .select('filters')
+          .select('filters, query_date_mode, selected_query_date')
           .eq('enabled', true)
           .limit(1);
 
-        const filters = ((cfgs ?? [])[0]?.filters as any) || {
+        const cfg0: any = (cfgs ?? [])[0];
+        const filters = (cfg0?.filters as any) || {
           only_mei: true,
           only_active: true,
           only_matriz: false,
           require_email: true,
         };
 
-        // Sempre as empresas MAIS RECENTES: começa em hoje e, quando o dia não
-        // tiver nenhum CNPJ novo, recua dia a dia (até 7 dias) em vez de parar.
-        const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' });
-        for (let back = 0; back < 7 && imported === 0; back++) {
-          const day = fmt.format(new Date(Date.now() - back * 86_400_000));
-          const outcome: any = await runImportBatch({
-            date: day,
-            filters,
-            limit: batchSize,
-            skipExisting: true,
-          });
-          imported = outcome?.imported ?? outcome?.created ?? 0;
-          if (Array.isArray(imported)) imported = imported.length;
-          imported = Number(imported) || 0;
-        }
-        stage = imported > 0 ? `novo lote importado (${imported})` : 'sem empresas novas na consulta';
+        // Data ÚNICA: a escolhida na aba Consulta Automática (ou o dia de hoje
+        // quando o modo é "hoje"). Nunca busca em outros dias — se não houver
+        // empresa nova nesse dia, o motor apenas aguarda chegarem novas.
+        const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(
+          new Date(),
+        );
+        const day =
+          cfg0?.query_date_mode === 'selected' && cfg0?.selected_query_date
+            ? String(cfg0.selected_query_date)
+            : hoje;
+
+        const outcome: any = await runImportBatch({
+          date: day,
+          filters,
+          limit: batchSize,
+          skipExisting: true,
+        });
+        imported = outcome?.imported ?? outcome?.created ?? 0;
+        if (Array.isArray(imported)) imported = imported.length;
+        imported = Number(imported) || 0;
+
+        stage =
+          imported > 0
+            ? `novo lote importado (${imported})`
+            : `aguardando novas empresas de ${day.split('-').reverse().join('/')}`;
+
       }
 
 
