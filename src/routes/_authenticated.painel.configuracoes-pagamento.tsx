@@ -25,6 +25,16 @@ import {
   deleteTestCompanies,
   type TestCompanyResult,
 } from '@/lib/payments/test-company.functions';
+import { PUBLIC_BASE_URL } from '@/lib/public-base-url';
+import { rowToVars, substitute } from '@/lib/email-campaign/template';
+import { sendCampaignEmail } from '@/lib/email-campaign/send.functions';
+import {
+  mergedDesign,
+  loadSavedSubject,
+  loadSavedFromName,
+  loadSavedFromAddress,
+  loadSavedReplyTo,
+} from '@/lib/automation/envio-engine';
 
 
 export const Route = createFileRoute('/_authenticated/painel/configuracoes-pagamento')({
@@ -188,13 +198,67 @@ function PaymentGatewaysPage() {
   const [testCompany, setTestCompany] = useState<TestCompanyResult | null>(null);
 
   const createTestMut = useMutation({
-    mutationFn: () => createTestCompanyLink({ data: { email: testEmail.trim() } }),
-    onSuccess: (res) => {
+    mutationFn: async () => {
+      const res = await createTestCompanyLink({ data: { email: testEmail.trim() } });
+
+      // Dispara imediatamente o e-mail da campanha para o endereço informado,
+      // usando exatamente o mesmo template/remetente da aba "Envio em Massa".
+      const vars = rowToVars(
+        {
+          NOME_EMPRESARIAL: res.company_name,
+          NOME_TITULAR: res.company_name,
+          CNPJ: res.cnpj,
+          SITUACAO: 'CNPJ sem certificado pendente',
+          MUNICIPIO: 'SAO PAULO',
+          UF: 'SP',
+          EMAIL: res.email,
+          LINK_PUBLICO: `${PUBLIC_BASE_URL}/acesso/${res.public_token}`,
+          LINK_CHECKOUT: `${PUBLIC_BASE_URL}/checkout/${res.public_token}`,
+          TOKEN: res.public_token,
+        },
+        {
+          name: loadSavedFromName() || 'Certificado Digital MEI',
+          company: loadSavedFromName() || 'Certificado Digital MEI',
+          reference: `MEI-${new Date().getFullYear()}`,
+        },
+      );
+
+      const subject = substitute(
+        loadSavedSubject() || 'Regularização do Certificado Digital do seu CNPJ',
+        vars,
+      );
+
+      const send: any = await sendCampaignEmail({
+        data: {
+          recipient: res.email,
+          subject,
+          vars,
+          design: mergedDesign(),
+          fromName: loadSavedFromName() || undefined,
+          fromAddress: loadSavedFromAddress() || undefined,
+          replyTo: loadSavedReplyTo() || undefined,
+          testMode: false,
+          idempotencyKey: `test-company-${res.company_id}`,
+          companyId: res.company_id,
+          cnpj: res.cnpj,
+        },
+      });
+
+      return { res, send };
+    },
+    onSuccess: ({ res, send }) => {
       setTestCompany(res);
-      toast.success('Empresa de teste criada');
+      if (send?.sent) {
+        toast.success(`Empresa de teste criada e e-mail enviado para ${res.email}`);
+      } else {
+        toast.warning(
+          `Empresa criada, mas o e-mail não saiu: ${send?.message || send?.reason || 'erro desconhecido'}`,
+        );
+      }
     },
     onError: (e: any) => toast.error(e?.message || 'Erro ao criar empresa de teste'),
   });
+
 
   const deleteTestMut = useMutation({
     mutationFn: () => deleteTestCompanies({}),
