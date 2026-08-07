@@ -112,6 +112,12 @@ export const checkOrderStatus = createServerFn({ method: "POST" })
           updated_at: new Date().toISOString(),
         })
         .eq("id", order.id);
+      try {
+        const { sendPaidEmail } = await import("@/lib/emails/order-emails.server");
+        await sendPaidEmail(order.id);
+      } catch (err) {
+        console.error("[status] falha ao enviar e-mail de pagamento confirmado", err);
+      }
       return { status: "paid" as const, paid: true };
     }
 

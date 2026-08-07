@@ -105,6 +105,7 @@ export const Route = createFileRoute('/api/public/webhook-mercadopago')({
             .neq('status', 'paid')
             .select('id');
           let updated = byTx?.length ?? 0;
+          const paidIds: string[] = (byTx ?? []).map((r: any) => r.id);
 
           if (updated === 0 && externalReference) {
             const { data: byRef } = await supabaseAdmin
@@ -114,7 +115,18 @@ export const Route = createFileRoute('/api/public/webhook-mercadopago')({
               .neq('status', 'paid')
               .select('id');
             updated = byRef?.length ?? 0;
+            paidIds.push(...((byRef ?? []).map((r: any) => r.id)));
           }
+
+          for (const id of paidIds) {
+            try {
+              const { sendPaidEmail } = await import('@/lib/emails/order-emails.server');
+              await sendPaidEmail(id);
+            } catch (err) {
+              console.error('[webhook-mercadopago] falha ao enviar e-mail de confirmação', err);
+            }
+          }
+
 
           if (updated === 0) {
             console.log('[webhook-mercadopago] nenhum pedido pendente para atualizar');

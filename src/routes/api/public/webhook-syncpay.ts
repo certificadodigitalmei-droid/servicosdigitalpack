@@ -43,6 +43,11 @@ export const Route = createFileRoute('/api/public/webhook-syncpay')({
 
           if (!rows?.length) {
             console.warn('[webhook-syncpay] nenhum pedido para a transação informada');
+          } else {
+            const { sendPaidEmail } = await import('@/lib/emails/order-emails.server');
+            for (const r of rows as any[]) {
+              try { await sendPaidEmail(r.id); } catch (e) { console.error('[webhook-syncpay] e-mail falhou', e); }
+            }
           }
 
           return new Response('OK', { status: 200 });
