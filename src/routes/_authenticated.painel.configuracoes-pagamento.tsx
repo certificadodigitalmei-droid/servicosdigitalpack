@@ -306,16 +306,29 @@ function PaymentGatewaysPage() {
               <CardContent className="space-y-2 text-sm text-slate-600">
                 <div><span className="font-medium text-slate-700">{gm.publicLabel}:</span> <code>{g.public_key_masked || '—'}</code></div>
                 <div><span className="font-medium text-slate-700">{gm.secretLabel}:</span> <code>{g.secret_key_masked || '—'}</code></div>
+                {gm.hasEnvironment && (
+                  <div>
+                    <span className="font-medium text-slate-700">Ambiente:</span>{' '}
+                    <Badge variant={g.environment === 'production' ? 'default' : 'outline'}>
+                      {g.environment === 'production' ? 'Produção' : 'Teste'}
+                    </Badge>
+                  </div>
+                )}
+                {gm.hasWebhookSecret && (
+                  <div>
+                    <span className="font-medium text-slate-700">Chave do webhook:</span>{' '}
+                    {g.has_webhook_secret ? 'configurada' : 'não configurada'}
+                  </div>
+                )}
                 <div><span className="font-medium text-slate-700">Base URL:</span> {g.base_url || gm.defaultBase}</div>
                 <div>
                   <span className="font-medium text-slate-700">Webhook (colar no painel {gm.label}):</span>{' '}
                   <code className="break-all">
-                    {g.provider_type === 'syncpay'
-                      ? `https://servicosdigitalpack.lovable.app${gm.webhookPath}`
-                      : `${origin}${gm.webhookPath}`}
+                    {webhookUrlFor((g.provider_type as ProviderId) ?? 'sigilopay', origin)}
                   </code>
                 </div>
                 {g.notes && <div className="text-slate-500">{g.notes}</div>}
+
               </CardContent>
             </Card>
           );})}
