@@ -108,6 +108,8 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
         pipeline: emptyState,
         sentInWindow: 0,
         remainingInWindow: 0,
+        rateLimited: false,
+        retryAfterSec: 0,
       };
     }
 
@@ -215,6 +217,8 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
         },
         sentInWindow: win.sentInWindow,
         remainingInWindow: win.remaining,
+        rateLimited: !!queue?.rateLimited,
+        retryAfterSec: queue?.retryAfterSec ?? 0,
       };
     } catch (e) {
       await release('error');
@@ -234,6 +238,8 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
         pipeline: emptyState,
         sentInWindow: 0,
         remainingInWindow: 0,
+        rateLimited: false,
+        retryAfterSec: 0,
         error: e instanceof Error ? e.message : String(e),
       };
     }
