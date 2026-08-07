@@ -22,8 +22,6 @@ import { Route as AcessoTokenRouteImport } from './routes/acesso.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedMonitorEnvioRouteImport } from './routes/_authenticated.monitor-envio'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
-import { Route as ApiPublicWebhookSyncpayRouteImport } from './routes/api/public/webhook-syncpay'
-import { Route as ApiPublicWebhookSigilopayRouteImport } from './routes/api/public/webhook-sigilopay'
 import { Route as ApiPublicWebhookMercadopagoRouteImport } from './routes/api/public/webhook-mercadopago'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
 import { Route as AuthenticatedPainelRemetenteEmailRouteImport } from './routes/_authenticated.painel.remetente-email'
@@ -120,17 +118,6 @@ const AuthenticatedPainelIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedPainelRoute,
-  } as any)
-const ApiPublicWebhookSyncpayRoute = ApiPublicWebhookSyncpayRouteImport.update({
-  id: '/api/public/webhook-syncpay',
-  path: '/api/public/webhook-syncpay',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicWebhookSigilopayRoute =
-  ApiPublicWebhookSigilopayRouteImport.update({
-    id: '/api/public/webhook-sigilopay',
-    path: '/api/public/webhook-sigilopay',
-    getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicWebhookMercadopagoRoute =
   ApiPublicWebhookMercadopagoRouteImport.update({
@@ -337,8 +324,6 @@ export interface FileRoutesByFullPath {
   '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
-  '/api/public/webhook-sigilopay': typeof ApiPublicWebhookSigilopayRoute
-  '/api/public/webhook-syncpay': typeof ApiPublicWebhookSyncpayRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/api/public/email-asset/$key': typeof ApiPublicEmailAssetKeyRoute
@@ -381,8 +366,6 @@ export interface FileRoutesByTo {
   '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
-  '/api/public/webhook-sigilopay': typeof ApiPublicWebhookSigilopayRoute
-  '/api/public/webhook-syncpay': typeof ApiPublicWebhookSyncpayRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/api/public/email-asset/$key': typeof ApiPublicEmailAssetKeyRoute
@@ -429,8 +412,6 @@ export interface FileRoutesById {
   '/_authenticated/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
-  '/api/public/webhook-sigilopay': typeof ApiPublicWebhookSigilopayRoute
-  '/api/public/webhook-syncpay': typeof ApiPublicWebhookSyncpayRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
   '/_authenticated/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/api/public/email-asset/$key': typeof ApiPublicEmailAssetKeyRoute
@@ -477,8 +458,6 @@ export interface FileRouteTypes {
     | '/painel/remetente-email'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
-    | '/api/public/webhook-sigilopay'
-    | '/api/public/webhook-syncpay'
     | '/painel/'
     | '/painel/empresas-importadas/$companyId'
     | '/api/public/email-asset/$key'
@@ -521,8 +500,6 @@ export interface FileRouteTypes {
     | '/painel/remetente-email'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
-    | '/api/public/webhook-sigilopay'
-    | '/api/public/webhook-syncpay'
     | '/painel'
     | '/painel/empresas-importadas/$companyId'
     | '/api/public/email-asset/$key'
@@ -568,8 +545,6 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/remetente-email'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
-    | '/api/public/webhook-sigilopay'
-    | '/api/public/webhook-syncpay'
     | '/_authenticated/painel/'
     | '/_authenticated/painel/empresas-importadas/$companyId'
     | '/api/public/email-asset/$key'
@@ -599,8 +574,6 @@ export interface RootRouteChildren {
   CheckoutTokenRoute: typeof CheckoutTokenRoute
   ApiInternalCasaDosDadosWorkerRoute: typeof ApiInternalCasaDosDadosWorkerRoute
   ApiPublicWebhookMercadopagoRoute: typeof ApiPublicWebhookMercadopagoRoute
-  ApiPublicWebhookSigilopayRoute: typeof ApiPublicWebhookSigilopayRoute
-  ApiPublicWebhookSyncpayRoute: typeof ApiPublicWebhookSyncpayRoute
   ApiPublicEmailAssetKeyRoute: typeof ApiPublicEmailAssetKeyRoute
   ApiPublicHooksAutoImportMeiRoute: typeof ApiPublicHooksAutoImportMeiRoute
   ApiPublicHooksFullAutomationRoute: typeof ApiPublicHooksFullAutomationRoute
@@ -706,20 +679,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/painel/'
       preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
-    }
-    '/api/public/webhook-syncpay': {
-      id: '/api/public/webhook-syncpay'
-      path: '/api/public/webhook-syncpay'
-      fullPath: '/api/public/webhook-syncpay'
-      preLoaderRoute: typeof ApiPublicWebhookSyncpayRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/webhook-sigilopay': {
-      id: '/api/public/webhook-sigilopay'
-      path: '/api/public/webhook-sigilopay'
-      fullPath: '/api/public/webhook-sigilopay'
-      preLoaderRoute: typeof ApiPublicWebhookSigilopayRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/api/public/webhook-mercadopago': {
       id: '/api/public/webhook-mercadopago'
@@ -1026,8 +985,6 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutTokenRoute: CheckoutTokenRoute,
   ApiInternalCasaDosDadosWorkerRoute: ApiInternalCasaDosDadosWorkerRoute,
   ApiPublicWebhookMercadopagoRoute: ApiPublicWebhookMercadopagoRoute,
-  ApiPublicWebhookSigilopayRoute: ApiPublicWebhookSigilopayRoute,
-  ApiPublicWebhookSyncpayRoute: ApiPublicWebhookSyncpayRoute,
   ApiPublicEmailAssetKeyRoute: ApiPublicEmailAssetKeyRoute,
   ApiPublicHooksAutoImportMeiRoute: ApiPublicHooksAutoImportMeiRoute,
   ApiPublicHooksFullAutomationRoute: ApiPublicHooksFullAutomationRoute,
@@ -1043,3 +1000,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

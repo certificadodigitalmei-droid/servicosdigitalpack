@@ -1,85 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const SIGILOPAY_DEFAULT_BASE = "https://app.sigilopay.com.br/api/v1";
-
 type PixResult = {
   pix_code: string;
   qr_code_base64: string;
   transaction_id: string;
   expiration: Date | null;
 };
-
-// api_key column stores "publicKey|secretKey"
-function splitKeys(apiKey: string): { publicKey: string; secretKey: string } {
-  const [publicKey = "", secretKey = ""] = (apiKey || "").split("|");
-  return { publicKey: publicKey.trim(), secretKey: secretKey.trim() };
-}
-
-async function callSigiloPay(
-  apiKey: string,
-  baseUrl: string,
-  input: {
-    identifier: string;
-    amount: number;
-    callbackUrl: string;
-    client: { name: string; email: string; phone: string; document: string };
-    productName: string;
-  },
-): Promise<PixResult> {
-  const { publicKey, secretKey } = splitKeys(apiKey);
-  if (!publicKey || !secretKey) {
-    throw new Error("Configure a chave pública e a chave secreta da SigiloPay em Configurações de Pagamento.");
-  }
-  const cleanBase = (baseUrl || SIGILOPAY_DEFAULT_BASE).replace(/\/+$/, "");
-
-  const payload = {
-    identifier: input.identifier,
-    amount: input.amount,
-    client: input.client,
-    products: [
-      {
-        id: input.identifier,
-        name: input.productName,
-        quantity: 1,
-        price: input.amount,
-      },
-    ],
-    callbackUrl: input.callbackUrl,
-  };
-
-  const response = await fetch(`${cleanBase}/gateway/pix/receive`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-public-key": publicKey,
-      "x-secret-key": secretKey,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const text = await response.text();
-  if (!response.ok) {
-    throw new Error(`SigiloPay ${response.status}: ${text.slice(0, 500) || "sem resposta"}`);
-  }
-
-  const parsed = JSON.parse(text) as any;
-  const pix = parsed?.pix ?? {};
-  const pix_code = pix.code || pix.emv || pix.pixCode || "";
-  const transaction_id = parsed?.transactionId || parsed?.id || "";
-  if (!pix_code) throw new Error(`Resposta sem código PIX: ${text.slice(0, 300)}`);
-
-  let qr_code_base64 = pix.base64 || "";
-  if (qr_code_base64.startsWith("data:image")) {
-    qr_code_base64 = qr_code_base64.replace(/^data:image\/[a-z]+;base64,/, "");
-  }
-  if (!qr_code_base64) {
-    const QRCode = (await import("qrcode")).default;
-    const dataUrl = await QRCode.toDataURL(pix_code, { errorCorrectionLevel: "M", margin: 1, width: 320 });
-    qr_code_base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
-  }
-  return { pix_code, qr_code_base64, transaction_id, expiration: null };
-}
 
 export const createOrderAndPixCharge = createServerFn({ method: "POST" })
   .inputValidator((data) =>
@@ -91,12 +18,12 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
         phone: z.string().min(8).max(20),
         productName: z.string().min(1).max(200),
         amount: z.number().positive().max(100000),
-        webhookUrl: z.string().url().max(500),
         userAgent: z.string().max(1000).optional(),
         token: z.string().max(200).optional(),
       })
       .parse(data)
   )
+
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
