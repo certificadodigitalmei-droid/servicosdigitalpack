@@ -89,7 +89,18 @@ export const checkOrderStatus = createServerFn({ method: "POST" })
     }
 
 
-    const paidStatuses = ["paid", "ok", "completed", "confirmed", "approved", "success"];
+    const paidStatuses = [
+      "paid",
+      "ok",
+      "completed",
+      "confirmed",
+      "approved",
+      "success",
+      // Mercado Pago (Orders API)
+      "processed",
+      "accredited",
+    ];
+
     const isPaid = !!remote && paidStatuses.includes(remote);
 
     if (isPaid) {
