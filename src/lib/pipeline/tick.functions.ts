@@ -285,6 +285,9 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
         remainingInWindow: 0,
         rateLimited: false,
         retryAfterSec: 0,
+        quotaExhausted: false,
+        health: EMPTY_HEALTH,
+
         error: e instanceof Error ? e.message : String(e),
       };
     }
