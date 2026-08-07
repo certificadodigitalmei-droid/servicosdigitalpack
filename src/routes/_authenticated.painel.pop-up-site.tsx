@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Eye, Save, Plus, Trash2, FileText, CreditCard } from 'lucide-react';
+import { Eye, Save, Plus, Trash2, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CertificatePopup } from '@/components/CertificatePopup';
+
 import { PaymentInfoPopup } from '@/components/checkout/PaymentInfoPopup';
 import { getSitePopup, saveSitePopup, POPUP_DEFAULTS, type SitePopupSettings } from '@/lib/site-popup.functions';
 import { RichField } from '@/components/admin/RichField';
@@ -22,8 +22,8 @@ function PopupSitePage() {
   const [s, setS] = useState<SitePopupSettings>(POPUP_DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [previewCert, setPreviewCert] = useState(false);
   const [previewPay, setPreviewPay] = useState(false);
+
 
   useEffect(() => {
     getSitePopup()
