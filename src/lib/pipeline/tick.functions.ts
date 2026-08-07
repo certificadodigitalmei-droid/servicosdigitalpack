@@ -31,6 +31,10 @@ export type PipelineTickResult = {
   };
   sentInWindow: number;
   remainingInWindow: number;
+  /** Provedor sinalizou limite de envio (HTTP 429) neste ciclo. */
+  rateLimited: boolean;
+  /** Segundos sugeridos de espera quando rateLimited. */
+  retryAfterSec: number;
   error?: string;
 };
 
