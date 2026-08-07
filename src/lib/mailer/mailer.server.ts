@@ -73,7 +73,7 @@ export async function sendMailMessage(opts: {
         from: `${sender.name} <${sender.email}>`,
         sender_domain: SENDER_DOMAIN,
         subject: opts.subject,
-        html: opts.html,
+        html: opts.html ?? '',
         text: opts.text || (opts.html ? opts.html.replace(/<[^>]+>/g, ' ') : ' '),
         purpose: 'transactional',
         label: opts.label ?? 'campanha',
