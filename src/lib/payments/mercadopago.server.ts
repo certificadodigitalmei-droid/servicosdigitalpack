@@ -257,7 +257,12 @@ export async function getMercadoPagoOrderStatus(
   const res = await fetch(`${cleanBase(baseUrl)}/v1/orders/${encodeURIComponent(orderId)}`, {
     headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
   });
-  if (!res.ok) return "";
+  if (!res.ok) {
+    // Cobranças criadas pelo fallback usam o id de /v1/payments.
+    const pay = await getMercadoPagoPaymentStatus(apiKey, baseUrl, orderId);
+    return pay.status;
+  }
+
   const json = (await res.json().catch(() => null)) as any;
   if (!json) return "";
   const payment = json?.transactions?.payments?.[0] ?? {};
