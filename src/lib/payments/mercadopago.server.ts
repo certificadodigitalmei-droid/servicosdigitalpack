@@ -109,6 +109,9 @@ export async function createMercadoPagoPix(
 
   const text = await res.text();
   if (!res.ok) {
+    if (res.status === 401 && text.includes("invalid_credentials")) {
+      throw new Error(TEST_CREDENTIALS_MESSAGE);
+    }
     throw new Error(`Mercado Pago ${res.status}: ${text.slice(0, 500) || "sem resposta"}`);
   }
 
