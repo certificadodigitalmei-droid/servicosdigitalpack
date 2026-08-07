@@ -71,7 +71,63 @@ export async function testMercadoPagoCredentials(
 }
 
 
+/**
+ * Fallback: API clássica de pagamentos (/v1/payments) com payment_method_id "pix".
+ * Retorna null quando também falhar, para que o erro original seja exibido.
+ */
+async function createPixViaPaymentsApi(
+  accessToken: string,
+  baseUrl: string | null | undefined,
+  input: { amount: number; orderId: string; payerEmail: string },
+): Promise<MercadoPagoPix | null> {
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const res = await fetch(`${cleanBase(baseUrl)}/v1/payments`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "X-Idempotency-Key": `${input.orderId}-pay`,
+    },
+    body: JSON.stringify({
+      transaction_amount: Number(money(input.amount)),
+      payment_method_id: "pix",
+      description: "Pack de Fotos",
+      external_reference: input.orderId,
+      date_of_expiration: expires.toISOString().replace("Z", "-00:00"),
+      payer: { email: input.payerEmail || "pagador@exemplo.com" },
+    }),
+  });
+  if (!res.ok) return null;
+  const json = (await res.json().catch(() => null)) as any;
+  const data = json?.point_of_interaction?.transaction_data ?? {};
+  const pix_code: string = data?.qr_code || "";
+  if (!pix_code) return null;
+  let qr_code_base64: string = data?.qr_code_base64 || "";
+  if (qr_code_base64.startsWith("data:image")) {
+    qr_code_base64 = qr_code_base64.replace(/^data:image\/[a-z]+;base64,/, "");
+  }
+  if (!qr_code_base64) {
+    const QRCode = (await import("qrcode")).default;
+    const dataUrl = await QRCode.toDataURL(pix_code, {
+      errorCorrectionLevel: "M",
+      margin: 1,
+      width: 320,
+    });
+    qr_code_base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
+  }
+  const expRaw = json?.date_of_expiration || null;
+  const parsed = expRaw ? new Date(expRaw) : null;
+  return {
+    pix_code,
+    qr_code_base64,
+    transaction_id: String(json?.id || ""),
+    expiration: parsed && !Number.isNaN(parsed.getTime()) ? parsed : null,
+  };
+}
+
 export async function createMercadoPagoPix(
+
   apiKey: string,
   baseUrl: string | null | undefined,
   input: {
@@ -138,21 +194,20 @@ export async function createMercadoPagoPix(
           "Minha aplicação > Testes > Credenciais de teste; em Produção, o token de produção.",
       );
     }
-    if (text.includes("invalid_users_involved")) {
-      throw new Error(
-        "Mercado Pago recusou a cobrança (invalid_users_involved): o Access Token e o pagador " +
-          "são de ambientes diferentes, ou a conta ainda não está habilitada para receber Pix. " +
-          "Confira em Sua conta > Pix se a chave Pix está cadastrada e use as credenciais de produção.",
-      );
-    }
-    if (text.includes("processing_error")) {
-      throw new Error(
-        "Mercado Pago não conseguiu processar o Pix no ambiente selecionado. Confira se o " +
-          "Access Token pertence ao mesmo ambiente configurado e se a conta está habilitada para Pix.",
-      );
-    }
+
+    // A Orders API ainda não está liberada em todas as contas. Nesses casos o Mercado Pago
+    // devolve "processing_error"/"invalid_users_involved"; caímos então para a API clássica
+    // de pagamentos (/v1/payments), que é a rota padrão de Pix do Checkout Transparente.
+    const fallback = await createPixViaPaymentsApi(accessToken, baseUrl, {
+      amount: input.amount,
+      orderId: input.orderId,
+      payerEmail: payer.email,
+    });
+    if (fallback) return fallback;
+
     throw new Error(`Mercado Pago ${res.status}: ${text.slice(0, 500) || "sem resposta"}`);
   }
+
 
   const json = JSON.parse(text) as any;
   const payment = json?.transactions?.payments?.[0] ?? {};
@@ -202,7 +257,12 @@ export async function getMercadoPagoOrderStatus(
   const res = await fetch(`${cleanBase(baseUrl)}/v1/orders/${encodeURIComponent(orderId)}`, {
     headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
   });
-  if (!res.ok) return "";
+  if (!res.ok) {
+    // Cobranças criadas pelo fallback usam o id de /v1/payments.
+    const pay = await getMercadoPagoPaymentStatus(apiKey, baseUrl, orderId);
+    return pay.status;
+  }
+
   const json = (await res.json().catch(() => null)) as any;
   if (!json) return "";
   const payment = json?.transactions?.payments?.[0] ?? {};
