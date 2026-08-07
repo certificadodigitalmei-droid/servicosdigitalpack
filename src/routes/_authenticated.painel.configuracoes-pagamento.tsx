@@ -440,20 +440,9 @@ function PaymentGatewaysPage() {
             </div>
             <div className="space-y-2">
               <Label>Provedor</Label>
-              <Select
-                value={form.provider_type}
-                onValueChange={(v) => setForm({ ...form, provider_type: v as ProviderId })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mercadopago">Mercado Pago</SelectItem>
-                  <SelectItem value="syncpay">SyncPay</SelectItem>
-                  <SelectItem value="sigilopay">SigiloPay</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input value="Mercado Pago" readOnly disabled />
             </div>
+
             {meta.hasEnvironment && (
               <div className="space-y-2">
                 <Label>Ambiente</Label>
