@@ -128,15 +128,15 @@ export function PaymentInfoPopup({ open, loading, onClose, onContinue, settings 
               </div>
 
               {/* How to pay / PIX instructions */}
-              <div className="group overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/70 to-white shadow-sm transition hover:shadow-md">
-                <div className="flex items-center gap-2 border-b border-amber-100 bg-amber-50/60 px-4 py-2.5">
-                  <QrCode className="h-4 w-4 text-amber-600" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+              <div className="group overflow-hidden rounded-2xl border border-[#1351b4]/15 bg-gradient-to-br from-[#1351b4]/[0.04] to-white shadow-sm transition hover:shadow-md">
+                <div className="flex items-center gap-2 border-b border-[#1351b4]/10 bg-[#1351b4]/[0.04] px-4 py-2.5">
+                  <QrCode className="h-4 w-4 text-[#1351b4]" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#0b1e3f]">
                     Pagamento simples e 100% digital
                   </span>
                 </div>
                 <div className="flex items-start gap-4 p-4 sm:p-5">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-600">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#1351b4]/10 text-[#1351b4]">
                     <Info className="h-6 w-6" />
                   </div>
                   <div className="text-[13.5px] leading-[1.7] text-slate-700">
