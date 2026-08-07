@@ -27,19 +27,21 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Resolve gateway ativo
+    // Mercado Pago é o único provedor suportado.
     const { data: gateway } = await supabaseAdmin
       .from("payment_gateways")
       .select("*")
+      .eq("provider_type", "mercadopago")
       .eq("is_active", true)
       .maybeSingle();
 
     if (!gateway || !gateway.api_key) {
-      throw new Error("Nenhum gateway de pagamento ativo. Cadastre em Configurações de Pagamento.");
+      throw new Error("Nenhuma conta Mercado Pago ativa. Cadastre em Configurações de Pagamento.");
     }
-    const provider = (gateway.provider_type as string) || "sigilopay";
+    const provider = "mercadopago";
     const apiKey = gateway.api_key as string;
     const baseUrl = gateway.base_url || null;
+
 
     // Resolve link → company
     let companyId: string | null = null;
