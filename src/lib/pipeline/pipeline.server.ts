@@ -439,6 +439,80 @@ export async function computeSendHealth(client: AnyClient): Promise<SendHealth> 
   };
 }
 
+// ---------------------------------------------------------------------------
+// ÍNDICE DE SAÚDE DO ENVIO
+// ---------------------------------------------------------------------------
+
+export type SendHealthStatus = 'healthy' | 'warning' | 'blocked';
+
+export type SendHealthReport = {
+  status: SendHealthStatus;
+  reason: string | null;
+  /** Espera sugerida (segundos) quando status = 'blocked'. */
+  waitSec: number;
+  health: SendHealth;
+  window: SendWindow;
+  /** % de falhas sobre o que foi tentado (enviados + falhas). */
+  failureRate: number;
+  /** Cota da hora esgotada (com margem de segurança). */
+  quotaExhausted: boolean;
+};
+
+/** Margem de segurança: nunca encostamos exatamente no teto do provedor. */
+export const SAFETY_MARGIN = 0.05;
+
+export function safeHourlyLimit(limit: number): number {
+  return Math.max(1, Math.floor(limit * (1 - SAFETY_MARGIN)));
+}
+
+/**
+ * Avalia se o envio está saudável. É a fonte única de verdade usada pelo
+ * motor para decidir entre enviar, esperar ou continuar esperando.
+ */
+export async function evaluateSendHealth(
+  client: AnyClient,
+  limitOverride?: number,
+): Promise<SendHealthReport> {
+  const [health, win] = await Promise.all([
+    computeSendHealth(client),
+    computeSendWindow(client, limitOverride),
+  ]);
+
+  const attempted = health.enviados + health.falhas;
+  const failureRate = attempted > 0 ? health.falhas / attempted : 0;
+  const safeLimit = safeHourlyLimit(win.limit);
+  const quotaExhausted = win.sentInWindow >= safeLimit;
+
+  let status: SendHealthStatus = 'healthy';
+  let reason: string | null = null;
+  let waitSec = 0;
+
+  if (health.aguardando429 > 0) {
+    status = 'blocked';
+    reason = `${health.aguardando429} e-mail(s) aguardando liberação do provedor`;
+    waitSec = 60;
+  } else if (attempted >= 10 && failureRate >= 0.3) {
+    status = 'blocked';
+    reason = `taxa de falhas alta (${Math.round(failureRate * 100)}%)`;
+    waitSec = 15 * 60;
+  } else if (health.enviando > 0 && health.naFila > 0 && health.enviadosUltimaHora === 0) {
+    status = 'blocked';
+    reason = 'fila travada em "enviando"';
+    waitSec = 10 * 60;
+  } else if (quotaExhausted) {
+    status = 'warning';
+    reason = 'cota da hora atingida — aguardando liberar vaga';
+    waitSec = win.secondsToReset;
+  } else if (attempted >= 10 && failureRate >= 0.1) {
+    status = 'warning';
+    reason = `algumas falhas recentes (${Math.round(failureRate * 100)}%)`;
+  }
+
+  return { status, reason, waitSec, health, window: win, failureRate, quotaExhausted };
+}
+
+
+
 
 // ---------------------------------------------------------------------------
 // JANELA DE ENVIO (1 hora, ancorada no 1º e-mail)
