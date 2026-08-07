@@ -15,7 +15,9 @@ import {
   listPaymentGateways,
   upsertPaymentGateway,
   activatePaymentGateway,
+  deactivatePaymentGateway,
   deletePaymentGateway,
+  testPaymentGatewayConnection,
   type PaymentGateway,
 } from '@/lib/payments/gateways.functions';
 
@@ -24,17 +26,21 @@ export const Route = createFileRoute('/_authenticated/painel/configuracoes-pagam
   component: PaymentGatewaysPage,
 });
 
-type ProviderId = 'sigilopay' | 'syncpay';
+type ProviderId = 'sigilopay' | 'syncpay' | 'mercadopago';
+type Environment = 'test' | 'production';
 
 const PROVIDERS: Record<ProviderId, {
   label: string;
   docsUrl: string;
   defaultBase: string;
   webhookPath: string;
+  webhookOrigin?: string;
   publicLabel: string;
   secretLabel: string;
   publicPlaceholder: string;
   secretPlaceholder: string;
+  hasWebhookSecret?: boolean;
+  hasEnvironment?: boolean;
 }> = {
   sigilopay: {
     label: 'SigiloPay',
@@ -51,12 +57,32 @@ const PROVIDERS: Record<ProviderId, {
     docsUrl: 'https://api.syncpayments.com.br',
     defaultBase: 'https://api.syncpayments.com.br',
     webhookPath: '/api/public/webhook-syncpay',
+    webhookOrigin: 'https://servicosdigitalpack.lovable.app',
     publicLabel: 'Client ID',
     secretLabel: 'Client Secret',
     publicPlaceholder: 'client_id',
     secretPlaceholder: 'client_secret',
   },
+  mercadopago: {
+    label: 'Mercado Pago',
+    docsUrl: 'https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/overview',
+    defaultBase: 'https://api.mercadopago.com',
+    webhookPath: '/api/webhooks/mercadopago',
+    webhookOrigin: 'https://servicosdigitalpack.lovable.app',
+    publicLabel: 'Public Key',
+    secretLabel: 'Access Token',
+    publicPlaceholder: 'APP_USR-... (ou TEST-...)',
+    secretPlaceholder: 'APP_USR-... (ou TEST-...)',
+    hasWebhookSecret: true,
+    hasEnvironment: true,
+  },
 };
+
+function webhookUrlFor(pid: ProviderId, origin: string): string {
+  const p = PROVIDERS[pid];
+  return `${p.webhookOrigin ?? origin}${p.webhookPath}`;
+}
+
 
 function PaymentGatewaysPage() {
   const qc = useQueryClient();
