@@ -77,9 +77,6 @@ function EnvioMassa() {
 
   // Métricas oficiais do servidor (valem mesmo com o painel fechado).
   const fetchEmailMetrics = useServerFn(getEmailMetrics);
-  const fetchAutomationStatus = useServerFn(getAutomationStatus);
-  const toggleAutomation = useServerFn(toggleGlobalAutomation);
-  const queryClient = useQueryClient();
   const metricsQ = useQuery({
     queryKey: ['email_send_queue', 'metrics', 'envio-massa'],
     queryFn: () => fetchEmailMetrics({ data: {} }),
