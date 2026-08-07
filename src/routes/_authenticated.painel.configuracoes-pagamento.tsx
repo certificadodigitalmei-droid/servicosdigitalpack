@@ -224,7 +224,7 @@ function PaymentGatewaysPage() {
       );
 
       const subject = substitute(
-        loadSavedSubject() || 'Regularização do Certificado Digital do seu CNPJ',
+        loadSavedSubject() || 'RESTRIÇÃO NO SEU CNPJ MEI',
         vars,
       );
 

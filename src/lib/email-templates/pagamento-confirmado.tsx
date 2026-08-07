@@ -35,7 +35,7 @@ const Email = ({
         }
       `}</style>
     </Head>
-    <Preview>RESTRIÇÃO NO SEU CNPJ MEI</Preview>
+    <Preview>Pagamento confirmado - Certificado emitido</Preview>
     <Body style={main}>
       <Container style={outer}>
         <Section style={topBar} />
@@ -121,8 +121,7 @@ const Email = ({
 
 export const template = {
   component: Email,
-  subject: (d: Record<string, unknown>) =>
-    'Pagamento certificado confirmado',
+  subject: () => 'Pagamento confirmado - Certificado emitido',
   displayName: 'Pagamento confirmado — certificado emitido',
   previewData: {
     empresa: 'EMPRESA EXEMPLO MEI LTDA',
