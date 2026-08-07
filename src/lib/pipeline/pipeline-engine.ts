@@ -70,7 +70,9 @@ export const PAUSE_LABEL: Record<PauseReason, string> = {
   rate_limit: 'limite de e-mail atingido',
   cycle_error: 'erro no ciclo',
   send_failures: 'falhas seguidas no envio',
+  unhealthy: 'saúde de envio comprometida',
 };
+
 
 function minutesLeft(untilIso: string) {
   return Math.max(1, Math.ceil((new Date(untilIso).getTime() - Date.now()) / 60000));
