@@ -135,25 +135,14 @@ function PanelLayout() {
     if (path === '/painel/pagamentos') return 'Pagamentos';
     if (path === '/painel/configuracoes-pagamento') return 'Configurações de Pagamento';
     if (path === '/painel/precos') return 'Preços';
-
-    
-    if (path === '/painel/google-workspace') return 'Google Workspace';
     if (path === '/painel/exibicao-site') return 'Exibição do Site';
     if (path === '/painel/pop-up-site') return 'Pop-up do Site';
     if (path === '/painel/api-casa-dos-dados') return 'API Casa dos Dados';
-    if (path === '/painel/importar-empresas') return 'Importar Empresas';
-    if (path === '/painel/filtrar-mei') return 'Filtrar Empresas MEI';
-    if (path === '/painel/gerador-links') return 'Gerador de Links';
-    
+    if (path === '/painel/auditoria') return 'Auditoria de Fluxo';
     if (path === '/painel/modelos-email') return 'Modelos de E-mail';
     if (path === '/painel/remetente-email') return 'Remetente de E-mail';
-
     if (path === '/painel/envio-massa') return 'Envio em Massa';
-    if (path === '/painel/workspace-envio') return 'Envio Google Workspace';
     if (path === '/painel/enviados') return 'E-mails Enviados';
-    
-    
-    if (path.startsWith('/painel/gerador-links/historico')) return 'Histórico de Gerações';
     return 'Painel';
   };
 
