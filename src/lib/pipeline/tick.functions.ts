@@ -207,13 +207,18 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
         stage = imported > 0 ? `novo lote importado (${imported})` : 'sem empresas novas na consulta';
       }
 
-      const { computeSendWindow } = await import('./pipeline.server');
-      const win = await computeSendWindow(context.supabase, batchSize);
+      const { evaluateSendHealth } = await import('./pipeline.server');
+      const report = await evaluateSendHealth(context.supabase, batchSize);
+      const win = report.window;
 
       if (!stage) stage = 'enviando lote';
       if (queue?.waitingSpacing) {
         stage = 'aguardando intervalo entre envios';
       }
+      if (queue?.quotaExhausted) {
+        stage = 'cota da hora atingida — aguardando liberar vaga';
+      }
+
 
       await release('active');
 
