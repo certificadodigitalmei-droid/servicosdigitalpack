@@ -17,9 +17,11 @@ async function assertAdmin(supabase: any, userId: string) {
 export type PaymentGateway = {
   id: string;
   name: string;
-  provider_type: 'sigilopay' | 'syncpay';
+  provider_type: 'sigilopay' | 'syncpay' | 'mercadopago';
+  environment: 'test' | 'production';
   public_key_masked: string;
   secret_key_masked: string;
+  has_webhook_secret: boolean;
   base_url: string | null;
   is_active: boolean;
   notes: string | null;
@@ -37,6 +39,7 @@ function splitKeys(apiKey: string): { publicKey: string; secretKey: string } {
   const [publicKey = '', secretKey = ''] = (apiKey || '').split('|');
   return { publicKey: publicKey.trim(), secretKey: secretKey.trim() };
 }
+
 
 export const listPaymentGateways = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
