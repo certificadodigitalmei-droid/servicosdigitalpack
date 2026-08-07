@@ -42,9 +42,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { GlobalFloatingPanels } from '@/components/painel/GlobalFloatingPanels';
 
-import { getAutomationStatus, toggleGlobalAutomation } from '@/lib/automation/global-status.functions';
-import { Power, PowerOff } from 'lucide-react';
-
 export const Route = createFileRoute('/_authenticated/painel')({
   component: PanelLayout,
 });
@@ -62,48 +59,6 @@ function PanelLayout() {
   const [hydrated, setHydrated] = useState(false);
   const doCleanup = useServerFn(cleanupUnsentCompanies);
   const [cleaning, setCleaning] = useState(false);
-
-  // Status da automação global na nuvem
-  const [autoEnabled, setAutoEnabled] = useState<boolean | null>(null);
-  const [loadingAuto, setLoadingAuto] = useState(true);
-  const fetchAuto = useServerFn(getAutomationStatus);
-  const doToggleAuto = useServerFn(toggleGlobalAutomation);
-
-  const refreshAutoStatus = async (isInitial = false) => {
-    try {
-      const status = await fetchAuto();
-      setAutoEnabled(status.isAutoEnabled);
-      if (isInitial) {
-        console.log('Status inicial da nuvem carregado:', status.isAutoEnabled);
-      }
-    } catch (e) { 
-      console.error('Erro ao buscar status da nuvem:', e);
-    } finally { 
-      setLoadingAuto(false); 
-    }
-  };
-
-  useEffect(() => {
-    refreshAutoStatus(true);
-    const id = setInterval(() => refreshAutoStatus(), 15000);
-    return () => clearInterval(id);
-  }, []);
-
-  const handleToggleAuto = async () => {
-    const next = !autoEnabled;
-    setAutoEnabled(next);
-    try {
-      await doToggleAuto({ data: { enabled: next } });
-      if (next) {
-        toast.success('Automação 24/7 ativada na nuvem.');
-      } else {
-        toast.info('Envios pausados pelo usuário.');
-      }
-    } catch (e: any) {
-      setAutoEnabled(!next);
-      toast.error('Erro ao mudar status: ' + (e?.message || 'erro'));
-    }
-  };
 
   const handleCleanup = async () => {
 
@@ -282,29 +237,6 @@ function PanelLayout() {
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
-                <div className="flex items-center gap-2 mr-2 bg-slate-50 p-1 rounded-lg border border-slate-200">
-                  <div className={cn(
-                    "h-2 w-2 rounded-full animate-pulse",
-                    autoEnabled ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-300"
-                  )} />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-1">
-                    {autoEnabled === null ? "Nuvem: Carregando..." : autoEnabled ? "Nuvem: Ativo" : "Nuvem: Pausado"}
-                  </span>
-                  <Button
-                    size="icon"
-                    variant={autoEnabled ? "default" : "outline"}
-                    className={cn(
-                      "h-8 w-8 rounded-md transition-all",
-                      autoEnabled ? "bg-red-500 hover:bg-red-600 text-white" : "bg-emerald-500 hover:bg-emerald-600 text-white border-none"
-                    )}
-                    onClick={handleToggleAuto}
-                    disabled={loadingAuto}
-                    title={autoEnabled ? "Pausar envios na nuvem" : "Retomar envios na nuvem"}
-                  >
-                    {loadingAuto ? <Loader2 className="h-4 w-4 animate-spin" /> : (autoEnabled ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />)}
-                  </Button>
-                </div>
-
                 <Button
 
                   size="sm"
