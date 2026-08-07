@@ -395,7 +395,79 @@ function SuccessCard({ paidAt, cnpjFmt }: { paidAt: string; cnpjFmt: string }) {
   );
 }
 
+function CertVisual({ paidAt, cnpjFmt, nome }: { paidAt: string | null; cnpjFmt: string; nome: string }) {
+  const active = !!paidAt;
+  return (
+    <div className={`border-b p-4 lg:p-5 ${active ? 'border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/40' : 'border-border bg-gradient-to-br from-[#eaf1ff] via-white to-[#eaf1ff]'}`}>
+      <div
+        className={`relative overflow-hidden rounded-xl p-4 text-white shadow-lg lg:p-5 ${
+          active
+            ? 'bg-[linear-gradient(135deg,#065f46_0%,#0f9d58_55%,#34d399_100%)] shadow-emerald-900/25'
+            : 'bg-[linear-gradient(135deg,#0b2545_0%,#12406f_55%,#1351b4_100%)] shadow-slate-900/25'
+        }`}
+      >
+        {/* textura sutil */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.14]"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(135deg, rgba(255,255,255,.6) 0 1px, transparent 1px 9px)',
+          }}
+        />
+        <div className="pointer-events-none absolute -right-12 -top-14 h-40 w-40 rounded-full bg-white/10 blur-xl" />
+
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[9.5px] font-semibold uppercase tracking-[0.18em] text-white/70">
+              Certificado Digital
+            </div>
+            <div className="mt-0.5 text-[17px] font-black leading-tight lg:text-[19px]">
+              e-CNPJ A1 · MEI 2026
+            </div>
+          </div>
+          <span
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
+              active ? 'bg-white text-emerald-700' : 'bg-[#ffc107] text-[#5c4400]'
+            }`}
+          >
+            {active ? <CheckCircle2 className="h-3 w-3" /> : <span className="h-1.5 w-1.5 rounded-full bg-[#5c4400] animate-pulse" />}
+            {active ? 'Ativo' : 'Pendente'}
+          </span>
+        </div>
+
+        <div className="relative mt-4 grid gap-2.5">
+          <div>
+            <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/60">Titular</div>
+            <div className="truncate text-[13.5px] font-bold">{nome}</div>
+          </div>
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/60">CNPJ</div>
+              <div className="font-mono text-[14px] font-bold tracking-wide">{cnpjFmt}</div>
+            </div>
+            <div
+              className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg ring-1 ${
+                active ? 'bg-white/95 text-emerald-700 ring-white/60' : 'bg-white/15 text-white/70 ring-white/25'
+              }`}
+            >
+              <ShieldCheck className="h-6 w-6" />
+            </div>
+          </div>
+        </div>
+
+        <div className="relative mt-4 flex items-center justify-between gap-2 border-t border-white/20 pt-2.5 text-[9.5px] font-semibold uppercase tracking-wide text-white/75">
+          <span>ICP-Brasil</span>
+          <span className={active ? 'text-white' : 'text-white/70'}>
+            {active ? 'Emitido e vinculado' : 'Aguardando emissão'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DataRow({ label, value, last }: { label: string; value: React.ReactNode; last?: boolean }) {
+
   return (
     <div className={last ? 'px-4 py-3' : 'border-b border-border px-4 py-3'}>
       <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
