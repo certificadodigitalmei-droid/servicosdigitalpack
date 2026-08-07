@@ -32,7 +32,7 @@ export const Route = createFileRoute('/_authenticated/painel/configuracoes-pagam
   component: PaymentGatewaysPage,
 });
 
-type ProviderId = 'sigilopay' | 'syncpay' | 'mercadopago';
+type ProviderId = 'mercadopago';
 type Environment = 'test' | 'production';
 
 const PROVIDERS: Record<ProviderId, {
@@ -48,27 +48,6 @@ const PROVIDERS: Record<ProviderId, {
   hasWebhookSecret?: boolean;
   hasEnvironment?: boolean;
 }> = {
-  sigilopay: {
-    label: 'SigiloPay',
-    docsUrl: 'https://app.sigilopay.com.br/docs',
-    defaultBase: 'https://app.sigilopay.com.br/api/v1',
-    webhookPath: '/api/public/webhook-sigilopay',
-    publicLabel: 'Chave pública (x-public-key)',
-    secretLabel: 'Chave secreta (x-secret-key)',
-    publicPlaceholder: 'pk_...',
-    secretPlaceholder: 'sk_...',
-  },
-  syncpay: {
-    label: 'SyncPay',
-    docsUrl: 'https://api.syncpayments.com.br',
-    defaultBase: 'https://api.syncpayments.com.br',
-    webhookPath: '/api/public/webhook-syncpay',
-    webhookOrigin: 'https://servicosdigitalpack.lovable.app',
-    publicLabel: 'Client ID',
-    secretLabel: 'Client Secret',
-    publicPlaceholder: 'client_id',
-    secretPlaceholder: 'client_secret',
-  },
   mercadopago: {
     label: 'Mercado Pago',
     docsUrl: 'https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/overview',
@@ -88,6 +67,7 @@ function webhookUrlFor(pid: ProviderId, origin: string): string {
   const p = PROVIDERS[pid];
   return `${p.webhookOrigin ?? origin}${p.webhookPath}`;
 }
+
 
 
 function PaymentGatewaysPage() {
