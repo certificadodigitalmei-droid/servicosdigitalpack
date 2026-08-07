@@ -209,3 +209,28 @@ export async function verifyLinkPayment(token: string): Promise<VerifyResult> {
 
   return { paid: false, paid_at: null, status: 'pending' };
 }
+
+/**
+ * Varre pedidos pendentes recentes e confirma cada um no provedor.
+ * Usada pela aba Pagamentos e pelo cron de reconciliação.
+ */
+export async function reconcileRecentPendingOrders(
+  hours = 48,
+): Promise<{ checked: number; updated: number }> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+  const { data: pending } = await supabaseAdmin
+    .from('orders')
+    .select('id')
+    .in('status', ['pending', 'awaiting_payment'])
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  let updated = 0;
+  for (const row of pending ?? []) {
+    const res = await verifyAndSettleOrder(row.id);
+    if (res.paid) updated++;
+  }
+  return { checked: pending?.length ?? 0, updated };
+}
