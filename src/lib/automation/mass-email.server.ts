@@ -75,6 +75,11 @@ export async function syncMassEmailQueue(limit = 25) {
     );
   const byId = new Map<string, any>((companies ?? []).map((c: any) => [c.id, c]));
 
+  // E-mails repetidos DENTRO do mesmo lote quebrariam o índice único do banco
+  // e derrubariam a inserção inteira. Marcamos o repetido como suprimido.
+  const seenEmails = new Set<string>();
+  let duplicados = 0;
+
   for (const p of pending) {
     const c = byId.get(p.companyId);
     const email = (c?.email ?? p.email ?? '').trim();
@@ -94,6 +99,22 @@ export async function syncMassEmailQueue(limit = 25) {
       continue;
     }
 
+    const normalized = email.toLowerCase();
+    if (seenEmails.has(normalized)) {
+      duplicados++;
+      rows.push({
+        to_email: normalized,
+        subject: SUBJECT,
+        html: null,
+        text: null,
+        status: 'suppressed',
+        idempotency_key: `mass-email-${p.companyId}`,
+        last_error: 'e-mail duplicado no lote',
+        created_by: null,
+      });
+      continue;
+    }
+    seenEmails.add(normalized);
 
     const vars: Vars = {
       NOME_TITULAR: c?.nome_titular_exibicao || c?.razao_social_original || p.nome || '',
@@ -107,7 +128,7 @@ export async function syncMassEmailQueue(limit = 25) {
     };
 
     rows.push({
-      to_email: email.toLowerCase(),
+      to_email: normalized,
       subject: SUBJECT,
       html: renderHtml(DEFAULT_DESIGN, vars),
       text: renderText(DEFAULT_DESIGN, vars),
@@ -124,20 +145,49 @@ export async function syncMassEmailQueue(limit = 25) {
     });
   }
 
-  if (rows.length > 0) {
-    const { error } = await supabaseAdmin
-      .from('email_send_queue')
-      .upsert(rows, { onConflict: 'idempotency_key' });
-    if (error) {
-      console.error('[MassEmailSync] Error enqueuing:', error);
-      return { ok: false as const, enqueued: 0, semEmail, error: error.message };
+  // Inserção resiliente: em blocos e, se o bloco falhar (conflito de índice
+  // único por destinatário), item por item — um endereço problemático nunca
+  // derruba o lote inteiro.
+  const failures: string[] = [];
+  let enqueued = 0;
+  const CHUNK = 25;
+
+  const upsert = async (batch: any[]) =>
+    supabaseAdmin.from('email_send_queue').upsert(batch, { onConflict: 'idempotency_key' });
+
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    const { error } = await upsert(chunk);
+    if (!error) {
+      enqueued += chunk.filter((r) => r.status === 'queued').length;
+      continue;
+    }
+    for (const row of chunk) {
+      const { error: rowErr } = await upsert([row]);
+      if (rowErr) {
+        // Destinatário já atendido por outra empresa: suprime para liberar o fluxo.
+        const { error: supErr } = await upsert([
+          { ...row, status: 'suppressed', html: null, text: null, last_error: rowErr.message.slice(0, 300) },
+        ]);
+        if (supErr) failures.push(`${row.idempotency_key}: ${rowErr.message}`);
+        else duplicados++;
+      } else if (row.status === 'queued') {
+        enqueued++;
+      }
     }
   }
 
-  return {
-    ok: true as const,
-    enqueued: rows.filter((r) => r.status === 'queued').length,
-    semEmail,
-  };
+  if (failures.length > 0) {
+    console.error('[MassEmailSync] falhas ao enfileirar:', failures.slice(0, 5));
+    return {
+      ok: false as const,
+      enqueued,
+      semEmail,
+      duplicados,
+      error: `${failures.length} item(ns) não entraram na fila: ${failures[0]}`,
+    };
+  }
 
+  return { ok: true as const, enqueued, semEmail, duplicados };
 }
+

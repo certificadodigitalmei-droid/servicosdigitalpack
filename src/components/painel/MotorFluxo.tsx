@@ -48,8 +48,8 @@ export function MotorFluxoCard() {
     return () => clearInterval(id);
   }, [pausedUntil]);
 
-  // Para o motor ao sair da página (evita dois motores em abas diferentes).
-  useEffect(() => () => stopPipelineEngine(), []);
+  // O motor continua rodando ao trocar de aba do painel (montado no layout).
+
 
   const pendente = snapshot?.pendenteTotal ?? 0;
   const progresso = batchSize > 0 ? Math.min(100, Math.round((sentInWindow / batchSize) * 100)) : 0;
