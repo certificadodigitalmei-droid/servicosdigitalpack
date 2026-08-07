@@ -54,9 +54,16 @@ export const Route = createFileRoute('/api/public/webhook-mercadopago')({
           const mp = await import('@/lib/payments/mercadopago.server');
 
           const secret = (gateway as any).webhook_secret || '';
+          const signatureHeader = request.headers.get('x-signature');
           if (secret) {
+            if (!signatureHeader) {
+              // Teste de conectividade do painel do Mercado Pago (sem assinatura):
+              // responde 200 sem processar nada. Nenhum pedido é liberado aqui.
+              console.log('[webhook-mercadopago] requisição sem assinatura — ignorada');
+              return new Response('OK', { status: 200 });
+            }
             const valid = await mp.verifyMercadoPagoSignature({
-              signatureHeader: request.headers.get('x-signature'),
+              signatureHeader,
               requestId: request.headers.get('x-request-id'),
               dataId,
               secret,
@@ -66,6 +73,7 @@ export const Route = createFileRoute('/api/public/webhook-mercadopago')({
               return new Response('Invalid signature', { status: 401 });
             }
           }
+
 
           // Reconsulta obrigatória na API oficial antes de liberar o conteúdo.
           let status = '';
