@@ -104,6 +104,18 @@ export function MotorFluxoCard() {
           )}
         </div>
 
+        {isPaused && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            <PauseCircle className="h-4 w-4 shrink-0" />
+            <span>
+              Pausado automaticamente ({pauseReason ? PAUSE_LABEL[pauseReason] : 'aguardando'}).
+              Retomada automática em <strong>{countdown}</strong>.
+            </span>
+          </div>
+        )}
+
+
+
         {/* Lote por hora */}
         <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
           <div className="w-40">
