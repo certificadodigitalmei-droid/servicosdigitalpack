@@ -281,14 +281,17 @@ export async function processQueueInternal(
     sent,
     failed,
     released,
+    recovered,
     rateLimited,
     retryAfterSec,
     lastHour: lastHour + sent,
-    remaining: null,
+    remaining: Math.max(0, safeLimit - (win.sentInWindow + sent)),
     throttled: false,
-    windowStart: null,
-    windowEnd: null,
-    secondsToReset: 0,
+    windowStart: win.windowStart,
+    windowEnd: win.windowEnd,
+    secondsToReset: win.secondsToReset,
+    quotaExhausted: false,
   };
+
 }
 
