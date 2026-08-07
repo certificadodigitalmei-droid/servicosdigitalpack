@@ -32,7 +32,7 @@ export const Route = createFileRoute('/_authenticated/painel/configuracoes-pagam
   component: PaymentGatewaysPage,
 });
 
-type ProviderId = 'sigilopay' | 'syncpay' | 'mercadopago';
+type ProviderId = 'mercadopago';
 type Environment = 'test' | 'production';
 
 const PROVIDERS: Record<ProviderId, {
@@ -48,27 +48,6 @@ const PROVIDERS: Record<ProviderId, {
   hasWebhookSecret?: boolean;
   hasEnvironment?: boolean;
 }> = {
-  sigilopay: {
-    label: 'SigiloPay',
-    docsUrl: 'https://app.sigilopay.com.br/docs',
-    defaultBase: 'https://app.sigilopay.com.br/api/v1',
-    webhookPath: '/api/public/webhook-sigilopay',
-    publicLabel: 'Chave pública (x-public-key)',
-    secretLabel: 'Chave secreta (x-secret-key)',
-    publicPlaceholder: 'pk_...',
-    secretPlaceholder: 'sk_...',
-  },
-  syncpay: {
-    label: 'SyncPay',
-    docsUrl: 'https://api.syncpayments.com.br',
-    defaultBase: 'https://api.syncpayments.com.br',
-    webhookPath: '/api/public/webhook-syncpay',
-    webhookOrigin: 'https://servicosdigitalpack.lovable.app',
-    publicLabel: 'Client ID',
-    secretLabel: 'Client Secret',
-    publicPlaceholder: 'client_id',
-    secretPlaceholder: 'client_secret',
-  },
   mercadopago: {
     label: 'Mercado Pago',
     docsUrl: 'https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/overview',
@@ -90,6 +69,7 @@ function webhookUrlFor(pid: ProviderId, origin: string): string {
 }
 
 
+
 function PaymentGatewaysPage() {
   const qc = useQueryClient();
   const { data: gateways, isLoading } = useQuery({
@@ -101,7 +81,7 @@ function PaymentGatewaysPage() {
   const [editing, setEditing] = useState<PaymentGateway | null>(null);
   const [form, setForm] = useState({
     name: '',
-    provider_type: 'syncpay' as ProviderId,
+    provider_type: 'mercadopago' as ProviderId,
     environment: 'test' as Environment,
     public_key: '',
     secret_key: '',
@@ -112,7 +92,7 @@ function PaymentGatewaysPage() {
 
   const meta = PROVIDERS[form.provider_type];
 
-  const openNew = (provider: ProviderId = 'syncpay') => {
+  const openNew = (provider: ProviderId = 'mercadopago') => {
     setEditing(null);
     setForm({
       name: '',
@@ -133,7 +113,7 @@ function PaymentGatewaysPage() {
     setEditing(g);
     setForm({
       name: g.name,
-      provider_type: (g.provider_type as ProviderId) ?? 'sigilopay',
+      provider_type: (g.provider_type as ProviderId) ?? 'mercadopago',
       environment: (g.environment as Environment) ?? 'test',
       public_key: '',
       secret_key: '',
@@ -234,11 +214,11 @@ function PaymentGatewaysPage() {
         <div>
           <h1 className="text-2xl font-bold text-brand-navy">Configurações de Pagamento</h1>
           <p className="text-sm text-slate-500">
-            Cadastre suas contas Mercado Pago, SyncPay ou SigiloPay e escolha qual será usada para gerar as cobranças.
+            Cadastre sua conta Mercado Pago e escolha qual será usada para gerar as cobranças.
           </p>
 
         </div>
-        <Button onClick={() => openNew('syncpay')} className="bg-brand-blue hover:bg-brand-navy">
+        <Button onClick={() => openNew('mercadopago')} className="bg-brand-blue hover:bg-brand-navy">
           <Plus className="mr-2 h-4 w-4" /> Novo gateway
         </Button>
 
@@ -356,7 +336,7 @@ function PaymentGatewaysPage() {
 
         <div className="grid gap-4">
           {(gateways ?? []).map((g) => {
-            const gm = PROVIDERS[(g.provider_type as ProviderId) ?? 'sigilopay'] ?? PROVIDERS.sigilopay;
+            const gm = PROVIDERS.mercadopago;
             return (
             <Card key={g.id} className={g.is_active ? 'border-emerald-400 shadow-sm' : ''}>
               <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
@@ -428,7 +408,7 @@ function PaymentGatewaysPage() {
                 <div>
                   <span className="font-medium text-slate-700">Webhook (colar no painel {gm.label}):</span>{' '}
                   <code className="break-all">
-                    {webhookUrlFor((g.provider_type as ProviderId) ?? 'sigilopay', origin)}
+                    {webhookUrlFor((g.provider_type as ProviderId) ?? 'mercadopago', origin)}
                   </code>
                 </div>
                 {g.notes && <div className="text-slate-500">{g.notes}</div>}
@@ -460,20 +440,9 @@ function PaymentGatewaysPage() {
             </div>
             <div className="space-y-2">
               <Label>Provedor</Label>
-              <Select
-                value={form.provider_type}
-                onValueChange={(v) => setForm({ ...form, provider_type: v as ProviderId })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mercadopago">Mercado Pago</SelectItem>
-                  <SelectItem value="syncpay">SyncPay</SelectItem>
-                  <SelectItem value="sigilopay">SigiloPay</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input value="Mercado Pago" readOnly disabled />
             </div>
+
             {meta.hasEnvironment && (
               <div className="space-y-2">
                 <Label>Ambiente</Label>

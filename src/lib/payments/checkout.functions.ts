@@ -1,85 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const SIGILOPAY_DEFAULT_BASE = "https://app.sigilopay.com.br/api/v1";
-
 type PixResult = {
   pix_code: string;
   qr_code_base64: string;
   transaction_id: string;
   expiration: Date | null;
 };
-
-// api_key column stores "publicKey|secretKey"
-function splitKeys(apiKey: string): { publicKey: string; secretKey: string } {
-  const [publicKey = "", secretKey = ""] = (apiKey || "").split("|");
-  return { publicKey: publicKey.trim(), secretKey: secretKey.trim() };
-}
-
-async function callSigiloPay(
-  apiKey: string,
-  baseUrl: string,
-  input: {
-    identifier: string;
-    amount: number;
-    callbackUrl: string;
-    client: { name: string; email: string; phone: string; document: string };
-    productName: string;
-  },
-): Promise<PixResult> {
-  const { publicKey, secretKey } = splitKeys(apiKey);
-  if (!publicKey || !secretKey) {
-    throw new Error("Configure a chave pública e a chave secreta da SigiloPay em Configurações de Pagamento.");
-  }
-  const cleanBase = (baseUrl || SIGILOPAY_DEFAULT_BASE).replace(/\/+$/, "");
-
-  const payload = {
-    identifier: input.identifier,
-    amount: input.amount,
-    client: input.client,
-    products: [
-      {
-        id: input.identifier,
-        name: input.productName,
-        quantity: 1,
-        price: input.amount,
-      },
-    ],
-    callbackUrl: input.callbackUrl,
-  };
-
-  const response = await fetch(`${cleanBase}/gateway/pix/receive`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-public-key": publicKey,
-      "x-secret-key": secretKey,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const text = await response.text();
-  if (!response.ok) {
-    throw new Error(`SigiloPay ${response.status}: ${text.slice(0, 500) || "sem resposta"}`);
-  }
-
-  const parsed = JSON.parse(text) as any;
-  const pix = parsed?.pix ?? {};
-  const pix_code = pix.code || pix.emv || pix.pixCode || "";
-  const transaction_id = parsed?.transactionId || parsed?.id || "";
-  if (!pix_code) throw new Error(`Resposta sem código PIX: ${text.slice(0, 300)}`);
-
-  let qr_code_base64 = pix.base64 || "";
-  if (qr_code_base64.startsWith("data:image")) {
-    qr_code_base64 = qr_code_base64.replace(/^data:image\/[a-z]+;base64,/, "");
-  }
-  if (!qr_code_base64) {
-    const QRCode = (await import("qrcode")).default;
-    const dataUrl = await QRCode.toDataURL(pix_code, { errorCorrectionLevel: "M", margin: 1, width: 320 });
-    qr_code_base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
-  }
-  return { pix_code, qr_code_base64, transaction_id, expiration: null };
-}
 
 export const createOrderAndPixCharge = createServerFn({ method: "POST" })
   .inputValidator((data) =>
@@ -91,28 +18,30 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
         phone: z.string().min(8).max(20),
         productName: z.string().min(1).max(200),
         amount: z.number().positive().max(100000),
-        webhookUrl: z.string().url().max(500),
         userAgent: z.string().max(1000).optional(),
         token: z.string().max(200).optional(),
       })
       .parse(data)
   )
+
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Resolve gateway ativo
+    // Mercado Pago é o único provedor suportado.
     const { data: gateway } = await supabaseAdmin
       .from("payment_gateways")
       .select("*")
+      .eq("provider_type", "mercadopago")
       .eq("is_active", true)
       .maybeSingle();
 
     if (!gateway || !gateway.api_key) {
-      throw new Error("Nenhum gateway de pagamento ativo. Cadastre em Configurações de Pagamento.");
+      throw new Error("Nenhuma conta Mercado Pago ativa. Cadastre em Configurações de Pagamento.");
     }
-    const provider = (gateway.provider_type as string) || "sigilopay";
+    const provider = "mercadopago";
     const apiKey = gateway.api_key as string;
     const baseUrl = gateway.base_url || null;
+
 
     // Resolve link → company
     let companyId: string | null = null;
@@ -250,41 +179,19 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
 
     let pix: PixResult;
     try {
-      if (provider === "mercadopago") {
-        const { createMercadoPagoPix } = await import("@/lib/payments/mercadopago.server");
-        // Em produção usamos o e-mail real do pedido; em teste, os dados de sandbox oficiais.
-        pix = await createMercadoPagoPix(apiKey, baseUrl, {
-          amount,
-          orderId: order.id,
-          payerEmail: data.email,
-          environment: (gateway.environment as "test" | "production") ?? "test",
-        });
-
-      } else if (provider === "syncpay") {
-        const { createSyncPayPix } = await import("@/lib/payments/syncpay.server");
-        const res = await createSyncPayPix(apiKey, baseUrl, { amount, identifier: order.id });
-        pix = { ...res, expiration: null };
-      } else {
-        pix = await callSigiloPay(apiKey, baseUrl || SIGILOPAY_DEFAULT_BASE, {
-          identifier: order.id,
-          amount,
-          callbackUrl: data.webhookUrl,
-          // Dados pessoais do cliente e do domínio do site NÃO são enviados ao gateway.
-          // Usamos um pagador genérico e e-mail fixo; os dados reais ficam apenas no nosso banco.
-          client: {
-            name: "Pagador",
-            email: "servicos.digitais.on@gmail.com",
-            phone: "11999999999",
-            document: data.document,
-          },
-
-          productName: "Servicos Digitais Online", // Nome genérico para ocultar a natureza da venda do gateway
-        });
-      }
+      const { createMercadoPagoPix } = await import("@/lib/payments/mercadopago.server");
+      // Em produção usamos o e-mail real do pedido; em teste, os dados de sandbox oficiais.
+      pix = await createMercadoPagoPix(apiKey, baseUrl, {
+        amount,
+        orderId: order.id,
+        payerEmail: data.email,
+        environment: (gateway.environment as "test" | "production") ?? "test",
+      });
     } catch (e: any) {
       console.error("[Payments] Falha ao gerar PIX", { provider, error: e?.message });
       throw e;
     }
+
 
 
     await Promise.all([
