@@ -33,7 +33,7 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
   const companyCnpj = qRow?.idempotency_key?.replace('mass-email-', '');
 
   try {
-    const result = await sendGmailMessage({
+    const result = await sendMailMessage({
       to: row.to_email,
       subject: row.subject,
       html: row.html ?? undefined,
@@ -60,7 +60,7 @@ export async function sendOneNow(row: QueueRow, opts: { burst?: boolean } = {}) 
     }
     return { ok: true as const };
   } catch (e) {
-    const err = e as InstanceType<typeof GmailError>;
+    const err = e as InstanceType<typeof MailError>;
     const attempts = row.attempts + 1;
     // 429 (rate limit) NÃO é falha do e-mail: é só "tente mais tarde".
     // Não gasta tentativa e nunca vira "failed".
