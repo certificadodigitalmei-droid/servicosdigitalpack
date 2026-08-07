@@ -135,6 +135,9 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
         remainingInWindow: 0,
         rateLimited: false,
         retryAfterSec: 0,
+        quotaExhausted: false,
+        health: EMPTY_HEALTH,
+
       };
     }
 
