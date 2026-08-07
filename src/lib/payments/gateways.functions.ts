@@ -78,7 +78,7 @@ export const upsertPaymentGateway = createServerFn({ method: 'POST' })
       .object({
         id: z.string().uuid().optional(),
         name: z.string().min(2).max(120),
-        provider_type: z.enum(['sigilopay', 'syncpay', 'mercadopago']).default('sigilopay'),
+        provider_type: z.literal('mercadopago').default('mercadopago'),
         environment: z.enum(['test', 'production']).default('test'),
         public_key: z.string().min(4).max(300).optional(),
         secret_key: z.string().min(4).max(300).optional(),
