@@ -309,10 +309,6 @@ export function SendProfileCard() {
               ))}
             </div>
           </div>
-          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-            <strong>Somente mensagem principal:</strong> e-mails de PIX gerado, cobrança,
-            pagamento e desconto estão desativados.
-          </div>
         </div>
 
         <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
