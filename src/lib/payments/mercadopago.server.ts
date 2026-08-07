@@ -13,7 +13,8 @@
 
 export const MERCADOPAGO_DEFAULT_BASE = "https://api.mercadopago.com";
 export const MERCADOPAGO_WEBHOOK_URL =
-  "https://servicosdigitalpack.lovable.app/api/webhooks/mercadopago";
+  "https://servicosdigitalpack.lovable.app/api/public/webhook-mercadopago";
+
 
 export type MercadoPagoPix = {
   pix_code: string;
