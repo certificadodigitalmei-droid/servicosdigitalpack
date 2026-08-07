@@ -59,13 +59,7 @@ function PanelLayout() {
     navigate({ to: '/auth' });
   };
 
-  // Salvar tudo na nuvem (todas as configurações do painel).
-  const [saving, setSaving] = useState(false);
-  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
-
   const [hydrated, setHydrated] = useState(false);
-  const doSave = useServerFn(saveCloudState);
-  const doLoad = useServerFn(getCloudState);
   const doCleanup = useServerFn(cleanupUnsentCompanies);
   const [cleaning, setCleaning] = useState(false);
 
@@ -111,33 +105,6 @@ function PanelLayout() {
     }
   };
 
-  const lastSnapshotJsonRef = useRef<string>('');
-  const persistNow = async () => {
-    const snapshot = collectLocalSnapshot();
-    const json = JSON.stringify(snapshot);
-    if (json === lastSnapshotJsonRef.current) {
-      return lastSavedAt; // nada mudou, não gasta upsert
-    }
-    const r = await doSave({ data: { snapshot } });
-    lastSnapshotJsonRef.current = json;
-    setLastSavedAt(r.savedAt);
-    try { window.localStorage.setItem('painel:cloudSyncedAt', r.savedAt); } catch {}
-    return r.savedAt;
-  };
-
-
-  const saveAll = async () => {
-    setSaving(true);
-    try {
-      await persistNow();
-      toast.success('Configurações do site salvas na nuvem.');
-    } catch (e: any) {
-      toast.error('Falha ao salvar: ' + (e?.message ?? 'erro'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleCleanup = async () => {
 
     if (!confirm('Deseja apagar TODOS os dados (empresas, links, pedidos pendentes, clientes sem compra) e deixar o painel limpo? Apenas vendas confirmadas serão preservadas.')) return;
@@ -157,77 +124,9 @@ function PanelLayout() {
     }
   };
 
-  // Lê apenas a data do último backup no mount. O snapshot não é aplicado
-  // automaticamente: alterar localStorage durante a inicialização fazia as
-  // sub-rotas remontarem e dava a impressão de F5 repetido. A restauração
-  // continua disponível somente pelo botão "Restaurar".
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await doLoad();
-        if (cancelled) return;
-        if (r.updatedAt) setLastSavedAt(r.updatedAt);
-      } catch { /* silencioso */ }
-      if (!cancelled) setHydrated(true);
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setHydrated(true);
   }, []);
-
-  // AUTO-SAVE: intercepta writes em localStorage nas chaves do painel e
-  // agenda um upload debounced (2,5s). Também salva ao sair da aba.
-  useEffect(() => {
-    if (!hydrated || typeof window === 'undefined') return;
-    const isTracked = (k: string) =>
-      CLOUD_PREFIXES.some((p) => k.startsWith(p)) &&
-      k !== 'painel:cloudSyncedAt' &&
-      !k.startsWith('painel:cloudReloaded:');
-    let timer: number | null = null;
-    let dirty = false;
-    const schedule = () => {
-      dirty = true;
-      if (timer) window.clearTimeout(timer);
-      timer = window.setTimeout(async () => {
-        timer = null;
-        if (!dirty) return;
-        dirty = false;
-        try { await persistNow(); } catch { /* silencioso; próximo write tentará de novo */ }
-      }, 15000);
-    };
-
-
-    const origSet = window.localStorage.setItem.bind(window.localStorage);
-    const origRemove = window.localStorage.removeItem.bind(window.localStorage);
-    window.localStorage.setItem = function (k: string, v: string) {
-      origSet(k, v);
-      if (isTracked(k)) schedule();
-    } as typeof window.localStorage.setItem;
-    window.localStorage.removeItem = function (k: string) {
-      origRemove(k);
-      if (isTracked(k)) schedule();
-    } as typeof window.localStorage.removeItem;
-
-    const flush = () => {
-      if (dirty) {
-        dirty = false;
-        // Envio síncrono não é possível; dispara sem aguardar.
-        persistNow().catch(() => {});
-      }
-    };
-    const onVis = () => { if (document.visibilityState === 'hidden') flush(); };
-    window.addEventListener('beforeunload', flush);
-    document.addEventListener('visibilitychange', onVis);
-
-    return () => {
-      if (timer) window.clearTimeout(timer);
-      window.localStorage.setItem = origSet as typeof window.localStorage.setItem;
-      window.localStorage.removeItem = origRemove as typeof window.localStorage.removeItem;
-      window.removeEventListener('beforeunload', flush);
-      document.removeEventListener('visibilitychange', onVis);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated]);
 
 
 
