@@ -448,17 +448,7 @@ function PanelLayout() {
                   <span className="sm:hidden">Salvar</span>
                 </Button>
                 <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={restoreAll}
-                  disabled={restoring}
-                  className="gap-2"
-                  title="Restaura as configurações salvas na nuvem neste dispositivo."
-                >
-                  {restoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
-                  <span className="hidden md:inline">Restaurar</span>
-                </Button>
-                <Button
+
                   size="sm"
                   variant="ghost"
                   onClick={handleCleanup}
