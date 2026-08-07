@@ -47,6 +47,12 @@ const SANDBOX_PAYER = {
   email: "test_user_br@testuser.com",
 };
 
+// O e-mail do cliente NUNCA é enviado ao Mercado Pago: o MP dispara comprovantes
+// automáticos para o e-mail do pagador, o que expõe a operação ao cliente final.
+// Usamos sempre uma caixa interna neutra; a comunicação é feita apenas pelo site.
+const INTERNAL_PAYER_EMAIL = "pagamentos@seu-certificado-mei-digital.online";
+
+
 /** Valida o par de credenciais chamando um endpoint autenticado leve. */
 export async function testMercadoPagoCredentials(
   apiKey: string,
@@ -96,7 +102,7 @@ async function createPixViaPaymentsApi(
       description: "Pack de Fotos",
       external_reference: input.orderId,
       date_of_expiration: expires.toISOString().replace("Z", "-00:00"),
-      payer: { email: input.payerEmail || "pagador@exemplo.com" },
+      payer: { email: INTERNAL_PAYER_EMAIL },
     }),
   });
   if (!res.ok) return null;
@@ -144,8 +150,9 @@ export async function createMercadoPagoPix(
   }
 
   // O pagador precisa pertencer ao mesmo ambiente do Access Token. Em teste, a Orders API
-  // exige o usuário oficial de sandbox; em produção, usa-se o e-mail real do pedido.
-  const realPayer = { email: input.payerEmail || "pagador@exemplo.com" };
+  // exige o usuário oficial de sandbox; em produção usamos a caixa interna neutra,
+  // nunca o e-mail do cliente (evita comprovantes automáticos do Mercado Pago).
+  const realPayer = { email: INTERNAL_PAYER_EMAIL };
   const sandboxPayer = { email: SANDBOX_PAYER.email };
   const payer = input.environment === "production" ? realPayer : sandboxPayer;
 
