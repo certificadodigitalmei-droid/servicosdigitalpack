@@ -506,9 +506,32 @@ function PaymentGatewaysPage() {
                   placeholder="Assinatura secreta gerada no painel do provedor"
                   autoComplete="off"
                 />
-                <p className="break-all text-xs text-slate-500">
-                  URL do webhook: {webhookUrlFor(form.provider_type, origin)}
-                </p>
+                <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+                  <p className="font-semibold">Cole exatamente esta URL no painel do Mercado Pago:</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <code className="flex-1 break-all rounded bg-white px-2 py-1 font-mono text-[11px] text-slate-800">
+                      {webhookUrlFor(form.provider_type, 'https://servicosdigitalpack.lovable.app')}
+                    </code>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          webhookUrlFor(form.provider_type, 'https://servicosdigitalpack.lovable.app'),
+                        );
+                        toast.success('URL copiada');
+                      }}
+                    >
+                      Copiar
+                    </Button>
+                  </div>
+                  <p className="mt-2">
+                    Se estiver configurado apenas o domínio (terminando em <code>.app/</code>), as
+                    notificações retornam erro 502. O caminho completo é obrigatório.
+                  </p>
+                </div>
+
               </div>
             )}
 
