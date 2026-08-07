@@ -404,6 +404,25 @@ function PaymentGatewaysPage() {
                 autoComplete="off"
               />
             </div>
+            {meta.hasWebhookSecret && (
+              <div className="space-y-2">
+                <Label>
+                  Chave secreta do Webhook{' '}
+                  {editing && <span className="text-xs text-slate-500">(deixe em branco para manter)</span>}
+                </Label>
+                <Input
+                  type="password"
+                  value={form.webhook_secret}
+                  onChange={(e) => setForm({ ...form, webhook_secret: e.target.value })}
+                  placeholder="Assinatura secreta gerada no painel do provedor"
+                  autoComplete="off"
+                />
+                <p className="break-all text-xs text-slate-500">
+                  URL do webhook: {webhookUrlFor(form.provider_type, origin)}
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Base URL <span className="text-xs text-slate-500">(opcional)</span></Label>
               <Input
