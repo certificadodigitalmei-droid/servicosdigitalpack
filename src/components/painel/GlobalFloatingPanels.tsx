@@ -56,9 +56,9 @@ export function GlobalFloatingPanels() {
 
   return (
     <>
-      <PipelineEngineHost />
+      <PipelineEngineHost hideBadge={isWhatsappTab} />
       <DraggableCnpjPanel />
-      {showFloating && (
+      {showFloating && !isWhatsappTab && (
         <FloatingStatsPanel
           stats={stats}
           running={running}
@@ -77,7 +77,7 @@ export function GlobalFloatingPanels() {
  * Mantém o motor do fluxo rodando em qualquer aba do painel e mostra um selo
  * discreto de "motor ativo" com a etapa atual.
  */
-function PipelineEngineHost() {
+function PipelineEngineHost({ hideBadge }: { hideBadge?: boolean }) {
   const running = useStore(pipelineStore, (s) => s.running);
   const stage = useStore(pipelineStore, (s) => s.stage);
   const pausedUntil = useStore(pipelineStore, (s) => s.pausedUntil);
@@ -86,7 +86,7 @@ function PipelineEngineHost() {
     resumePipelineEngine();
   }, []);
 
-  if (!running) return null;
+  if (!running || hideBadge) return null;
 
   const paused = !!pausedUntil && new Date(pausedUntil).getTime() > Date.now();
 
