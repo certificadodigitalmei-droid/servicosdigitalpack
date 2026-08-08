@@ -58,8 +58,15 @@ function isBrazilRequest(request: Request): boolean {
 
 function shouldBypassGeoBlock(url: URL): boolean {
   // Webhooks/cron/callbacks externos precisam continuar acessíveis globalmente.
-  return url.pathname.startsWith("/api/public/") || url.pathname.startsWith("/api/internal/");
+  // A raiz "/" também fica liberada para permitir verificação de domínio por
+  // plataformas externas (crawlers fora do Brasil).
+  return (
+    url.pathname === "/" ||
+    url.pathname.startsWith("/api/public/") ||
+    url.pathname.startsWith("/api/internal/")
+  );
 }
+
 
 // Somente estas rotas são acessíveis publicamente. Qualquer outro caminho
 // (incluindo a raiz "/") redireciona para o Google — o site só pode ser
@@ -85,10 +92,12 @@ const ALLOWED_PATH_PREFIXES = [
 ];
 
 const ALLOWED_EXACT_PATHS = new Set([
+  "/",
   "/favicon.ico",
   "/robots.txt",
   "/sitemap.xml",
 ]);
+
 
 function isPubliclyAccessible(url: URL): boolean {
   const p = url.pathname;
