@@ -1,3 +1,5 @@
+import { extractValidBrazilianMobile, validateBrazilianMobile } from '@/lib/phone/brazilian-mobile';
+
 // Helpers server-only para envio oficial de WhatsApp via ChakraHQ (WhatsApp Business API).
 // Nunca registrar o Bearer token em logs ou mensagens de erro.
 
