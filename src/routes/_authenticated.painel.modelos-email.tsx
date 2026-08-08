@@ -293,6 +293,10 @@ function RotacaoModelos() {
         </CardContent>
       </Card>
 
+      <SubjectAuditPanel activeIds={selected} />
+
+
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Pré-visualização: {current.name}</CardTitle>
