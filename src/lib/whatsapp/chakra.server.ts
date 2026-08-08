@@ -169,7 +169,7 @@ export async function sendChakraTemplate(opts: {
   if (!opts.pluginId) return { ok: false, error: 'Plugin ID não configurado' };
   if (!opts.whatsappPhoneNumberId) return { ok: false, error: 'Phone Number ID não configurado' };
   if (!opts.buttonToken) return { ok: false, error: 'Item sem token de link — envio bloqueado' };
-  if (!normalizePhone(opts.to)) return { ok: false, error: 'Telefone inválido — envio bloqueado' };
+  if (!validateBrazilianMobile(opts.to).valid) return { ok: false, error: 'Celular inválido — envio bloqueado' };
   if (!String(opts.razao ?? '').trim()) return { ok: false, error: 'Item sem razão social — envio bloqueado' };
   if (!String(opts.cnpj ?? '').trim()) return { ok: false, error: 'Item sem CNPJ — envio bloqueado' };
 
