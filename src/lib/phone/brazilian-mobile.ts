@@ -92,6 +92,9 @@ export function validateBrazilianMobile(
   if (!subscriber.startsWith('9')) return fail('not_mobile', d, subscriber);
   if (allSameDigits(subscriber)) return fail('repeated_digits', d, subscriber);
   if (isSequential(subscriber)) return fail('sequential_digits', d, subscriber);
+  // 9 + sequência (ex.: 912345678) também é número de teste/inválido.
+  if (allSameDigits(subscriber.slice(1))) return fail('repeated_digits', d, subscriber);
+  if (isSequential(subscriber.slice(1))) return fail('sequential_digits', d, subscriber);
 
   return { valid: true, e164: `55${national}`, ddd: d, subscriber, reason: null };
 }
