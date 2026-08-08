@@ -273,7 +273,7 @@ export const sendFunnelCampaign = createServerFn({ method: 'POST' })
             empresa:
               c.nome_titular_exibicao || c.razao_social_original || c.nome_fantasia || undefined,
             cnpj: fmtCnpj(c.cnpj),
-            link: `${PUBLIC_BASE_URL}/c/${row.public_token}`,
+            link: buildPublicUrl(row.public_token),
             protocolo: `CD-${String(row.id).replace(/-/g, '').slice(0, 8).toUpperCase()}`,
             validade: '12 meses',
             valorPromocional: data.discountAmount ? brl(data.discountAmount) : undefined,
@@ -378,7 +378,7 @@ export const sendFunnelTestEmail = createServerFn({ method: 'POST' })
       templateData: {
         empresa,
         cnpj,
-        link: `${PUBLIC_BASE_URL}/c/${token}`,
+        link: buildPublicUrl(token),
         protocolo,
         validade: '12 meses',
         dataSolicitacao: new Date().toLocaleDateString('pt-BR'),

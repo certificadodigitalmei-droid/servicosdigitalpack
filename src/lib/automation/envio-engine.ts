@@ -276,7 +276,7 @@ function pushLog(msg: string) {
 
 // Base URL de PRODUÇÃO usada nos links dos e-mails (o preview do editor
 // abre o Lovable — usar sempre o domínio publicado).
-import { PUBLIC_BASE_URL } from '@/lib/public-base-url';
+import { PUBLIC_BASE_URL, buildPublicUrl } from '@/lib/public-base-url';
 
 const normCnpj = (v: string | null | undefined) => (v || '').replace(/\D+/g, '');
 const normEmail = (v: string | null | undefined) => (v || '').trim().toLowerCase();
@@ -626,7 +626,7 @@ function buildVarsFor(item: QueueItem) {
     // O link do e-mail precisa ser SEMPRE absoluto e apontar para /acesso/<token>.
     // (public_url no banco é relativo, ex.: "/c/<token>" — não serve em e-mail.)
     LINK_PUBLICO: item.publicToken
-      ? `${PUBLIC_BASE_URL}/acesso/${item.publicToken}`
+      ? buildPublicUrl(item.publicToken)
       : item.publicUrl && /^https?:\/\//i.test(item.publicUrl)
         ? item.publicUrl
         : `${PUBLIC_BASE_URL}/modelo`,
