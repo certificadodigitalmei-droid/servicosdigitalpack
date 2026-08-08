@@ -283,17 +283,24 @@ export const sendWaBatch = createServerFn({ method: 'POST' })
     let failed = 0;
     for (const item of (items ?? []) as any[]) {
       const token = String(item.button_url_token ?? '').trim();
-      if (!token) {
+      const razao = String(item.company_name ?? '').trim();
+      const cnpj = String(item.cnpj ?? '').trim();
+      const blocked = !token
+        ? 'Item antigo sem token de link — regenere a fila'
+        : !razao
+          ? 'Item sem razão social — regenere a fila'
+          : !cnpj
+            ? 'Item sem CNPJ — regenere a fila'
+            : null;
+      if (blocked) {
         failed++;
         await supabaseAdmin
           .from('whatsapp_queue')
-          .update({
-            status: 'failed',
-            error_message: 'Item antigo sem token de link — regenere a fila',
-          } as any)
+          .update({ status: 'failed', error_message: blocked } as any)
           .eq('id', item.id);
         continue;
       }
+
 
       const result = await sendChakraTemplate({
         apiBaseUrl: cfg.base_url,
