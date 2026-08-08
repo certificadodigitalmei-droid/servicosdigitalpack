@@ -506,6 +506,24 @@ export type Database = {
           },
         ]
       }
+      campaign_variant_settings: {
+        Row: {
+          id: number
+          updated_at: string
+          variant_ids: Json
+        }
+        Insert: {
+          id?: number
+          updated_at?: string
+          variant_ids?: Json
+        }
+        Update: {
+          id?: number
+          updated_at?: string
+          variant_ids?: Json
+        }
+        Relationships: []
+      }
       casa_dos_dados_settings: {
         Row: {
           api_base_url: string | null
