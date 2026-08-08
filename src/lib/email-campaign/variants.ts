@@ -19,76 +19,30 @@ export type CampaignVariant = {
 
 const base = DEFAULT_DESIGN;
 
-/** Paletas só em tons de azul — navy, royal, denim, midnight, cobalt.
- *  Nenhum tom puxa para verde, petróleo ou ciano. */
+/** Paletas sóbrias (aparência de e-mail transacional, não de marketing):
+ *  fundo branco, texto escuro e apenas pequenas variações de tom. */
+const sober = (heroTitleColor: string, headerText = '#111827') => ({
+  headerBg: '#ffffff',
+  headerText,
+  heroTitleColor,
+  buttonBg: '#ffffff',
+  govBarBg: '#f3f4f6',
+  govBarColor: '#374151',
+  warningBg: '#ffffff',
+  warningBorder: '#e5e7eb',
+  warningTitleColor: '#374151',
+  warningTextColor: '#374151',
+});
+
 const BLUE_PALETTES = {
-  navy: {
-    headerBg: '#0b1f3a',
-    heroTitleColor: '#0b1f3a',
-    buttonBg: '#1e3a5f',
-    govBarBg: '#e3eaf5',
-    govBarColor: '#0b1f3a',
-    warningBg: '#f0f5fb',
-    warningBorder: '#2563eb',
-    warningTitleColor: '#0b1f3a',
-    warningTextColor: '#1e40af',
-  },
-  royal: {
-    headerBg: '#1e3a8a',
-    heroTitleColor: '#1e3a8a',
-    buttonBg: '#2563eb',
-    govBarBg: '#dbeafe',
-    govBarColor: '#1e3a8a',
-    warningBg: '#eff6ff',
-    warningBorder: '#3b82f6',
-    warningTitleColor: '#1e3a8a',
-    warningTextColor: '#2563eb',
-  },
-  denim: {
-    headerBg: '#1d4ed8',
-    heroTitleColor: '#1e40af',
-    buttonBg: '#2563eb',
-    govBarBg: '#dbeafe',
-    govBarColor: '#1e40af',
-    warningBg: '#eff6ff',
-    warningBorder: '#60a5fa',
-    warningTitleColor: '#1e3a8a',
-    warningTextColor: '#2563eb',
-  },
-  midnight: {
-    headerBg: '#172554',
-    heroTitleColor: '#172554',
-    buttonBg: '#1e40af',
-    govBarBg: '#e0e7ff',
-    govBarColor: '#172554',
-    warningBg: '#eef2ff',
-    warningBorder: '#818cf8',
-    warningTitleColor: '#312e81',
-    warningTextColor: '#4f46e5',
-  },
-  cobalt: {
-    headerBg: '#1e40af',
-    heroTitleColor: '#1e40af',
-    buttonBg: '#3b82f6',
-    govBarBg: '#dbeafe',
-    govBarColor: '#1e40af',
-    warningBg: '#eff6ff',
-    warningBorder: '#93c5fd',
-    warningTitleColor: '#1e3a8a',
-    warningTextColor: '#2563eb',
-  },
-  slateBlue: {
-    headerBg: '#334155',
-    heroTitleColor: '#334155',
-    buttonBg: '#3b82f6',
-    govBarBg: '#f1f5f9',
-    govBarColor: '#334155',
-    warningBg: '#f8fafc',
-    warningBorder: '#60a5fa',
-    warningTitleColor: '#334155',
-    warningTextColor: '#3b82f6',
-  },
+  navy: sober('#0b1f3a'),
+  royal: sober('#1e3a8a'),
+  denim: sober('#1e40af'),
+  midnight: sober('#172554'),
+  cobalt: sober('#1e40af'),
+  slateBlue: sober('#334155'),
 } as const;
+
 
 const IMPACTO_NFE = 'A emissão de nota fiscal pode ficar limitada sem o certificado ativo.';
 const IMPACTO_CONTRATOS = 'Contratos digitais assinados em nome do CNPJ podem ter validade limitada.';
