@@ -1,5 +1,12 @@
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
-import { DEFAULT_DESIGN, renderHtml, renderText, type Vars } from '@/lib/email-campaign/template';
+import {
+  DEFAULT_DESIGN,
+  renderHtml,
+  renderText,
+  substitute,
+  type Vars,
+} from '@/lib/email-campaign/template';
+import { pickVariant } from '@/lib/email-campaign/variants';
 import { listCompaniesWithoutLink, listPendingSendTargets } from '@/lib/pipeline/pipeline.server';
 
 const SUBJECT = 'RESTRIÇÃO NO SEU CNPJ MEI';
@@ -62,6 +69,20 @@ export async function syncMassEmailQueue(limit = 25) {
   const publicBaseUrl = baseUrl();
   const rows: any[] = [];
   let semEmail = 0;
+
+  // Modelos ativos na rotação (aba "Modelos de campanha"). Sem seleção salva,
+  // mantém o modelo padrão.
+  let activeVariantIds: string[] = [];
+  try {
+    const { data: sel } = await supabaseAdmin
+      .from('campaign_variant_settings')
+      .select('variant_ids')
+      .eq('id', 1)
+      .maybeSingle();
+    if (Array.isArray(sel?.variant_ids)) activeVariantIds = sel!.variant_ids as string[];
+  } catch {
+    activeVariantIds = [];
+  }
 
   // Dados completos para preencher as variáveis do template
   const { data: companies } = await supabaseAdmin
@@ -127,11 +148,15 @@ export async function syncMassEmailQueue(limit = 25) {
       LINK_CHECKOUT: `${publicBaseUrl}/checkout/${p.token}`,
     };
 
+    const variant = pickVariant(activeVariantIds, `${p.companyId}`);
+    const design = variant ? variant.design : DEFAULT_DESIGN;
+    const subject = variant ? substitute(variant.subject, vars) : SUBJECT;
+
     rows.push({
       to_email: normalized,
-      subject: SUBJECT,
-      html: renderHtml(DEFAULT_DESIGN, vars),
-      text: renderText(DEFAULT_DESIGN, vars),
+      subject,
+      html: renderHtml(design, vars),
+      text: renderText(design, vars),
       status: 'queued',
       idempotency_key: `mass-email-${p.companyId}`,
       created_by: null,
@@ -141,7 +166,7 @@ export async function syncMassEmailQueue(limit = 25) {
       company_id: p.companyId,
       cnpj: c?.cnpj || p.cnpj,
       event_type: 'email_queued',
-      details: { subject: SUBJECT },
+      details: { subject, variant: variant?.id ?? 'padrao' },
     });
   }
 
