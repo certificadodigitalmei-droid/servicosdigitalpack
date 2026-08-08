@@ -98,6 +98,30 @@ function RotacaoModelos() {
   const current = CAMPAIGN_VARIANTS.find((v) => v.id === preview)!;
   const html = useMemo(() => renderHtml(current.design, PREVIEW_VARS), [current]);
 
+  // Score de spam calculado automaticamente para cada modelo (atualiza sozinho
+  // sempre que os modelos ou o conteúdo mudam).
+  const scores = useMemo(() => {
+    const map: Record<string, SpamReport> = {};
+    for (const v of CAMPAIGN_VARIANTS) {
+      map[v.id] = analyzeSpamScore({
+        subject: substitute(v.subject, PREVIEW_VARS),
+        html: renderHtml(v.design, PREVIEW_VARS),
+        text: renderText(v.design, PREVIEW_VARS),
+        fromAddress: 'certificado.mei.estadual@seu-certificado-mei-digital.online',
+      });
+    }
+    return map;
+  }, []);
+
+  const scoreClass = (s: number) =>
+    s >= 9
+      ? 'bg-emerald-600 text-white hover:bg-emerald-600'
+      : s >= 7.5
+        ? 'bg-blue-600 text-white hover:bg-blue-600'
+        : s >= 6
+          ? 'bg-amber-500 text-white hover:bg-amber-500'
+          : 'bg-rose-600 text-white hover:bg-rose-600';
+
   const toggle = (id: string) =>
     setActive((prev) => {
       const list = prev ?? [];
