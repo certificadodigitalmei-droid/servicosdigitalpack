@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Check, Loader2, Mail, Save, Shuffle } from 'lucide-react';
 import { toast } from 'sonner';
-import { previewEmailTemplate } from '@/lib/emails/recovery.functions';
 import {
   loadCampaignVariantSelection,
   saveCampaignVariantSelection,
@@ -27,14 +26,6 @@ export const Route = createFileRoute('/_authenticated/painel/modelos-email')({
     ],
   }),
 });
-
-const MODELOS = [
-  {
-    name: 'pagamento-confirmado',
-    label: 'Pagamento confirmado',
-    when: 'Enviado assim que o pagamento é confirmado (certificado emitido).',
-  },
-];
 
 const PREVIEW_VARS: Record<string, string> = {
   NOME_EMPRESARIAL: 'RAFAEL VALE DA SILVA',
@@ -68,16 +59,11 @@ function ModelosEmailPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="transacionais">
+      <Tabs defaultValue="rotacao">
         <TabsList>
-          <TabsTrigger value="transacionais">Visão geral</TabsTrigger>
           <TabsTrigger value="rotacao">Modelos de campanha (rotação)</TabsTrigger>
           <TabsTrigger value="spam">Teste de spam</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="transacionais" className="mt-4">
-          <VisaoGeral />
-        </TabsContent>
 
         <TabsContent value="rotacao" className="mt-4">
           <RotacaoModelos />
@@ -87,78 +73,6 @@ function ModelosEmailPage() {
           <SpamScorePanel vars={PREVIEW_VARS} />
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function VisaoGeral() {
-  const [selected, setSelected] = useState(MODELOS[0].name);
-  const [html, setHtml] = useState('');
-  const [subject, setSubject] = useState('');
-  const [loading, setLoading] = useState(false);
-  const doPreview = useServerFn(previewEmailTemplate);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    doPreview({ data: { name: selected } })
-      .then((r) => {
-        if (cancelled) return;
-        setHtml(r.html);
-        setSubject(r.subject);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setHtml('<p style="font-family:sans-serif;padding:24px">Falha ao carregar o modelo.</p>');
-          setSubject('');
-        }
-      })
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [selected, doPreview]);
-
-  const current = MODELOS.find((m) => m.name === selected)!;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {MODELOS.map((m) => (
-          <Button
-            key={m.name}
-            variant={m.name === selected ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSelected(m.name)}
-          >
-            {m.label}
-          </Button>
-        ))}
-      </div>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">{current.label}</CardTitle>
-          <p className="text-xs text-muted-foreground">{current.when}</p>
-          <p className="text-sm mt-2">
-            <span className="text-muted-foreground">Assunto: </span>
-            <span className="font-medium">{subject || '—'}</span>
-          </p>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="h-[600px] flex items-center justify-center text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando modelo…
-            </div>
-          ) : (
-            <iframe
-              title={`preview-${selected}`}
-              srcDoc={html}
-              className="w-full h-[700px] rounded-md border bg-white"
-            />
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

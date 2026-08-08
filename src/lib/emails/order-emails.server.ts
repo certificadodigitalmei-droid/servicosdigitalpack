@@ -168,32 +168,6 @@ export async function sendPixCreatedEmail(orderId: string): Promise<void> {
   }
 }
 
-/** E-mail de confirmação: certificado emitido e vinculado. */
-export async function sendPaidEmail(orderId: string): Promise<void> {
-  try {
-    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-    const order = await loadOrder(orderId)
-    if (!order?.customer_email) return
-
-    // Evita duplicidade quando webhook e reconciliação disparam juntos.
-    const { data: flag } = await supabaseAdmin
-      .from('orders')
-      .select('email_paid_sent_at')
-      .eq('id', orderId)
-      .maybeSingle()
-    if ((flag as any)?.email_paid_sent_at) return
-
-    const ctx = await resolveContext(order)
-    await sendTemplateEmail('pagamento-confirmado', order.customer_email, {
-      idempotencyKey: `pagamento-confirmado-${order.id}`,
-      templateData: { ...ctx, validade: VALIDADE_PADRAO, dataEmissao: formatDateTimeBR(new Date().toISOString()) },
-    })
-    await markEmail(order.id, 'email_paid_sent_at')
-  } catch (err) {
-    console.error('[order-emails] falha ao enviar e-mail de pagamento confirmado', err)
-  }
-}
-
 /**
  * Varredura de cobrança: pedidos com PIX gerado há mais de N minutos,
  * ainda não pagos e sem lembrete enviado.

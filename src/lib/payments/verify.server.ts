@@ -69,14 +69,7 @@ export async function settleOrderPaid(orderId: string, paidAtIso?: string): Prom
     .neq('status', 'paid')
     .select('id');
 
-  if (updated && updated.length > 0) {
-    try {
-      const { sendPaidEmail } = await import('@/lib/emails/order-emails.server');
-      await sendPaidEmail(orderId);
-    } catch (err) {
-      console.error('[verify] falha ao enviar e-mail de pagamento confirmado', err);
-    }
-  }
+  // E-mail de confirmação de pagamento foi descontinuado por decisão do produto.
   return nowIso;
 }
 

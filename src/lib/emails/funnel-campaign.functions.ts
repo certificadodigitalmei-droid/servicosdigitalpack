@@ -206,7 +206,7 @@ export const sendFunnelCampaign = createServerFn({ method: 'POST' })
     z
       .object({
         linkIds: z.array(z.string().uuid()).min(1).max(500),
-        template: z.enum(['oferta-desconto', 'pix-pendente', 'pix-gerado', 'pagamento-confirmado']),
+        template: z.enum(['oferta-desconto', 'pix-pendente', 'pix-gerado']),
         discountAmount: z.number().positive().max(100000).optional(),
         discountHours: z.number().min(1).max(720).default(24),
         ofertaLabel: z.string().max(60).optional(),
@@ -324,7 +324,7 @@ export const sendFunnelTestEmail = createServerFn({ method: 'POST' })
     z
       .object({
         email: z.string().email().max(200),
-        template: z.enum(['oferta-desconto', 'pix-pendente', 'pix-gerado', 'pagamento-confirmado']),
+        template: z.enum(['oferta-desconto', 'pix-pendente', 'pix-gerado']),
         discountAmount: z.number().positive().max(100000).optional(),
         ofertaLabel: z.string().max(60).optional(),
         linkId: z.string().uuid().optional(),
@@ -399,7 +399,7 @@ export const sendManualEmails = createServerFn({ method: 'POST' })
     z
       .object({
         emails: z.array(z.string().email().max(200)).min(1).max(500),
-        template: z.enum(['oferta-desconto', 'pix-pendente', 'pix-gerado', 'pagamento-confirmado']),
+        template: z.enum(['oferta-desconto', 'pix-pendente', 'pix-gerado']),
         empresa: z.string().max(200).optional(),
         cnpj: z.string().max(30).optional(),
         link: z.string().max(500).optional(),
