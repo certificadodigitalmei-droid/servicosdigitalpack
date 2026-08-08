@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useServerFn } from '@tanstack/react-start';
 import { getSitePopup } from '@/lib/site-popup.functions';
-import { DashboardOverviewStrip } from '@/components/painel/DashboardOverviewStrip';
 import { PipelineStrip } from '@/components/painel/PipelineStrip';
 
 
@@ -382,8 +381,6 @@ function DashboardPage() {
           </div>
         </CardContent>
       </Card>
-
-      <DashboardOverviewStrip from={range.from} to={range.to} periodLabel={periodLabel} />
 
       <div className="flex items-center justify-between">
         <div>
