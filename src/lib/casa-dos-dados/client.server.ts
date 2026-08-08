@@ -8,7 +8,12 @@ export type CasaFilters = {
   only_active?: boolean;
   only_matriz?: boolean;
   require_email?: boolean;
+  /** Exige celular na própria pesquisa — evita consumir créditos com fixo/sem telefone. */
+  require_mobile_phone?: boolean;
 };
+
+/** Limite defensivo de CNPJs enviados em `excluir.cnpj`. */
+export const MAX_EXCLUDED_CNPJS = 200;
 
 export type SanitizedRequestLog = {
   url: string;
