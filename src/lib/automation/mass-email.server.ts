@@ -1,12 +1,11 @@
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
 import {
-  DEFAULT_DESIGN,
   renderHtml,
   renderText,
   substitute,
   type Vars,
 } from '@/lib/email-campaign/template';
-import { pickVariant } from '@/lib/email-campaign/variants';
+import { pickVariantOrDefault } from '@/lib/email-campaign/variants';
 import { listCompaniesWithoutLink, listPendingSendTargets } from '@/lib/pipeline/pipeline.server';
 
 const SUBJECT = 'RESTRIÇÃO NO SEU CNPJ MEI';
@@ -148,9 +147,9 @@ export async function syncMassEmailQueue(limit = 25) {
       LINK_CHECKOUT: `${publicBaseUrl}/checkout/${p.token}`,
     };
 
-    const variant = pickVariant(activeVariantIds, `${p.companyId}`);
-    const design = variant ? variant.design : DEFAULT_DESIGN;
-    const subject = variant ? substitute(variant.subject, vars) : SUBJECT;
+    const variant = pickVariantOrDefault(activeVariantIds, `${p.companyId}`);
+    const design = variant.design;
+    const subject = substitute(variant.subject, vars);
 
     rows.push({
       to_email: normalized,
@@ -166,7 +165,7 @@ export async function syncMassEmailQueue(limit = 25) {
       company_id: p.companyId,
       cnpj: c?.cnpj || p.cnpj,
       event_type: 'email_queued',
-      details: { subject, variant: variant?.id ?? 'padrao' },
+      details: { subject, variant: variant.id },
     });
   }
 

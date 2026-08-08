@@ -16,8 +16,6 @@ import {
 import { toast } from 'sonner';
 import { CAMPAIGN_VARIANTS } from '@/lib/email-campaign/variants';
 import {
-  DEFAULT_DESIGN,
-  DEFAULT_SUBJECT,
   renderHtml,
   renderText,
   substitute,
@@ -42,19 +40,13 @@ const verdictStyle: Record<SpamReport['verdict'], { label: string; className: st
 };
 
 export function SpamScorePanel({ vars }: { vars: Record<string, string> }) {
-  const [selected, setSelected] = useState<string>('__principal');
+  const [selected, setSelected] = useState<string>(CAMPAIGN_VARIANTS[0].id);
   const [testAddress, setTestAddress] = useState('');
   const [sending, setSending] = useState(false);
   const send = useServerFn(sendCampaignEmail);
 
   const items = useMemo<Item[]>(() => {
     const list: { id: string; name: string; subject: string; design: CampaignDesign }[] = [
-      {
-        id: '__principal',
-        name: 'Modelo principal',
-        subject: DEFAULT_SUBJECT,
-        design: { ...DEFAULT_DESIGN },
-      },
       ...CAMPAIGN_VARIANTS.map((v) => ({
         id: v.id,
         name: v.name,

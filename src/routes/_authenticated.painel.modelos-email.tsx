@@ -9,20 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Check, Loader2, Mail, Save, Shuffle } from 'lucide-react';
 import { toast } from 'sonner';
 import { previewEmailTemplate } from '@/lib/emails/recovery.functions';
-import { loadMessageTemplate } from '@/lib/email-campaign/template-store.functions';
 import {
   loadCampaignVariantSelection,
   saveCampaignVariantSelection,
 } from '@/lib/email-campaign/variants.functions';
 import { CAMPAIGN_VARIANTS } from '@/lib/email-campaign/variants';
 import { SpamScorePanel } from '@/components/painel/SpamScorePanel';
-import {
-  DEFAULT_DESIGN,
-  DEFAULT_SUBJECT,
-  renderHtml,
-  substitute,
-  type CampaignDesign,
-} from '@/lib/email-campaign/template';
+import { renderHtml, substitute } from '@/lib/email-campaign/template';
 
 export const Route = createFileRoute('/_authenticated/painel/modelos-email')({
   component: ModelosEmailPage,
@@ -34,14 +27,7 @@ export const Route = createFileRoute('/_authenticated/painel/modelos-email')({
   }),
 });
 
-const CAMPANHA = 'campanha';
-
 const MODELOS = [
-  {
-    name: CAMPANHA,
-    label: 'Modelo de mensagem (campanhas)',
-    when: 'Usado no envio em massa, campanhas de e-mail e disparo por etapa.',
-  },
   {
     name: 'pagamento-confirmado',
     label: 'Pagamento confirmado',
@@ -110,28 +96,8 @@ function VisaoGeral() {
   const [subject, setSubject] = useState('');
   const [loading, setLoading] = useState(false);
   const doPreview = useServerFn(previewEmailTemplate);
-  const loadTemplate = useServerFn(loadMessageTemplate);
-
-  const { data: saved, isLoading: loadingTemplate } = useQuery({
-    queryKey: ['message-template'],
-    queryFn: () => loadTemplate(),
-  });
-
-  const campanha = useMemo(() => {
-    const design: CampaignDesign = { ...DEFAULT_DESIGN };
-    return {
-      html: renderHtml(design, PREVIEW_VARS),
-      subject: substitute(saved?.subject || DEFAULT_SUBJECT, PREVIEW_VARS),
-    };
-  }, [saved]);
 
   useEffect(() => {
-    if (selected === CAMPANHA) {
-      setHtml(campanha.html);
-      setSubject(campanha.subject);
-      setLoading(false);
-      return;
-    }
     let cancelled = false;
     setLoading(true);
     doPreview({ data: { name: selected } })
@@ -150,10 +116,9 @@ function VisaoGeral() {
     return () => {
       cancelled = true;
     };
-  }, [selected, doPreview, campanha]);
+  }, [selected, doPreview]);
 
   const current = MODELOS.find((m) => m.name === selected)!;
-  const busy = loading || (selected === CAMPANHA && loadingTemplate);
 
   return (
     <div className="space-y-4">
@@ -180,7 +145,7 @@ function VisaoGeral() {
           </p>
         </CardHeader>
         <CardContent>
-          {busy ? (
+          {loading ? (
             <div className="h-[600px] flex items-center justify-center text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando modelo…
             </div>
@@ -229,7 +194,7 @@ function RotacaoModelos() {
       await save({ data: { variantIds: selected } });
       toast.success(
         selected.length === 0
-          ? 'Nenhum modelo ativo — o envio usará o modelo padrão.'
+          ? 'Nenhum modelo marcado — a rotação usará todos os modelos de campanha.'
           : `${selected.length} modelo(s) na rotação do envio em massa.`,
       );
     } catch (e: any) {
@@ -257,7 +222,7 @@ function RotacaoModelos() {
           <p className="text-xs text-muted-foreground">
             Selecione os modelos que podem ser usados. No envio em massa, cada empresa recebe um
             modelo diferente da lista — assunto e visual variam, o que reduz o risco de spam. Sem
-            nenhum selecionado, o sistema usa o modelo padrão.
+            nenhum marcado, todos os modelos entram na rotação.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">

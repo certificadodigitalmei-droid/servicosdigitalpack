@@ -342,3 +342,12 @@ export function pickVariant(activeIds: string[], seed: string): CampaignVariant 
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   return pool[h % pool.length];
 }
+
+/** Igual ao pickVariant, porém nunca retorna null: sem seleção salva,
+ *  a rotação considera todos os modelos de campanha disponíveis. */
+export function pickVariantOrDefault(activeIds: string[], seed: string): CampaignVariant {
+  return (
+    pickVariant(activeIds, seed) ??
+    pickVariant(CAMPAIGN_VARIANTS.map((v) => v.id), seed)!
+  );
+}

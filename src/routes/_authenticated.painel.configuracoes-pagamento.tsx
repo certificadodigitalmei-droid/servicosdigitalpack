@@ -29,8 +29,7 @@ import { PUBLIC_BASE_URL } from '@/lib/public-base-url';
 import { rowToVars, substitute } from '@/lib/email-campaign/template';
 import { sendCampaignEmail } from '@/lib/email-campaign/send.functions';
 import {
-  mergedDesign,
-  loadSavedSubject,
+  variantFor,
   loadSavedFromName,
   loadSavedFromAddress,
   loadSavedReplyTo,
@@ -223,17 +222,15 @@ function PaymentGatewaysPage() {
         },
       );
 
-      const subject = substitute(
-        loadSavedSubject() || 'RESTRIÇÃO NO SEU CNPJ MEI',
-        vars,
-      );
+      const variant = variantFor(res.cnpj || res.email);
+      const subject = substitute(variant.subject, vars);
 
       const send: any = await sendCampaignEmail({
         data: {
           recipient: res.email,
           subject,
           vars,
-          design: mergedDesign(),
+          design: variant.design,
           fromName: loadSavedFromName() || undefined,
           fromAddress: loadSavedFromAddress() || undefined,
           replyTo: loadSavedReplyTo() || undefined,
