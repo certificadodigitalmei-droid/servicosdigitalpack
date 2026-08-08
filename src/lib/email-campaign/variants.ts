@@ -146,7 +146,7 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
       subtitle: 'Central de Emissão · MEI',
       heroTitle: 'Certificado Digital não localizado',
       intro:
-        'Prezado(a) *{{NOME_TITULAR}}*,\n\nO CNPJ *{{CNPJ}}* consta com o Certificado Digital inativo. Para manter a regularidade, especialmente junto à Receita Federal, é importante atualizar essa pendência.\n\nConfira os detalhes abaixo:',
+        'Prezado(a) *{{NOME_TITULAR}}*,\n\nO CNPJ *{{CNPJ}}* consta com o Certificado Digital inativo. Para manter a regularidade, especialmente junto à Receita Federal, é importante atualizar essa pendência.\n\nConfira abaixo os detalhes do cadastro e as orientações para concluir a atualização com segurança, sem sair do computador ou do celular:',
       warningTitle: 'Pontos que precisam de atenção',
       warningItems: [
         IMPACTO_NFE,
@@ -196,7 +196,7 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
     name: 'Redação 3 — Azul denim',
     description: 'Formato de resultado de consulta. Azul denim.',
     accent: BLUE_PALETTES.denim.headerBg,
-    subject: 'Resultado da consulta {{REFERENCIA}} — CNPJ {{CNPJ}}',
+    subject: 'Resultado da consulta cadastral do CNPJ {{CNPJ}}',
     preheader: 'Resultado da verificação do seu CNPJ.',
     design: {
       ...base,
@@ -272,7 +272,7 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
       heroTitle: 'Seu CNPJ está sem certificado ativo',
       heroTitleSize: 22,
       intro:
-        'Prezado(a) *{{NOME_TITULAR}}*,\n\nAo verificar o CNPJ *{{CNPJ}}*, não encontramos um Certificado Digital ativo vinculado à empresa. A Receita Federal orienta que o certificado esteja sempre em dia.\n\nVocê pode conferir a situação completa em poucos segundos:',
+        'Prezado(a) *{{NOME_TITULAR}}*,\n\nAo verificar o CNPJ *{{CNPJ}}*, não encontramos um Certificado Digital ativo vinculado à empresa. A Receita Federal orienta que o certificado esteja sempre em dia.\n\nVocê pode conferir a situação completa em poucos segundos e, se preferir, salvar o resumo do cadastro para consultar depois com calma:',
       warningTitle: 'Por que isso importa',
       warningItems: [
         IMPACTO_NFE,
