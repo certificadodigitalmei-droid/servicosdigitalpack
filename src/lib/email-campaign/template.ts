@@ -436,57 +436,42 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
 
 
-    ${D.showHero ? `
-    <tr><td class="l-pad" style="padding:44px ${px}px 20px ${px}px;text-align:center;">
-      <h2 style="font-size:${D.heroTitleSize}px;font-weight:800;color:${D.heroTitleColor};margin:0;line-height:1.25;">${heroTitle}</h2>
-      <div style="width:48px;height:1px;background:#e5e7eb;margin:28px auto;"></div>
+    ${D.showHero && String(heroTitle).trim() ? `
+    <tr><td class="l-pad" style="padding:20px ${px}px 0 ${px}px;text-align:left;">
+      <h2 style="font-size:${D.heroTitleSize}px;font-weight:700;color:${D.heroTitleColor};margin:0;line-height:1.35;">${heroTitle}</h2>
     </td></tr>` : ''}
 
-    <tr><td class="l-pad" style="padding:0 ${px}px 24px ${px}px;text-align:${align};font-size:${D.bodySize}px;line-height:1.6;color:${D.textColor};font-weight:700;">
+    <tr><td class="l-pad" style="padding:20px ${px}px 20px ${px}px;text-align:${align};font-size:${D.bodySize}px;line-height:1.65;color:${D.textColor};">
       ${intro}
     </td></tr>
 
     ${D.showCard ? `
-    <tr><td class="l-pad" style="padding:0 ${px}px 28px ${px}px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background:#ffffff;border:1px solid #dfe4ea;border-radius:6px;border-collapse:separate;">
-        <tr><td colspan="2" bgcolor="#f4f7f9" style="background:#f4f7f9;border-bottom:1px solid #dfe4ea;padding:9px 16px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:#5b6b7b;border-radius:6px 6px 0 0;">${cardTitle}</td></tr>
+    <tr><td class="l-pad" style="padding:0 ${px}px 24px ${px}px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background:#ffffff;border:1px solid #e5e7eb;border-collapse:separate;">
+        <tr><td colspan="3" bgcolor="#f9fafb" style="background:#f9fafb;border-bottom:1px solid #e5e7eb;padding:9px 16px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#4b5563;">${cardTitle}</td></tr>
         ${rowsHtml}
       </table>
     </td></tr>` : ''}
 
     ${D.showWarning ? `
-    <tr><td class="l-pad" style="padding:0 ${px}px 30px ${px}px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#fffbeb" style="background:#fffbeb;background-color:#fffbeb;border:1px solid #d97706;border-left:5px solid #d97706;border-radius:6px;">
-        <tr><td style="padding:16px 22px 8px 22px;font-family:Arial,sans-serif;">
-          <div style="color:#92400e;font-size:${D.warningTitleSize || 14}px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;line-height:1.35;">
-            <span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:#d97706;color:#ffffff;border-radius:50%;font-size:13px;font-weight:900;margin-right:8px;vertical-align:middle;">!</span>${warningTitle}
-          </div>
-        </td></tr>
-        <tr><td style="padding:6px 22px 18px 22px;font-family:Arial,sans-serif;">
-          ${warningItemsList.map((item) => `
-            <div style="color:#78350f;font-size:${D.warningItemsSize || 13}px;line-height:1.6;font-weight:700;padding:6px 0;border-top:1px dashed #e5e7eb;">
-              <span style="color:#d97706;font-weight:900;margin-right:8px;">✕</span>${inlineFormat(item)}
-            </div>`).join('')}
-        </td></tr>
-      </table>
+    <tr><td class="l-pad" style="padding:0 ${px}px 24px ${px}px;">
+      <div style="font-family:Arial,sans-serif;font-size:${D.warningTitleSize || 13}px;font-weight:700;color:${D.textColor};margin-bottom:8px;">${warningTitle}</div>
+      ${warningItemsList.map((item) => `
+        <div style="font-family:Arial,sans-serif;color:${D.textColor};font-size:${D.warningItemsSize || 13}px;line-height:1.6;padding:2px 0;">&#8226;&nbsp;${inlineFormat(item)}</div>`).join('')}
     </td></tr>` : ''}
 
 
-    <tr><td align="center" class="l-pad" style="padding:0 ${px}px 44px ${px}px;">
-      <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;text-transform:uppercase;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);white-space:normal;mso-padding-alt:0;line-height:1.2;">${buttonLabel}</a>
+    <tr><td class="l-pad" style="padding:0 ${px}px 28px ${px}px;font-family:Arial,sans-serif;font-size:${D.bodySize}px;line-height:1.6;color:${D.textColor};">
+      ${buttonLabel}:<br/>
+      <a href="${buttonHref}" class="l-btn" style="color:#1a4a8a;text-decoration:underline;word-break:break-all;">${buttonHref}</a>
     </td></tr>
 
     ${D.showSignature ? `
-    <tr><td class="l-pad" style="padding:0 ${px}px 36px ${px}px;color:${D.mutedColor};font-size:${D.signatureSize || Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
+    <tr><td class="l-pad" style="padding:0 ${px}px 28px ${px}px;color:${D.mutedColor};font-size:${D.signatureSize || Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
       ${signature}
     </td></tr>` : ''}
 
-    ${D.showBadges && D.badgesText ? `
-    <tr><td class="l-pad" style="padding:20px ${px}px 8px ${px}px;text-align:center;">
-      <div style="display:inline-block;font-size:11px;color:${D.mutedColor};letter-spacing:0.6px;text-transform:uppercase;font-weight:700;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:8px 16px;font-family:Arial,sans-serif;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;display:inline-block;color:#16a34a;" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>${esc(S(D.badgesText))}
-      </div>
-    </td></tr>` : ''}
+
 
     ${D.showFooter ? `
     <tr><td class="l-pad" style="padding:24px 32px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
