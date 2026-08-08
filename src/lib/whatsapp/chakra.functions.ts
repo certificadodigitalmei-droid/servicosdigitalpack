@@ -165,11 +165,14 @@ export const enqueueWaCompanies = createServerFn({ method: 'POST' })
 
     const { data: companies, error } = await supabaseAdmin
       .from('companies')
-      .select('id,cnpj,razao_social_original,nome_titular_exibicao,nome_fantasia,ddd,telefones')
-      .eq('possui_telefone', true)
+      .select('id,cnpj,razao_social_original,nome_titular_exibicao,nome_fantasia,ddd,telefones,whatsapp_phone_e164')
+      .not('whatsapp_phone_e164', 'is', null)
       .order('created_at', { ascending: false })
       .limit(data.limit * 3);
     if (error) throw new Error(error.message);
+
+    const { loadBlockedPhones } = await import('./blocklist.server');
+    const blockedPhones = await loadBlockedPhones();
 
     const ids = (companies ?? []).map((c: any) => c.id);
     const linkByCompany = new Map<string, { id: string; token: string }>();
@@ -196,11 +199,17 @@ export const enqueueWaCompanies = createServerFn({ method: 'POST' })
     let skippedNoLink = 0;
     let skippedNoPhone = 0;
     let skippedNoCnpj = 0;
+    let skippedBlocked = 0;
     for (const c of (companies ?? []) as any[]) {
       if (rows.length >= data.limit) break;
+      // pickCompanyPhone só devolve celular brasileiro válido (E.164).
       const phone = pickCompanyPhone(c);
       if (!phone) {
         skippedNoPhone++;
+        continue;
+      }
+      if (blockedPhones.has(phone)) {
+        skippedBlocked++;
         continue;
       }
       if (existing.has(phone)) continue;
@@ -229,10 +238,41 @@ export const enqueueWaCompanies = createServerFn({ method: 'POST' })
       });
     }
 
-    if (!rows.length) return { inserted: 0, skippedNoLink, skippedNoPhone, skippedNoCnpj };
+    if (!rows.length) return { inserted: 0, skippedNoLink, skippedNoPhone, skippedNoCnpj, skippedBlocked };
     const { error: insErr } = await supabaseAdmin.from('whatsapp_queue').insert(rows);
     if (insErr) throw new Error(insErr.message);
-    return { inserted: rows.length, skippedNoLink, skippedNoPhone, skippedNoCnpj };
+    return { inserted: rows.length, skippedNoLink, skippedNoPhone, skippedNoCnpj, skippedBlocked };
+  });
+
+/**
+ * Limpeza preventiva: remove da fila (sem chamar a API) todo item cujo
+ * telefone não seja celular brasileiro válido ou esteja bloqueado.
+ */
+export const cleanupWaQueue = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { validateBrazilianMobile } = await import('@/lib/phone/brazilian-mobile');
+    const { loadBlockedPhones } = await import('./blocklist.server');
+    const blockedPhones = await loadBlockedPhones();
+
+    const { data: rows } = await supabaseAdmin
+      .from('whatsapp_queue')
+      .select('id,phone')
+      .eq('owner_user_id', context.userId)
+      .neq('status', 'sent')
+      .limit(5000);
+
+    const toRemove = ((rows ?? []) as any[])
+      .filter((r) => !validateBrazilianMobile(r.phone).valid || blockedPhones.has(String(r.phone)))
+      .map((r) => r.id as string);
+
+    for (let i = 0; i < toRemove.length; i += 200) {
+      await supabaseAdmin.from('whatsapp_queue').delete().in('id', toRemove.slice(i, i + 200));
+    }
+    return { removed: toRemove.length, scanned: (rows ?? []).length };
   });
 
 export const sendWaBatch = createServerFn({ method: 'POST' })
