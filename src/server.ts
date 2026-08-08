@@ -107,7 +107,10 @@ function isPubliclyAccessible(url: URL): boolean {
   return ALLOWED_PATH_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix));
 }
 
-function withNoIndexHeaders(response: Response): Response {
+function withNoIndexHeaders(response: Response, url: URL): Response {
+  // A raiz "/" e o robots.txt precisam ficar indexáveis/legíveis para
+  // verificação de domínio por plataformas externas.
+  if (url.pathname === "/" || url.pathname === "/robots.txt") return response;
   const headers = new Headers(response.headers);
   headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
   return new Response(response.body, {
@@ -116,6 +119,7 @@ function withNoIndexHeaders(response: Response): Response {
     headers,
   });
 }
+
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
@@ -129,7 +133,7 @@ export default {
       }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return withNoIndexHeaders(await normalizeCatastrophicSsrResponse(response));
+      return withNoIndexHeaders(await normalizeCatastrophicSsrResponse(response), url);
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
