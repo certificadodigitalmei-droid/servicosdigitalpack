@@ -13,6 +13,7 @@
 import { searchOpeningsByDate, fetchCompanyDetailsByCnpj } from './client.server';
 import { normalizeCasaDosDadosCompany } from './worker-logic';
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
+import { validateEmailForImport } from '@/lib/email-validation';
 
 export type RunImportBatchInput = {
   date: string; // YYYY-MM-DD
@@ -174,6 +175,19 @@ export async function runImportBatch(
         n.nome_fantasia ||
         cnpj;
 
+      // Validação de e-mail para reduzir bounce.
+      const rawEmail = n.email;
+      const emailValidation = rawEmail ? validateEmailForImport(rawEmail) : { valid: false, normalized: null, reason: 'e-mail ausente' };
+      const validEmail = emailValidation.valid ? emailValidation.normalized : null;
+
+      if (input.filters.require_email && !validEmail) {
+        failed.push({
+          cnpj,
+          error: `pulado: ${emailValidation.reason || 'e-mail inválido'}`,
+        });
+        continue;
+      }
+
       const rawAny = raw as any;
       const estab =
         rawAny?.estabelecimento && typeof rawAny.estabelecimento === 'object'
@@ -261,7 +275,7 @@ export async function runImportBatch(
         razao_social_original: n.razao_social ?? nBase.razao_social,
         nome_fantasia: n.nome_fantasia ?? nBase.nome_fantasia,
         nome_titular_exibicao: displayName,
-        email: n.email,
+        email: validEmail,
         uf: n.uf ?? endObj?.uf ?? null,
         municipio_descricao: n.municipio ?? endObj?.municipio ?? null,
         municipio_codigo: (endObj?.ibge?.codigo_municipio ??

@@ -21,6 +21,7 @@ import {
   validateCompanyItem,
   type CursorMap,
 } from './worker-logic';
+import { validateEmailForImport } from '@/lib/email-validation';
 
 type Automation = {
   id: string;
@@ -433,13 +434,22 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
       // Use the normalizer output so nested payload shapes are extracted.
       const n = validation.normalized;
+      const emailValidation = n.email ? validateEmailForImport(n.email) : { valid: false, normalized: null, reason: 'e-mail ausente' };
+      const validEmail = emailValidation.valid ? emailValidation.normalized : null;
+
+      // Se o filtro exige e-mail, descarta empresas sem e-mail válido.
+      if (automation.filters?.require_email && !validEmail) {
+        outcome.skipped.push({ index: i, page, cnpj, reason: 'incomplete', detail: emailValidation.reason ?? 'e-mail inválido' });
+        continue;
+      }
+
       const companyPayload: Record<string, unknown> = {
         cnpj,
         razao_social_original: n.razao_social ?? null,
         nome_fantasia: n.nome_fantasia,
         nome_titular_exibicao:
           pickString(enrichedItem, ['nome_titular', 'nome']) ?? n.razao_social,
-        email: n.email,
+        email: validEmail,
         uf: n.uf,
         municipio_descricao: n.municipio,
         situacao_cadastral_desc: n.situacao_cadastral,
@@ -448,7 +458,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         is_matriz: automation.filters?.only_matriz ? true : (n.matriz_filial ? /matriz/i.test(n.matriz_filial) : undefined),
         fonte: 'casa_dos_dados',
         last_seen_at: new Date().toISOString(),
-        possui_email: !!n.email,
+        possui_email: !!validEmail,
         is_test_record: isTestRun,
         data_quality_status: dataQualityStatus,
         missing_fields: validation.missingFields,
