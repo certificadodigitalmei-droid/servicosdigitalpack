@@ -15,6 +15,7 @@ import {
 } from '@/lib/email-campaign/variants.functions';
 import { CAMPAIGN_VARIANTS } from '@/lib/email-campaign/variants';
 import { SpamScorePanel } from '@/components/painel/SpamScorePanel';
+import { SubjectAuditPanel } from '@/components/painel/SubjectAuditPanel';
 import { renderHtml, substitute } from '@/lib/email-campaign/template';
 
 export const Route = createFileRoute('/_authenticated/painel/modelos-email')({
@@ -292,6 +293,10 @@ function RotacaoModelos() {
           </div>
         </CardContent>
       </Card>
+
+      <SubjectAuditPanel activeIds={selected} />
+
+
 
       <Card>
         <CardHeader className="pb-3">

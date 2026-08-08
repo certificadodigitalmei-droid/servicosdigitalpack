@@ -334,13 +334,37 @@ export function getVariant(id: string): CampaignVariant | undefined {
   return CAMPAIGN_VARIANTS.find((v) => v.id === id);
 }
 
+/** Remove modelos com assunto vazio ou repetido, para a rotação nunca
+ *  enviar dois e-mails com o mesmo assunto. */
+function dedupeBySubject(pool: CampaignVariant[]): CampaignVariant[] {
+  const seen = new Set<string>();
+  const out: CampaignVariant[] = [];
+  for (const v of pool) {
+    const key = (v.subject ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(v);
+  }
+  return out;
+}
+
+/** Hash FNV-1a — distribui melhor sementes numéricas sequenciais (ids). */
+function hashSeed(seed: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+}
+
 /** Escolhe o modelo da rotação de forma estável por destinatário. */
 export function pickVariant(activeIds: string[], seed: string): CampaignVariant | null {
-  const pool = activeIds.map(getVariant).filter(Boolean) as CampaignVariant[];
+  const pool = dedupeBySubject(
+    activeIds.map(getVariant).filter(Boolean) as CampaignVariant[],
+  );
   if (pool.length === 0) return null;
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return pool[h % pool.length];
+  return pool[hashSeed(seed) % pool.length];
 }
 
 /** Igual ao pickVariant, porém nunca retorna null: sem seleção salva,
@@ -351,3 +375,4 @@ export function pickVariantOrDefault(activeIds: string[], seed: string): Campaig
     pickVariant(CAMPAIGN_VARIANTS.map((v) => v.id), seed)!
   );
 }
+
