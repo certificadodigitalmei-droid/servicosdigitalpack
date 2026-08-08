@@ -1,5 +1,6 @@
 // Pure helpers for the automation worker.
 // No supabase / no fetch — safe to unit-test with mocks.
+import { extractValidBrazilianMobile } from '@/lib/phone/brazilian-mobile';
 
 export type ItemClassification =
   | { kind: 'missing_cnpj' }
