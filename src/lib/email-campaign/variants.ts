@@ -19,9 +19,10 @@ export type CampaignVariant = {
 
 const base = DEFAULT_DESIGN;
 
-/** Paletas neutras aprovadas (sem vermelho). */
-const NEUTRAL = {
-  azul: {
+/** Paletas em tons de azul — variam entre azul escuro, royal, índigo,
+ *  petróleo e acinzentado, sempre dentro da família azul. */
+const BLUE_PALETTES = {
+  azulEscuro: {
     headerBg: '#0e3a70',
     heroTitleColor: '#0e3a70',
     buttonBg: '#1a4a8a',
@@ -32,60 +33,60 @@ const NEUTRAL = {
     warningTitleColor: '#1e3a8a',
     warningTextColor: '#1d4ed8',
   },
-  grafite: {
-    headerBg: '#1f2937',
-    heroTitleColor: '#1f2937',
-    buttonBg: '#0f172a',
+  azulRoyal: {
+    headerBg: '#1e40af',
+    heroTitleColor: '#1e40af',
+    buttonBg: '#2563eb',
+    govBarBg: '#dbeafe',
+    govBarColor: '#1e40af',
+    warningBg: '#eff6ff',
+    warningBorder: '#3b82f6',
+    warningTitleColor: '#1e3a8a',
+    warningTextColor: '#2563eb',
+  },
+  azulPetroleo: {
+    headerBg: '#164e63',
+    heroTitleColor: '#155e75',
+    buttonBg: '#0e7490',
+    govBarBg: '#cffafe',
+    govBarColor: '#164e63',
+    warningBg: '#ecfeff',
+    warningBorder: '#06b6d4',
+    warningTitleColor: '#155e75',
+    warningTextColor: '#0891b2',
+  },
+  azulAcinzentado: {
+    headerBg: '#334155',
+    heroTitleColor: '#475569',
+    buttonBg: '#3b82f6',
     govBarBg: '#f1f5f9',
     govBarColor: '#334155',
     warningBg: '#f8fafc',
-    warningBorder: '#64748b',
-    warningTitleColor: '#1f2937',
-    warningTextColor: '#475569',
+    warningBorder: '#60a5fa',
+    warningTitleColor: '#334155',
+    warningTextColor: '#3b82f6',
   },
-  ambar: {
-    headerBg: '#78350f',
-    heroTitleColor: '#92400e',
-    buttonBg: '#b45309',
-    govBarBg: '#fef3c7',
-    govBarColor: '#78350f',
-    warningBg: '#fffbeb',
-    warningBorder: '#d97706',
-    warningTitleColor: '#92400e',
-    warningTextColor: '#78350f',
+  azulSlate: {
+    headerBg: '#1e3a8a',
+    heroTitleColor: '#1e3a8a',
+    buttonBg: '#2563eb',
+    govBarBg: '#dbeafe',
+    govBarColor: '#1e3a8a',
+    warningBg: '#eff6ff',
+    warningBorder: '#60a5fa',
+    warningTitleColor: '#1e3a8a',
+    warningTextColor: '#2563eb',
   },
-  teal: {
-    headerBg: '#134e4a',
-    heroTitleColor: '#0f766e',
-    buttonBg: '#0f766e',
-    govBarBg: '#ccfbf1',
-    govBarColor: '#134e4a',
-    warningBg: '#f0fdfa',
-    warningBorder: '#14b8a6',
-    warningTitleColor: '#115e59',
-    warningTextColor: '#0f766e',
-  },
-  verde: {
-    headerBg: '#14532d',
-    heroTitleColor: '#15803d',
-    buttonBg: '#15803d',
-    govBarBg: '#ecfdf5',
-    govBarColor: '#14532d',
-    warningBg: '#f0fdf4',
-    warningBorder: '#16a34a',
-    warningTitleColor: '#166534',
-    warningTextColor: '#15803d',
-  },
-  indigo: {
+  azulIndigo: {
     headerBg: '#312e81',
     heroTitleColor: '#3730a3',
-    buttonBg: '#4338ca',
-    govBarBg: '#eef2ff',
+    buttonBg: '#4f46e5',
+    govBarBg: '#e0e7ff',
     govBarColor: '#312e81',
     warningBg: '#eef2ff',
-    warningBorder: '#6366f1',
+    warningBorder: '#818cf8',
     warningTitleColor: '#3730a3',
-    warningTextColor: '#4338ca',
+    warningTextColor: '#4f46e5',
   },
 } as const;
 
