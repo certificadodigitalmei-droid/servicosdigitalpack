@@ -198,9 +198,10 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
 
 
-export const DEFAULT_SUBJECT = 'Aviso sobre o CNPJ {{CNPJ}} — Certificado Digital';
+export const DEFAULT_SUBJECT = 'Situação do CNPJ {{CNPJ}} — Certificado Digital';
 export const DEFAULT_PREHEADER =
-  'Seu CNPJ está sem Certificado Digital ativo. Regularize para evitar limitações.';
+  'Consulta ao CNPJ {{CNPJ}}: certificado digital não localizado.';
+
 
 export type Vars = Record<string, string>;
 
