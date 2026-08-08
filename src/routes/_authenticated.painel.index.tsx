@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useServerFn } from '@tanstack/react-start';
 import { getSitePopup } from '@/lib/site-popup.functions';
-import { DashboardOverviewStrip } from '@/components/painel/DashboardOverviewStrip';
 import { PipelineStrip } from '@/components/painel/PipelineStrip';
 
 
