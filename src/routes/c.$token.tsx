@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, CalendarClock, Loader2, ShieldCheck } from 'lucide-react';
+import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, CalendarClock, Loader2, ShieldCheck, XCircle, AlertCircle, X } from 'lucide-react';
 
 
 import { CertificatePopup } from '@/components/CertificatePopup';
@@ -238,6 +238,48 @@ function TokenHomePage() {
                   <span className={`flex items-center gap-1 ${paidAt ? 'text-[#138835]' : 'text-[#004884]'}`}><span className="text-[8px]">●</span> Emitir certificado</span>
                 </div>
               </div>
+
+              {!paidAt && (
+                <div className="overflow-hidden rounded-md border border-border bg-card">
+                  <div className="grid sm:grid-cols-2">
+                    <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:border-r">
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Validade</div>
+                        <div className="text-[13.5px] font-bold text-destructive">Expirado</div>
+                      </div>
+                      <XCircle className="h-4 w-4 shrink-0 text-destructive" />
+                    </div>
+                    <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Situação</div>
+                        <div className="text-[13.5px] font-bold text-destructive">CNPJ sem certificado pendente</div>
+                      </div>
+                      <XCircle className="h-4 w-4 shrink-0 text-destructive" />
+                    </div>
+                  </div>
+
+                  <div className="border-l-4 border-destructive bg-destructive/5 p-4 lg:p-5">
+                    <div className="flex items-center gap-2 text-[13.5px] font-bold uppercase tracking-tight text-destructive">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      Atenção · Riscos ativos no seu CNPJ
+                    </div>
+                    <ul className="mt-3 divide-y divide-destructive/20 border-t border-destructive/20">
+                      {[
+                        'Impossibilitado de emitir nota fiscal (NFS-e).',
+                        'Impossibilitado de assinar contratos digitais e físicos com CNPJ.',
+                        'Bloqueio de limites de crédito empresarial em bancos e financeiras PJ.',
+                        'Sujeito a multa e restrição perante a Receita Federal.',
+                      ].map((risk) => (
+                        <li key={risk} className="flex items-start gap-2 py-2.5 text-[13px] font-semibold leading-snug text-destructive">
+                          <X className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                          <span>{risk}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
 
               <div className="hidden lg:flex gap-2.5 rounded-md border border-border bg-muted/40 p-4 text-left text-[12.5px] text-muted-foreground">
                 <Info className="h-4 w-4 shrink-0" />
