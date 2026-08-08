@@ -19,6 +19,7 @@ import {
   sendWaBatch,
   clearWaApiQueue,
   sendWaTestMessage,
+  cleanupWaQueue,
 } from '@/lib/whatsapp/chakra.functions';
 
 export const Route = createFileRoute('/_authenticated/painel/whatsapp-massa')({
@@ -80,6 +81,7 @@ function WhatsappMassaPage() {
   const send = useServerFn(sendWaBatch);
   const clear = useServerFn(clearWaApiQueue);
   const sendTest = useServerFn(sendWaTestMessage);
+  const cleanup = useServerFn(cleanupWaQueue);
 
   const [cfg, setCfg] = useState<Cfg>(EMPTY);
   const [templateStatus, setTemplateStatus] = useState('PENDING');
