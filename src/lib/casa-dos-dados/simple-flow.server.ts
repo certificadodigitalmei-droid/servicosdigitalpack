@@ -209,6 +209,11 @@ export async function runImportBatch(
           const verdict = await assessBounceRisk(validEmail);
           if (!verdict.ok) {
             await discardRiskyCompany(verdict.email, verdict.reason ?? 'risco de bounce', null);
+            try {
+              await supabaseAdmin
+                .from('suppression_list')
+                .insert({ cnpj, reason: verdict.reason ?? 'risco de bounce', source: 'pre_send_scan' } as any);
+            } catch { /* já existe */ }
             failed.push({ cnpj, error: `descartado: ${verdict.reason ?? 'risco de bounce'}` });
             continue;
           }
