@@ -105,6 +105,7 @@ function PanelLayout() {
         { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
         
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
+        { title: 'WhatsApp em Massa', icon: MessageSquare, to: '/painel/whatsapp-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
         { title: 'Entregabilidade', icon: Activity, to: '/painel/entregabilidade' },
       ],

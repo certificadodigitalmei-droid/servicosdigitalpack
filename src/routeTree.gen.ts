@@ -25,6 +25,7 @@ import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenti
 import { Route as LovableEmailEventsRouteImport } from './routes/lovable/email/events'
 import { Route as ApiPublicWebhookMercadopagoRouteImport } from './routes/api/public/webhook-mercadopago'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
+import { Route as AuthenticatedPainelWhatsappMassaRouteImport } from './routes/_authenticated.painel.whatsapp-massa'
 import { Route as AuthenticatedPainelVisualPaginaRouteImport } from './routes/_authenticated.painel.visual-pagina'
 import { Route as AuthenticatedPainelRemetenteEmailRouteImport } from './routes/_authenticated.painel.remetente-email'
 import { Route as AuthenticatedPainelPrecosRouteImport } from './routes/_authenticated.painel.precos'
@@ -138,6 +139,12 @@ const ApiInternalCasaDosDadosWorkerRoute =
     id: '/api/internal/casa-dos-dados-worker',
     path: '/api/internal/casa-dos-dados-worker',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedPainelWhatsappMassaRoute =
+  AuthenticatedPainelWhatsappMassaRouteImport.update({
+    id: '/whatsapp-massa',
+    path: '/whatsapp-massa',
+    getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelVisualPaginaRoute =
   AuthenticatedPainelVisualPaginaRouteImport.update({
@@ -344,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
   '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/painel/visual-pagina': typeof AuthenticatedPainelVisualPaginaRoute
+  '/painel/whatsapp-massa': typeof AuthenticatedPainelWhatsappMassaRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
@@ -389,6 +397,7 @@ export interface FileRoutesByTo {
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
   '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/painel/visual-pagina': typeof AuthenticatedPainelVisualPaginaRoute
+  '/painel/whatsapp-massa': typeof AuthenticatedPainelWhatsappMassaRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
@@ -438,6 +447,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/precos': typeof AuthenticatedPainelPrecosRoute
   '/_authenticated/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/_authenticated/painel/visual-pagina': typeof AuthenticatedPainelVisualPaginaRoute
+  '/_authenticated/painel/whatsapp-massa': typeof AuthenticatedPainelWhatsappMassaRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
@@ -487,6 +497,7 @@ export interface FileRouteTypes {
     | '/painel/precos'
     | '/painel/remetente-email'
     | '/painel/visual-pagina'
+    | '/painel/whatsapp-massa'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
     | '/lovable/email/events'
@@ -532,6 +543,7 @@ export interface FileRouteTypes {
     | '/painel/precos'
     | '/painel/remetente-email'
     | '/painel/visual-pagina'
+    | '/painel/whatsapp-massa'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
     | '/lovable/email/events'
@@ -580,6 +592,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/precos'
     | '/_authenticated/painel/remetente-email'
     | '/_authenticated/painel/visual-pagina'
+    | '/_authenticated/painel/whatsapp-massa'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
     | '/lovable/email/events'
@@ -739,6 +752,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/internal/casa-dos-dados-worker'
       preLoaderRoute: typeof ApiInternalCasaDosDadosWorkerRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/painel/whatsapp-massa': {
+      id: '/_authenticated/painel/whatsapp-massa'
+      path: '/whatsapp-massa'
+      fullPath: '/painel/whatsapp-massa'
+      preLoaderRoute: typeof AuthenticatedPainelWhatsappMassaRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/visual-pagina': {
       id: '/_authenticated/painel/visual-pagina'
@@ -989,6 +1009,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelPrecosRoute: typeof AuthenticatedPainelPrecosRoute
   AuthenticatedPainelRemetenteEmailRoute: typeof AuthenticatedPainelRemetenteEmailRoute
   AuthenticatedPainelVisualPaginaRoute: typeof AuthenticatedPainelVisualPaginaRoute
+  AuthenticatedPainelWhatsappMassaRoute: typeof AuthenticatedPainelWhatsappMassaRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
 
@@ -1017,6 +1038,7 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelRemetenteEmailRoute:
     AuthenticatedPainelRemetenteEmailRoute,
   AuthenticatedPainelVisualPaginaRoute: AuthenticatedPainelVisualPaginaRoute,
+  AuthenticatedPainelWhatsappMassaRoute: AuthenticatedPainelWhatsappMassaRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
 }
 
@@ -1066,13 +1088,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
