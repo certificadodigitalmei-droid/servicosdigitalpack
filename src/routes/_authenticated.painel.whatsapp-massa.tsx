@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
-import { Loader2, MessageCircle, Send, Trash2, Users, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, MessageCircle, Send, Trash2, Users, CheckCircle2, XCircle, RefreshCw, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   getWaApiConfig,
   saveWaApiConfig,
+  syncWaTemplateStatus,
   enqueueWaCompanies,
   sendWaBatch,
   clearWaApiQueue,
@@ -31,7 +32,11 @@ export const Route = createFileRoute('/_authenticated/painel/whatsapp-massa')({
 
 type Cfg = {
   base_url: string;
-  channel_id: string;
+  plugin_id: string;
+  whatsapp_phone_number_id: string;
+  waba_id: string;
+  whatsapp_api_version: string;
+  button_base_url: string;
   template_name: string;
   template_language: string;
   template_body: string;
@@ -42,9 +47,13 @@ type Cfg = {
 };
 
 const EMPTY: Cfg = {
-  base_url: 'https://api.chakrahq.com/v1/messages',
-  channel_id: '',
-  template_name: '',
+  base_url: 'https://api.chakrahq.com',
+  plugin_id: '',
+  whatsapp_phone_number_id: '',
+  waba_id: '',
+  whatsapp_api_version: 'v19.0',
+  button_base_url: 'https://seu-certificado-mei-digital.online/c/',
+  template_name: 'consulta_certificado_mei_v1',
   template_language: 'pt_BR',
   template_body: '',
   active: false,
@@ -53,14 +62,25 @@ const EMPTY: Cfg = {
   min_delay_ms: 4000,
 };
 
+function statusBadge(status: string) {
+  const s = (status || 'PENDING').toUpperCase();
+  if (s === 'APPROVED') return { label: 'Aprovado', variant: 'default' as const };
+  if (s === 'REJECTED') return { label: 'Rejeitado', variant: 'destructive' as const };
+  if (s === 'PAUSED') return { label: 'Pausado', variant: 'destructive' as const };
+  return { label: 'Aguardando aprovação', variant: 'secondary' as const };
+}
+
 function WhatsappMassaPage() {
   const load = useServerFn(getWaApiConfig);
   const save = useServerFn(saveWaApiConfig);
+  const syncStatus = useServerFn(syncWaTemplateStatus);
   const enqueue = useServerFn(enqueueWaCompanies);
   const send = useServerFn(sendWaBatch);
   const clear = useServerFn(clearWaApiQueue);
 
   const [cfg, setCfg] = useState<Cfg>(EMPTY);
+  const [templateStatus, setTemplateStatus] = useState('PENDING');
+  const [lastError, setLastError] = useState<string | null>(null);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [stats, setStats] = useState({ pending: 0, sent: 0, failed: 0, audience: 0 });
   const [recent, setRecent] = useState<any[]>([]);
@@ -68,21 +88,31 @@ function WhatsappMassaPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [qty, setQty] = useState(50);
 
+  const approved = templateStatus.toUpperCase() === 'APPROVED';
+  const badge = statusBadge(templateStatus);
+
   const refresh = async () => {
     try {
       const res: any = await load({});
-      if (res.settings) {
+      const s = res.settings;
+      if (s) {
         setCfg({
-          base_url: res.settings.base_url ?? EMPTY.base_url,
-          channel_id: res.settings.channel_id ?? '',
-          template_name: res.settings.template_name ?? '',
-          template_language: res.settings.template_language ?? 'pt_BR',
-          template_body: res.settings.template_body ?? '',
-          active: !!res.settings.active,
-          daily_limit: res.settings.daily_limit ?? 300,
-          batch_size: res.settings.batch_size ?? 20,
-          min_delay_ms: res.settings.min_delay_ms ?? 4000,
+          base_url: s.base_url ?? EMPTY.base_url,
+          plugin_id: s.plugin_id ?? '',
+          whatsapp_phone_number_id: s.whatsapp_phone_number_id ?? '',
+          waba_id: s.waba_id ?? '',
+          whatsapp_api_version: s.whatsapp_api_version ?? 'v19.0',
+          button_base_url: s.button_base_url ?? EMPTY.button_base_url,
+          template_name: s.template_name ?? '',
+          template_language: s.template_language ?? 'pt_BR',
+          template_body: s.template_body ?? '',
+          active: !!s.active,
+          daily_limit: s.daily_limit ?? 300,
+          batch_size: s.batch_size ?? 20,
+          min_delay_ms: s.min_delay_ms ?? 4000,
         });
+        setTemplateStatus(s.template_status ?? 'PENDING');
+        setLastError(s.last_error ?? null);
       }
       setHasApiKey(!!res.hasApiKey);
       setStats(res.stats);
@@ -131,15 +161,35 @@ function WhatsappMassaPage() {
             Disparo oficial pela API da ChakraHQ usando o template aprovado pelo WhatsApp.
           </p>
         </div>
-        <Badge variant={cfg.active ? 'default' : 'secondary'}>{cfg.active ? 'Ativo' : 'Pausado'}</Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant={badge.variant}>Template: {badge.label}</Badge>
+          <Badge variant={cfg.active && approved ? 'default' : 'secondary'}>
+            {cfg.active && approved ? 'Ativo' : 'Pausado'}
+          </Badge>
+        </div>
       </header>
 
       {!hasApiKey && (
         <Alert>
           <AlertDescription>
-            A chave da ChakraHQ ainda não está salva no servidor. Peça para cadastrar a chave
+            A chave da ChakraHQ ainda não está salva no servidor. Cadastre a chave
             <code className="mx-1 rounded bg-slate-100 px-1">CHAKRA_API_KEY</code> antes de disparar.
           </AlertDescription>
+        </Alert>
+      )}
+
+      {!approved && (
+        <Alert>
+          <AlertDescription>
+            O template <b>{cfg.template_name || '—'}</b> está com status <b>{badge.label}</b>. O envio permanece
+            bloqueado até o WhatsApp aprovar. Use “Sincronizar status do template” para atualizar.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {lastError && (
+        <Alert variant="destructive">
+          <AlertDescription className="break-words">{lastError}</AlertDescription>
         </Alert>
       )}
 
@@ -164,26 +214,45 @@ function WhatsappMassaPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Configuração da API (ChakraHQ)</CardTitle>
+          <CardTitle>Conexão oficial (ChakraHQ)</CardTitle>
           <CardDescription>
-            Endpoint de envio, canal e template aprovado. As variáveis do template são preenchidas
-            nesta ordem: <b>{'{{1}}'}</b> nome da empresa, <b>{'{{2}}'}</b> CNPJ, <b>{'{{3}}'}</b> link.
+            Variáveis do template: <b>razao</b> (nome da empresa), <b>cnpj</b> e o botão <b>{'{{1}}'}</b>, que recebe
+            somente o token individual do link.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1.5 md:col-span-2">
-            <Label htmlFor="base_url">URL do endpoint de envio</Label>
+            <Label htmlFor="base_url">API base</Label>
             <Input id="base_url" value={cfg.base_url} onChange={(e) => setCfg({ ...cfg, base_url: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="channel_id">ID do canal / número (opcional)</Label>
-            <Input id="channel_id" value={cfg.channel_id} onChange={(e) => setCfg({ ...cfg, channel_id: e.target.value })} />
+            <Label htmlFor="plugin_id">Plugin ID</Label>
+            <Input id="plugin_id" value={cfg.plugin_id} onChange={(e) => setCfg({ ...cfg, plugin_id: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="template_name">Nome do template aprovado</Label>
+            <Label htmlFor="phone_id">Phone Number ID (Meta)</Label>
+            <Input
+              id="phone_id"
+              value={cfg.whatsapp_phone_number_id}
+              onChange={(e) => setCfg({ ...cfg, whatsapp_phone_number_id: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="waba_id">WABA ID</Label>
+            <Input id="waba_id" value={cfg.waba_id} onChange={(e) => setCfg({ ...cfg, waba_id: e.target.value })} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="api_version">Versão da API</Label>
+            <Input
+              id="api_version"
+              value={cfg.whatsapp_api_version}
+              onChange={(e) => setCfg({ ...cfg, whatsapp_api_version: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="template_name">Template aprovado</Label>
             <Input
               id="template_name"
-              placeholder="ex: aviso_certificado_mei"
               value={cfg.template_name}
               onChange={(e) => setCfg({ ...cfg, template_name: e.target.value })}
             />
@@ -195,6 +264,19 @@ function WhatsappMassaPage() {
               value={cfg.template_language}
               onChange={(e) => setCfg({ ...cfg, template_language: e.target.value })}
             />
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label htmlFor="button_base_url">Base do botão</Label>
+            <Input
+              id="button_base_url"
+              value={cfg.button_base_url}
+              onChange={(e) => setCfg({ ...cfg, button_base_url: e.target.value })}
+            />
+            <p className="flex items-center gap-1.5 text-xs text-slate-500">
+              <Link2 className="h-3.5 w-3.5" />
+              Cada empresa recebe <code className="rounded bg-slate-100 px-1">{cfg.button_base_url}</code>
+              <b>{'{token individual}'}</b> — só o token vai no botão.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="daily_limit">Limite por dia</Label>
@@ -228,16 +310,21 @@ function WhatsappMassaPage() {
             <Textarea
               id="template_body"
               rows={4}
-              placeholder="Olá {{1}}, identificamos que o CNPJ {{2}} está com o certificado digital pendente. Acesse: {{3}}"
+              placeholder="Olá {{razao}}, o CNPJ {{cnpj}} consta sem certificado digital ativo."
               value={cfg.template_body}
               onChange={(e) => setCfg({ ...cfg, template_body: e.target.value })}
             />
           </div>
           <div className="flex items-center gap-3 md:col-span-2">
-            <Switch id="active" checked={cfg.active} onCheckedChange={(v) => setCfg({ ...cfg, active: v })} />
-            <Label htmlFor="active">Envio ativo</Label>
+            <Switch
+              id="active"
+              disabled={!approved}
+              checked={cfg.active && approved}
+              onCheckedChange={(v) => setCfg({ ...cfg, active: v })}
+            />
+            <Label htmlFor="active">Envio ativo {approved ? '' : '(bloqueado até aprovação)'}</Label>
           </div>
-          <div className="md:col-span-2">
+          <div className="flex flex-wrap gap-2 md:col-span-2">
             <Button
               disabled={busy === 'save'}
               onClick={() =>
@@ -245,7 +332,11 @@ function WhatsappMassaPage() {
                   await save({
                     data: {
                       base_url: cfg.base_url,
-                      channel_id: cfg.channel_id || null,
+                      plugin_id: cfg.plugin_id || null,
+                      whatsapp_phone_number_id: cfg.whatsapp_phone_number_id || null,
+                      waba_id: cfg.waba_id || null,
+                      whatsapp_api_version: cfg.whatsapp_api_version,
+                      button_base_url: cfg.button_base_url,
                       template_name: cfg.template_name || null,
                       template_language: cfg.template_language,
                       template_body: cfg.template_body || null,
@@ -261,6 +352,24 @@ function WhatsappMassaPage() {
             >
               {busy === 'save' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar configuração
             </Button>
+            <Button
+              variant="secondary"
+              disabled={busy === 'sync'}
+              onClick={() =>
+                run('sync', async () => {
+                  const r: any = await syncStatus({});
+                  if (r.ok) toast.success(`Status do template: ${r.status}`);
+                  else toast.error(r.error ?? 'Falha ao sincronizar');
+                })
+              }
+            >
+              {busy === 'sync' ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
+              Sincronizar status do template
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -268,7 +377,9 @@ function WhatsappMassaPage() {
       <Card>
         <CardHeader>
           <CardTitle>Fila de disparo</CardTitle>
-          <CardDescription>Monta a fila com empresas importadas que possuem telefone celular.</CardDescription>
+          <CardDescription>
+            Só entram empresas com telefone brasileiro válido e link ativo com token individual.
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
           <div className="space-y-1.5">
@@ -281,14 +392,16 @@ function WhatsappMassaPage() {
             onClick={() =>
               run('enq', async () => {
                 const r: any = await enqueue({ data: { limit: Math.max(1, Math.min(2000, qty)) } });
-                toast.success(`${r.inserted} contatos adicionados à fila`);
+                toast.success(
+                  `${r.inserted} contatos adicionados · ${r.skippedNoLink ?? 0} sem link ativo · ${r.skippedNoPhone ?? 0} sem telefone válido`,
+                );
               })
             }
           >
             {busy === 'enq' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Adicionar à fila
           </Button>
           <Button
-            disabled={busy === 'send'}
+            disabled={busy === 'send' || !approved || !cfg.active}
             onClick={() =>
               run('send', async () => {
                 const r: any = await send({ data: {} });
@@ -326,6 +439,7 @@ function WhatsappMassaPage() {
               <tr className="border-b text-left text-xs uppercase text-slate-400">
                 <th className="py-2">Empresa</th>
                 <th className="py-2">Telefone</th>
+                <th className="py-2">Link</th>
                 <th className="py-2">Status</th>
                 <th className="py-2">Detalhe</th>
               </tr>
@@ -333,7 +447,7 @@ function WhatsappMassaPage() {
             <tbody>
               {recent.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-slate-400">Nenhum envio ainda.</td>
+                  <td colSpan={5} className="py-6 text-center text-slate-400">Nenhum envio ainda.</td>
                 </tr>
               )}
               {recent.map((r) => (
@@ -343,6 +457,9 @@ function WhatsappMassaPage() {
                     <div className="text-xs text-slate-400">{r.cnpj ?? ''}</div>
                   </td>
                   <td className="py-2 text-slate-600">{r.phone}</td>
+                  <td className="py-2 text-xs text-slate-500">
+                    {r.button_url_token ? `/c/${r.button_url_token}` : <span className="text-red-500">sem token</span>}
+                  </td>
                   <td className="py-2">
                     <Badge variant={r.status === 'sent' ? 'default' : r.status === 'failed' ? 'destructive' : 'secondary'}>
                       {r.status}
