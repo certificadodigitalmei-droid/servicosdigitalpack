@@ -97,7 +97,12 @@ export type SpamScoreInput = {
   text?: string;
   fromAddress?: string;
   hasUnsubscribe?: boolean;
+  /** O provedor injeta o cabeçalho List-Unsubscribe (padrão: sim). */
+  listUnsubscribe?: boolean;
+  /** SPF/DKIM/DMARC verificados no domínio de envio (padrão: sim). */
+  authVerified?: boolean;
 };
+
 
 export function analyzeSpamScore(input: SpamScoreInput): SpamReport {
   const subject = (input.subject || '').trim();
