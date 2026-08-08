@@ -110,68 +110,68 @@ const AVATAR_URL = govbrAvatarAsset.url.startsWith('http')
 export const DEFAULT_DESIGN: CampaignDesign = {
   logoText: 'Portal Certificado Digital MEI',
   logoSize: 12,
-  headerBg: '#0e3a70',
-  headerText: '#ffffff',
-  headerPadding: 28,
+  headerBg: '#ffffff',
+  headerText: '#111827',
+  headerPadding: 24,
 
   bodyBg: '#ffffff',
-  pageBg: '#f3f4f6',
-  cardBg: '#f4f7f5',
+  pageBg: '#ffffff',
+  cardBg: '#ffffff',
   textColor: '#1f2937',
-  mutedColor: '#64748b',
+  mutedColor: '#6b7280',
 
-  buttonBg: '#1a4a8a',
-  buttonText: '#ffffff',
-  buttonRadius: 6,
-  buttonPaddingY: 14,
-  buttonPaddingX: 30,
+  buttonBg: '#ffffff',
+  buttonText: '#1a4a8a',
+  buttonRadius: 0,
+  buttonPaddingY: 0,
+  buttonPaddingX: 0,
   buttonSize: 14,
 
   align: 'left',
-  containerWidth: 640,
-  contentPaddingX: 36,
+  containerWidth: 600,
+  contentPaddingX: 28,
 
-  titleSize: 20,
+  titleSize: 17,
   subtitleSize: 12,
-  bodySize: 13.5,
-  heroTitleSize: 20,
-  heroTitleColor: '#0e3a70',
+  bodySize: 14,
+  heroTitleSize: 16,
+  heroTitleColor: '#111827',
   cardTitleSize: 11,
-  cardBodySize: 12,
-  warningTitleSize: 14,
+  cardBodySize: 13,
+  warningTitleSize: 13,
   warningItemsSize: 13,
 
   signatureSize: 12,
   disclaimerSize: 11,
 
-  title: 'CNPJ sem certificado digital ativo',
+  title: 'Situação do CNPJ {{CNPJ}} — Certificado Digital',
   subtitle: 'Central de Emissão · MEI',
-  heroTitle: 'Certificado Digital não localizado',
-  showHero: true,
+  heroTitle: '',
+  showHero: false,
   intro:
-    'Prezado(a) *{{NOME_TITULAR}}*,\n\nNa consulta ao CNPJ *{{CNPJ}}*, não localizamos um Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
+    'Prezado(a) {{NOME_TITULAR}},\n\nNa consulta ao CNPJ {{CNPJ}}, não localizamos um Certificado Digital ativo.\n\nAbaixo estão os dados do cadastro:',
   cardTitle: 'Dados do requerente',
   showCard: true,
-  buttonLabel: 'Regularizar meu CNPJ',
+  buttonLabel: 'Ver a situação do meu CNPJ',
   buttonHref: '{{LINK_PUBLICO}}',
 
   showWarning: true,
-  warningTitle: 'Atenção · pontos em aberto no seu CNPJ',
+  warningTitle: 'Pontos em aberto no cadastro',
   warningItems:
-    'A emissão de nota fiscal pode ficar impedida sem o certificado ativo.\nA assinatura de contratos digitais com CNPJ pode ter validade limitada.\nLinhas de crédito empresarial podem ser restringidas em bancos e financeiras.\nA regularidade do CNPJ perante a Receita Federal pode ser afetada.\nO acesso a alguns sistemas do governo pode exigir o certificado digital.\nConsultas cadastrais podem apresentar o CNPJ com situação incompleta.',
-  warningBg: '#eff6ff',
-  warningBorder: '#2563eb',
-  warningTitleColor: '#1e3a8a',
-  warningTextColor: '#1e40af',
+    'A emissão de nota fiscal pode ficar limitada sem o certificado ativo.\nA assinatura de contratos digitais com CNPJ pode ter validade limitada.\nO acesso a alguns sistemas do governo pode exigir o certificado digital.\nConsultas cadastrais podem apresentar o CNPJ com situação incompleta.',
+  warningBg: '#f8fafc',
+  warningBorder: '#e5e7eb',
+  warningTitleColor: '#374151',
+  warningTextColor: '#374151',
 
   showSignature: false,
   signature: '',
 
   footer: '',
   disclaimer:
-    'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nAutomated message — do not reply.\nIf you no longer wish to receive these notices, unsubscribe below.',
+    'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nMensagem automática — não responda a este e-mail.',
   showFooter: true,
-  unsubText: 'unsubscribe',
+  unsubText: 'Cancelar o recebimento destes avisos',
   unsubHref: '{{LINK_PUBLICO}}?unsubscribe=1',
 
 
@@ -182,11 +182,11 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
   showGovBar: false,
   govBarText: 'Central de emissão · Protocolo {{REFERENCIA}}',
-  govBarBg: '#e2e8f0',
-  govBarColor: '#334155',
+  govBarBg: '#f3f4f6',
+  govBarColor: '#374151',
 
-  showBadges: true,
-  badgesText: 'SSL 256-bits · LGPD · Validade 12 meses',
+  showBadges: false,
+  badgesText: '',
 
   showStatusBar: true,
   statusLabel: 'Situação do cadastro',
@@ -194,6 +194,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   statusNote: 'Certificado e-CNPJ não localizado.',
 
 };
+
 
 
 
