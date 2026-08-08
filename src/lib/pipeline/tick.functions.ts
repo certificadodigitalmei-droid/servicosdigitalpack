@@ -85,6 +85,16 @@ export const runPipelineTick = createServerFn({ method: 'POST' })
     );
     const { processQueueInternal, MAX_PER_TICK } = await import('@/lib/mailer/queue.server');
 
+    // Higiene automática: remove da base todo endereço que deu bounce.
+    try {
+      const { sweepBouncedEmails } = await import('@/lib/email-hygiene/bounce-cleanup.server');
+      await sweepBouncedEmails(24);
+    } catch {
+      /* higiene é best-effort, nunca interrompe o ciclo */
+    }
+
+
+
     const flow = await readFlowSettings(context.supabase);
     const batchSize = Math.max(1, data.batchSize ?? flow.hourlyBatchSize);
     const spacingSec = Math.max(1, Math.round(3600 / batchSize));
