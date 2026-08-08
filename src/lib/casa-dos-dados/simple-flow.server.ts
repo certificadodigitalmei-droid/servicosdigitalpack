@@ -13,6 +13,7 @@
 import { searchOpeningsByDate, fetchCompanyDetailsByCnpj } from './client.server';
 import { normalizeCasaDosDadosCompany } from './worker-logic';
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
+import { validateEmailForImport } from '@/lib/email-validation';
 
 export type RunImportBatchInput = {
   date: string; // YYYY-MM-DD
