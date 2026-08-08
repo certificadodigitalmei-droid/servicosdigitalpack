@@ -15,7 +15,8 @@ import {
 import { CAMPAIGN_VARIANTS } from '@/lib/email-campaign/variants';
 import { SpamScorePanel } from '@/components/painel/SpamScorePanel';
 import { SubjectAuditPanel } from '@/components/painel/SubjectAuditPanel';
-import { renderHtml, substitute } from '@/lib/email-campaign/template';
+import { renderHtml, renderText, substitute } from '@/lib/email-campaign/template';
+import { analyzeSpamScore, type SpamReport } from '@/lib/email-campaign/spam-score';
 
 export const Route = createFileRoute('/_authenticated/painel/modelos-email')({
   component: ModelosEmailPage,
