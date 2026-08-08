@@ -328,6 +328,77 @@ export const sendWaBatch = createServerFn({ method: 'POST' })
     return { sent, failed, error: null as string | null };
   });
 
+export const sendWaTestMessage = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        phone: z.string().trim().min(8).max(30),
+        razao: z.string().trim().max(200).optional(),
+        cnpj: z.string().trim().max(30).optional(),
+        token: z.string().trim().max(100).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { sendChakraTemplate, normalizePhone } = await import('./chakra.server');
+
+    const apiKey = process.env['CHAKRA_API_KEY'];
+    if (!apiKey) return { ok: false as const, error: 'CHAKRA_API_KEY não configurada' };
+
+    const phone = normalizePhone(data.phone);
+    if (!phone) return { ok: false as const, error: 'Telefone inválido — use DDD + número (ex.: 11 99999-9999)' };
+
+    const { data: cfgRow } = await supabaseAdmin
+      .from('whatsapp_api_settings')
+      .select('*')
+      .eq('id', 1)
+      .maybeSingle();
+    if (!cfgRow) return { ok: false as const, error: 'Configuração não encontrada' };
+    const cfg = cfgRow as any;
+
+    const status = String(cfg.template_status ?? 'PENDING').toUpperCase();
+    if (status !== SENDABLE_STATUS) {
+      return { ok: false as const, error: `Template com status ${status}: teste bloqueado até a aprovação do WhatsApp` };
+    }
+    if (!cfg.template_name) return { ok: false as const, error: 'Informe o nome do template aprovado' };
+    if (!cfg.plugin_id) return { ok: false as const, error: 'Informe o Plugin ID da ChakraHQ' };
+    if (!cfg.whatsapp_phone_number_id) return { ok: false as const, error: 'Informe o Phone Number ID' };
+
+    let token = String(data.token ?? '').trim();
+    if (!token) {
+      const { data: link } = await supabaseAdmin
+        .from('company_links')
+        .select('public_token')
+        .eq('active', true)
+        .not('public_token', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      token = String((link as any)?.public_token ?? '').trim();
+    }
+    if (!token) return { ok: false as const, error: 'Nenhum token de link disponível — informe um token manualmente' };
+
+    const result = await sendChakraTemplate({
+      apiBaseUrl: cfg.base_url,
+      apiKey,
+      pluginId: cfg.plugin_id,
+      whatsappPhoneNumberId: cfg.whatsapp_phone_number_id,
+      to: phone,
+      templateName: cfg.template_name,
+      language: cfg.template_language ?? 'pt_BR',
+      razao: data.razao?.trim() || 'Empresa Teste',
+      cnpj: data.cnpj?.trim() || '00.000.000/0001-00',
+      buttonToken: token,
+    });
+
+    if (!result.ok) return { ok: false as const, error: result.error };
+    return { ok: true as const, phone, messageId: result.messageId, error: null };
+  });
+
 export const clearWaApiQueue = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ scope: z.enum(['pending', 'failed', 'all']) }).parse(d))

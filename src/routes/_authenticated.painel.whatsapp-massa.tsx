@@ -18,6 +18,7 @@ import {
   enqueueWaCompanies,
   sendWaBatch,
   clearWaApiQueue,
+  sendWaTestMessage,
 } from '@/lib/whatsapp/chakra.functions';
 
 export const Route = createFileRoute('/_authenticated/painel/whatsapp-massa')({
@@ -77,6 +78,7 @@ function WhatsappMassaPage() {
   const enqueue = useServerFn(enqueueWaCompanies);
   const send = useServerFn(sendWaBatch);
   const clear = useServerFn(clearWaApiQueue);
+  const sendTest = useServerFn(sendWaTestMessage);
 
   const [cfg, setCfg] = useState<Cfg>(EMPTY);
   const [templateStatus, setTemplateStatus] = useState('PENDING');
@@ -87,6 +89,10 @@ function WhatsappMassaPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [qty, setQty] = useState(50);
+  const [testPhone, setTestPhone] = useState('');
+  const [testRazao, setTestRazao] = useState('');
+  const [testCnpj, setTestCnpj] = useState('');
+  const [testToken, setTestToken] = useState('');
 
   const approved = templateStatus.toUpperCase() === 'APPROVED';
   const badge = statusBadge(templateStatus);
@@ -374,7 +380,72 @@ function WhatsappMassaPage() {
         </CardContent>
       </Card>
 
+      <Card className="border-emerald-200">
+        <CardHeader>
+          <CardTitle>Envio de teste</CardTitle>
+          <CardDescription>
+            Antes de disparar em massa, envie uma mensagem única para o número que você escolher.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-4">
+          <div className="space-y-1.5 md:col-span-2">
+            <Label htmlFor="test_phone">Número de destino (com DDD)</Label>
+            <Input
+              id="test_phone"
+              placeholder="(11) 99999-9999"
+              value={testPhone}
+              onChange={(e) => setTestPhone(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="test_razao">Nome da empresa (opcional)</Label>
+            <Input id="test_razao" value={testRazao} onChange={(e) => setTestRazao(e.target.value)} placeholder="Empresa Teste" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="test_cnpj">CNPJ (opcional)</Label>
+            <Input id="test_cnpj" value={testCnpj} onChange={(e) => setTestCnpj(e.target.value)} placeholder="00.000.000/0001-00" />
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label htmlFor="test_token">Token do botão (opcional)</Label>
+            <Input
+              id="test_token"
+              value={testToken}
+              onChange={(e) => setTestToken(e.target.value)}
+              placeholder="Deixe vazio para usar o último link ativo"
+            />
+          </div>
+          <div className="flex items-end md:col-span-2">
+            <Button
+              variant="secondary"
+              disabled={busy === 'test' || !approved || !testPhone.trim()}
+              onClick={() =>
+                run('test', async () => {
+                  const r: any = await sendTest({
+                    data: {
+                      phone: testPhone.trim(),
+                      razao: testRazao.trim() || undefined,
+                      cnpj: testCnpj.trim() || undefined,
+                      token: testToken.trim() || undefined,
+                    },
+                  });
+                  if (r.ok) toast.success(`Teste enviado para ${r.phone}`);
+                  else toast.error(r.error ?? 'Falha no envio de teste');
+                })
+              }
+            >
+              {busy === 'test' ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Enviar teste
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
+
         <CardHeader>
           <CardTitle>Fila de disparo</CardTitle>
           <CardDescription>
