@@ -359,13 +359,29 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
       // Validate data quality directly from search payload.
       await progress('validacao_dos_campos', { page, item_offset: i, cnpj });
+      const requireMobile = !!automation.filters?.require_mobile_phone && !isTestRun;
       const validation = validateCompanyItem(enrichedItem, automation.filters ?? {});
+      const mobile = validation.mobile;
+
+      // ---- CELULAR OBRIGATÓRIO (execução real) ----
+      // Sem celular válido o registro é apenas ignorado: não entra na fila,
+      // não vira company nem link e NÃO consome a quantidade solicitada.
+      if (requireMobile && !mobile) {
+        outcome.skipped.push({ index: i, page, cnpj, reason: 'invalid_mobile', detail: 'celular brasileiro válido ausente' });
+        continue;
+      }
+      if (mobile && deps.isPhoneBlocked && (await deps.isPhoneBlocked(mobile))) {
+        outcome.skipped.push({ index: i, page, cnpj, reason: 'blocked_number', detail: 'telefone na lista permanente de rejeição' });
+        continue;
+      }
+
       const isValid = validation.complete;
       const dataQualityStatus: 'complete' | 'test_partial' | 'pending_enrichment' = isValid
         ? 'complete'
         : isTestRun
           ? 'test_partial'
           : 'pending_enrichment';
+
 
       // ---- NORMAL MODE + INCOMPLETE ----
       // Enqueue as pending_enrichment (best effort), skip everything else,
