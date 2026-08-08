@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
-  DEFAULT_DESIGN,
   renderHtml,
   substitute,
   formatCnpj,
@@ -48,10 +47,10 @@ import {
   setTestMode,
   setTestRecipient,
   setShowFloating,
-  mergedDesign,
-  loadSavedSubject,
+  variantFor,
   syncFromMessageModel,
   syncSenderFromServer,
+  syncCampaignVariants,
   ensureDailyWindow,
 } from '@/lib/automation/envio-engine';
 
@@ -102,6 +101,7 @@ function EnvioMassa() {
     const id = setInterval(ensureDailyWindow, 30_000);
     syncFromMessageModel();
     void syncSenderFromServer();
+    void syncCampaignVariants();
     return () => clearInterval(id);
   }, []);
 
@@ -135,12 +135,12 @@ function EnvioMassa() {
   }, []);
 
   const previewItem = queue[previewIdx];
-  const effectiveSubject = loadSavedSubject() || subject;
+  const effectiveSubject = previewItem ? variantFor(previewItem.id || previewItem.cnpj) .subject : subject;
   const previewHtml = useMemo(() => {
     if (!previewItem) return '';
     const vars = buildVarsForPreview(previewItem);
-    const design = { ...DEFAULT_DESIGN, ...mergedDesign() };
-    return renderHtml(design, vars);
+    const variant = variantFor(previewItem.id || previewItem.cnpj);
+    return renderHtml(variant.design, vars);
   }, [previewItem, fromName, fromAddress, subject, designTick]);
 
   return (
