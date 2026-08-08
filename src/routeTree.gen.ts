@@ -36,6 +36,7 @@ import { Route as AuthenticatedPainelImportacaoAutomaticaRouteImport } from './r
 import { Route as AuthenticatedPainelExibicaoSiteRouteImport } from './routes/_authenticated.painel.exibicao-site'
 import { Route as AuthenticatedPainelEnvioMassaRouteImport } from './routes/_authenticated.painel.envio-massa'
 import { Route as AuthenticatedPainelEnviadosRouteImport } from './routes/_authenticated.painel.enviados'
+import { Route as AuthenticatedPainelEntregabilidadeRouteImport } from './routes/_authenticated.painel.entregabilidade'
 import { Route as AuthenticatedPainelEmpresasImportadasRouteImport } from './routes/_authenticated.painel.empresas-importadas'
 import { Route as AuthenticatedPainelConsultaAutomaticaRouteImport } from './routes/_authenticated.painel.consulta-automatica'
 import { Route as AuthenticatedPainelConfiguracoesPagamentoRouteImport } from './routes/_authenticated.painel.configuracoes-pagamento'
@@ -204,6 +205,12 @@ const AuthenticatedPainelEnviadosRoute =
     path: '/enviados',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const AuthenticatedPainelEntregabilidadeRoute =
+  AuthenticatedPainelEntregabilidadeRouteImport.update({
+    id: '/entregabilidade',
+    path: '/entregabilidade',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
 const AuthenticatedPainelEmpresasImportadasRoute =
   AuthenticatedPainelEmpresasImportadasRouteImport.update({
     id: '/empresas-importadas',
@@ -325,6 +332,7 @@ export interface FileRoutesByFullPath {
   '/painel/configuracoes-pagamento': typeof AuthenticatedPainelConfiguracoesPagamentoRoute
   '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
+  '/painel/entregabilidade': typeof AuthenticatedPainelEntregabilidadeRoute
   '/painel/enviados': typeof AuthenticatedPainelEnviadosRoute
   '/painel/envio-massa': typeof AuthenticatedPainelEnvioMassaRoute
   '/painel/exibicao-site': typeof AuthenticatedPainelExibicaoSiteRoute
@@ -369,6 +377,7 @@ export interface FileRoutesByTo {
   '/painel/auditoria': typeof AuthenticatedPainelAuditoriaRoute
   '/painel/configuracoes-pagamento': typeof AuthenticatedPainelConfiguracoesPagamentoRoute
   '/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
+  '/painel/entregabilidade': typeof AuthenticatedPainelEntregabilidadeRoute
   '/painel/enviados': typeof AuthenticatedPainelEnviadosRoute
   '/painel/envio-massa': typeof AuthenticatedPainelEnvioMassaRoute
   '/painel/exibicao-site': typeof AuthenticatedPainelExibicaoSiteRoute
@@ -417,6 +426,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/configuracoes-pagamento': typeof AuthenticatedPainelConfiguracoesPagamentoRoute
   '/_authenticated/painel/consulta-automatica': typeof AuthenticatedPainelConsultaAutomaticaRoute
   '/_authenticated/painel/empresas-importadas': typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
+  '/_authenticated/painel/entregabilidade': typeof AuthenticatedPainelEntregabilidadeRoute
   '/_authenticated/painel/enviados': typeof AuthenticatedPainelEnviadosRoute
   '/_authenticated/painel/envio-massa': typeof AuthenticatedPainelEnvioMassaRoute
   '/_authenticated/painel/exibicao-site': typeof AuthenticatedPainelExibicaoSiteRoute
@@ -465,6 +475,7 @@ export interface FileRouteTypes {
     | '/painel/configuracoes-pagamento'
     | '/painel/consulta-automatica'
     | '/painel/empresas-importadas'
+    | '/painel/entregabilidade'
     | '/painel/enviados'
     | '/painel/envio-massa'
     | '/painel/exibicao-site'
@@ -509,6 +520,7 @@ export interface FileRouteTypes {
     | '/painel/auditoria'
     | '/painel/configuracoes-pagamento'
     | '/painel/consulta-automatica'
+    | '/painel/entregabilidade'
     | '/painel/enviados'
     | '/painel/envio-massa'
     | '/painel/exibicao-site'
@@ -556,6 +568,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/configuracoes-pagamento'
     | '/_authenticated/painel/consulta-automatica'
     | '/_authenticated/painel/empresas-importadas'
+    | '/_authenticated/painel/entregabilidade'
     | '/_authenticated/painel/enviados'
     | '/_authenticated/painel/envio-massa'
     | '/_authenticated/painel/exibicao-site'
@@ -804,6 +817,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelEnviadosRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
+    '/_authenticated/painel/entregabilidade': {
+      id: '/_authenticated/painel/entregabilidade'
+      path: '/entregabilidade'
+      fullPath: '/painel/entregabilidade'
+      preLoaderRoute: typeof AuthenticatedPainelEntregabilidadeRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
     '/_authenticated/painel/empresas-importadas': {
       id: '/_authenticated/painel/empresas-importadas'
       path: '/empresas-importadas'
@@ -957,6 +977,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelConfiguracoesPagamentoRoute: typeof AuthenticatedPainelConfiguracoesPagamentoRoute
   AuthenticatedPainelConsultaAutomaticaRoute: typeof AuthenticatedPainelConsultaAutomaticaRoute
   AuthenticatedPainelEmpresasImportadasRoute: typeof AuthenticatedPainelEmpresasImportadasRouteWithChildren
+  AuthenticatedPainelEntregabilidadeRoute: typeof AuthenticatedPainelEntregabilidadeRoute
   AuthenticatedPainelEnviadosRoute: typeof AuthenticatedPainelEnviadosRoute
   AuthenticatedPainelEnvioMassaRoute: typeof AuthenticatedPainelEnvioMassaRoute
   AuthenticatedPainelExibicaoSiteRoute: typeof AuthenticatedPainelExibicaoSiteRoute
@@ -981,6 +1002,8 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
     AuthenticatedPainelConsultaAutomaticaRoute,
   AuthenticatedPainelEmpresasImportadasRoute:
     AuthenticatedPainelEmpresasImportadasRouteWithChildren,
+  AuthenticatedPainelEntregabilidadeRoute:
+    AuthenticatedPainelEntregabilidadeRoute,
   AuthenticatedPainelEnviadosRoute: AuthenticatedPainelEnviadosRoute,
   AuthenticatedPainelEnvioMassaRoute: AuthenticatedPainelEnvioMassaRoute,
   AuthenticatedPainelExibicaoSiteRoute: AuthenticatedPainelExibicaoSiteRoute,
