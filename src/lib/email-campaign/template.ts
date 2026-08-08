@@ -144,12 +144,12 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   signatureSize: 12,
   disclaimerSize: 11,
 
-  title: 'CNPJ com restrição · pendente',
+  title: 'CNPJ sem certificado digital ativo',
   subtitle: 'Central de Emissão · MEI',
-  heroTitle: 'Certificado Digital pendente',
+  heroTitle: 'Certificado Digital não localizado',
   showHero: true,
   intro:
-    'Prezado(a) *{{NOME_TITULAR}}*,\n\nSeu CNPJ consta como *pendente*: sem Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
+    'Prezado(a) *{{NOME_TITULAR}}*,\n\nNa consulta ao CNPJ *{{CNPJ}}*, não localizamos um Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
   cardTitle: 'Dados do requerente',
   showCard: true,
   buttonLabel: 'Regularizar meu CNPJ',
@@ -158,11 +158,11 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   showWarning: true,
   warningTitle: 'Atenção · pontos em aberto no seu CNPJ',
   warningItems:
-    'Impossibilitado de emitir nota fiscal (NFS-e).\nImpossibilitado de assinar contratos digitais e físicos com CNPJ.\nLimites de crédito empresarial podem ficar restritos em bancos e financeiras PJ.\nA regularidade do CNPJ perante a Receita Federal pode ser afetada.\nO acesso a alguns sistemas do governo pode exigir o certificado digital.\nConsultas cadastrais podem apresentar o CNPJ com situação incompleta.',
-  warningBg: '#fff8ed',
-  warningBorder: '#b45309',
-  warningTitleColor: '#7c2d12',
-  warningTextColor: '#78350f',
+    'A emissão de nota fiscal pode ficar impedida sem o certificado ativo.\nA assinatura de contratos digitais com CNPJ pode ter validade limitada.\nLinhas de crédito empresarial podem ser restringidas em bancos e financeiras.\nA regularidade do CNPJ perante a Receita Federal pode ser afetada.\nO acesso a alguns sistemas do governo pode exigir o certificado digital.\nConsultas cadastrais podem apresentar o CNPJ com situação incompleta.',
+  warningBg: '#eff6ff',
+  warningBorder: '#2563eb',
+  warningTitleColor: '#1e3a8a',
+  warningTextColor: '#1e40af',
 
   showSignature: false,
   signature: '',
@@ -180,10 +180,10 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   avatarUrl: AVATAR_URL,
   avatarSize: 58,
 
-  showGovBar: true,
+  showGovBar: false,
   govBarText: 'Central de emissão · Protocolo {{REFERENCIA}}',
-  govBarBg: '#f2c200',
-  govBarColor: '#4a3800',
+  govBarBg: '#e2e8f0',
+  govBarColor: '#334155',
 
   showBadges: true,
   badgesText: 'SSL 256-bits · LGPD · Validade 12 meses',
@@ -197,9 +197,9 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
 
 
-export const DEFAULT_SUBJECT = 'Restrição no seu CNPJ MEI — regularização pendente';
+export const DEFAULT_SUBJECT = 'Aviso sobre o CNPJ {{CNPJ}} — Certificado Digital';
 export const DEFAULT_PREHEADER =
-  'Verificação de restituição e pendências para o CNPJ {{CNPJ}}.';
+  'Seu CNPJ está sem Certificado Digital ativo. Regularize para evitar limitações.';
 
 export type Vars = Record<string, string>;
 
@@ -430,13 +430,13 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
     ${D.showStatusBar !== false ? `
     <tr><td style="padding:0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#fffbeb" style="background:#fffbeb;border-bottom:1px solid #d97706;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#eff6ff" style="background:#eff6ff;border-bottom:1px solid #2563eb;">
         <tr><td class="l-pad" style="padding:14px ${px}px;font-family:Arial,sans-serif;">
-          <div style="font-size:10px;letter-spacing:1.2px;color:#92400e;font-weight:700;margin-bottom:6px;text-transform:uppercase;">${esc(S(D.statusLabel || 'Situação do cadastro'))}</div>
-          <div style="font-size:16px;font-weight:800;color:#92400e;letter-spacing:0.5px;text-transform:uppercase;">
-            <span style="display:inline-block;width:9px;height:9px;background:#d97706;border-radius:50%;vertical-align:middle;margin-right:8px;"></span>${esc(S(D.statusValue || 'Pendente'))}
+          <div style="font-size:10px;letter-spacing:1.2px;color:#1e3a8a;font-weight:700;margin-bottom:6px;text-transform:uppercase;">${esc(S(D.statusLabel || 'Situação do cadastro'))}</div>
+          <div style="font-size:16px;font-weight:800;color:#1e40af;letter-spacing:0.5px;text-transform:uppercase;">
+            <span style="display:inline-block;width:9px;height:9px;background:#2563eb;border-radius:50%;vertical-align:middle;margin-right:8px;"></span>${esc(S(D.statusValue || 'Pendente'))}
           </div>
-          ${D.statusNote ? `<div style="font-size:11.5px;color:#78350f;margin-top:6px;line-height:1.5;">${esc(S(D.statusNote))}</div>` : ''}
+          ${D.statusNote ? `<div style="font-size:11.5px;color:#334155;margin-top:6px;line-height:1.5;">${esc(S(D.statusNote))}</div>` : ''}
         </td></tr>
       </table>
     </td></tr>` : ''}

@@ -9,13 +9,17 @@ import { pickVariantOrDefault } from '@/lib/email-campaign/variants';
 import { listCompaniesWithoutLink, listPendingSendTargets } from '@/lib/pipeline/pipeline.server';
 import { validateEmailForSending } from '@/lib/email-validation';
 
-const SUBJECT = 'RESTRIÇÃO NO SEU CNPJ MEI';
-
 function baseUrl() {
   return (process.env.PUBLIC_APP_URL || 'https://seu-certificado-mei-digital.online').replace(
     /\/+$/,
     '',
   );
+}
+
+/** Carrega a lista local de endereços suprimidos (bounce/complaint/unsubscribe). */
+async function loadSuppressedEmails(): Promise<Set<string>> {
+  const { data } = await supabaseAdmin.from('suppression_list').select('email');
+  return new Set((data ?? []).map((r: any) => String(r.email).trim().toLowerCase()).filter(Boolean));
 }
 
 /**
@@ -64,11 +68,12 @@ export async function ensureLinksForImported(limit = 25) {
  */
 export async function syncMassEmailQueue(limit = 25) {
   const pending = await listPendingSendTargets(supabaseAdmin as any, limit);
-  if (pending.length === 0) return { ok: true as const, enqueued: 0, semEmail: 0 };
+  if (pending.length === 0) return { ok: true as const, enqueued: 0, semEmail: 0, suprimidos: 0 };
 
   const publicBaseUrl = baseUrl();
   const rows: any[] = [];
   let semEmail = 0;
+  let suprimidos = 0;
 
   // Modelos ativos na rotação (aba "Modelos de campanha"). Sem seleção salva,
   // mantém o modelo padrão.
@@ -101,6 +106,9 @@ export async function syncMassEmailQueue(limit = 25) {
   const seenEmails = new Set<string>();
   let duplicados = 0;
 
+  // Endereços já suprimidos (bounce/complaint/unsubscribe) nunca voltam à fila.
+  const suppressed = await loadSuppressedEmails();
+
   for (const p of pending) {
     const c = byId.get(p.companyId);
     const rawEmail = (c?.email ?? p.email ?? '').trim();
@@ -111,7 +119,7 @@ export async function syncMassEmailQueue(limit = 25) {
       // Marca como suprimido para não travar o pipeline indefinidamente.
       rows.push({
         to_email: validation.normalized ?? `sem-email+${p.companyId}@invalido.local`,
-        subject: SUBJECT,
+        subject: 'Aviso cadastral — CNPJ sem certificado digital ativo',
         html: null,
         text: null,
         status: 'suppressed',
@@ -123,11 +131,27 @@ export async function syncMassEmailQueue(limit = 25) {
     }
 
     const normalized = validation.normalized;
+
+    if (suppressed.has(normalized)) {
+      suprimidos++;
+      rows.push({
+        to_email: normalized,
+        subject: 'Aviso cadastral — CNPJ sem certificado digital ativo',
+        html: null,
+        text: null,
+        status: 'suppressed',
+        idempotency_key: `mass-email-${p.companyId}`,
+        last_error: 'destinatário suprimido (bounce/complaint/unsubscribe)',
+        created_by: null,
+      });
+      continue;
+    }
+
     if (seenEmails.has(normalized)) {
       duplicados++;
       rows.push({
         to_email: normalized,
-        subject: SUBJECT,
+        subject: 'Aviso cadastral — CNPJ sem certificado digital ativo',
         html: null,
         text: null,
         status: 'suppressed',
@@ -145,7 +169,7 @@ export async function syncMassEmailQueue(limit = 25) {
       CNPJ: c?.cnpj || p.cnpj || '',
       REFERENCIA: (c?.cnpj || p.cnpj || '').slice(-8).toUpperCase() || 'CCMEI',
       DATA_ABERTURA: c?.inicio_atividade || '',
-      SITUACAO: 'CNPJ sem certificado pendente',
+      SITUACAO: 'CNPJ sem certificado digital ativo',
       LINK_PUBLICO: `${publicBaseUrl}/acesso/${p.token}`,
       LINK_CHECKOUT: `${publicBaseUrl}/checkout/${p.token}`,
     };
@@ -211,10 +235,11 @@ export async function syncMassEmailQueue(limit = 25) {
       enqueued,
       semEmail,
       duplicados,
+      suprimidos,
       error: `${failures.length} item(ns) não entraram na fila: ${failures[0]}`,
     };
   }
 
-  return { ok: true as const, enqueued, semEmail, duplicados };
+  return { ok: true as const, enqueued, semEmail, duplicados, suprimidos };
 }
 

@@ -201,6 +201,18 @@ export async function recoverRetryableFailures(): Promise<number> {
 }
 
 
+/** Verifica se o endereço consta na lista de supressão local. */
+async function isSuppressed(email: string): Promise<boolean> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const normalized = email.trim().toLowerCase();
+  const { data } = await supabaseAdmin
+    .from('suppression_list')
+    .select('email')
+    .eq('email', normalized)
+    .maybeSingle();
+  return !!data;
+}
+
 /**
  * Modo ÚNICO de envio: 1 e-mail a cada `spacingSec` segundos (padrão 36 s).
  *
@@ -264,6 +276,16 @@ export async function processQueueInternal(
 
   const row = (rows ?? [])[0] as QueueRow | undefined;
   if (!row) return { ...base, throttled: false };
+
+  // Nunca envia para endereços suprimidos localmente (bounce/complaint/unsubscribe).
+  // Isso protege a reputação do domínio e evita loops de reenvio.
+  if (await isSuppressed(row.to_email)) {
+    await supabaseAdmin
+      .from('email_send_queue')
+      .update({ status: 'suppressed', last_error: 'destinatário suprimido (bounce/complaint/unsubscribe)' })
+      .eq('id', row.id);
+    return { ...base, processed: 1, throttled: false };
+  }
 
   let sent = 0;
   let failed = 0;
