@@ -56,7 +56,8 @@ const EMPTY: Cfg = {
   button_base_url: 'https://seu-certificado-mei-digital.online/c/',
   template_name: 'certificado1',
   template_language: 'pt_BR',
-  template_body: '',
+  template_body:
+    '*Olá, {{razao}}* Recomendamos que confira as informações do CNPJ MEI: *{{cnpj}}.* e os dados relacionados ao Certificado Digital da sua empresa.',
   active: false,
   daily_limit: 300,
   batch_size: 20,
