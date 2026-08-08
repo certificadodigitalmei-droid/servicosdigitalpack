@@ -382,8 +382,6 @@ function DashboardPage() {
         </CardContent>
       </Card>
 
-      <DashboardOverviewStrip from={range.from} to={range.to} periodLabel={periodLabel} />
-
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Dashboard de Links</h1>
