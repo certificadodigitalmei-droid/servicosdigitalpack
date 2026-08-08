@@ -217,7 +217,7 @@ export const sendFunnelCampaign = createServerFn({ method: 'POST' })
     await assertAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const { sendTemplateEmail } = await import('@/lib/email-templates/send-email');
-    const { PUBLIC_BASE_URL } = await import('@/lib/public-base-url');
+    const { PUBLIC_BASE_URL, buildPublicUrl } = await import('@/lib/public-base-url');
 
     const { data: pricing } = await supabaseAdmin
       .from('site_settings')
@@ -335,7 +335,7 @@ export const sendFunnelTestEmail = createServerFn({ method: 'POST' })
     await assertAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const { sendTemplateEmail } = await import('@/lib/email-templates/send-email');
-    const { PUBLIC_BASE_URL } = await import('@/lib/public-base-url');
+    const { PUBLIC_BASE_URL, buildPublicUrl } = await import('@/lib/public-base-url');
 
     const { data: pricing } = await supabaseAdmin
       .from('site_settings')
@@ -412,7 +412,7 @@ export const sendManualEmails = createServerFn({ method: 'POST' })
     await assertAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const { sendTemplateEmail } = await import('@/lib/email-templates/send-email');
-    const { PUBLIC_BASE_URL } = await import('@/lib/public-base-url');
+    const { PUBLIC_BASE_URL, buildPublicUrl } = await import('@/lib/public-base-url');
 
     const { data: pricing } = await supabaseAdmin
       .from('site_settings')
