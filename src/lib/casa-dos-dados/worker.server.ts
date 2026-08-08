@@ -43,6 +43,8 @@ type SkipReason =
   | 'invalid_cnpj_length'
   | 'duplicate'
   | 'incomplete'
+  | 'invalid_mobile'
+  | 'blocked_number'
   | 'detail_lookup_error'
   | 'company_upsert_error'
   | 'link_error'
