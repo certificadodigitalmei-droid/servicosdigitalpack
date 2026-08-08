@@ -21,7 +21,7 @@ const base = {
   apiKey: 'secret-key',
   pluginId: '3f095662-d969-42b0-a41e-e729e1f46328',
   whatsappPhoneNumberId: '1290004607527438',
-  to: '5511999999999',
+  to: '5511999998877',
   templateName: 'certificado1',
   language: 'pt_BR',
   razao: 'Empresa Teste',
@@ -31,8 +31,8 @@ const base = {
 
 describe('endpoint ChakraHQ', () => {
   it('monta a URL por destinatário', () => {
-    expect(buildSendTemplateUrl('https://api.chakrahq.com/', 'plug', '5511999999999')).toBe(
-      'https://api.chakrahq.com/v1/ext/plugin/whatsapp/plug/phoneNumber/5511999999999/send-template-message',
+    expect(buildSendTemplateUrl('https://api.chakrahq.com/', 'plug', '5511999998877')).toBe(
+      'https://api.chakrahq.com/v1/ext/plugin/whatsapp/plug/phoneNumber/5511999998877/send-template-message',
     );
   });
 });
@@ -45,7 +45,7 @@ describe('sendChakraTemplate', () => {
     expect(res).toEqual({ ok: true, messageId: 'wamid.1' });
     const [url, init] = fetchImpl.mock.calls[0] as any[];
     expect(url).toBe(
-      `https://api.chakrahq.com/v1/ext/plugin/whatsapp/${base.pluginId}/phoneNumber/5511999999999/send-template-message`,
+      `https://api.chakrahq.com/v1/ext/plugin/whatsapp/${base.pluginId}/phoneNumber/5511999998877/send-template-message`,
     );
     expect(init.headers.Authorization).toBe('Bearer secret-key');
     expect(init.headers['X-API-Key']).toBeUndefined();
