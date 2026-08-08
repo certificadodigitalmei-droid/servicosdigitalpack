@@ -405,43 +405,35 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 </style>
 </head>
 <body id="body" class="body l-page" style="margin:0;padding:0;background:${D.pageBg};font-family:Arial,Helvetica,sans-serif;color:${D.textColor};word-break:break-word;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="l-page" bgcolor="${D.pageBg}" style="background:${D.pageBg};padding:40px 0;"><tr><td align="center">
-  <table role="presentation" width="${D.containerWidth}" cellpadding="0" cellspacing="0" class="l-card" bgcolor="${D.bodyBg}" style="max-width:${D.containerWidth}px;width:100%;background:${D.bodyBg};box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="l-page" bgcolor="${D.pageBg}" style="background:${D.pageBg};padding:24px 0;"><tr><td align="center">
+  <table role="presentation" width="${D.containerWidth}" cellpadding="0" cellspacing="0" class="l-card" bgcolor="${D.bodyBg}" style="max-width:${D.containerWidth}px;width:100%;background:${D.bodyBg};">
 
     ${D.showGovBar ? `
-    <tr><td class="l-pad" style="background:${D.govBarBg};color:${D.govBarColor};padding:10px ${px}px;font-size:12px;letter-spacing:0.5px;text-transform:uppercase;font-family:Arial,sans-serif;">
+    <tr><td class="l-pad" style="background:${D.govBarBg};color:${D.govBarColor};padding:10px ${px}px;font-size:12px;font-family:Arial,sans-serif;">
       ${nl2br(S(D.govBarText || ''))}
     </td></tr>` : ''}
     <!-- Header -->
-    <tr><td class="l-pad" style="background:${D.headerBg};color:${D.headerText};padding:${D.headerPadding}px ${px}px;text-align:left;">
-      ${D.showAvatar && D.avatarUrl ? `<div style="margin-bottom:16px;"><img src="${esc(D.avatarUrl)}" alt="" width="${D.avatarSize}" height="${D.avatarSize}" bgcolor="#ffffff" style="width:${D.avatarSize}px;height:${D.avatarSize}px;border-radius:50%;border:3px solid #ffffff;display:block;background:#ffffff;background-color:#ffffff;" /></div>` : ''}
+    <tr><td class="l-pad" style="background:${D.headerBg};color:${D.headerText};padding:${D.headerPadding}px ${px}px 12px ${px}px;text-align:left;border-bottom:1px solid #e5e7eb;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
         <td style="font-family:Arial,sans-serif;vertical-align:top;">
-          <div class="l-logo" style="font-size:${D.logoSize}px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;">${logo}</div>
+          <div class="l-logo" style="font-size:${D.logoSize}px;font-weight:700;color:${D.mutedColor};">${logo}</div>
         </td>
         ${vars.REFERENCIA ? `<td align="right" style="font-family:Arial,sans-serif;vertical-align:top;white-space:nowrap;">
-          <div style="font-size:9px;letter-spacing:1.2px;color:#9fbad8;">PROTOCOLO</div>
-          <div style="font-size:11.5px;font-weight:700;color:#ffffff;margin-top:2px;">${esc(String(vars.REFERENCIA))}</div>
+          <div style="font-size:11px;color:${D.mutedColor};">Protocolo ${esc(String(vars.REFERENCIA))}</div>
         </td>` : ''}
       </tr></table>
-      <div style="height:1px;background:rgba(255,255,255,0.18);margin:14px 0;line-height:1px;font-size:1px;">&nbsp;</div>
-      <div class="l-title" style="text-transform:uppercase;font-size:${effectiveTitleSize}px;font-weight:800;line-height:1.25;margin:0;white-space:normal;word-break:break-word;color:${D.headerText};">${title}</div>
-      <div class="l-sub" style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:10px;">${subtitle}</div>
+      <div class="l-title" style="font-size:${effectiveTitleSize}px;font-weight:700;line-height:1.35;margin:12px 0 0 0;white-space:normal;word-break:break-word;color:${D.headerText};">${title}</div>
+      <div class="l-sub" style="font-size:${D.subtitleSize}px;color:${D.mutedColor};margin:6px 0 12px 0;">${subtitle}</div>
     </td></tr>
-    ${D.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(D.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:${D.containerWidth}px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
 
     ${D.showStatusBar !== false ? `
-    <tr><td style="padding:0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#eff6ff" style="background:#eff6ff;border-bottom:1px solid #2563eb;">
-        <tr><td class="l-pad" style="padding:14px ${px}px;font-family:Arial,sans-serif;">
-          <div style="font-size:10px;letter-spacing:1.2px;color:#1e3a8a;font-weight:700;margin-bottom:6px;text-transform:uppercase;">${esc(S(D.statusLabel || 'Situação do cadastro'))}</div>
-          <div style="font-size:16px;font-weight:800;color:#1e40af;letter-spacing:0.5px;text-transform:uppercase;">
-            <span style="display:inline-block;width:9px;height:9px;background:#2563eb;border-radius:50%;vertical-align:middle;margin-right:8px;"></span>${esc(S(D.statusValue || 'Pendente'))}
-          </div>
-          ${D.statusNote ? `<div style="font-size:11.5px;color:#334155;margin-top:6px;line-height:1.5;">${esc(S(D.statusNote))}</div>` : ''}
-        </td></tr>
-      </table>
+    <tr><td class="l-pad" style="padding:16px ${px}px 0 ${px}px;font-family:Arial,sans-serif;">
+      <div style="font-size:12px;color:${D.mutedColor};margin-bottom:4px;">${esc(S(D.statusLabel || 'Situação do cadastro'))}</div>
+      <div style="font-size:14px;font-weight:700;color:${D.textColor};">${esc(S(D.statusValue || 'Pendente'))}</div>
+      ${D.statusNote ? `<div style="font-size:12px;color:${D.mutedColor};margin-top:4px;line-height:1.5;">${esc(S(D.statusNote))}</div>` : ''}
     </td></tr>` : ''}
+
+
 
 
     ${D.showHero ? `
