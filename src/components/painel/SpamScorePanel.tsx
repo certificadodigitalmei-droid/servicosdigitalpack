@@ -107,12 +107,15 @@ export function SpamScorePanel({ vars }: { vars: Record<string, string> }) {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4" /> Score de spam por modelo
+            <ShieldCheck className="h-4 w-4" /> Estimativa de conteúdo por modelo
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Análise automática (regras no estilo SpamAssassin/Mail-Tester) do assunto, HTML e texto
-            de cada modelo. Nota de 0 a 10 — rode antes de disparar a campanha.
+            Esta nota analisa apenas o <strong>conteúdo</strong> (assunto, HTML e texto). Ela não mede
+            SPF/DKIM/DMARC, blacklists, reputação do IP nem o cabeçalho List-Unsubscribe — por isso a
+            nota real do Mail-Tester costuma ser <strong>mais baixa</strong>. Use o teste real abaixo
+            para a nota oficial.
           </p>
+
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3 text-sm">
