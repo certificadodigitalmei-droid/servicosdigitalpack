@@ -200,12 +200,13 @@ function WhatsappMassaPage() {
         </Alert>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[
-          { label: 'Empresas com telefone', value: stats.audience, icon: Users },
+          { label: 'Empresas com celular válido', value: stats.audience, icon: Users },
           { label: 'Na fila', value: stats.pending, icon: Send },
           { label: 'Enviadas', value: stats.sent, icon: CheckCircle2 },
           { label: 'Falhas', value: stats.failed, icon: XCircle },
+          { label: 'Bloqueados/rejeitados', value: stats.blocked, icon: Ban },
         ].map((s) => (
           <Card key={s.label}>
             <CardContent className="flex items-center gap-3 p-4">
