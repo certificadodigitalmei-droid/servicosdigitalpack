@@ -253,22 +253,31 @@ function EnvioMassa() {
       <Section title="Mensagem e prévia">
         <div className="space-y-3">
           <p className="text-xs text-slate-500">
-            Assunto e remetente vêm do{' '}
+            O assunto vem do modelo sorteado na{' '}
             <Link to="/painel/modelos-email" className="font-medium text-blue-600 hover:underline">
-              Modelo de Mensagem
+              rotação de campanhas
             </Link>
-            .
+            . O remetente é o configurado no envio.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             <div>
-              <Label className="text-xs">Assunto</Label>
-              <Input value={subject} readOnly className="bg-slate-50 text-slate-600" />
+              <Label className="text-xs">Assunto (modelo em rotação)</Label>
+              <Input
+                value={
+                  previewItem
+                    ? substitute(effectiveSubject, buildVarsForPreview(previewItem))
+                    : effectiveSubject
+                }
+                readOnly
+                className="bg-slate-50 text-slate-600"
+              />
             </div>
             <div>
               <Label className="text-xs">Remetente</Label>
               <Input value={`${fromName} <${fromAddress}>`} readOnly className="bg-slate-50 text-slate-600" />
             </div>
           </div>
+
 
           {previewItem ? (
             <>
