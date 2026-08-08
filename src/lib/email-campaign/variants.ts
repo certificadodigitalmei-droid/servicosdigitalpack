@@ -101,6 +101,16 @@ const BLUE_PALETTES = {
   },
 } as const;
 
+const RISCO_RECEITA_FEDERAL = 'Receita Federal pode identificar o CNPJ com pendência cadastral ativa.';
+const RISCO_NOTA_FISCAL = 'Emissão de nota fiscal (NFS-e) fica indisponível ou sem validade jurídica.';
+const RISCO_CONTRATOS = 'Contratos digitais assinados em nome do CNPJ podem não ter validade legal.';
+const RISCO_CREDITO = 'Bancos e financeiras podem limitar ou negar crédito empresarial.';
+const RISCO_CONSULTAS = 'Consultas públicas podem exibir o cadastro como incompleto.';
+const RISCO_MULTA = 'Multas e autuações tributárias podem ser aplicadas enquanto a pendência persistir.';
+const RISCO_ACESSO_GOV = 'Acesso a sistemas do governo que exigem certificado digital pode ser barrado.';
+const RISCO_FISCALIZACAO = 'Fiscalizações podem ser intensificadas com o CNPJ em situação irregular.';
+const RISCO_PARCEIROS = 'Parceiros comerciais e fornecedores podem recusar negócios com CNPJ pendente.';
+
 export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
   {
     id: 'azul-alerta',
@@ -117,10 +127,18 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
       subtitle: 'Central de Emissão · MEI',
       heroTitle: 'Sua empresa pode estar impedida de operar regularmente',
       intro:
-        'Prezado(a) *{{NOME_TITULAR}}*,\n\nIdentificamos que o CNPJ *{{CNPJ}}* está *sem Certificado Digital ativo*. Essa pendência pode limitar operações importantes do seu negócio.\n\nVeja abaixo o que está em risco enquanto a situação não for regularizada:',
+        'Prezado(a) *{{NOME_TITULAR}}*,\n\nIdentificamos que o CNPJ *{{CNPJ}}* está *sem Certificado Digital ativo*. Essa pendência pode limitar operações importantes do seu negócio e chamar a atenção da Receita Federal.\n\nVeja abaixo o que está em risco enquanto a situação não for regularizada:',
       warningTitle: 'O que pode estar comprometido no seu CNPJ',
-      warningItems:
-        'Emissão de nota fiscal (NFS-e) pode ficar indisponível.\nAssinatura de contratos digitais com validade jurídica pode ser bloqueada.\nAcesso a linhas de crédito empresarial pode ser limitado por bancos.\nO cadastro pode ser considerado incompleto em consultas oficiais.',
+      warningItems: [
+        RISCO_NOTA_FISCAL,
+        RISCO_CONTRATOS,
+        RISCO_CREDITO,
+        RISCO_ACESSO_GOV,
+        RISCO_FISCALIZACAO,
+        RISCO_MULTA,
+        RISCO_RECEITA_FEDERAL,
+        RISCO_PARCEIROS,
+      ].join('\n'),
       buttonLabel: 'REGULARIZAR MEU CNPJ AGORA',
       statusValue: 'PENDENTE',
       statusNote: 'Certificado e-CNPJ não localizado. Regularização recomendada.',
@@ -141,10 +159,17 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
       subtitle: 'Central de Emissão · MEI',
       heroTitle: 'Certificado Digital pendente',
       intro:
-        'Prezado(a) *{{NOME_TITULAR}}*,\n\nO CNPJ *{{CNPJ}}* consta como *pendente*: não há Certificado Digital ativo vinculado.\n\nConfira abaixo a situação do cadastro:',
+        'Prezado(a) *{{NOME_TITULAR}}*,\n\nO CNPJ *{{CNPJ}}* consta como *pendente*: não há Certificado Digital ativo vinculado. Isso pode afetar a regularidade perante a Receita Federal.\n\nConfira abaixo a situação do cadastro:',
       warningTitle: 'Pontos que dependem do certificado ativo',
-      warningItems:
-        'Emissão de nota fiscal (NFS-e) indisponível.\nAssinatura de contratos digitais em nome do CNPJ indisponível.\nLimites de crédito empresarial em bancos e financeiras PJ limitados.\nExigências da Receita Federal em aberto.',
+      warningItems: [
+        RISCO_NOTA_FISCAL,
+        RISCO_CONTRATOS,
+        RISCO_CREDITO,
+        RISCO_CONSULTAS,
+        RISCO_ACESSO_GOV,
+        RISCO_FISCALIZACAO,
+        RISCO_RECEITA_FEDERAL,
+      ].join('\n'),
       buttonLabel: 'REGULARIZAR MEU CNPJ',
       statusValue: 'PENDENTE',
       statusNote: 'Certificado e-CNPJ não localizado.',
@@ -165,10 +190,17 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
       subtitle: 'Referência {{REFERENCIA}}',
       heroTitle: 'Certificado Digital não localizado',
       intro:
-        'Prezado(a) *{{NOME_TITULAR}}*,\n\nComunicamos que, na verificação do CNPJ *{{CNPJ}}*, não foi localizado Certificado Digital ativo vinculado à empresa.\n\nAbaixo estão os dados do cadastro:',
+        'Prezado(a) *{{NOME_TITULAR}}*,\n\nComunicamos que, na verificação do CNPJ *{{CNPJ}}*, não foi localizado Certificado Digital ativo vinculado à empresa. A Receita Federal exige esse documento para diversas operações.\n\nAbaixo estão os dados do cadastro:',
       warningTitle: 'O que fica limitado enquanto a pendência existir',
-      warningItems:
-        'Não é possível emitir nota fiscal (NFS-e).\nNão é possível assinar contratos digitais em nome do CNPJ.\nAnálises de crédito empresarial podem ser prejudicadas.\nObrigações junto à Receita Federal seguem em aberto.',
+      warningItems: [
+        RISCO_NOTA_FISCAL,
+        RISCO_CONTRATOS,
+        RISCO_CREDITO,
+        RISCO_MULTA,
+        RISCO_ACESSO_GOV,
+        RISCO_FISCALIZACAO,
+        RISCO_RECEITA_FEDERAL,
+      ].join('\n'),
       buttonLabel: 'REGULARIZAR AGORA MEU CNPJ',
       statusValue: 'PENDENTE',
       statusNote: 'Certificado digital não identificado.',
@@ -190,10 +222,18 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
       subtitle: 'Consulta nº {{REFERENCIA}}',
       heroTitle: 'Resumo da verificação',
       intro:
-        '*{{NOME_TITULAR}}*, o resultado da consulta ao CNPJ *{{CNPJ}}* já está disponível.\n\nSituação: *pendente*, por ausência de Certificado Digital ativo.\n\nVeja os dados apurados:',
+        '*{{NOME_TITULAR}}*, o resultado da consulta ao CNPJ *{{CNPJ}}* já está disponível.\n\nSituação: *pendente*, por ausência de Certificado Digital ativo. A Receita Federal considera essa ausência como irregularidade cadastral.\n\nVeja os dados apurados:',
       warningTitle: 'Observações da verificação',
-      warningItems:
-        'Certificado e-CNPJ não localizado.\nEmissão de NFS-e indisponível sem o certificado.\nAssinaturas digitais em nome da empresa bloqueadas.\nRecomenda-se regularizar o quanto antes.',
+      warningItems: [
+        'Certificado e-CNPJ não localizado.',
+        RISCO_NOTA_FISCAL,
+        RISCO_CONTRATOS,
+        RISCO_CREDITO,
+        RISCO_CONSULTAS,
+        RISCO_FISCALIZACAO,
+        RISCO_RECEITA_FEDERAL,
+        'Recomenda-se regularizar o quanto antes.',
+      ].join('\n'),
       buttonLabel: 'REGULARIZAR MEU CNPJ',
       statusValue: 'PENDENTE',
       statusNote: 'Item pendente identificado na consulta.',
@@ -214,10 +254,17 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
       subtitle: 'Protocolo {{REFERENCIA}}',
       heroTitle: 'Um ponto em aberto no seu cadastro',
       intro:
-        'Prezado(a) *{{NOME_TITULAR}}*,\n\nO acompanhamento do CNPJ *{{CNPJ}}* apontou ausência de Certificado Digital ativo — item que entra na avaliação da reputação cadastral da empresa.\n\nVeja o detalhamento abaixo:',
+        'Prezado(a) *{{NOME_TITULAR}}*,\n\nO acompanhamento do CNPJ *{{CNPJ}}* apontou ausência de Certificado Digital ativo — item que entra na avaliação da Receita Federal e da reputação cadastral da empresa.\n\nVeja o detalhamento abaixo:',
       warningTitle: 'Impactos enquanto a pendência continuar',
-      warningItems:
-        'Cadastro considerado incompleto por parceiros e instituições.\nEmissão de nota fiscal (NFS-e) indisponível.\nContratos digitais em nome do CNPJ não podem ser assinados.\nAnálises de crédito PJ podem ser prejudicadas.',
+      warningItems: [
+        RISCO_CONSULTAS,
+        RISCO_NOTA_FISCAL,
+        RISCO_CONTRATOS,
+        RISCO_CREDITO,
+        RISCO_PARCEIROS,
+        RISCO_FISCALIZACAO,
+        RISCO_RECEITA_FEDERAL,
+      ].join('\n'),
       buttonLabel: 'QUERO REGULARIZAR MEU CNPJ',
       statusValue: 'PENDENTE',
       statusNote: 'Certificado digital ausente.',
@@ -240,10 +287,16 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
       heroTitle: 'Seu CNPJ está sem certificado ativo',
       heroTitleSize: 22,
       intro:
-        'Prezado(a) *{{NOME_TITULAR}}*,\n\nAo verificar o CNPJ *{{CNPJ}}*, não encontramos um Certificado Digital ativo vinculado à empresa.\n\nVocê pode conferir a situação completa em poucos segundos:',
+        'Prezado(a) *{{NOME_TITULAR}}*,\n\nAo verificar o CNPJ *{{CNPJ}}*, não encontramos um Certificado Digital ativo vinculado à empresa. Sem ele, a Receita Federal e outros órgãos podem considerar o cadastro irregular.\n\nVocê pode conferir a situação completa em poucos segundos:',
       warningTitle: 'Por que isso importa',
-      warningItems:
-        'Sem o certificado, você não emite nota fiscal (NFS-e).\nContratos digitais em nome do CNPJ não podem ser assinados.\nO cadastro segue incompleto em consultas de terceiros.',
+      warningItems: [
+        RISCO_NOTA_FISCAL,
+        RISCO_CONTRATOS,
+        RISCO_CONSULTAS,
+        RISCO_CREDITO,
+        RISCO_ACESSO_GOV,
+        RISCO_RECEITA_FEDERAL,
+      ].join('\n'),
       buttonLabel: 'REGULARIZAR MEU CNPJ',
       statusValue: 'PENDENTE',
       statusNote: 'Certificado e-CNPJ não localizado.',
@@ -264,10 +317,17 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
       subtitle: 'Referência {{REFERENCIA}}',
       heroTitle: 'Falta apenas o Certificado Digital',
       intro:
-        'Prezado(a) *{{NOME_TITULAR}}*,\n\nO cadastro do CNPJ *{{CNPJ}}* está quase completo: falta apenas o Certificado Digital ativo, e por isso ele segue como *pendente*.\n\nVeja o que consta hoje na consulta:',
+        'Prezado(a) *{{NOME_TITULAR}}*,\n\nO cadastro do CNPJ *{{CNPJ}}* está quase completo: falta apenas o Certificado Digital ativo, e por isso ele segue como *pendente* perante a Receita Federal.\n\nVeja o que consta hoje na consulta:',
       warningTitle: 'O que ainda está pendente',
-      warningItems:
-        'Certificado digital e-CNPJ não vinculado.\nEmissão de nota fiscal (NFS-e) indisponível.\nAssinatura digital com validade jurídica indisponível.\nCadastro exibido como incompleto em consultas.',
+      warningItems: [
+        'Certificado digital e-CNPJ não vinculado.',
+        RISCO_NOTA_FISCAL,
+        RISCO_CONTRATOS,
+        RISCO_ACESSO_GOV,
+        RISCO_CREDITO,
+        RISCO_FISCALIZACAO,
+        RISCO_RECEITA_FEDERAL,
+      ].join('\n'),
       buttonLabel: 'REGULARIZAR MEU CNPJ',
       statusValue: 'PENDENTE',
       statusNote: 'Falta o Certificado Digital ativo.',
