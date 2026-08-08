@@ -3,6 +3,7 @@ import {
   buildSendTemplateUrl,
   extractMessageId,
   extractErrorMessage,
+  formatCnpj,
   sendChakraTemplate,
   fetchChakraTemplateStatus,
 } from '@/lib/whatsapp/chakra.server';
@@ -54,12 +55,42 @@ describe('sendChakraTemplate', () => {
       templateName: 'certificado1',
       mapping: [
         { schemaPropertyName: 'razao', schemaPropertyValue: 'Empresa Teste' },
-        { schemaPropertyName: 'cnpj', schemaPropertyValue: '12345678000199' },
+        { schemaPropertyName: 'cnpj', schemaPropertyValue: '12.345.678/0001-99' },
       ],
       buttonMapping: [{ schemaPropertyName: '1', schemaPropertyValue: 'ABC123TOKEN' }],
       language: 'pt_BR',
     });
     expect(body.buttonMapping[0].schemaPropertyValue).not.toContain('http');
+  });
+
+  it('varia mapping por empresa e formata o CNPJ', async () => {
+    const fetchImpl = vi.fn(async () => jsonRes({ _data: { id: 'x' } }));
+    await sendChakraTemplate({ ...base, razao: 'Padaria A', cnpj: '11222333000181', buttonToken: 'TOKA', fetchImpl: fetchImpl as any });
+    await sendChakraTemplate({ ...base, razao: 'Oficina B', cnpj: '99888777000166', buttonToken: 'TOKB', fetchImpl: fetchImpl as any });
+    const b1 = JSON.parse((fetchImpl.mock.calls[0] as any[])[1].body);
+    const b2 = JSON.parse((fetchImpl.mock.calls[1] as any[])[1].body);
+    expect(b1.mapping).toEqual([
+      { schemaPropertyName: 'razao', schemaPropertyValue: 'Padaria A' },
+      { schemaPropertyName: 'cnpj', schemaPropertyValue: '11.222.333/0001-81' },
+    ]);
+    expect(b2.mapping[0].schemaPropertyValue).toBe('Oficina B');
+    expect(b2.mapping[1].schemaPropertyValue).toBe('99.888.777/0001-66');
+    expect(b1.buttonMapping[0].schemaPropertyValue).toBe('TOKA');
+    expect(b2.buttonMapping[0].schemaPropertyValue).toBe('TOKB');
+    expect(b1.templateName).toBe('certificado1');
+  });
+
+  it('formatCnpj só formata com 14 dígitos', () => {
+    expect(formatCnpj('12345678000199')).toBe('12.345.678/0001-99');
+    expect(formatCnpj('123')).toBe('123');
+  });
+
+  it('não chama a API quando faltam razão, CNPJ ou telefone', async () => {
+    const fetchImpl = vi.fn();
+    expect((await sendChakraTemplate({ ...base, razao: '  ', fetchImpl: fetchImpl as any })).ok).toBe(false);
+    expect((await sendChakraTemplate({ ...base, cnpj: '', fetchImpl: fetchImpl as any })).ok).toBe(false);
+    expect((await sendChakraTemplate({ ...base, to: '123', fetchImpl: fetchImpl as any })).ok).toBe(false);
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('não chama a API quando o item não tem token', async () => {
@@ -86,6 +117,24 @@ describe('sendChakraTemplate', () => {
     expect(extractMessageId({ messages: [{ id: 'd' }] })).toBe('d');
     expect(extractMessageId({})).toBeNull();
     expect(extractErrorMessage({ _errors: ['x'] }, 'fb')).toBe('x');
+  });
+});
+
+describe('template certificado1', () => {
+  it('mantém PENDING como status inicial bloqueando envio', async () => {
+    const fetchImpl = vi.fn(async () =>
+      jsonRes({ _data: { data: [{ name: 'certificado1', status: 'PENDING' }] } }),
+    );
+    const res = await fetchChakraTemplateStatus({
+      apiBaseUrl: 'https://api.chakrahq.com',
+      apiKey: 'k',
+      apiVersion: 'v19.0',
+      wabaId: '1996285911002627',
+      templateName: 'certificado1',
+      fetchImpl: fetchImpl as any,
+    });
+    expect(res).toEqual({ ok: true, status: 'PENDING' });
+    if (res.ok) expect(res.status === 'APPROVED').toBe(false);
   });
 });
 
