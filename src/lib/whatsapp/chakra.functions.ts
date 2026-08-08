@@ -225,10 +225,10 @@ export const enqueueWaCompanies = createServerFn({ method: 'POST' })
       });
     }
 
-    if (!rows.length) return { inserted: 0, skippedNoLink, skippedNoPhone };
+    if (!rows.length) return { inserted: 0, skippedNoLink, skippedNoPhone, skippedNoCnpj };
     const { error: insErr } = await supabaseAdmin.from('whatsapp_queue').insert(rows);
     if (insErr) throw new Error(insErr.message);
-    return { inserted: rows.length, skippedNoLink, skippedNoPhone };
+    return { inserted: rows.length, skippedNoLink, skippedNoPhone, skippedNoCnpj };
   });
 
 export const sendWaBatch = createServerFn({ method: 'POST' })
