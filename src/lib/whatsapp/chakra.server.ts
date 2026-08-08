@@ -118,18 +118,22 @@ export async function sendChakraTemplate(opts: {
   if (!opts.pluginId) return { ok: false, error: 'Plugin ID não configurado' };
   if (!opts.whatsappPhoneNumberId) return { ok: false, error: 'Phone Number ID não configurado' };
   if (!opts.buttonToken) return { ok: false, error: 'Item sem token de link — envio bloqueado' };
+  if (!normalizePhone(opts.to)) return { ok: false, error: 'Telefone inválido — envio bloqueado' };
+  if (!String(opts.razao ?? '').trim()) return { ok: false, error: 'Item sem razão social — envio bloqueado' };
+  if (!String(opts.cnpj ?? '').trim()) return { ok: false, error: 'Item sem CNPJ — envio bloqueado' };
 
   const url = buildSendTemplateUrl(opts.apiBaseUrl, opts.pluginId, opts.to);
   const payload = {
     whatsappPhoneNumberId: opts.whatsappPhoneNumberId,
     templateName: opts.templateName,
     mapping: [
-      { schemaPropertyName: 'razao', schemaPropertyValue: opts.razao },
-      { schemaPropertyName: 'cnpj', schemaPropertyValue: opts.cnpj },
+      { schemaPropertyName: 'razao', schemaPropertyValue: String(opts.razao).trim() },
+      { schemaPropertyName: 'cnpj', schemaPropertyValue: formatCnpj(opts.cnpj) },
     ],
     buttonMapping: [{ schemaPropertyName: '1', schemaPropertyValue: opts.buttonToken }],
     language: opts.language,
   };
+
 
   const doFetch = opts.fetchImpl ?? fetch;
   let res: Response;
