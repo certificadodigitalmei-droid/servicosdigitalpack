@@ -275,7 +275,7 @@ export async function runImportBatch(
         razao_social_original: n.razao_social ?? nBase.razao_social,
         nome_fantasia: n.nome_fantasia ?? nBase.nome_fantasia,
         nome_titular_exibicao: displayName,
-        email: n.email,
+        email: validEmail,
         uf: n.uf ?? endObj?.uf ?? null,
         municipio_descricao: n.municipio ?? endObj?.municipio ?? null,
         municipio_codigo: (endObj?.ibge?.codigo_municipio ??
