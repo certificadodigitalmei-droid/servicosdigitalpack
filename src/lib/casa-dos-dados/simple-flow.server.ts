@@ -175,6 +175,19 @@ export async function runImportBatch(
         n.nome_fantasia ||
         cnpj;
 
+      // Validação de e-mail para reduzir bounce.
+      const rawEmail = n.email;
+      const emailValidation = rawEmail ? validateEmailForImport(rawEmail) : { valid: false, normalized: null, reason: 'e-mail ausente' };
+      const validEmail = emailValidation.valid ? emailValidation.normalized : null;
+
+      if (input.filters.require_email && !validEmail) {
+        failed.push({
+          cnpj,
+          error: `pulado: ${emailValidation.reason || 'e-mail inválido'}`,
+        });
+        continue;
+      }
+
       const rawAny = raw as any;
       const estab =
         rawAny?.estabelecimento && typeof rawAny.estabelecimento === 'object'
