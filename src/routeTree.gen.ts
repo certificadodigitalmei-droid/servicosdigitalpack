@@ -22,6 +22,7 @@ import { Route as AcessoTokenRouteImport } from './routes/acesso.$token'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated.painel'
 import { Route as AuthenticatedMonitorEnvioRouteImport } from './routes/_authenticated.monitor-envio'
 import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenticated.painel.index'
+import { Route as LovableEmailEventsRouteImport } from './routes/lovable/email/events'
 import { Route as ApiPublicWebhookMercadopagoRouteImport } from './routes/api/public/webhook-mercadopago'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
 import { Route as AuthenticatedPainelRemetenteEmailRouteImport } from './routes/_authenticated.painel.remetente-email'
@@ -119,6 +120,11 @@ const AuthenticatedPainelIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
+const LovableEmailEventsRoute = LovableEmailEventsRouteImport.update({
+  id: '/lovable/email/events',
+  path: '/lovable/email/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhookMercadopagoRoute =
   ApiPublicWebhookMercadopagoRouteImport.update({
     id: '/api/public/webhook-mercadopago',
@@ -324,6 +330,7 @@ export interface FileRoutesByFullPath {
   '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
+  '/lovable/email/events': typeof LovableEmailEventsRoute
   '/painel/': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/api/public/email-asset/$key': typeof ApiPublicEmailAssetKeyRoute
@@ -366,6 +373,7 @@ export interface FileRoutesByTo {
   '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
+  '/lovable/email/events': typeof LovableEmailEventsRoute
   '/painel': typeof AuthenticatedPainelIndexRoute
   '/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/api/public/email-asset/$key': typeof ApiPublicEmailAssetKeyRoute
@@ -412,6 +420,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
+  '/lovable/email/events': typeof LovableEmailEventsRoute
   '/_authenticated/painel/': typeof AuthenticatedPainelIndexRoute
   '/_authenticated/painel/empresas-importadas/$companyId': typeof AuthenticatedPainelEmpresasImportadasCompanyIdRoute
   '/api/public/email-asset/$key': typeof ApiPublicEmailAssetKeyRoute
@@ -458,6 +467,7 @@ export interface FileRouteTypes {
     | '/painel/remetente-email'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
+    | '/lovable/email/events'
     | '/painel/'
     | '/painel/empresas-importadas/$companyId'
     | '/api/public/email-asset/$key'
@@ -500,6 +510,7 @@ export interface FileRouteTypes {
     | '/painel/remetente-email'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
+    | '/lovable/email/events'
     | '/painel'
     | '/painel/empresas-importadas/$companyId'
     | '/api/public/email-asset/$key'
@@ -545,6 +556,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/remetente-email'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
+    | '/lovable/email/events'
     | '/_authenticated/painel/'
     | '/_authenticated/painel/empresas-importadas/$companyId'
     | '/api/public/email-asset/$key'
@@ -574,6 +586,7 @@ export interface RootRouteChildren {
   CheckoutTokenRoute: typeof CheckoutTokenRoute
   ApiInternalCasaDosDadosWorkerRoute: typeof ApiInternalCasaDosDadosWorkerRoute
   ApiPublicWebhookMercadopagoRoute: typeof ApiPublicWebhookMercadopagoRoute
+  LovableEmailEventsRoute: typeof LovableEmailEventsRoute
   ApiPublicEmailAssetKeyRoute: typeof ApiPublicEmailAssetKeyRoute
   ApiPublicHooksAutoImportMeiRoute: typeof ApiPublicHooksAutoImportMeiRoute
   ApiPublicHooksFullAutomationRoute: typeof ApiPublicHooksFullAutomationRoute
@@ -679,6 +692,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/painel/'
       preLoaderRoute: typeof AuthenticatedPainelIndexRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/lovable/email/events': {
+      id: '/lovable/email/events'
+      path: '/lovable/email/events'
+      fullPath: '/lovable/email/events'
+      preLoaderRoute: typeof LovableEmailEventsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/webhook-mercadopago': {
       id: '/api/public/webhook-mercadopago'
@@ -985,6 +1005,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutTokenRoute: CheckoutTokenRoute,
   ApiInternalCasaDosDadosWorkerRoute: ApiInternalCasaDosDadosWorkerRoute,
   ApiPublicWebhookMercadopagoRoute: ApiPublicWebhookMercadopagoRoute,
+  LovableEmailEventsRoute: LovableEmailEventsRoute,
   ApiPublicEmailAssetKeyRoute: ApiPublicEmailAssetKeyRoute,
   ApiPublicHooksAutoImportMeiRoute: ApiPublicHooksAutoImportMeiRoute,
   ApiPublicHooksFullAutomationRoute: ApiPublicHooksFullAutomationRoute,
@@ -1000,13 +1021,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
