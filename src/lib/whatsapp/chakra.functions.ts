@@ -378,15 +378,35 @@ export const sendWaBatch = createServerFn({ method: 'POST' })
           .eq('id', item.id);
       } else {
         failed++;
-        await supabaseAdmin
-          .from('whatsapp_queue')
-          .update({ status: 'failed', error_message: result.error, template_name: cfg.template_name })
-          .eq('id', item.id);
+        const kind = classifyWhatsappError(statusFromError(result.error), result.error);
+        if (kind === 'permanent_recipient') {
+          // Número inexistente / sem WhatsApp: bloqueio definitivo,
+          // remoção da empresa e dos links — nunca mais será importado.
+          blockedPermanently++;
+          await blockPhoneAndQuarantine({
+            phone: item.phone,
+            cnpj: item.cnpj ?? null,
+            companyId: item.company_id ?? null,
+            reason: result.error,
+            source: 'whatsapp_send',
+            providerStatus: statusFromError(result.error),
+          });
+        } else if (kind === 'temporary') {
+          await supabaseAdmin
+            .from('whatsapp_queue')
+            .update({ status: 'pending', error_message: result.error, template_name: cfg.template_name } as any)
+            .eq('id', item.id);
+        } else {
+          await supabaseAdmin
+            .from('whatsapp_queue')
+            .update({ status: 'failed', error_message: result.error, template_name: cfg.template_name })
+            .eq('id', item.id);
+        }
       }
       if (cfg.min_delay_ms) await new Promise((r) => setTimeout(r, Math.min(cfg.min_delay_ms, 15000)));
     }
 
-    return { sent, failed, error: null as string | null };
+    return { sent, failed, blockedPermanently, error: null as string | null };
   });
 
 export const sendWaTestMessage = createServerFn({ method: 'POST' })
