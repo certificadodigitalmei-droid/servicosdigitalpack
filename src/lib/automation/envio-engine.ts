@@ -18,18 +18,29 @@ import {
   type CampaignDesign,
 } from '@/lib/email-campaign/template';
 
-/** Lê o design salvo pela aba "Modelo de Mensagem" para aplicar no envio real. */
 /**
- * O design das campanhas é fixo (DEFAULT_DESIGN, padrão institucional).
- * O editor foi removido, então designs antigos salvos localmente são ignorados.
+ * Todo e-mail de campanha usa exclusivamente os "Modelos de campanha (rotação)".
+ * O antigo modelo de mensagem principal foi removido do sistema.
  */
-export function loadSavedDesign(): Partial<CampaignDesign> {
-  return {};
+let activeVariantIds: string[] = [];
+
+export async function syncCampaignVariants() {
+  try {
+    const { loadCampaignVariantSelection } = await import(
+      '@/lib/email-campaign/variants.functions'
+    );
+    const r = await loadCampaignVariantSelection();
+    activeVariantIds = Array.isArray(r?.variantIds) ? r.variantIds : [];
+  } catch {
+    activeVariantIds = [];
+  }
 }
-export function loadSavedSubject(): string | null {
-  if (typeof window === 'undefined') return null;
-  try { return window.localStorage.getItem('campanha:subject:v1'); } catch { return null; }
+
+/** Modelo de campanha (rotação) para um destinatário/semente. */
+export function variantFor(seed: string) {
+  return pickVariantOrDefault(activeVariantIds, seed || 'default');
 }
+
 export function loadSavedFromName(): string | null {
   if (typeof window === 'undefined') return null;
   try { return window.localStorage.getItem('campanha:fromName:v1'); } catch { return null; }
@@ -42,10 +53,7 @@ export function loadSavedReplyTo(): string | null {
   if (typeof window === 'undefined') return null;
   try { return window.localStorage.getItem('campanha:replyTo:v1'); } catch { return null; }
 }
-export function mergedDesign(heroImageUrl?: string): Partial<CampaignDesign> {
-  const saved = loadSavedDesign();
-  return heroImageUrl ? { ...saved, heroImageUrl } : saved;
-}
+
 
 /** Sincroniza assunto/remetente do Modelo de Mensagem para a engine de Envio em Massa. */
 export function syncFromMessageModel() {
