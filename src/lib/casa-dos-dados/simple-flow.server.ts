@@ -408,13 +408,13 @@ export async function runImportBatch(
       if (existingLink) {
         publicToken = (existingLink as any).public_token as string;
         publicUrl =
-          (existingLink as any).public_url ?? `${publicBaseUrl}/c/${publicToken}`;
+          (existingLink as any).public_url ?? `${publicBaseUrl}/acesso/${publicToken.slice(0, 10)}`;
         checkoutUrl =
           (existingLink as any).checkout_url ??
           `${publicBaseUrl}/checkout/${publicToken}`;
       } else {
         publicToken = crypto.randomUUID().replace(/-/g, '');
-        publicUrl = `${publicBaseUrl}/c/${publicToken}`;
+        publicUrl = `${publicBaseUrl}/acesso/${publicToken.slice(0, 10)}`;
         checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
         const { error: lErr } = await supabaseAdmin.from('company_links').insert({
           company_id: companyId,

@@ -2,13 +2,15 @@
 // Sempre use esta constante — nunca `window.location.origin` — para evitar
 // links quebrados quando a página é aberta em iframe/preview ou o origin
 // retorna vazio.
+import { shortToken } from './short-token';
+
 export const PUBLIC_BASE_URL = 'https://seu-certificado-mei-digital.online';
 
 export function buildPublicUrl(token: string): string {
-  return `${PUBLIC_BASE_URL}/acesso/${token}`;
+  return `${PUBLIC_BASE_URL}/acesso/${shortToken(token)}`;
 }
 
 
 export function buildCheckoutUrl(token: string): string {
-  return `${PUBLIC_BASE_URL}/checkout/${token}`;
+  return `${PUBLIC_BASE_URL}/checkout/${shortToken(token)}`;
 }
