@@ -110,68 +110,68 @@ const AVATAR_URL = govbrAvatarAsset.url.startsWith('http')
 export const DEFAULT_DESIGN: CampaignDesign = {
   logoText: 'Portal Certificado Digital MEI',
   logoSize: 12,
-  headerBg: '#0e3a70',
-  headerText: '#ffffff',
-  headerPadding: 28,
+  headerBg: '#ffffff',
+  headerText: '#111827',
+  headerPadding: 24,
 
   bodyBg: '#ffffff',
-  pageBg: '#f3f4f6',
-  cardBg: '#f4f7f5',
+  pageBg: '#ffffff',
+  cardBg: '#ffffff',
   textColor: '#1f2937',
-  mutedColor: '#64748b',
+  mutedColor: '#6b7280',
 
-  buttonBg: '#1a4a8a',
-  buttonText: '#ffffff',
-  buttonRadius: 6,
-  buttonPaddingY: 14,
-  buttonPaddingX: 30,
+  buttonBg: '#ffffff',
+  buttonText: '#1a4a8a',
+  buttonRadius: 0,
+  buttonPaddingY: 0,
+  buttonPaddingX: 0,
   buttonSize: 14,
 
   align: 'left',
-  containerWidth: 640,
-  contentPaddingX: 36,
+  containerWidth: 600,
+  contentPaddingX: 28,
 
-  titleSize: 20,
+  titleSize: 17,
   subtitleSize: 12,
-  bodySize: 13.5,
-  heroTitleSize: 20,
-  heroTitleColor: '#0e3a70',
+  bodySize: 14,
+  heroTitleSize: 16,
+  heroTitleColor: '#111827',
   cardTitleSize: 11,
-  cardBodySize: 12,
-  warningTitleSize: 14,
+  cardBodySize: 13,
+  warningTitleSize: 13,
   warningItemsSize: 13,
 
   signatureSize: 12,
   disclaimerSize: 11,
 
-  title: 'CNPJ sem certificado digital ativo',
+  title: 'Situação do CNPJ {{CNPJ}} — Certificado Digital',
   subtitle: 'Central de Emissão · MEI',
-  heroTitle: 'Certificado Digital não localizado',
-  showHero: true,
+  heroTitle: '',
+  showHero: false,
   intro:
-    'Prezado(a) *{{NOME_TITULAR}}*,\n\nNa consulta ao CNPJ *{{CNPJ}}*, não localizamos um Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
+    'Prezado(a) {{NOME_TITULAR}},\n\nNa consulta ao CNPJ {{CNPJ}}, não localizamos um Certificado Digital ativo.\n\nAbaixo estão os dados do cadastro:',
   cardTitle: 'Dados do requerente',
   showCard: true,
-  buttonLabel: 'Regularizar meu CNPJ',
+  buttonLabel: 'Ver a situação do meu CNPJ',
   buttonHref: '{{LINK_PUBLICO}}',
 
   showWarning: true,
-  warningTitle: 'Atenção · pontos em aberto no seu CNPJ',
+  warningTitle: 'Pontos em aberto no cadastro',
   warningItems:
-    'A emissão de nota fiscal pode ficar impedida sem o certificado ativo.\nA assinatura de contratos digitais com CNPJ pode ter validade limitada.\nLinhas de crédito empresarial podem ser restringidas em bancos e financeiras.\nA regularidade do CNPJ perante a Receita Federal pode ser afetada.\nO acesso a alguns sistemas do governo pode exigir o certificado digital.\nConsultas cadastrais podem apresentar o CNPJ com situação incompleta.',
-  warningBg: '#eff6ff',
-  warningBorder: '#2563eb',
-  warningTitleColor: '#1e3a8a',
-  warningTextColor: '#1e40af',
+    'A emissão de nota fiscal pode ficar limitada sem o certificado ativo.\nA assinatura de contratos digitais com CNPJ pode ter validade limitada.\nO acesso a alguns sistemas do governo pode exigir o certificado digital.\nConsultas cadastrais podem apresentar o CNPJ com situação incompleta.',
+  warningBg: '#f8fafc',
+  warningBorder: '#e5e7eb',
+  warningTitleColor: '#374151',
+  warningTextColor: '#374151',
 
   showSignature: false,
   signature: '',
 
   footer: '',
   disclaimer:
-    'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nAutomated message — do not reply.\nIf you no longer wish to receive these notices, unsubscribe below.',
+    'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nMensagem automática — não responda a este e-mail.',
   showFooter: true,
-  unsubText: 'unsubscribe',
+  unsubText: 'Cancelar o recebimento destes avisos',
   unsubHref: '{{LINK_PUBLICO}}?unsubscribe=1',
 
 
@@ -182,11 +182,11 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
   showGovBar: false,
   govBarText: 'Central de emissão · Protocolo {{REFERENCIA}}',
-  govBarBg: '#e2e8f0',
-  govBarColor: '#334155',
+  govBarBg: '#f3f4f6',
+  govBarColor: '#374151',
 
-  showBadges: true,
-  badgesText: 'SSL 256-bits · LGPD · Validade 12 meses',
+  showBadges: false,
+  badgesText: '',
 
   showStatusBar: true,
   statusLabel: 'Situação do cadastro',
@@ -197,9 +197,11 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
 
 
-export const DEFAULT_SUBJECT = 'Aviso sobre o CNPJ {{CNPJ}} — Certificado Digital';
+
+export const DEFAULT_SUBJECT = 'Situação do CNPJ {{CNPJ}} — Certificado Digital';
 export const DEFAULT_PREHEADER =
-  'Seu CNPJ está sem Certificado Digital ativo. Regularize para evitar limitações.';
+  'Consulta ao CNPJ {{CNPJ}}: certificado digital não localizado.';
+
 
 export type Vars = Record<string, string>;
 
@@ -381,13 +383,13 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   [data-ogsc] .l-card, [data-ogsb] .l-card { background:${D.bodyBg} !important; color:${D.textColor} !important; }
   [data-ogsc] .l-text, [data-ogsb] .l-text { color:${D.textColor} !important; }
   [data-ogsc] .l-muted, [data-ogsb] .l-muted { color:${D.mutedColor} !important; }
-  [data-ogsc] .l-btn, [data-ogsb] .l-btn { background:${D.buttonBg} !important; color:${D.buttonText} !important; }
+  [data-ogsc] .l-btn, [data-ogsb] .l-btn { color:#1a4a8a !important; }
   @media (prefers-color-scheme: dark) {
     body, .l-page { background:${D.pageBg} !important; color:${D.textColor} !important; }
     .l-card { background:${D.bodyBg} !important; color:${D.textColor} !important; }
     .l-text { color:${D.textColor} !important; }
     .l-muted { color:${D.mutedColor} !important; }
-    .l-btn { background:${D.buttonBg} !important; color:${D.buttonText} !important; }
+    .l-btn { color:#1a4a8a !important; }
   }
   /* Celular: nada de texto cortado ou estourando a largura */
   @media only screen and (max-width:600px) {
@@ -398,101 +400,77 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     .rowKey, .rowVal { display:block !important; width:auto !important; }
     .rowKey { padding:10px 14px 0 14px !important; border-bottom:0 !important; }
     .rowVal { padding:2px 14px 10px 14px !important; }
-    .l-btn { display:block !important; width:auto !important; white-space:normal !important; font-size:15px !important; padding:14px 18px !important; }
   }
 </style>
 </head>
 <body id="body" class="body l-page" style="margin:0;padding:0;background:${D.pageBg};font-family:Arial,Helvetica,sans-serif;color:${D.textColor};word-break:break-word;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="l-page" bgcolor="${D.pageBg}" style="background:${D.pageBg};padding:40px 0;"><tr><td align="center">
-  <table role="presentation" width="${D.containerWidth}" cellpadding="0" cellspacing="0" class="l-card" bgcolor="${D.bodyBg}" style="max-width:${D.containerWidth}px;width:100%;background:${D.bodyBg};box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="l-page" bgcolor="${D.pageBg}" style="background:${D.pageBg};padding:24px 0;"><tr><td align="center">
+  <table role="presentation" width="${D.containerWidth}" cellpadding="0" cellspacing="0" class="l-card" bgcolor="${D.bodyBg}" style="max-width:${D.containerWidth}px;width:100%;background:${D.bodyBg};">
 
     ${D.showGovBar ? `
-    <tr><td class="l-pad" style="background:${D.govBarBg};color:${D.govBarColor};padding:10px ${px}px;font-size:12px;letter-spacing:0.5px;text-transform:uppercase;font-family:Arial,sans-serif;">
+    <tr><td class="l-pad" style="background:${D.govBarBg};color:${D.govBarColor};padding:10px ${px}px;font-size:12px;font-family:Arial,sans-serif;">
       ${nl2br(S(D.govBarText || ''))}
     </td></tr>` : ''}
     <!-- Header -->
-    <tr><td class="l-pad" style="background:${D.headerBg};color:${D.headerText};padding:${D.headerPadding}px ${px}px;text-align:left;">
-      ${D.showAvatar && D.avatarUrl ? `<div style="margin-bottom:16px;"><img src="${esc(D.avatarUrl)}" alt="" width="${D.avatarSize}" height="${D.avatarSize}" bgcolor="#ffffff" style="width:${D.avatarSize}px;height:${D.avatarSize}px;border-radius:50%;border:3px solid #ffffff;display:block;background:#ffffff;background-color:#ffffff;" /></div>` : ''}
+    <tr><td class="l-pad" style="background:${D.headerBg};color:${D.headerText};padding:${D.headerPadding}px ${px}px 12px ${px}px;text-align:left;border-bottom:1px solid #e5e7eb;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
         <td style="font-family:Arial,sans-serif;vertical-align:top;">
-          <div class="l-logo" style="font-size:${D.logoSize}px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.95;">${logo}</div>
+          <div class="l-logo" style="font-size:${D.logoSize}px;font-weight:700;color:${D.mutedColor};">${logo}</div>
         </td>
         ${vars.REFERENCIA ? `<td align="right" style="font-family:Arial,sans-serif;vertical-align:top;white-space:nowrap;">
-          <div style="font-size:9px;letter-spacing:1.2px;color:#9fbad8;">PROTOCOLO</div>
-          <div style="font-size:11.5px;font-weight:700;color:#ffffff;margin-top:2px;">${esc(String(vars.REFERENCIA))}</div>
+          <div style="font-size:11px;color:${D.mutedColor};">Protocolo ${esc(String(vars.REFERENCIA))}</div>
         </td>` : ''}
       </tr></table>
-      <div style="height:1px;background:rgba(255,255,255,0.18);margin:14px 0;line-height:1px;font-size:1px;">&nbsp;</div>
-      <div class="l-title" style="text-transform:uppercase;font-size:${effectiveTitleSize}px;font-weight:800;line-height:1.25;margin:0;white-space:normal;word-break:break-word;color:${D.headerText};">${title}</div>
-      <div class="l-sub" style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:10px;">${subtitle}</div>
+      <div class="l-title" style="font-size:${effectiveTitleSize}px;font-weight:700;line-height:1.35;margin:12px 0 0 0;white-space:normal;word-break:break-word;color:${D.headerText};">${title}</div>
+      <div class="l-sub" style="font-size:${D.subtitleSize}px;color:${D.mutedColor};margin:6px 0 12px 0;">${subtitle}</div>
     </td></tr>
-    ${D.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(D.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:${D.containerWidth}px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
 
     ${D.showStatusBar !== false ? `
-    <tr><td style="padding:0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#eff6ff" style="background:#eff6ff;border-bottom:1px solid #2563eb;">
-        <tr><td class="l-pad" style="padding:14px ${px}px;font-family:Arial,sans-serif;">
-          <div style="font-size:10px;letter-spacing:1.2px;color:#1e3a8a;font-weight:700;margin-bottom:6px;text-transform:uppercase;">${esc(S(D.statusLabel || 'Situação do cadastro'))}</div>
-          <div style="font-size:16px;font-weight:800;color:#1e40af;letter-spacing:0.5px;text-transform:uppercase;">
-            <span style="display:inline-block;width:9px;height:9px;background:#2563eb;border-radius:50%;vertical-align:middle;margin-right:8px;"></span>${esc(S(D.statusValue || 'Pendente'))}
-          </div>
-          ${D.statusNote ? `<div style="font-size:11.5px;color:#334155;margin-top:6px;line-height:1.5;">${esc(S(D.statusNote))}</div>` : ''}
-        </td></tr>
-      </table>
+    <tr><td class="l-pad" style="padding:16px ${px}px 0 ${px}px;font-family:Arial,sans-serif;">
+      <div style="font-size:12px;color:${D.mutedColor};margin-bottom:4px;">${esc(S(D.statusLabel || 'Situação do cadastro'))}</div>
+      <div style="font-size:14px;font-weight:700;color:${D.textColor};">${esc(S(D.statusValue || 'Pendente'))}</div>
+      ${D.statusNote ? `<div style="font-size:12px;color:${D.mutedColor};margin-top:4px;line-height:1.5;">${esc(S(D.statusNote))}</div>` : ''}
     </td></tr>` : ''}
 
 
-    ${D.showHero ? `
-    <tr><td class="l-pad" style="padding:44px ${px}px 20px ${px}px;text-align:center;">
-      <h2 style="font-size:${D.heroTitleSize}px;font-weight:800;color:${D.heroTitleColor};margin:0;line-height:1.25;">${heroTitle}</h2>
-      <div style="width:48px;height:1px;background:#e5e7eb;margin:28px auto;"></div>
+
+
+    ${D.showHero && String(heroTitle).trim() ? `
+    <tr><td class="l-pad" style="padding:20px ${px}px 0 ${px}px;text-align:left;">
+      <h2 style="font-size:${D.heroTitleSize}px;font-weight:700;color:${D.heroTitleColor};margin:0;line-height:1.35;">${heroTitle}</h2>
     </td></tr>` : ''}
 
-    <tr><td class="l-pad" style="padding:0 ${px}px 24px ${px}px;text-align:${align};font-size:${D.bodySize}px;line-height:1.6;color:${D.textColor};font-weight:700;">
+    <tr><td class="l-pad" style="padding:20px ${px}px 20px ${px}px;text-align:${align};font-size:${D.bodySize}px;line-height:1.65;color:${D.textColor};">
       ${intro}
     </td></tr>
 
     ${D.showCard ? `
-    <tr><td class="l-pad" style="padding:0 ${px}px 28px ${px}px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background:#ffffff;border:1px solid #dfe4ea;border-radius:6px;border-collapse:separate;">
-        <tr><td colspan="2" bgcolor="#f4f7f9" style="background:#f4f7f9;border-bottom:1px solid #dfe4ea;padding:9px 16px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:#5b6b7b;border-radius:6px 6px 0 0;">${cardTitle}</td></tr>
+    <tr><td class="l-pad" style="padding:0 ${px}px 24px ${px}px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background:#ffffff;border:1px solid #e5e7eb;border-collapse:separate;">
+        <tr><td colspan="3" bgcolor="#f9fafb" style="background:#f9fafb;border-bottom:1px solid #e5e7eb;padding:9px 16px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#4b5563;">${cardTitle}</td></tr>
         ${rowsHtml}
       </table>
     </td></tr>` : ''}
 
     ${D.showWarning ? `
-    <tr><td class="l-pad" style="padding:0 ${px}px 30px ${px}px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#fffbeb" style="background:#fffbeb;background-color:#fffbeb;border:1px solid #d97706;border-left:5px solid #d97706;border-radius:6px;">
-        <tr><td style="padding:16px 22px 8px 22px;font-family:Arial,sans-serif;">
-          <div style="color:#92400e;font-size:${D.warningTitleSize || 14}px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;line-height:1.35;">
-            <span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:#d97706;color:#ffffff;border-radius:50%;font-size:13px;font-weight:900;margin-right:8px;vertical-align:middle;">!</span>${warningTitle}
-          </div>
-        </td></tr>
-        <tr><td style="padding:6px 22px 18px 22px;font-family:Arial,sans-serif;">
-          ${warningItemsList.map((item) => `
-            <div style="color:#78350f;font-size:${D.warningItemsSize || 13}px;line-height:1.6;font-weight:700;padding:6px 0;border-top:1px dashed #e5e7eb;">
-              <span style="color:#d97706;font-weight:900;margin-right:8px;">✕</span>${inlineFormat(item)}
-            </div>`).join('')}
-        </td></tr>
-      </table>
+    <tr><td class="l-pad" style="padding:0 ${px}px 24px ${px}px;">
+      <div style="font-family:Arial,sans-serif;font-size:${D.warningTitleSize || 13}px;font-weight:700;color:${D.textColor};margin-bottom:8px;">${warningTitle}</div>
+      ${warningItemsList.map((item) => `
+        <div style="font-family:Arial,sans-serif;color:${D.textColor};font-size:${D.warningItemsSize || 13}px;line-height:1.6;padding:2px 0;">&#8226;&nbsp;${inlineFormat(item)}</div>`).join('')}
     </td></tr>` : ''}
 
 
-    <tr><td align="center" class="l-pad" style="padding:0 ${px}px 44px ${px}px;">
-      <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;text-transform:uppercase;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);white-space:normal;mso-padding-alt:0;line-height:1.2;">${buttonLabel}</a>
+    <tr><td class="l-pad" style="padding:0 ${px}px 28px ${px}px;font-family:Arial,sans-serif;font-size:${D.bodySize}px;line-height:1.6;color:${D.textColor};">
+      ${buttonLabel}:<br/>
+      <a href="${buttonHref}" class="l-btn" style="color:#1a4a8a;text-decoration:underline;word-break:break-all;">${buttonHref}</a>
     </td></tr>
 
     ${D.showSignature ? `
-    <tr><td class="l-pad" style="padding:0 ${px}px 36px ${px}px;color:${D.mutedColor};font-size:${D.signatureSize || Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
+    <tr><td class="l-pad" style="padding:0 ${px}px 28px ${px}px;color:${D.mutedColor};font-size:${D.signatureSize || Math.max(13, D.bodySize - 2)}px;line-height:1.6;">
       ${signature}
     </td></tr>` : ''}
 
-    ${D.showBadges && D.badgesText ? `
-    <tr><td class="l-pad" style="padding:20px ${px}px 8px ${px}px;text-align:center;">
-      <div style="display:inline-block;font-size:11px;color:${D.mutedColor};letter-spacing:0.6px;text-transform:uppercase;font-weight:700;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:8px 16px;font-family:Arial,sans-serif;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;display:inline-block;color:#16a34a;" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>${esc(S(D.badgesText))}
-      </div>
-    </td></tr>` : ''}
+
 
     ${D.showFooter ? `
     <tr><td class="l-pad" style="padding:24px 32px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
