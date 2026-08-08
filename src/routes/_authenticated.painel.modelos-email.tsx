@@ -15,6 +15,7 @@ import {
   saveCampaignVariantSelection,
 } from '@/lib/email-campaign/variants.functions';
 import { CAMPAIGN_VARIANTS } from '@/lib/email-campaign/variants';
+import { SpamScorePanel } from '@/components/painel/SpamScorePanel';
 import {
   DEFAULT_DESIGN,
   DEFAULT_SUBJECT,
