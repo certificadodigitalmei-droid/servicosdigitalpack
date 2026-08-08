@@ -208,6 +208,8 @@ export type NormalizedCompany = {
   quadro_societario: unknown;
   email: string | null;
   telefone: string | null;
+  /** Celular brasileiro validado em E.164 sem "+" (55DD9XXXXXXXX). */
+  celular: string | null;
   raw: Record<string, unknown>;
 };
 
