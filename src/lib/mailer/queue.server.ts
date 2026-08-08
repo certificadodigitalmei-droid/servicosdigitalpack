@@ -300,11 +300,12 @@ export async function processQueueInternal(
         ? row.idempotency_key.slice('mass-email-'.length)
         : null;
       const reason = verdict.reason ?? 'risco de bounce';
-      await discardRiskyCompany(verdict.email, reason, companyId);
+      // marca antes de descartar para o registro sobreviver à limpeza
       await supabaseAdmin
         .from('email_send_queue')
         .update({ status: 'suppressed', last_error: `varredura pré-envio: ${reason}`.slice(0, 500) })
         .eq('id', row.id);
+      await discardRiskyCompany(verdict.email, reason, companyId);
       return { ...base, processed: 1, throttled: false };
     }
   }

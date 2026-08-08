@@ -201,6 +201,7 @@ export async function discardRiskyCompany(
       .from('email_send_queue')
       .delete()
       .ilike('to_email', email)
+      .in('status', ['pending', 'queued', 'retry', 'error', 'failed'])
       .select('id');
     out.queueRemoved = (removedQueue ?? []).length;
   }
