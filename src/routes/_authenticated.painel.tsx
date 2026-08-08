@@ -114,6 +114,7 @@ function PanelLayout() {
 
         
         { title: 'Exibição do Site', icon: LayoutDashboard, to: '/painel/exibicao-site' },
+        { title: 'Visual da Página', icon: Monitor, to: '/painel/visual-pagina' },
         { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
         { title: 'API Casa dos Dados', icon: KeyRound, to: '/painel/api-casa-dos-dados' },
         { title: 'Auditoria de Fluxo', icon: ClipboardList, to: '/painel/auditoria' },
