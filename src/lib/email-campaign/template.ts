@@ -158,7 +158,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   showWarning: true,
   warningTitle: 'Atenção · pontos em aberto no seu CNPJ',
   warningItems:
-    'Impossibilitado de emitir nota fiscal (NFS-e).\nImpossibilitado de assinar contratos digitais e físicos com CNPJ.\nBloqueio de limites de crédito empresarial em bancos e financeiras PJ.\nSujeito a multa e restrição perante a Receita Federal.',
+    'Impossibilitado de emitir nota fiscal (NFS-e).\nImpossibilitado de assinar contratos digitais e físicos com CNPJ.\nLimites de crédito empresarial podem ficar restritos em bancos e financeiras PJ.\nA regularidade do CNPJ perante a Receita Federal pode ser afetada.\nO acesso a alguns sistemas do governo pode exigir o certificado digital.\nConsultas cadastrais podem apresentar o CNPJ com situação incompleta.',
   warningBg: '#fff8ed',
   warningBorder: '#b45309',
   warningTitleColor: '#7c2d12',

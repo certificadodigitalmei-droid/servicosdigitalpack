@@ -107,7 +107,7 @@ const IMPACTO_CREDITO = 'Bancos e financeiras podem restringir linhas de crédit
 const IMPACTO_ACESSO_GOV = 'O acesso a alguns sistemas do governo pode exigir o certificado digital.';
 const IMPACTO_CONSULTAS = 'Consultas cadastrais podem mostrar o CNPJ com situação incompleta.';
 const IMPACTO_RECEITA = 'A Receita Federal recomenda manter o certificado digital atualizado.';
-const IMPACTO_REGULARIDADE = 'A regularidade da empresa pode ser prejudicada em processos que exigem o certificado.';
+const IMPACTO_REGULARIDADE = 'A regularidade da empresa pode ser prejudicada em situações que exigem o certificado.';
 
 export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
   {
