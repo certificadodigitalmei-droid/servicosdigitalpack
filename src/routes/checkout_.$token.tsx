@@ -215,9 +215,10 @@ function CheckoutTokenPage() {
               </div>
 
               {/* Responsive columns: stack on mobile/tablet, split on desktop */}
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
+              <div className="grid w-full min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
                 {/* LEFT column */}
-                <div className="space-y-5">
+                <div className="min-w-0 space-y-5">
+
                   <Card title="Detalhes da Guia">
                     <TableRow label="Serviço" value="Certificado Digital MEI" />
                     <TableRow label="Descrição" value="Emissão do Certificado Digital para MEI" />
@@ -291,7 +292,7 @@ function CheckoutTokenPage() {
                 </div>
 
                 {/* RIGHT column — sticky summary */}
-                <aside className="lg:sticky lg:top-6 space-y-4">
+                <aside className="min-w-0 space-y-4 lg:sticky lg:top-6">
                   <Card title="Resumo do Pagamento">
                     {pricing?.discounted ? (
                       <div className="mx-3 mt-3 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 sm:mx-4">
