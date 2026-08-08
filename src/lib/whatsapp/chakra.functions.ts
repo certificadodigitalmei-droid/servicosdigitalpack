@@ -26,7 +26,10 @@ export const getWaApiConfig = createServerFn({ method: 'GET' })
     const { count: audience } = await supabaseAdmin
       .from('companies')
       .select('id', { count: 'exact', head: true })
-      .eq('possui_telefone', true);
+      .not('whatsapp_phone_e164', 'is', null);
+
+    const { countBlockedNumbers } = await import('./blocklist.server');
+    const blocked = await countBlockedNumbers();
 
     const { data: recent } = await supabaseAdmin
       .from('whatsapp_queue')
@@ -43,6 +46,7 @@ export const getWaApiConfig = createServerFn({ method: 'GET' })
         sent: sent.count ?? 0,
         failed: failed.count ?? 0,
         audience: audience ?? 0,
+        blocked,
       },
       recent: recent ?? [],
     };
