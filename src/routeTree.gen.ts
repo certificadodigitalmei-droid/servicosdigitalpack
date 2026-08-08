@@ -50,6 +50,7 @@ import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/em
 import { Route as ApiPublicWhatsappReportRouteImport } from './routes/api/public/whatsapp/report'
 import { Route as ApiPublicWhatsappNextRouteImport } from './routes/api/public/whatsapp/next'
 import { Route as ApiPublicWhatsappHeartbeatRouteImport } from './routes/api/public/whatsapp/heartbeat'
+import { Route as ApiPublicHooksWhatsappCampaignTickRouteImport } from './routes/api/public/hooks/whatsapp-campaign-tick'
 import { Route as ApiPublicHooksReconcilePaymentsRouteImport } from './routes/api/public/hooks/reconcile-payments'
 import { Route as ApiPublicHooksPixRemindersRouteImport } from './routes/api/public/hooks/pix-reminders'
 import { Route as ApiPublicHooksFullAutomationRouteImport } from './routes/api/public/hooks/full-automation'
@@ -286,6 +287,12 @@ const ApiPublicWhatsappHeartbeatRoute =
     path: '/api/public/whatsapp/heartbeat',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksWhatsappCampaignTickRoute =
+  ApiPublicHooksWhatsappCampaignTickRouteImport.update({
+    id: '/api/public/hooks/whatsapp-campaign-tick',
+    path: '/api/public/hooks/whatsapp-campaign-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksReconcilePaymentsRoute =
   ApiPublicHooksReconcilePaymentsRouteImport.update({
     id: '/api/public/hooks/reconcile-payments',
@@ -362,6 +369,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/full-automation': typeof ApiPublicHooksFullAutomationRoute
   '/api/public/hooks/pix-reminders': typeof ApiPublicHooksPixRemindersRoute
   '/api/public/hooks/reconcile-payments': typeof ApiPublicHooksReconcilePaymentsRoute
+  '/api/public/hooks/whatsapp-campaign-tick': typeof ApiPublicHooksWhatsappCampaignTickRoute
   '/api/public/whatsapp/heartbeat': typeof ApiPublicWhatsappHeartbeatRoute
   '/api/public/whatsapp/next': typeof ApiPublicWhatsappNextRoute
   '/api/public/whatsapp/report': typeof ApiPublicWhatsappReportRoute
@@ -408,6 +416,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/full-automation': typeof ApiPublicHooksFullAutomationRoute
   '/api/public/hooks/pix-reminders': typeof ApiPublicHooksPixRemindersRoute
   '/api/public/hooks/reconcile-payments': typeof ApiPublicHooksReconcilePaymentsRoute
+  '/api/public/hooks/whatsapp-campaign-tick': typeof ApiPublicHooksWhatsappCampaignTickRoute
   '/api/public/whatsapp/heartbeat': typeof ApiPublicWhatsappHeartbeatRoute
   '/api/public/whatsapp/next': typeof ApiPublicWhatsappNextRoute
   '/api/public/whatsapp/report': typeof ApiPublicWhatsappReportRoute
@@ -458,6 +467,7 @@ export interface FileRoutesById {
   '/api/public/hooks/full-automation': typeof ApiPublicHooksFullAutomationRoute
   '/api/public/hooks/pix-reminders': typeof ApiPublicHooksPixRemindersRoute
   '/api/public/hooks/reconcile-payments': typeof ApiPublicHooksReconcilePaymentsRoute
+  '/api/public/hooks/whatsapp-campaign-tick': typeof ApiPublicHooksWhatsappCampaignTickRoute
   '/api/public/whatsapp/heartbeat': typeof ApiPublicWhatsappHeartbeatRoute
   '/api/public/whatsapp/next': typeof ApiPublicWhatsappNextRoute
   '/api/public/whatsapp/report': typeof ApiPublicWhatsappReportRoute
@@ -508,6 +518,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/full-automation'
     | '/api/public/hooks/pix-reminders'
     | '/api/public/hooks/reconcile-payments'
+    | '/api/public/hooks/whatsapp-campaign-tick'
     | '/api/public/whatsapp/heartbeat'
     | '/api/public/whatsapp/next'
     | '/api/public/whatsapp/report'
@@ -554,6 +565,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/full-automation'
     | '/api/public/hooks/pix-reminders'
     | '/api/public/hooks/reconcile-payments'
+    | '/api/public/hooks/whatsapp-campaign-tick'
     | '/api/public/whatsapp/heartbeat'
     | '/api/public/whatsapp/next'
     | '/api/public/whatsapp/report'
@@ -603,6 +615,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/full-automation'
     | '/api/public/hooks/pix-reminders'
     | '/api/public/hooks/reconcile-payments'
+    | '/api/public/hooks/whatsapp-campaign-tick'
     | '/api/public/whatsapp/heartbeat'
     | '/api/public/whatsapp/next'
     | '/api/public/whatsapp/report'
@@ -631,6 +644,7 @@ export interface RootRouteChildren {
   ApiPublicHooksFullAutomationRoute: typeof ApiPublicHooksFullAutomationRoute
   ApiPublicHooksPixRemindersRoute: typeof ApiPublicHooksPixRemindersRoute
   ApiPublicHooksReconcilePaymentsRoute: typeof ApiPublicHooksReconcilePaymentsRoute
+  ApiPublicHooksWhatsappCampaignTickRoute: typeof ApiPublicHooksWhatsappCampaignTickRoute
   ApiPublicWhatsappHeartbeatRoute: typeof ApiPublicWhatsappHeartbeatRoute
   ApiPublicWhatsappNextRoute: typeof ApiPublicWhatsappNextRoute
   ApiPublicWhatsappReportRoute: typeof ApiPublicWhatsappReportRoute
@@ -928,6 +942,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWhatsappHeartbeatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/whatsapp-campaign-tick': {
+      id: '/api/public/hooks/whatsapp-campaign-tick'
+      path: '/api/public/hooks/whatsapp-campaign-tick'
+      fullPath: '/api/public/hooks/whatsapp-campaign-tick'
+      preLoaderRoute: typeof ApiPublicHooksWhatsappCampaignTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/reconcile-payments': {
       id: '/api/public/hooks/reconcile-payments'
       path: '/api/public/hooks/reconcile-payments'
@@ -1078,6 +1099,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksFullAutomationRoute: ApiPublicHooksFullAutomationRoute,
   ApiPublicHooksPixRemindersRoute: ApiPublicHooksPixRemindersRoute,
   ApiPublicHooksReconcilePaymentsRoute: ApiPublicHooksReconcilePaymentsRoute,
+  ApiPublicHooksWhatsappCampaignTickRoute:
+    ApiPublicHooksWhatsappCampaignTickRoute,
   ApiPublicWhatsappHeartbeatRoute: ApiPublicWhatsappHeartbeatRoute,
   ApiPublicWhatsappNextRoute: ApiPublicWhatsappNextRoute,
   ApiPublicWhatsappReportRoute: ApiPublicWhatsappReportRoute,
