@@ -191,6 +191,7 @@ export const enqueueWaCompanies = createServerFn({ method: 'POST' })
     const rows: any[] = [];
     let skippedNoLink = 0;
     let skippedNoPhone = 0;
+    let skippedNoCnpj = 0;
     for (const c of (companies ?? []) as any[]) {
       if (rows.length >= data.limit) break;
       const phone = pickCompanyPhone(c);
@@ -199,6 +200,10 @@ export const enqueueWaCompanies = createServerFn({ method: 'POST' })
         continue;
       }
       if (existing.has(phone)) continue;
+      if (!String(c.cnpj ?? '').trim()) {
+        skippedNoCnpj++;
+        continue;
+      }
       const link = linkByCompany.get(c.id) ?? null;
       if (!link) {
         skippedNoLink++;
