@@ -15,7 +15,8 @@ import {
 import { CAMPAIGN_VARIANTS } from '@/lib/email-campaign/variants';
 import { SpamScorePanel } from '@/components/painel/SpamScorePanel';
 import { SubjectAuditPanel } from '@/components/painel/SubjectAuditPanel';
-import { renderHtml, substitute } from '@/lib/email-campaign/template';
+import { renderHtml, renderText, substitute } from '@/lib/email-campaign/template';
+import { analyzeSpamScore, type SpamReport } from '@/lib/email-campaign/spam-score';
 
 export const Route = createFileRoute('/_authenticated/painel/modelos-email')({
   component: ModelosEmailPage,
@@ -97,6 +98,30 @@ function RotacaoModelos() {
   const current = CAMPAIGN_VARIANTS.find((v) => v.id === preview)!;
   const html = useMemo(() => renderHtml(current.design, PREVIEW_VARS), [current]);
 
+  // Score de spam calculado automaticamente para cada modelo (atualiza sozinho
+  // sempre que os modelos ou o conteúdo mudam).
+  const scores = useMemo(() => {
+    const map: Record<string, SpamReport> = {};
+    for (const v of CAMPAIGN_VARIANTS) {
+      map[v.id] = analyzeSpamScore({
+        subject: substitute(v.subject, PREVIEW_VARS),
+        html: renderHtml(v.design, PREVIEW_VARS),
+        text: renderText(v.design, PREVIEW_VARS),
+        fromAddress: 'certificado.mei.estadual@seu-certificado-mei-digital.online',
+      });
+    }
+    return map;
+  }, []);
+
+  const scoreClass = (s: number) =>
+    s >= 9
+      ? 'bg-emerald-600 text-white hover:bg-emerald-600'
+      : s >= 7.5
+        ? 'bg-blue-600 text-white hover:bg-blue-600'
+        : s >= 6
+          ? 'bg-amber-500 text-white hover:bg-amber-500'
+          : 'bg-rose-600 text-white hover:bg-rose-600';
+
   const toggle = (id: string) =>
     setActive((prev) => {
       const list = prev ?? [];
@@ -161,7 +186,15 @@ function RotacaoModelos() {
                       />
                       <span className="font-medium text-sm">{v.name}</span>
                     </div>
-                    {on && <Check className="h-4 w-4 text-primary shrink-0" />}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge
+                        className={scoreClass(scores[v.id]?.score ?? 0)}
+                        title="Score de spam calculado automaticamente (0 a 10)"
+                      >
+                        {(scores[v.id]?.score ?? 0).toFixed(1)}/10
+                      </Badge>
+                      {on && <Check className="h-4 w-4 text-primary" />}
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">{v.description}</p>
                   <p className="text-xs mt-2">
