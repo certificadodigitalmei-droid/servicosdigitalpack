@@ -287,7 +287,6 @@ export function normalizeCasaDosDadosCompany(item: Record<string, unknown>): Nor
 
   // Contato override — v4 exposes contato.{email,telefone}
   const contatoEmail = contatoObj ? pickStr(contatoObj, ['email']) : null;
-  const contatoTelefone = contatoObj ? pickStr(contatoObj, ['telefone', 'ddd_telefone']) : null;
 
   return {
     cnpj: cnpj ? cnpj.replace(/\D+/g, '') : null,
