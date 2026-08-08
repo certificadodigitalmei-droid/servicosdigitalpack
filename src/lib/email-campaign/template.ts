@@ -108,7 +108,7 @@ const AVATAR_URL = govbrAvatarAsset.url.startsWith('http')
  * automáticos (faixa dourada, cabeçalho azul, protocolo, quadro de dados e selos).
  */
 export const DEFAULT_DESIGN: CampaignDesign = {
-  logoText: 'PORTAL CERTIFICADO DIGITAL MEI',
+  logoText: 'Portal Certificado Digital MEI',
   logoSize: 12,
   headerBg: '#0e3a70',
   headerText: '#ffffff',
@@ -144,35 +144,35 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   signatureSize: 12,
   disclaimerSize: 11,
 
-  title: 'CNPJ COM RESTRIÇÃO - PENDENTE',
+  title: 'CNPJ com restrição · pendente',
   subtitle: 'Central de Emissão · MEI',
   heroTitle: 'Certificado Digital pendente',
   showHero: true,
   intro:
-    'Prezado(a) *{{NOME_TITULAR}}*,\n\nSeu CNPJ consta como *PENDENTE*: sem Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
-  cardTitle: 'DADOS DO REQUERENTE',
+    'Prezado(a) *{{NOME_TITULAR}}*,\n\nSeu CNPJ consta como *pendente*: sem Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
+  cardTitle: 'Dados do requerente',
   showCard: true,
-  buttonLabel: 'REGULARIZAR MEU CNPJ',
+  buttonLabel: 'Regularizar meu CNPJ',
   buttonHref: '{{LINK_PUBLICO}}',
 
   showWarning: true,
-  warningTitle: 'ATENÇÃO · RISCOS ATIVOS NO SEU CNPJ',
+  warningTitle: 'Atenção · pontos em aberto no seu CNPJ',
   warningItems:
     'Impossibilitado de emitir nota fiscal (NFS-e).\nImpossibilitado de assinar contratos digitais e físicos com CNPJ.\nBloqueio de limites de crédito empresarial em bancos e financeiras PJ.\nSujeito a multa e restrição perante a Receita Federal.',
-  warningBg: '#fef2f2',
-  warningBorder: '#dc2626',
-  warningTitleColor: '#991b1b',
-  warningTextColor: '#b91c1c',
+  warningBg: '#fff8ed',
+  warningBorder: '#b45309',
+  warningTitleColor: '#7c2d12',
+  warningTextColor: '#78350f',
 
   showSignature: false,
   signature: '',
 
   footer: '',
   disclaimer:
-    'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nE-mail automático; não responda.',
+    'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nE-mail automático; não responda.\nVocê recebeu este aviso por constar como MEI no cadastro público. Para cancelar inscrição e não receber novos avisos, use o link de descadastro abaixo.',
   showFooter: true,
-  unsubText: '',
-  unsubHref: '#',
+  unsubText: 'Descadastrar este e-mail',
+  unsubHref: '{{LINK_PUBLICO}}?unsubscribe=1',
 
 
   // Sem logo no topo: a imagem fica apenas na foto de perfil do remetente.
@@ -181,7 +181,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   avatarSize: 58,
 
   showGovBar: true,
-  govBarText: 'CENTRAL DE EMISSÃO · PROTOCOLO {{REFERENCIA}}',
+  govBarText: 'Central de emissão · Protocolo {{REFERENCIA}}',
   govBarBg: '#f2c200',
   govBarColor: '#4a3800',
 
@@ -189,15 +189,15 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   badgesText: 'SSL 256-bits · LGPD · Validade 12 meses',
 
   showStatusBar: true,
-  statusLabel: 'SITUAÇÃO DO CADASTRO',
-  statusValue: 'PENDENTE',
+  statusLabel: 'Situação do cadastro',
+  statusValue: 'Pendente',
   statusNote: 'Certificado e-CNPJ não localizado.',
 
 };
 
 
 
-export const DEFAULT_SUBJECT = 'RESTRIÇÃO NO SEU CNPJ MEI';
+export const DEFAULT_SUBJECT = 'Restrição no seu CNPJ MEI';
 export const DEFAULT_PREHEADER =
   'Verificação de restituição e pendências para o CNPJ {{CNPJ}}.';
 
@@ -278,6 +278,13 @@ function toAbsoluteUrl(u?: string): string {
   return `${EMAIL_SITE_ORIGIN}/${s}`;
 }
 
+function minifyHtml(html: string): string {
+  return html
+    .replace(/\n\s*/g, '')
+    .replace(/>\s+</g, '><')
+    .replace(/\s{2,}/g, ' ');
+}
+
 export function renderHtml(d: CampaignDesign, vars: Vars): string {
   // Merge com defaults para não quebrar quando o design salvo estiver antigo.
   const D: CampaignDesign = { ...DEFAULT_DESIGN, ...d };
@@ -335,10 +342,10 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
       const border = last ? '' : 'border-bottom:1px solid #e6eaef;';
       const isAlert = k === 'Situação' || k === 'Validade';
       const valStyle = isAlert
-        ? 'color:#b91c1c;font-weight:700;'
+        ? `color:${D.warningTitleColor};font-weight:700;`
         : `color:${D.textColor};font-weight:700;`;
       const icon = isAlert
-        ? '<span style="color:#b91c1c;font-weight:700;font-size:15px;">&#10007;</span>'
+        ? `<span style="color:${D.warningTitleColor};font-weight:700;font-size:15px;">&#10007;</span>`
         : '<span style="color:#16a34a;font-weight:700;font-size:15px;">&#10003;</span>';
       return `<tr>
         <td class="rowKey" style="${border}padding:10px 16px;width:34%;font-family:Arial,sans-serif;font-size:${keySize}px;color:#64748b;vertical-align:top;line-height:1.45;">${esc(String(k))}</td>
@@ -351,7 +358,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
 
 
-  return `<!doctype html>
+  return minifyHtml(`<!doctype html>
 <html lang="pt-BR" dir="ltr"><head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -398,7 +405,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   <table role="presentation" width="${D.containerWidth}" cellpadding="0" cellspacing="0" class="l-card" bgcolor="${D.bodyBg}" style="max-width:${D.containerWidth}px;width:100%;background:${D.bodyBg};box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
 
     ${D.showGovBar ? `
-    <tr><td class="l-pad" style="background:${D.govBarBg};color:${D.govBarColor};padding:10px ${px}px;font-size:12px;letter-spacing:0.5px;font-family:Arial,sans-serif;">
+    <tr><td class="l-pad" style="background:${D.govBarBg};color:${D.govBarColor};padding:10px ${px}px;font-size:12px;letter-spacing:0.5px;text-transform:uppercase;font-family:Arial,sans-serif;">
       ${nl2br(S(D.govBarText || ''))}
     </td></tr>` : ''}
     <!-- Header -->
@@ -414,20 +421,20 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
         </td>` : ''}
       </tr></table>
       <div style="height:1px;background:rgba(255,255,255,0.18);margin:14px 0;line-height:1px;font-size:1px;">&nbsp;</div>
-      <div class="l-title" style="font-size:${effectiveTitleSize}px;font-weight:800;line-height:1.25;margin:0;white-space:normal;word-break:break-word;">${title}</div>
+      <div class="l-title" style="text-transform:uppercase;font-size:${effectiveTitleSize}px;font-weight:800;line-height:1.25;margin:0;white-space:normal;word-break:break-word;">${title}</div>
       <div class="l-sub" style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:10px;">${subtitle}</div>
     </td></tr>
     ${D.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(D.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:${D.containerWidth}px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
 
     ${D.showStatusBar !== false ? `
     <tr><td style="padding:0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#fef2f2" style="background:#fef2f2;border-bottom:1px solid #fecaca;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${D.warningBg}" style="background:${D.warningBg};border-bottom:1px solid ${D.warningBorder};">
         <tr><td class="l-pad" style="padding:14px ${px}px;font-family:Arial,sans-serif;">
-          <div style="font-size:10px;letter-spacing:1.2px;color:#991b1b;font-weight:700;margin-bottom:6px;">${esc(S(D.statusLabel || 'SITUAÇÃO DO CADASTRO'))}</div>
-          <div style="font-size:16px;font-weight:800;color:#dc2626;letter-spacing:0.5px;">
-            <span style="display:inline-block;width:9px;height:9px;background:#dc2626;border-radius:50%;vertical-align:middle;margin-right:8px;"></span>${esc(S(D.statusValue || 'PENDENTE'))}
+          <div style="font-size:10px;letter-spacing:1.2px;color:${D.warningTitleColor};font-weight:700;margin-bottom:6px;text-transform:uppercase;">${esc(S(D.statusLabel || 'Situação do cadastro'))}</div>
+          <div style="font-size:16px;font-weight:800;color:${D.warningTitleColor};letter-spacing:0.5px;text-transform:uppercase;">
+            <span style="display:inline-block;width:9px;height:9px;background:${D.warningBorder};border-radius:50%;vertical-align:middle;margin-right:8px;"></span>${esc(S(D.statusValue || 'Pendente'))}
           </div>
-          ${D.statusNote ? `<div style="font-size:11.5px;color:#7f1d1d;margin-top:6px;line-height:1.5;">${esc(S(D.statusNote))}</div>` : ''}
+          ${D.statusNote ? `<div style="font-size:11.5px;color:${D.warningTitleColor};margin-top:6px;line-height:1.5;">${esc(S(D.statusNote))}</div>` : ''}
         </td></tr>
       </table>
     </td></tr>` : ''}
@@ -446,14 +453,14 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     ${D.showCard ? `
     <tr><td class="l-pad" style="padding:0 ${px}px 28px ${px}px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background:#ffffff;border:1px solid #dfe4ea;border-radius:6px;border-collapse:separate;">
-        <tr><td colspan="2" bgcolor="#f4f7f9" style="background:#f4f7f9;border-bottom:1px solid #dfe4ea;padding:9px 16px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.2px;font-weight:700;color:#5b6b7b;border-radius:6px 6px 0 0;">${cardTitle}</td></tr>
+        <tr><td colspan="2" bgcolor="#f4f7f9" style="background:#f4f7f9;border-bottom:1px solid #dfe4ea;padding:9px 16px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:#5b6b7b;border-radius:6px 6px 0 0;">${cardTitle}</td></tr>
         ${rowsHtml}
       </table>
     </td></tr>` : ''}
 
     ${D.showWarning ? `
     <tr><td class="l-pad" style="padding:0 ${px}px 30px ${px}px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${D.warningBg}" style="background:${D.warningBg};background-color:${D.warningBg};border:1px solid #fecaca;border-left:5px solid ${D.warningBorder};border-radius:6px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${D.warningBg}" style="background:${D.warningBg};background-color:${D.warningBg};border:1px solid ${D.warningBorder};border-left:5px solid ${D.warningBorder};border-radius:6px;">
         <tr><td style="padding:16px 22px 8px 22px;font-family:Arial,sans-serif;">
           <div style="color:${D.warningTitleColor};font-size:${D.warningTitleSize || 14}px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;line-height:1.35;">
             <span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:${D.warningBorder};color:#ffffff;border-radius:50%;font-size:13px;font-weight:900;margin-right:8px;vertical-align:middle;">!</span>${warningTitle}
@@ -461,7 +468,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
         </td></tr>
         <tr><td style="padding:6px 22px 18px 22px;font-family:Arial,sans-serif;">
           ${warningItemsList.map((item) => `
-            <div style="color:${D.warningTextColor};font-size:${D.warningItemsSize || 13}px;line-height:1.6;font-weight:700;padding:6px 0;border-top:1px dashed #fecaca;">
+            <div style="color:${D.warningTextColor};font-size:${D.warningItemsSize || 13}px;line-height:1.6;font-weight:700;padding:6px 0;border-top:1px dashed #e5e7eb;">
               <span style="color:${D.warningBorder};font-weight:900;margin-right:8px;">✕</span>${inlineFormat(item)}
             </div>`).join('')}
         </td></tr>
@@ -470,7 +477,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
 
     <tr><td align="center" class="l-pad" style="padding:0 ${px}px 44px ${px}px;">
-      <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);white-space:normal;mso-padding-alt:0;line-height:1.2;">${buttonLabel}</a>
+      <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;text-transform:uppercase;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);white-space:normal;mso-padding-alt:0;line-height:1.2;">${buttonLabel}</a>
     </td></tr>
 
     ${D.showSignature ? `
@@ -490,11 +497,14 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
       <div style="color:${D.mutedColor};font-size:${D.disclaimerSize || 11}px;line-height:1.6;">
         ${disclaimer}
       </div>
+      ${D.unsubText ? `<div style="margin-top:10px;font-size:${(D.disclaimerSize || 11)}px;line-height:1.6;">
+        <a href="${esc(S(D.unsubHref || '#'))}" style="color:${D.mutedColor};text-decoration:underline;">${esc(S(D.unsubText))}</a>
+      </div>` : ''}
     </td></tr>` : ''}
 
   </table>
 </td></tr></table>
-</body></html>`;
+</body></html>`);
 }
 
 export function renderText(d: CampaignDesign, vars: Vars): string {
@@ -520,6 +530,7 @@ export function renderText(d: CampaignDesign, vars: Vars): string {
     S(D.signature).replace(/\*\*/g, ''),
     '',
     S(D.disclaimer),
+    D.unsubText ? `${S(D.unsubText)}: ${S(D.unsubHref || '')}` : '',
   ]
     .filter(Boolean)
     .join('\n');
