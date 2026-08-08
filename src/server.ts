@@ -133,7 +133,7 @@ export default {
       }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return withNoIndexHeaders(await normalizeCatastrophicSsrResponse(response));
+      return withNoIndexHeaders(await normalizeCatastrophicSsrResponse(response), url);
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
