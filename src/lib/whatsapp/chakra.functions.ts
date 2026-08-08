@@ -317,14 +317,19 @@ export const sendWaBatch = createServerFn({ method: 'POST' })
     const take = Math.min(data.limit ?? cfg.batch_size ?? 20, cfg.batch_size ?? 20, remaining);
     const { data: items } = await supabaseAdmin
       .from('whatsapp_queue')
-      .select('id,phone,company_name,cnpj,message,button_url_token')
+      .select('id,phone,company_name,cnpj,message,button_url_token,company_id')
       .eq('owner_user_id', context.userId)
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
       .limit(take);
 
+    const { classifyWhatsappError, statusFromError } = await import('./chakra.server');
+    const { blockPhoneAndQuarantine } = await import('./blocklist.server');
+
     let sent = 0;
     let failed = 0;
+    let blockedPermanently = 0;
+
     for (const item of (items ?? []) as any[]) {
       const token = String(item.button_url_token ?? '').trim();
       const razao = String(item.company_name ?? '').trim();
