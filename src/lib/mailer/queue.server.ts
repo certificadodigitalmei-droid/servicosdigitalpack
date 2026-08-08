@@ -266,7 +266,7 @@ export async function processQueueInternal(
   const nowIso = new Date().toISOString();
   const { data: rows, error } = await supabaseAdmin
     .from('email_send_queue')
-    .select('id, to_email, subject, html, text, attempts')
+    .select('id, to_email, subject, html, text, attempts, idempotency_key')
     .in('status', ['queued', 'pending'])
     .like('idempotency_key', 'mass-email-%')
     .or(`next_retry_at.is.null,next_retry_at.lte.${nowIso}`)
@@ -274,7 +274,7 @@ export async function processQueueInternal(
     .limit(_maxBatch);
   if (error) throw new Error(error.message);
 
-  const row = (rows ?? [])[0] as QueueRow | undefined;
+  const row = (rows ?? [])[0] as (QueueRow & { idempotency_key?: string }) | undefined;
   if (!row) return { ...base, throttled: false };
 
   // Nunca envia para endereços suprimidos localmente (bounce/complaint/unsubscribe).
@@ -286,6 +286,29 @@ export async function processQueueInternal(
       .eq('id', row.id);
     return { ...base, processed: 1, throttled: false };
   }
+
+  // VARREDURA ANTES DO ENVIO: sintaxe, domínio temporário, erro de digitação
+  // e existência de servidor de e-mail (MX). Havendo risco de bounce, o envio
+  // é cancelado e a empresa (importação + links) é apagada e bloqueada.
+  {
+    const { assessBounceRisk, discardRiskyCompany } = await import(
+      '@/lib/email-hygiene/pre-send-scan.server'
+    );
+    const verdict = await assessBounceRisk(row.to_email);
+    if (!verdict.ok) {
+      const companyId = row.idempotency_key?.startsWith('mass-email-')
+        ? row.idempotency_key.slice('mass-email-'.length)
+        : null;
+      const reason = verdict.reason ?? 'risco de bounce';
+      await discardRiskyCompany(verdict.email, reason, companyId);
+      await supabaseAdmin
+        .from('email_send_queue')
+        .update({ status: 'suppressed', last_error: `varredura pré-envio: ${reason}`.slice(0, 500) })
+        .eq('id', row.id);
+      return { ...base, processed: 1, throttled: false };
+    }
+  }
+
 
   let sent = 0;
   let failed = 0;
