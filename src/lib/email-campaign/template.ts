@@ -169,9 +169,9 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
   footer: '',
   disclaimer:
-    'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nE-mail automático; não responda.\nVocê recebeu este aviso por constar como MEI no cadastro público. Para cancelar inscrição e não receber novos avisos, use o link de descadastro abaixo.',
+    'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nAutomated message — do not reply.\nIf you no longer wish to receive these notices, unsubscribe below.',
   showFooter: true,
-  unsubText: 'Descadastrar este e-mail',
+  unsubText: 'unsubscribe',
   unsubHref: '{{LINK_PUBLICO}}?unsubscribe=1',
 
 
