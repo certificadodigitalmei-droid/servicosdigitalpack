@@ -186,7 +186,15 @@ function RotacaoModelos() {
                       />
                       <span className="font-medium text-sm">{v.name}</span>
                     </div>
-                    {on && <Check className="h-4 w-4 text-primary shrink-0" />}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge
+                        className={scoreClass(scores[v.id]?.score ?? 0)}
+                        title="Score de spam calculado automaticamente (0 a 10)"
+                      >
+                        {(scores[v.id]?.score ?? 0).toFixed(1)}/10
+                      </Badge>
+                      {on && <Check className="h-4 w-4 text-primary" />}
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">{v.description}</p>
                   <p className="text-xs mt-2">
