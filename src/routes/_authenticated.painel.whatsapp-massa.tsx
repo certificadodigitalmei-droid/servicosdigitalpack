@@ -482,7 +482,7 @@ function WhatsappMassaPage() {
               run('enq', async () => {
                 const r: any = await enqueue({ data: { limit: Math.max(1, Math.min(2000, qty)) } });
                 toast.success(
-                  `${r.inserted} contatos adicionados · ${r.skippedNoLink ?? 0} sem link ativo · ${r.skippedNoPhone ?? 0} sem telefone válido · ${r.skippedNoCnpj ?? 0} sem CNPJ`,
+                  `${r.inserted} contatos adicionados · ${r.skippedNoLink ?? 0} sem link ativo · ${r.skippedNoPhone ?? 0} sem celular válido · ${r.skippedNoCnpj ?? 0} sem CNPJ · ${r.skippedBlocked ?? 0} bloqueados`,
                 );
               })
             }
@@ -490,12 +490,28 @@ function WhatsappMassaPage() {
             {busy === 'enq' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Adicionar à fila
           </Button>
           <Button
+            variant="outline"
+            disabled={busy === 'cln'}
+            onClick={() =>
+              run('cln', async () => {
+                const r: any = await cleanup({});
+                toast.success(`${r.removed} contatos inválidos ou bloqueados removidos da fila`);
+              })
+            }
+          >
+            {busy === 'cln' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+            Limpar inválidos
+          </Button>
+          <Button
             disabled={busy === 'send' || !approved || !cfg.active}
             onClick={() =>
               run('send', async () => {
                 const r: any = await send({ data: {} });
                 if (r.error) toast.error(r.error);
-                else toast.success(`Enviadas: ${r.sent} · Falhas: ${r.failed}`);
+                else
+                  toast.success(
+                    `Enviadas: ${r.sent} · Falhas: ${r.failed}${r.blockedPermanently ? ` · Bloqueados: ${r.blockedPermanently}` : ''}`,
+                  );
               })
             }
           >
