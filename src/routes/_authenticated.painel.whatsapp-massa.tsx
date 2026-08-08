@@ -85,7 +85,7 @@ function WhatsappMassaPage() {
   const [templateStatus, setTemplateStatus] = useState('PENDING');
   const [lastError, setLastError] = useState<string | null>(null);
   const [hasApiKey, setHasApiKey] = useState(false);
-  const [stats, setStats] = useState({ pending: 0, sent: 0, failed: 0, audience: 0 });
+  const [stats, setStats] = useState({ pending: 0, sent: 0, failed: 0, audience: 0, blocked: 0 });
   const [recent, setRecent] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
