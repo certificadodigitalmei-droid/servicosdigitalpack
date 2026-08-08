@@ -48,11 +48,14 @@ export const getPreviewTokens = createServerFn({ method: 'GET' })
 
     const { data: companies } = await supabaseAdmin
       .from('companies')
-      .select('id, company_name, cnpj')
+      .select('id, nome_fantasia, razao_social_original, cnpj')
       .in('id', companyIds);
 
     const nameById = new Map(
-      (companies ?? []).map((c) => [c.id as string, (c.company_name as string) || (c.cnpj as string) || '']),
+      (companies ?? []).map((c) => [
+        c.id as string,
+        (c.nome_fantasia as string) || (c.razao_social_original as string) || (c.cnpj as string) || '',
+      ]),
     );
 
     let out: PreviewTokens = { pendingToken: null, pendingName: null, paidToken: null, paidName: null };
