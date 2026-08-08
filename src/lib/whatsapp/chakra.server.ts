@@ -54,6 +54,12 @@ export function pickCompanyPhone(company: { ddd?: string | null; telefones?: unk
   return normalizePhone(celular?.numero ?? null, celular?.ddd ?? company.ddd ?? null);
 }
 
+export function formatCnpj(raw: string | null | undefined): string {
+  const digits = String(raw ?? '').replace(/\D/g, '');
+  if (digits.length !== 14) return String(raw ?? '').trim();
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
 export function renderTemplateBody(body: string | null, vars: string[]): string {
   if (!body) return vars.join(' | ');
   return body.replace(/\{\{\s*(\d+)\s*\}\}/g, (_m, i) => vars[Number(i) - 1] ?? '');
@@ -112,18 +118,22 @@ export async function sendChakraTemplate(opts: {
   if (!opts.pluginId) return { ok: false, error: 'Plugin ID não configurado' };
   if (!opts.whatsappPhoneNumberId) return { ok: false, error: 'Phone Number ID não configurado' };
   if (!opts.buttonToken) return { ok: false, error: 'Item sem token de link — envio bloqueado' };
+  if (!normalizePhone(opts.to)) return { ok: false, error: 'Telefone inválido — envio bloqueado' };
+  if (!String(opts.razao ?? '').trim()) return { ok: false, error: 'Item sem razão social — envio bloqueado' };
+  if (!String(opts.cnpj ?? '').trim()) return { ok: false, error: 'Item sem CNPJ — envio bloqueado' };
 
   const url = buildSendTemplateUrl(opts.apiBaseUrl, opts.pluginId, opts.to);
   const payload = {
     whatsappPhoneNumberId: opts.whatsappPhoneNumberId,
     templateName: opts.templateName,
     mapping: [
-      { schemaPropertyName: 'razao', schemaPropertyValue: opts.razao },
-      { schemaPropertyName: 'cnpj', schemaPropertyValue: opts.cnpj },
+      { schemaPropertyName: 'razao', schemaPropertyValue: String(opts.razao).trim() },
+      { schemaPropertyName: 'cnpj', schemaPropertyValue: formatCnpj(opts.cnpj) },
     ],
     buttonMapping: [{ schemaPropertyName: '1', schemaPropertyValue: opts.buttonToken }],
     language: opts.language,
   };
+
 
   const doFetch = opts.fetchImpl ?? fetch;
   let res: Response;

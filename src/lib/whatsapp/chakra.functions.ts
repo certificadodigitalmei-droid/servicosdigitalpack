@@ -191,6 +191,7 @@ export const enqueueWaCompanies = createServerFn({ method: 'POST' })
     const rows: any[] = [];
     let skippedNoLink = 0;
     let skippedNoPhone = 0;
+    let skippedNoCnpj = 0;
     for (const c of (companies ?? []) as any[]) {
       if (rows.length >= data.limit) break;
       const phone = pickCompanyPhone(c);
@@ -199,6 +200,10 @@ export const enqueueWaCompanies = createServerFn({ method: 'POST' })
         continue;
       }
       if (existing.has(phone)) continue;
+      if (!String(c.cnpj ?? '').trim()) {
+        skippedNoCnpj++;
+        continue;
+      }
       const link = linkByCompany.get(c.id) ?? null;
       if (!link) {
         skippedNoLink++;
@@ -220,10 +225,10 @@ export const enqueueWaCompanies = createServerFn({ method: 'POST' })
       });
     }
 
-    if (!rows.length) return { inserted: 0, skippedNoLink, skippedNoPhone };
+    if (!rows.length) return { inserted: 0, skippedNoLink, skippedNoPhone, skippedNoCnpj };
     const { error: insErr } = await supabaseAdmin.from('whatsapp_queue').insert(rows);
     if (insErr) throw new Error(insErr.message);
-    return { inserted: rows.length, skippedNoLink, skippedNoPhone };
+    return { inserted: rows.length, skippedNoLink, skippedNoPhone, skippedNoCnpj };
   });
 
 export const sendWaBatch = createServerFn({ method: 'POST' })
@@ -278,17 +283,24 @@ export const sendWaBatch = createServerFn({ method: 'POST' })
     let failed = 0;
     for (const item of (items ?? []) as any[]) {
       const token = String(item.button_url_token ?? '').trim();
-      if (!token) {
+      const razao = String(item.company_name ?? '').trim();
+      const cnpj = String(item.cnpj ?? '').trim();
+      const blocked = !token
+        ? 'Item antigo sem token de link — regenere a fila'
+        : !razao
+          ? 'Item sem razão social — regenere a fila'
+          : !cnpj
+            ? 'Item sem CNPJ — regenere a fila'
+            : null;
+      if (blocked) {
         failed++;
         await supabaseAdmin
           .from('whatsapp_queue')
-          .update({
-            status: 'failed',
-            error_message: 'Item antigo sem token de link — regenere a fila',
-          } as any)
+          .update({ status: 'failed', error_message: blocked } as any)
           .eq('id', item.id);
         continue;
       }
+
 
       const result = await sendChakraTemplate({
         apiBaseUrl: cfg.base_url,
@@ -298,8 +310,8 @@ export const sendWaBatch = createServerFn({ method: 'POST' })
         to: item.phone,
         templateName: cfg.template_name,
         language: cfg.template_language ?? 'pt_BR',
-        razao: item.company_name ?? '',
-        cnpj: item.cnpj ?? '',
+        razao,
+        cnpj,
         buttonToken: token,
       });
 
