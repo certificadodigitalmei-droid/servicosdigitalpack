@@ -1919,49 +1919,67 @@ export type Database = {
           active: boolean
           base_url: string
           batch_size: number
+          button_base_url: string
           channel_id: string | null
           daily_limit: number
           id: number
           last_error: string | null
           min_delay_ms: number
+          plugin_id: string | null
           provider: string
           template_body: string | null
           template_language: string
           template_name: string | null
+          template_status: string
           updated_at: string
           variable_map: Json
+          waba_id: string | null
+          whatsapp_api_version: string
+          whatsapp_phone_number_id: string | null
         }
         Insert: {
           active?: boolean
           base_url?: string
           batch_size?: number
+          button_base_url?: string
           channel_id?: string | null
           daily_limit?: number
           id?: number
           last_error?: string | null
           min_delay_ms?: number
+          plugin_id?: string | null
           provider?: string
           template_body?: string | null
           template_language?: string
           template_name?: string | null
+          template_status?: string
           updated_at?: string
           variable_map?: Json
+          waba_id?: string | null
+          whatsapp_api_version?: string
+          whatsapp_phone_number_id?: string | null
         }
         Update: {
           active?: boolean
           base_url?: string
           batch_size?: number
+          button_base_url?: string
           channel_id?: string | null
           daily_limit?: number
           id?: number
           last_error?: string | null
           min_delay_ms?: number
+          plugin_id?: string | null
           provider?: string
           template_body?: string | null
           template_language?: string
           template_name?: string | null
+          template_status?: string
           updated_at?: string
           variable_map?: Json
+          waba_id?: string | null
+          whatsapp_api_version?: string
+          whatsapp_phone_number_id?: string | null
         }
         Relationships: []
       }
@@ -2026,6 +2044,7 @@ export type Database = {
         Row: {
           attempts: number
           batch_label: string | null
+          button_url_token: string | null
           claimed_at: string | null
           cnpj: string | null
           company_id: string | null
@@ -2047,6 +2066,7 @@ export type Database = {
         Insert: {
           attempts?: number
           batch_label?: string | null
+          button_url_token?: string | null
           claimed_at?: string | null
           cnpj?: string | null
           company_id?: string | null
@@ -2068,6 +2088,7 @@ export type Database = {
         Update: {
           attempts?: number
           batch_label?: string | null
+          button_url_token?: string | null
           claimed_at?: string | null
           cnpj?: string | null
           company_id?: string | null
