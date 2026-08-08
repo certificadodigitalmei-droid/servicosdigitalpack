@@ -25,6 +25,7 @@ import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenti
 import { Route as LovableEmailEventsRouteImport } from './routes/lovable/email/events'
 import { Route as ApiPublicWebhookMercadopagoRouteImport } from './routes/api/public/webhook-mercadopago'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
+import { Route as AuthenticatedPainelVisualPaginaRouteImport } from './routes/_authenticated.painel.visual-pagina'
 import { Route as AuthenticatedPainelRemetenteEmailRouteImport } from './routes/_authenticated.painel.remetente-email'
 import { Route as AuthenticatedPainelPrecosRouteImport } from './routes/_authenticated.painel.precos'
 import { Route as AuthenticatedPainelPopUpSiteRouteImport } from './routes/_authenticated.painel.pop-up-site'
@@ -136,6 +137,12 @@ const ApiInternalCasaDosDadosWorkerRoute =
     id: '/api/internal/casa-dos-dados-worker',
     path: '/api/internal/casa-dos-dados-worker',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedPainelVisualPaginaRoute =
+  AuthenticatedPainelVisualPaginaRouteImport.update({
+    id: '/visual-pagina',
+    path: '/visual-pagina',
+    getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelRemetenteEmailRoute =
   AuthenticatedPainelRemetenteEmailRouteImport.update({
@@ -328,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
   '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
+  '/painel/visual-pagina': typeof AuthenticatedPainelVisualPaginaRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
@@ -371,6 +379,7 @@ export interface FileRoutesByTo {
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
   '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
+  '/painel/visual-pagina': typeof AuthenticatedPainelVisualPaginaRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
@@ -418,6 +427,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/_authenticated/painel/precos': typeof AuthenticatedPainelPrecosRoute
   '/_authenticated/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
+  '/_authenticated/painel/visual-pagina': typeof AuthenticatedPainelVisualPaginaRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
@@ -465,6 +475,7 @@ export interface FileRouteTypes {
     | '/painel/pop-up-site'
     | '/painel/precos'
     | '/painel/remetente-email'
+    | '/painel/visual-pagina'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
     | '/lovable/email/events'
@@ -508,6 +519,7 @@ export interface FileRouteTypes {
     | '/painel/pop-up-site'
     | '/painel/precos'
     | '/painel/remetente-email'
+    | '/painel/visual-pagina'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
     | '/lovable/email/events'
@@ -554,6 +566,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/pop-up-site'
     | '/_authenticated/painel/precos'
     | '/_authenticated/painel/remetente-email'
+    | '/_authenticated/painel/visual-pagina'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
     | '/lovable/email/events'
@@ -713,6 +726,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/internal/casa-dos-dados-worker'
       preLoaderRoute: typeof ApiInternalCasaDosDadosWorkerRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/painel/visual-pagina': {
+      id: '/_authenticated/painel/visual-pagina'
+      path: '/visual-pagina'
+      fullPath: '/painel/visual-pagina'
+      preLoaderRoute: typeof AuthenticatedPainelVisualPaginaRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/remetente-email': {
       id: '/_authenticated/painel/remetente-email'
@@ -947,6 +967,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelPopUpSiteRoute: typeof AuthenticatedPainelPopUpSiteRoute
   AuthenticatedPainelPrecosRoute: typeof AuthenticatedPainelPrecosRoute
   AuthenticatedPainelRemetenteEmailRoute: typeof AuthenticatedPainelRemetenteEmailRoute
+  AuthenticatedPainelVisualPaginaRoute: typeof AuthenticatedPainelVisualPaginaRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
 
@@ -972,6 +993,7 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelPrecosRoute: AuthenticatedPainelPrecosRoute,
   AuthenticatedPainelRemetenteEmailRoute:
     AuthenticatedPainelRemetenteEmailRoute,
+  AuthenticatedPainelVisualPaginaRoute: AuthenticatedPainelVisualPaginaRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
 }
 
@@ -1021,3 +1043,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
