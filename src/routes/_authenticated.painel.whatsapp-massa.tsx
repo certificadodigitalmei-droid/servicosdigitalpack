@@ -223,11 +223,27 @@ function WhatsappMassaPage() {
         <CardHeader>
           <CardTitle>Conexão oficial (ChakraHQ)</CardTitle>
           <CardDescription>
-            Variáveis do template: <b>razao</b> (nome da empresa), <b>cnpj</b> e o botão <b>{'{{1}}'}</b>, que recebe
-            somente o token individual do link.
+            Template <b>certificado1</b> · variáveis do corpo <b>razao</b> (nome da empresa) e <b>cnpj</b> (formatado
+            00.000.000/0000-00) · botão <b>{'{{1}}'}</b> recebe somente o token individual do link.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1.5 rounded-lg border bg-slate-50 p-3 text-sm md:col-span-2">
+            <div className="text-xs font-semibold uppercase text-slate-500">Prévia por empresa</div>
+            <p className="text-slate-700">Atenção: Verifique seu CNPJ</p>
+            <p className="text-slate-700">
+              <b>Olá, {'{razao da empresa}'}</b> Recomendamos que confira as informações do CNPJ MEI:{' '}
+              <b>{'{cnpj da empresa}'}.</b> e os dados relacionados ao Certificado Digital da sua empresa.
+            </p>
+            <p className="text-slate-500">
+              Botão “Clique aqui - VERIFICAR” → {cfg.button_base_url}
+              <b>{'{token da empresa}'}</b>
+            </p>
+            <p className="text-xs text-slate-500">
+              Cada disparo substitui razao, cnpj e token pelos dados da empresa correspondente na fila.
+            </p>
+          </div>
+
           <div className="space-y-1.5 md:col-span-2">
             <Label htmlFor="base_url">API base</Label>
             <Input id="base_url" value={cfg.base_url} onChange={(e) => setCfg({ ...cfg, base_url: e.target.value })} />
