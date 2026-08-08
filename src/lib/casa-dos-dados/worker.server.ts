@@ -21,6 +21,7 @@ import {
   validateCompanyItem,
   type CursorMap,
 } from './worker-logic';
+import { validateEmailForImport } from '@/lib/email-validation';
 
 type Automation = {
   id: string;
