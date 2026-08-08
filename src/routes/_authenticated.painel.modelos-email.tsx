@@ -114,11 +114,11 @@ function RotacaoModelos() {
   }, []);
 
   const scoreClass = (s: number) =>
-    s >= 9
+    s >= 8
       ? 'bg-emerald-600 text-white hover:bg-emerald-600'
-      : s >= 7.5
+      : s >= 6.5
         ? 'bg-blue-600 text-white hover:bg-blue-600'
-        : s >= 6
+        : s >= 4.5
           ? 'bg-amber-500 text-white hover:bg-amber-500'
           : 'bg-rose-600 text-white hover:bg-rose-600';
 
