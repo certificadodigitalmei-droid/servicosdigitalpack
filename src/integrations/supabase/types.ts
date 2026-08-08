@@ -2082,6 +2082,157 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_campaign_items: {
+        Row: {
+          attempts: number
+          campaign_id: string
+          cnpj: string | null
+          company_id: string | null
+          company_link_id: string | null
+          company_name: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          lock_token: string | null
+          locked_at: string | null
+          next_attempt_at: string
+          phone: string
+          provider_message_id: string | null
+          sent_at: string | null
+          status: string
+          template_name: string
+          token: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          campaign_id: string
+          cnpj?: string | null
+          company_id?: string | null
+          company_link_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lock_token?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string
+          phone: string
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          template_name: string
+          token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          campaign_id?: string
+          cnpj?: string | null
+          company_id?: string | null
+          company_link_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lock_token?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string
+          phone?: string
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          template_name?: string
+          token?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_campaign_items_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_campaign_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_campaign_items_company_link_id_fkey"
+            columns: ["company_link_id"]
+            isOneToOne: false
+            referencedRelation: "company_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_campaigns: {
+        Row: {
+          continuous_mode: boolean
+          created_at: string
+          daily_unique_cap: number
+          finished_at: string | null
+          id: string
+          interval_seconds: number
+          last_error: string | null
+          name: string
+          next_send_at: string | null
+          owner_user_id: string
+          pace_preset: string
+          paused_reason: string | null
+          started_at: string | null
+          status: string
+          target_count: number
+          template_language: string
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          continuous_mode?: boolean
+          created_at?: string
+          daily_unique_cap?: number
+          finished_at?: string | null
+          id?: string
+          interval_seconds?: number
+          last_error?: string | null
+          name: string
+          next_send_at?: string | null
+          owner_user_id: string
+          pace_preset?: string
+          paused_reason?: string | null
+          started_at?: string | null
+          status?: string
+          target_count?: number
+          template_language?: string
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          continuous_mode?: boolean
+          created_at?: string
+          daily_unique_cap?: number
+          finished_at?: string | null
+          id?: string
+          interval_seconds?: number
+          last_error?: string | null
+          name?: string
+          next_send_at?: string | null
+          owner_user_id?: string
+          pace_preset?: string
+          paused_reason?: string | null
+          started_at?: string | null
+          status?: string
+          target_count?: number
+          template_language?: string
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       whatsapp_queue: {
         Row: {
           attempts: number
@@ -2159,6 +2310,60 @@ export type Database = {
           },
         ]
       }
+      whatsapp_templates: {
+        Row: {
+          body_text: string | null
+          button_label: string | null
+          button_url_base: string | null
+          category: string | null
+          created_at: string
+          footer_text: string | null
+          header_text: string | null
+          id: string
+          language: string
+          name: string
+          raw: Json | null
+          status: string
+          synced_at: string | null
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          body_text?: string | null
+          button_label?: string | null
+          button_url_base?: string | null
+          category?: string | null
+          created_at?: string
+          footer_text?: string | null
+          header_text?: string | null
+          id?: string
+          language?: string
+          name: string
+          raw?: Json | null
+          status?: string
+          synced_at?: string | null
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          body_text?: string | null
+          button_label?: string | null
+          button_url_base?: string | null
+          category?: string | null
+          created_at?: string
+          footer_text?: string | null
+          header_text?: string | null
+          id?: string
+          language?: string
+          name?: string
+          raw?: Json | null
+          status?: string
+          synced_at?: string | null
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -2212,6 +2417,19 @@ export type Database = {
           situacao: string
           telefone: string
           uf: string
+        }[]
+      }
+      wa_campaign_claim_item: {
+        Args: { _campaign_id: string }
+        Returns: {
+          attempts: number
+          cnpj: string
+          company_id: string
+          company_name: string
+          id: string
+          phone: string
+          template_name: string
+          token: string
         }[]
       }
       wq_claim_next: {
