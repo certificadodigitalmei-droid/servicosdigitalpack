@@ -197,7 +197,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
 
 
-export const DEFAULT_SUBJECT = 'Restrição no seu CNPJ MEI';
+export const DEFAULT_SUBJECT = 'Restrição no seu CNPJ MEI — regularização pendente';
 export const DEFAULT_PREHEADER =
   'Verificação de restituição e pendências para o CNPJ {{CNPJ}}.';
 
@@ -280,6 +280,8 @@ function toAbsoluteUrl(u?: string): string {
 
 function minifyHtml(html: string): string {
   return html
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/\n\s*/g, '')
     .replace(/>\s+</g, '><')
     .replace(/\s{2,}/g, ' ');
@@ -519,15 +521,28 @@ export function renderText(d: CampaignDesign, vars: Vars): string {
     '',
     S(D.intro),
     '',
+    S(D.heroTitle),
+    '',
     S(D.cardTitle),
+    vars.NOME_EMPRESARIAL ? `- Razão Social: ${vars.NOME_EMPRESARIAL}` : '',
     vars.NOME_TITULAR ? `- Nome: ${vars.NOME_TITULAR}` : '',
+    vars.REFERENCIA ? `- Protocolo: ${vars.REFERENCIA}` : '',
     vars.CNPJ ? `- CNPJ: ${formatCnpj(vars.CNPJ)}` : '',
     vars.DATA_ABERTURA ? `- Data de Abertura: ${vars.DATA_ABERTURA}` : '',
     vars.SITUACAO ? `- Situação: ${vars.SITUACAO}` : '',
     '',
+    S(D.warningTitle),
+    ...String(S(D.warningItems) || '')
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => `- ${l}`),
+    '',
     `${S(D.buttonLabel)}: ${S(D.buttonHref)}`,
     '',
-    S(D.signature).replace(/\*\*/g, ''),
+    S(D.badgesText || ''),
+    '',
+    S(D.signature).replace(/\*\*/g, '').replace(/[*_~]/g, ''),
     '',
     S(D.disclaimer),
     D.unsubText ? `${S(D.unsubText)}: ${S(D.unsubHref || '')}` : '',
