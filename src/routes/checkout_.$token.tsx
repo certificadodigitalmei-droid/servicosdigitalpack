@@ -215,9 +215,10 @@ function CheckoutTokenPage() {
               </div>
 
               {/* Responsive columns: stack on mobile/tablet, split on desktop */}
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
+              <div className="grid w-full min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
                 {/* LEFT column */}
-                <div className="space-y-5">
+                <div className="min-w-0 space-y-5">
+
                   <Card title="Detalhes da Guia">
                     <TableRow label="Serviço" value="Certificado Digital MEI" />
                     <TableRow label="Descrição" value="Emissão do Certificado Digital para MEI" />
