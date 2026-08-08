@@ -2,6 +2,8 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 
+const SENDABLE_STATUS = 'APPROVED';
+
 export const getWaApiConfig = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -28,7 +30,7 @@ export const getWaApiConfig = createServerFn({ method: 'GET' })
 
     const { data: recent } = await supabaseAdmin
       .from('whatsapp_queue')
-      .select('id,phone,company_name,cnpj,status,sent_at,error_message,created_at,provider_message_id')
+      .select('id,phone,company_name,cnpj,status,sent_at,error_message,created_at,provider_message_id,button_url_token')
       .eq('owner_user_id', context.userId)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -52,7 +54,11 @@ export const saveWaApiConfig = createServerFn({ method: 'POST' })
     z
       .object({
         base_url: z.string().trim().url().max(500),
-        channel_id: z.string().trim().max(200).nullable().optional(),
+        plugin_id: z.string().trim().max(200).nullable().optional(),
+        whatsapp_phone_number_id: z.string().trim().max(200).nullable().optional(),
+        waba_id: z.string().trim().max(200).nullable().optional(),
+        whatsapp_api_version: z.string().trim().min(2).max(20),
+        button_base_url: z.string().trim().url().max(500),
         template_name: z.string().trim().max(200).nullable().optional(),
         template_language: z.string().trim().min(2).max(10),
         template_body: z.string().trim().max(2000).nullable().optional(),
@@ -67,12 +73,72 @@ export const saveWaApiConfig = createServerFn({ method: 'POST' })
     const { assertAdmin } = await import('./admin.server');
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+
+    const { data: current } = await supabaseAdmin
+      .from('whatsapp_api_settings')
+      .select('template_status')
+      .eq('id', 1)
+      .maybeSingle();
+    const status = String((current as any)?.template_status ?? 'PENDING').toUpperCase();
+
     const { error } = await supabaseAdmin
       .from('whatsapp_api_settings')
-      .update({ ...data, provider: 'chakrahq' })
+      .update({
+        ...data,
+        // Envio só pode ficar ativo com template aprovado
+        active: status === SENDABLE_STATUS ? data.active : false,
+        provider: 'chakrahq',
+      } as any)
       .eq('id', 1);
     if (error) throw new Error(error.message);
-    return { ok: true };
+    return { ok: true, templateStatus: status };
+  });
+
+export const syncWaTemplateStatus = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { fetchChakraTemplateStatus } = await import('./chakra.server');
+
+    const apiKey = process.env['CHAKRA_API_KEY'];
+    if (!apiKey) return { ok: false as const, status: null, error: 'CHAKRA_API_KEY não configurada' };
+
+    const { data: cfg } = await supabaseAdmin
+      .from('whatsapp_api_settings')
+      .select('*')
+      .eq('id', 1)
+      .maybeSingle();
+    if (!cfg) return { ok: false as const, status: null, error: 'Configuração não encontrada' };
+    const c = cfg as any;
+
+    const result = await fetchChakraTemplateStatus({
+      apiBaseUrl: c.base_url,
+      apiKey,
+      apiVersion: c.whatsapp_api_version ?? 'v19.0',
+      wabaId: c.waba_id ?? '',
+      templateName: c.template_name ?? '',
+    });
+
+    if (!result.ok) {
+      await supabaseAdmin
+        .from('whatsapp_api_settings')
+        .update({ last_error: result.error } as any)
+        .eq('id', 1);
+      return { ok: false as const, status: null, error: result.error };
+    }
+
+    await supabaseAdmin
+      .from('whatsapp_api_settings')
+      .update({
+        template_status: result.status,
+        last_error: null,
+        active: result.status === SENDABLE_STATUS ? c.active : false,
+      } as any)
+      .eq('id', 1);
+
+    return { ok: true as const, status: result.status, error: null };
   });
 
 export const enqueueWaCompanies = createServerFn({ method: 'POST' })
@@ -83,7 +149,15 @@ export const enqueueWaCompanies = createServerFn({ method: 'POST' })
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const { pickCompanyPhone } = await import('./chakra.server');
-    const { buildPublicUrl } = await import('@/lib/public-base-url');
+
+    const { data: cfg } = await supabaseAdmin
+      .from('whatsapp_api_settings')
+      .select('button_base_url')
+      .eq('id', 1)
+      .maybeSingle();
+    const buttonBase = String(
+      (cfg as any)?.button_base_url ?? 'https://seu-certificado-mei-digital.online/c/',
+    );
 
     const { data: companies, error } = await supabaseAdmin
       .from('companies')
@@ -102,8 +176,8 @@ export const enqueueWaCompanies = createServerFn({ method: 'POST' })
         .in('company_id', ids.slice(i, i + 200))
         .eq('active', true);
       for (const l of (links ?? []) as any[]) {
-        if (l.company_id && !linkByCompany.has(l.company_id)) {
-          linkByCompany.set(l.company_id, { id: l.id, token: l.public_token });
+        if (l.company_id && l.public_token && String(l.public_token).trim() && !linkByCompany.has(l.company_id)) {
+          linkByCompany.set(l.company_id, { id: l.id, token: String(l.public_token).trim() });
         }
       }
     }
@@ -115,30 +189,41 @@ export const enqueueWaCompanies = createServerFn({ method: 'POST' })
     const existing = new Set((existingRows ?? []).map((r: any) => String(r.phone)));
 
     const rows: any[] = [];
+    let skippedNoLink = 0;
+    let skippedNoPhone = 0;
     for (const c of (companies ?? []) as any[]) {
       if (rows.length >= data.limit) break;
       const phone = pickCompanyPhone(c);
-      if (!phone || existing.has(phone)) continue;
-      existing.add(phone);
+      if (!phone) {
+        skippedNoPhone++;
+        continue;
+      }
+      if (existing.has(phone)) continue;
       const link = linkByCompany.get(c.id) ?? null;
+      if (!link) {
+        skippedNoLink++;
+        continue;
+      }
+      existing.add(phone);
       const name = c.nome_titular_exibicao || c.nome_fantasia || c.razao_social_original || 'Empresa';
       rows.push({
         owner_user_id: context.userId,
         phone,
-        message: link ? buildPublicUrl(link.token) : '',
+        message: `${buttonBase}${link.token}`,
+        button_url_token: link.token,
         company_name: name,
         cnpj: c.cnpj,
         company_id: c.id,
-        company_link_id: link?.id ?? null,
+        company_link_id: link.id,
         provider: 'chakrahq',
         status: 'pending',
       });
     }
 
-    if (!rows.length) return { inserted: 0 };
+    if (!rows.length) return { inserted: 0, skippedNoLink, skippedNoPhone };
     const { error: insErr } = await supabaseAdmin.from('whatsapp_queue').insert(rows);
     if (insErr) throw new Error(insErr.message);
-    return { inserted: rows.length };
+    return { inserted: rows.length, skippedNoLink, skippedNoPhone };
   });
 
 export const sendWaBatch = createServerFn({ method: 'POST' })
@@ -153,14 +238,22 @@ export const sendWaBatch = createServerFn({ method: 'POST' })
     const apiKey = process.env['CHAKRA_API_KEY'];
     if (!apiKey) return { sent: 0, failed: 0, error: 'CHAKRA_API_KEY não configurada' };
 
-    const { data: cfg } = await supabaseAdmin
+    const { data: cfgRow } = await supabaseAdmin
       .from('whatsapp_api_settings')
       .select('*')
       .eq('id', 1)
       .maybeSingle();
-    if (!cfg) return { sent: 0, failed: 0, error: 'Configuração não encontrada' };
+    if (!cfgRow) return { sent: 0, failed: 0, error: 'Configuração não encontrada' };
+    const cfg = cfgRow as any;
+
+    const status = String(cfg.template_status ?? 'PENDING').toUpperCase();
+    if (status !== SENDABLE_STATUS) {
+      return { sent: 0, failed: 0, error: `Template com status ${status}: envio bloqueado até a aprovação do WhatsApp` };
+    }
     if (!cfg.active) return { sent: 0, failed: 0, error: 'Envio desativado nas configurações' };
     if (!cfg.template_name) return { sent: 0, failed: 0, error: 'Informe o nome do template aprovado' };
+    if (!cfg.plugin_id) return { sent: 0, failed: 0, error: 'Informe o Plugin ID da ChakraHQ' };
+    if (!cfg.whatsapp_phone_number_id) return { sent: 0, failed: 0, error: 'Informe o Phone Number ID' };
 
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { count: sentToday } = await supabaseAdmin
@@ -175,7 +268,7 @@ export const sendWaBatch = createServerFn({ method: 'POST' })
     const take = Math.min(data.limit ?? cfg.batch_size ?? 20, cfg.batch_size ?? 20, remaining);
     const { data: items } = await supabaseAdmin
       .from('whatsapp_queue')
-      .select('id,phone,company_name,cnpj,message')
+      .select('id,phone,company_name,cnpj,message,button_url_token')
       .eq('owner_user_id', context.userId)
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
@@ -184,18 +277,32 @@ export const sendWaBatch = createServerFn({ method: 'POST' })
     let sent = 0;
     let failed = 0;
     for (const item of (items ?? []) as any[]) {
-      const variables = [item.company_name ?? '', item.cnpj ?? '', item.message ?? ''].filter(
-        (_v, i) => i < 3,
-      );
+      const token = String(item.button_url_token ?? '').trim();
+      if (!token) {
+        failed++;
+        await supabaseAdmin
+          .from('whatsapp_queue')
+          .update({
+            status: 'failed',
+            error_message: 'Item antigo sem token de link — regenere a fila',
+          } as any)
+          .eq('id', item.id);
+        continue;
+      }
+
       const result = await sendChakraTemplate({
-        endpoint: cfg.base_url,
+        apiBaseUrl: cfg.base_url,
         apiKey,
-        channelId: cfg.channel_id,
+        pluginId: cfg.plugin_id,
+        whatsappPhoneNumberId: cfg.whatsapp_phone_number_id,
         to: item.phone,
         templateName: cfg.template_name,
         language: cfg.template_language ?? 'pt_BR',
-        variables,
+        razao: item.company_name ?? '',
+        cnpj: item.cnpj ?? '',
+        buttonToken: token,
       });
+
       if (result.ok) {
         sent++;
         await supabaseAdmin
