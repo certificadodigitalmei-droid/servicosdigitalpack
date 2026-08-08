@@ -92,10 +92,12 @@ const ALLOWED_PATH_PREFIXES = [
 ];
 
 const ALLOWED_EXACT_PATHS = new Set([
+  "/",
   "/favicon.ico",
   "/robots.txt",
   "/sitemap.xml",
 ]);
+
 
 function isPubliclyAccessible(url: URL): boolean {
   const p = url.pathname;
