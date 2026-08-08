@@ -479,6 +479,11 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         fonte: 'casa_dos_dados',
         last_seen_at: new Date().toISOString(),
         possui_email: !!validEmail,
+        // Celular validado — única fonte de verdade para o WhatsApp.
+        whatsapp_phone_e164: mobile,
+        possui_telefone: !!mobile,
+        ddd: mobile ? mobile.slice(2, 4) : null,
+        telefones: mobile ? [{ tipo: 'celular', ddd: mobile.slice(2, 4), numero: mobile.slice(4), completo: mobile }] : [],
         is_test_record: isTestRun,
         data_quality_status: dataQualityStatus,
         missing_fields: validation.missingFields,
