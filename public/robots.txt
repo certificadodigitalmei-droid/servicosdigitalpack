@@ -1,2 +1,11 @@
 User-agent: *
-Disallow: /
+Allow: /$
+Disallow: /c/
+Disallow: /acesso/
+Disallow: /certificado-mei/
+Disallow: /checkout
+Disallow: /painel
+Disallow: /auth
+Disallow: /login
+Disallow: /monitor-envio
+Disallow: /api/
