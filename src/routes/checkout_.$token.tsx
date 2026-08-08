@@ -292,7 +292,7 @@ function CheckoutTokenPage() {
                 </div>
 
                 {/* RIGHT column — sticky summary */}
-                <aside className="lg:sticky lg:top-6 space-y-4">
+                <aside className="min-w-0 space-y-4 lg:sticky lg:top-6">
                   <Card title="Resumo do Pagamento">
                     {pricing?.discounted ? (
                       <div className="mx-3 mt-3 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 sm:mx-4">
