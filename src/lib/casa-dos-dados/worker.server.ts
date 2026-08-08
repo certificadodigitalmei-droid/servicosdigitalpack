@@ -716,11 +716,18 @@ export async function runAutomationOnce(
 
     if (!publicBaseUrl) throw new Error('PUBLIC_APP_URL não configurado');
 
+    const { loadBlockedPhones, loadBlockedCnpjs } = await import('@/lib/whatsapp/blocklist.server');
+    const blockedPhones = await loadBlockedPhones();
+    const blockedCnpjs = await loadBlockedCnpjs();
+
     const deps: WorkerDeps = {
       fetchPage: async (o) => {
         await touchHeartbeat('pesquisa_avancada', { page: o.page, limit: o.limit, date: o.date });
-        return searchOpeningsByDate(o);
+        // Execução real importa empresas → precisa do resultado completo,
+        // mas SOMENTE depois dos filtros oficiais (com_telefone/somente_celular).
+        return searchOpeningsByDate({ ...o, excludeCnpjs: blockedCnpjs, completo: !isTestRun });
       },
+      isPhoneBlocked: (e164) => blockedPhones.has(e164),
       // fetchDetails intentionally omitted: response.cnpjs already carries
       // the seven required fields. GET /v5/cnpj/{cnpj} is no longer called
       // per-result to keep every run inside the timeout budget.
