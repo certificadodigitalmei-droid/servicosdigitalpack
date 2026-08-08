@@ -189,10 +189,11 @@ function RotacaoModelos() {
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge
                         className={scoreClass(scores[v.id]?.score ?? 0)}
-                        title="Score de spam calculado automaticamente (0 a 10)"
+                        title="Estimativa de conteúdo (0 a 10). Não inclui autenticação, reputação nem List-Unsubscribe — a nota real do Mail-Tester tende a ser menor."
                       >
                         {(scores[v.id]?.score ?? 0).toFixed(1)}/10
                       </Badge>
+
                       {on && <Check className="h-4 w-4 text-primary" />}
                     </div>
                   </div>
