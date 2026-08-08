@@ -144,40 +144,53 @@ export function extractEmail(item: Record<string, unknown>): string | null {
   return null;
 }
 
-function extractPhone(item: Record<string, unknown>): string | null {
-  const direct = pickStr(item, ['telefone', 'telefone_contato']);
-  if (direct) return direct;
-  // v4: contato_telefonico: [{ completo, ddd, numero, tipo }]
-  const contatoTel = (item as any).contato_telefonico;
-  if (Array.isArray(contatoTel)) {
-    for (const t of contatoTel) {
-      if (t && typeof t === 'object') {
-        const s = pickStr(t as Record<string, unknown>, ['completo', 'numero']);
-        if (s) return s;
-      } else if (typeof t === 'string' && t.trim()) return t.trim();
-    }
-  }
-  const tels = (item as any).telefones;
-  if (Array.isArray(tels)) {
-    for (const t of tels) {
-      if (typeof t === 'string' && t.trim()) return t.trim();
-      if (t && typeof t === 'object') {
-        const s = pickStr(t as Record<string, unknown>, ['numero', 'telefone', 'completo']);
-        if (s) return s;
-      }
-    }
-  }
+/** Reúne todos os contatos telefônicos do payload preservando tipo e DDD. */
+export function collectPhoneCandidates(item: Record<string, unknown>): unknown[] {
+  const out: unknown[] = [];
+  const push = (v: unknown) => {
+    if (v === null || v === undefined || v === '') return;
+    if (Array.isArray(v)) out.push(...v);
+    else out.push(v);
+  };
+  push((item as any).contato_telefonico);
+  push((item as any).telefones);
+  push((item as any).telefone);
+  push((item as any).telefone_contato);
   const contato = (item as any).contato;
   if (contato && typeof contato === 'object') {
-    const s = pickStr(contato as Record<string, unknown>, ['telefone', 'ddd_telefone']);
-    if (s) return s;
+    push((contato as any).telefones);
+    push((contato as any).telefone);
+    push((contato as any).ddd_telefone);
   }
   const estab = (item as any).estabelecimento;
   if (estab && typeof estab === 'object') {
-    const s = pickStr(estab as Record<string, unknown>, ['telefone', 'ddd_telefone_1', 'ddd_telefone']);
-    if (s) return s;
+    push((estab as any).telefones);
+    push((estab as any).telefone);
+    push((estab as any).ddd_telefone_1);
+    push((estab as any).ddd_telefone);
+  }
+  return out;
+}
+
+function itemDdd(item: Record<string, unknown>): string | null {
+  const direct = (item as any).ddd ?? (item as any).ddd_1;
+  if (direct != null && String(direct).trim()) return String(direct);
+  const estab = (item as any).estabelecimento;
+  if (estab && typeof estab === 'object') {
+    const v = (estab as any).ddd ?? (estab as any).ddd_1;
+    if (v != null && String(v).trim()) return String(v);
   }
   return null;
+}
+
+/** Celular brasileiro válido (E.164 sem "+") extraído do payload, ou null. */
+export function extractMobile(item: Record<string, unknown>): string | null {
+  const r = extractValidBrazilianMobile(collectPhoneCandidates(item) as any, itemDdd(item));
+  return r.valid ? r.e164 : null;
+}
+
+function extractPhone(item: Record<string, unknown>): string | null {
+  return extractMobile(item);
 }
 
 export type NormalizedCompany = {
