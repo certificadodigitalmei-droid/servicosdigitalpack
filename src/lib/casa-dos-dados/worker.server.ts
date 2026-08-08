@@ -844,7 +844,11 @@ export async function runAutomationOnce(
 
     const res = await runCoreLoop(
       {
-        automation,
+        // Fluxo real de importação para WhatsApp exige celular por padrão.
+        automation: {
+          ...automation,
+          filters: { require_mobile_phone: true, ...(automation.filters ?? {}) },
+        },
         requested,
         queryDate,
         runId,
