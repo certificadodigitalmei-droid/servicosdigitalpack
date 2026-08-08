@@ -383,13 +383,13 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   [data-ogsc] .l-card, [data-ogsb] .l-card { background:${D.bodyBg} !important; color:${D.textColor} !important; }
   [data-ogsc] .l-text, [data-ogsb] .l-text { color:${D.textColor} !important; }
   [data-ogsc] .l-muted, [data-ogsb] .l-muted { color:${D.mutedColor} !important; }
-  [data-ogsc] .l-btn, [data-ogsb] .l-btn { background:${D.buttonBg} !important; color:${D.buttonText} !important; }
+  [data-ogsc] .l-btn, [data-ogsb] .l-btn { color:#1a4a8a !important; }
   @media (prefers-color-scheme: dark) {
     body, .l-page { background:${D.pageBg} !important; color:${D.textColor} !important; }
     .l-card { background:${D.bodyBg} !important; color:${D.textColor} !important; }
     .l-text { color:${D.textColor} !important; }
     .l-muted { color:${D.mutedColor} !important; }
-    .l-btn { background:${D.buttonBg} !important; color:${D.buttonText} !important; }
+    .l-btn { color:#1a4a8a !important; }
   }
   /* Celular: nada de texto cortado ou estourando a largura */
   @media only screen and (max-width:600px) {
@@ -400,7 +400,6 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
     .rowKey, .rowVal { display:block !important; width:auto !important; }
     .rowKey { padding:10px 14px 0 14px !important; border-bottom:0 !important; }
     .rowVal { padding:2px 14px 10px 14px !important; }
-    .l-btn { display:block !important; width:auto !important; white-space:normal !important; font-size:15px !important; padding:14px 18px !important; }
   }
 </style>
 </head>
