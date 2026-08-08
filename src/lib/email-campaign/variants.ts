@@ -88,21 +88,10 @@ const BLUE_PALETTES = {
     warningTitleColor: '#334155',
     warningTextColor: '#3b82f6',
   },
-  alertAmber: {
-    headerBg: '#1e3a8a',
-    heroTitleColor: '#1e3a8a',
-    buttonBg: '#1e40af',
-    govBarBg: '#dbeafe',
-    govBarColor: '#1e3a8a',
-    warningBg: '#fffbeb',
-    warningBorder: '#d97706',
-    warningTitleColor: '#92400e',
-    warningTextColor: '#78350f',
-  },
 } as const;
 
 const IMPACTO_NFE = 'A emissão de nota fiscal pode ficar limitada sem o certificado ativo.';
-const IMPACTO_CONTRATOS = 'Contratos digitais assinados em nome do CNPJ podem não ter validade jurídica.';
+const IMPACTO_CONTRATOS = 'Contratos digitais assinados em nome do CNPJ podem ter validade limitada.';
 const IMPACTO_CREDITO = 'Bancos e financeiras podem restringir linhas de crédito empresarial.';
 const IMPACTO_ACESSO_GOV = 'O acesso a alguns sistemas do governo pode exigir o certificado digital.';
 const IMPACTO_CONSULTAS = 'Consultas cadastrais podem mostrar o CNPJ com situação incompleta.';
@@ -114,12 +103,13 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
     id: 'azul-alerta',
     name: 'Aviso — Regularidade do CNPJ',
     description: 'Tom de aviso institucional. Destaca a importância sem cair em spam.',
-    accent: BLUE_PALETTES.alertAmber.headerBg,
+    accent: BLUE_PALETTES.navy.headerBg,
     subject: 'Aviso sobre a regularidade do CNPJ {{CNPJ}}',
     preheader: 'Seu CNPJ está sem Certificado Digital ativo. Regularize para evitar limitações.',
     design: {
       ...base,
-      ...BLUE_PALETTES.alertAmber,
+      ...BLUE_PALETTES.navy,
+      showGovBar: false,
       govBarText: 'Aviso cadastral · Protocolo {{REFERENCIA}}',
       title: 'Aviso sobre a regularidade do seu CNPJ',
       subtitle: 'Central de Emissão · MEI',
