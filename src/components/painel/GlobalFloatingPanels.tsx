@@ -12,6 +12,10 @@ import { envioStore, setShowFloating } from '@/lib/automation/envio-engine';
  * visíveis enquanto o usuário navega entre as abas.
  */
 export function GlobalFloatingPanels() {
+  // A aba de WhatsApp não exibe nenhum indicador do fluxo de e-mail.
+  const isWhatsappTab = useRouterState({
+    select: (s) => s.location.pathname.startsWith('/painel/whatsapp-massa'),
+  });
   const showFloating = useStore(envioStore, (s) => s.showFloating);
   const queue = useStore(envioStore, (s) => s.queue);
   const running = useStore(envioStore, (s) => s.running);
