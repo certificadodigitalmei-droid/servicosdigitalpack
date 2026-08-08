@@ -21,6 +21,7 @@ import {
   Loader2,
   Trash2,
   Monitor,
+  Activity,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -105,6 +106,7 @@ function PanelLayout() {
         
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
+        { title: 'Entregabilidade', icon: Activity, to: '/painel/entregabilidade' },
       ],
     },
     {
@@ -146,6 +148,7 @@ function PanelLayout() {
     if (path === '/painel/remetente-email') return 'Remetente de E-mail';
     if (path === '/painel/envio-massa') return 'Envio em Massa';
     if (path === '/painel/enviados') return 'E-mails Enviados';
+    if (path === '/painel/entregabilidade') return 'Entregabilidade';
     return 'Painel';
   };
 
