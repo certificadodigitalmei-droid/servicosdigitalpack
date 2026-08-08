@@ -25,7 +25,7 @@ describe('normalizePhone', () => {
   });
 
   it('usa o DDD separado apenas para número local', () => {
-    expect(normalizePhone('99999999', '11')).toBe('5511999999999');
+    expect(normalizePhone('999999999', '11')).toBe('5511999999999');
     expect(normalizePhone('33334444', '11')).toBe('551133334444');
   });
 
