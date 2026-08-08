@@ -105,6 +105,7 @@ function PanelLayout() {
         { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
         
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
+        { title: 'WhatsApp em Massa', icon: MessageSquare, to: '/painel/whatsapp-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
         { title: 'Entregabilidade', icon: Activity, to: '/painel/entregabilidade' },
       ],
@@ -148,6 +149,7 @@ function PanelLayout() {
     if (path === '/painel/remetente-email') return 'Remetente de E-mail';
     if (path === '/painel/envio-massa') return 'Envio em Massa';
     if (path === '/painel/enviados') return 'E-mails Enviados';
+    if (path === '/painel/whatsapp-massa') return 'WhatsApp em Massa';
     if (path === '/painel/entregabilidade') return 'Entregabilidade';
     return 'Painel';
   };

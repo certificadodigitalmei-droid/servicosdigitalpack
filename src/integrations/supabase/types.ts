@@ -1914,6 +1914,57 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_api_settings: {
+        Row: {
+          active: boolean
+          base_url: string
+          batch_size: number
+          channel_id: string | null
+          daily_limit: number
+          id: number
+          last_error: string | null
+          min_delay_ms: number
+          provider: string
+          template_body: string | null
+          template_language: string
+          template_name: string | null
+          updated_at: string
+          variable_map: Json
+        }
+        Insert: {
+          active?: boolean
+          base_url?: string
+          batch_size?: number
+          channel_id?: string | null
+          daily_limit?: number
+          id?: number
+          last_error?: string | null
+          min_delay_ms?: number
+          provider?: string
+          template_body?: string | null
+          template_language?: string
+          template_name?: string | null
+          updated_at?: string
+          variable_map?: Json
+        }
+        Update: {
+          active?: boolean
+          base_url?: string
+          batch_size?: number
+          channel_id?: string | null
+          daily_limit?: number
+          id?: number
+          last_error?: string | null
+          min_delay_ms?: number
+          provider?: string
+          template_body?: string | null
+          template_language?: string
+          template_name?: string | null
+          updated_at?: string
+          variable_map?: Json
+        }
+        Relationships: []
+      }
       whatsapp_batch_config: {
         Row: {
           active: boolean
@@ -1977,6 +2028,7 @@ export type Database = {
           batch_label: string | null
           claimed_at: string | null
           cnpj: string | null
+          company_id: string | null
           company_link_id: string | null
           company_name: string | null
           created_at: string
@@ -1985,8 +2037,11 @@ export type Database = {
           message: string
           owner_user_id: string
           phone: string
+          provider: string | null
+          provider_message_id: string | null
           sent_at: string | null
           status: string
+          template_name: string | null
           updated_at: string
         }
         Insert: {
@@ -1994,6 +2049,7 @@ export type Database = {
           batch_label?: string | null
           claimed_at?: string | null
           cnpj?: string | null
+          company_id?: string | null
           company_link_id?: string | null
           company_name?: string | null
           created_at?: string
@@ -2002,8 +2058,11 @@ export type Database = {
           message: string
           owner_user_id: string
           phone: string
+          provider?: string | null
+          provider_message_id?: string | null
           sent_at?: string | null
           status?: string
+          template_name?: string | null
           updated_at?: string
         }
         Update: {
@@ -2011,6 +2070,7 @@ export type Database = {
           batch_label?: string | null
           claimed_at?: string | null
           cnpj?: string | null
+          company_id?: string | null
           company_link_id?: string | null
           company_name?: string | null
           created_at?: string
@@ -2019,11 +2079,22 @@ export type Database = {
           message?: string
           owner_user_id?: string
           phone?: string
+          provider?: string | null
+          provider_message_id?: string | null
           sent_at?: string | null
           status?: string
+          template_name?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_queue_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
