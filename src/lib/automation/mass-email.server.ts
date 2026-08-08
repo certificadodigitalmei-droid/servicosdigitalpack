@@ -103,24 +103,26 @@ export async function syncMassEmailQueue(limit = 25) {
 
   for (const p of pending) {
     const c = byId.get(p.companyId);
-    const email = (c?.email ?? p.email ?? '').trim();
-    if (!email || !email.includes('@')) {
+    const rawEmail = (c?.email ?? p.email ?? '').trim();
+    const validation = validateEmailForSending(rawEmail);
+
+    if (!validation.valid) {
       semEmail++;
       // Marca como suprimido para não travar o pipeline indefinidamente.
       rows.push({
-        to_email: `sem-email+${p.companyId}@invalido.local`,
+        to_email: validation.normalized ?? `sem-email+${p.companyId}@invalido.local`,
         subject: SUBJECT,
         html: null,
         text: null,
         status: 'suppressed',
         idempotency_key: `mass-email-${p.companyId}`,
-        last_error: 'empresa sem e-mail válido',
+        last_error: validation.reason ?? 'e-mail inválido',
         created_by: null,
       });
       continue;
     }
 
-    const normalized = email.toLowerCase();
+    const normalized = validation.normalized;
     if (seenEmails.has(normalized)) {
       duplicados++;
       rows.push({
