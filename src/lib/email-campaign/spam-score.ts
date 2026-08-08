@@ -267,23 +267,40 @@ export function analyzeSpamScore(input: SpamScoreInput): SpamReport {
     push('html_size', 'Tamanho do HTML', 0.8, `${Math.round(html.length / 1024)} KB — o Gmail corta.`);
   else push('html_size', 'Tamanho do HTML', 0, `${Math.round(html.length / 1024)} KB.`);
 
-  // 18. Cabeçalho List-Unsubscribe — o Mail-Tester penaliza a ausência e a API
-  // de envio atual não permite injetar esse cabeçalho.
-  push(
-    'list_unsubscribe',
-    'Cabeçalho List-Unsubscribe',
-    0.8,
-    'O provedor de envio não expõe esse cabeçalho; o Mail-Tester desconta por isso.',
-  );
+  // 18. Cabeçalho List-Unsubscribe — a infraestrutura de envio gerenciada já
+  // adiciona o cabeçalho e trata os descadastros automaticamente.
+  if (input.listUnsubscribe === false)
+    push(
+      'list_unsubscribe',
+      'Cabeçalho List-Unsubscribe',
+      0.8,
+      'Sem cabeçalho de descadastro; o Mail-Tester desconta por isso.',
+    );
+  else
+    push(
+      'list_unsubscribe',
+      'Cabeçalho List-Unsubscribe',
+      0,
+      'Cabeçalho adicionado automaticamente pela infraestrutura de envio.',
+    );
 
-  // 19. Fatores que só um teste real mede (SPF/DKIM/DMARC, blacklists,
-  // reputação do IP e do domínio). Nunca damos nota cheia sem esse teste.
-  push(
-    'infra_unverified',
-    'Autenticação e reputação (não verificável aqui)',
-    0.7,
-    'SPF, DKIM, DMARC, blacklists e reputação do IP só são medidos no envio real (Mail-Tester).',
-  );
+  // 19. Autenticação do domínio (SPF/DKIM/DMARC). Verificada no domínio de
+  // envio; blacklists e reputação continuam dependendo do envio real.
+  if (input.authVerified === false)
+    push(
+      'infra_unverified',
+      'Autenticação e reputação',
+      0.7,
+      'SPF, DKIM e DMARC não confirmados para o domínio de envio.',
+    );
+  else
+    push(
+      'infra_unverified',
+      'Autenticação e reputação',
+      0,
+      'SPF, DKIM e DMARC verificados no domínio de envio.',
+    );
+
 
   const totalPenalty = rules.reduce((s, r) => s + r.penalty, 0);
   const score = Math.max(0, Math.min(10, 10 - totalPenalty));
