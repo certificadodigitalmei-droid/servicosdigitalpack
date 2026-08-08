@@ -241,27 +241,29 @@ function TokenHomePage() {
 
               {!paidAt && (
                 <div className="overflow-hidden rounded-md border border-border bg-card">
-                  <div className="grid sm:grid-cols-2">
-                    <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:border-r">
-                      <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 sm:border-r">
+                      <div className="min-w-0">
                         <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Validade</div>
                         <div className="text-[13.5px] font-bold text-destructive">Expirado</div>
                       </div>
                       <XCircle className="h-4 w-4 shrink-0 text-destructive" />
                     </div>
-                    <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-                      <div>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3">
+                      <div className="min-w-0">
                         <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Situação</div>
-                        <div className="text-[13.5px] font-bold text-destructive">CNPJ sem certificado pendente</div>
+                        <div className="text-[13.5px] font-bold leading-snug text-destructive">
+                          CNPJ sem certificado pendente
+                        </div>
                       </div>
                       <XCircle className="h-4 w-4 shrink-0 text-destructive" />
                     </div>
                   </div>
 
-                  <div className="border-l-4 border-destructive bg-destructive/5 p-4 lg:p-5">
-                    <div className="flex items-center gap-2 text-[13.5px] font-bold uppercase tracking-tight text-destructive">
-                      <AlertCircle className="h-4 w-4 shrink-0" />
-                      Atenção · Riscos ativos no seu CNPJ
+                  <div className="bg-destructive/5 px-4 py-4 lg:px-5 lg:py-5">
+                    <div className="flex items-start gap-2 text-[13px] font-bold uppercase leading-snug tracking-tight text-destructive lg:text-[13.5px]">
+                      <AlertCircle className="mt-[1px] h-4 w-4 shrink-0" />
+                      <span className="min-w-0">Atenção · Riscos ativos no seu CNPJ</span>
                     </div>
                     <ul className="mt-3 divide-y divide-destructive/20 border-t border-destructive/20">
                       {[
@@ -270,9 +272,12 @@ function TokenHomePage() {
                         'Bloqueio de limites de crédito empresarial em bancos e financeiras PJ.',
                         'Sujeito a multa e restrição perante a Receita Federal.',
                       ].map((risk) => (
-                        <li key={risk} className="flex items-start gap-2 py-2.5 text-[13px] font-semibold leading-snug text-destructive">
+                        <li
+                          key={risk}
+                          className="flex items-start gap-2 py-2.5 text-[12.5px] font-semibold leading-snug text-destructive lg:text-[13px]"
+                        >
                           <X className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                          <span>{risk}</span>
+                          <span className="min-w-0 break-words">{risk}</span>
                         </li>
                       ))}
                     </ul>
