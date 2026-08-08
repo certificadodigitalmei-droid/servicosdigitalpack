@@ -54,6 +54,12 @@ export function pickCompanyPhone(company: { ddd?: string | null; telefones?: unk
   return normalizePhone(celular?.numero ?? null, celular?.ddd ?? company.ddd ?? null);
 }
 
+export function formatCnpj(raw: string | null | undefined): string {
+  const digits = String(raw ?? '').replace(/\D/g, '');
+  if (digits.length !== 14) return String(raw ?? '').trim();
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
 export function renderTemplateBody(body: string | null, vars: string[]): string {
   if (!body) return vars.join(' | ');
   return body.replace(/\{\{\s*(\d+)\s*\}\}/g, (_m, i) => vars[Number(i) - 1] ?? '');
