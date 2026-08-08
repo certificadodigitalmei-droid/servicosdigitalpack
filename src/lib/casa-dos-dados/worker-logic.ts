@@ -315,18 +315,23 @@ export type DataQualityResult = {
   complete: boolean;
   missingFields: string[];
   email: string | null;
+  /** Celular validado (E.164 sem "+") ou null. */
+  mobile: string | null;
   normalized: NormalizedCompany;
 };
 
-export type ValidationFilters = { require_email?: boolean; only_matriz?: boolean };
+export type ValidationFilters = {
+  require_email?: boolean;
+  only_matriz?: boolean;
+  require_mobile_phone?: boolean;
+};
 
 /**
  * Validates the raw Casa dos Dados item against the seven required fields:
  *   cnpj, razao_social, situacao_cadastral, data_abertura,
  *   matriz_filial, municipio, uf.
- * Email/telefone stay OPTIONAL — never mark a record incomplete.
- * Normalization runs first so nested payload shapes (`municipio: {descricao}`,
- * `estabelecimento.*`, etc.) are correctly recognized.
+ * E-mail continua OPCIONAL. Celular é obrigatório quando
+ * `require_mobile_phone` está ativo (fluxo real de importação p/ WhatsApp).
  */
 export function validateCompanyItem(
   item: Record<string, unknown>,
@@ -341,6 +346,13 @@ export function validateCompanyItem(
   if (!filters?.only_matriz && !n.matriz_filial) missing.push('matriz_filial');
   if (!n.municipio) missing.push('municipio');
   if (!n.uf) missing.push('uf');
-  return { complete: missing.length === 0, missingFields: missing, email: n.email, normalized: n };
+  if (filters?.require_mobile_phone && !n.celular) missing.push('celular');
+  return {
+    complete: missing.length === 0,
+    missingFields: missing,
+    email: n.email,
+    mobile: n.celular,
+    normalized: n,
+  };
 }
 
