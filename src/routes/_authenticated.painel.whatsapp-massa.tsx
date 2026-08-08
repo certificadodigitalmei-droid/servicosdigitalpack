@@ -18,6 +18,7 @@ import {
   enqueueWaCompanies,
   sendWaBatch,
   clearWaApiQueue,
+  sendWaTestMessage,
 } from '@/lib/whatsapp/chakra.functions';
 
 export const Route = createFileRoute('/_authenticated/painel/whatsapp-massa')({
@@ -77,6 +78,7 @@ function WhatsappMassaPage() {
   const enqueue = useServerFn(enqueueWaCompanies);
   const send = useServerFn(sendWaBatch);
   const clear = useServerFn(clearWaApiQueue);
+  const sendTest = useServerFn(sendWaTestMessage);
 
   const [cfg, setCfg] = useState<Cfg>(EMPTY);
   const [templateStatus, setTemplateStatus] = useState('PENDING');
@@ -87,6 +89,10 @@ function WhatsappMassaPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [qty, setQty] = useState(50);
+  const [testPhone, setTestPhone] = useState('');
+  const [testRazao, setTestRazao] = useState('');
+  const [testCnpj, setTestCnpj] = useState('');
+  const [testToken, setTestToken] = useState('');
 
   const approved = templateStatus.toUpperCase() === 'APPROVED';
   const badge = statusBadge(templateStatus);
