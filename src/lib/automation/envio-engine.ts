@@ -12,11 +12,10 @@ import { createStore } from './store';
 import { sendCampaignEmail } from '@/lib/email-campaign/send.functions';
 import { getLatestTestEmailCompany } from '@/lib/company-links.functions';
 import {
-  DEFAULT_SUBJECT,
   rowToVars,
   substitute,
-  type CampaignDesign,
 } from '@/lib/email-campaign/template';
+import { pickVariantOrDefault } from '@/lib/email-campaign/variants';
 
 /**
  * Todo e-mail de campanha usa exclusivamente os "Modelos de campanha (rotação)".
@@ -55,20 +54,14 @@ export function loadSavedReplyTo(): string | null {
 }
 
 
-/** Sincroniza assunto/remetente do Modelo de Mensagem para a engine de Envio em Massa. */
+/** Sincroniza remetente salvo localmente para a engine de Envio em Massa. */
 export function syncFromMessageModel() {
-  const subject = loadSavedSubject();
   const fromName = loadSavedFromName();
   const fromAddress = loadSavedFromAddress();
   const replyTo = loadSavedReplyTo();
 
-  const finalSubject = subject && (subject.includes('protocolo de emissão') || subject.includes('CNPJ'))
-    ? 'RESTRIÇÃO NO SEU CNPJ MEI'
-    : (subject || 'RESTRIÇÃO NO SEU CNPJ MEI');
-
   envioStore.set((s) => ({
     ...s,
-    subject: finalSubject,
     ...(fromName ? { fromName } : {}),
     ...(fromAddress ? { fromAddress } : {}),
     ...(replyTo !== null ? { replyTo } : {}),
@@ -656,14 +649,15 @@ async function sendOne(item: QueueItem, channelIndex?: number): Promise<{ ok: bo
   }));
   const cfg = envioStore.get();
   const vars = buildVarsFor(item);
-  const subj = substitute(loadSavedSubject() || cfg.subject, vars);
+  const variant = variantFor(item.id || item.cnpj || item.email);
+  const subj = substitute(variant.subject, vars);
   try {
     const res: any = await sendCampaignEmail({
       data: {
         recipient: item.email,
         subject: subj,
         vars,
-        design: mergedDesign(cfg.heroImageUrl || undefined),
+        design: variant.design,
         fromName: cfg.fromName,
         fromAddress: cfg.fromAddress,
         replyTo: cfg.replyTo || undefined,
@@ -1107,7 +1101,8 @@ export async function sendTestOnce() {
 
   const vars = buildVarsFor(sample);
 
-  const subj = substitute(loadSavedSubject() || cfg.subject, vars);
+  const testVariant = variantFor(sample.cnpj || to);
+  const subj = substitute(testVariant.subject, vars);
   pushLog(`🧪 Teste com empresa real ${sample.company_name} (${sample.cnpj}) para ${to}...`);
   try {
     const res: any = await sendCampaignEmail({
@@ -1115,7 +1110,7 @@ export async function sendTestOnce() {
         recipient: to,
         subject: subj,
         vars,
-        design: mergedDesign(cfg.heroImageUrl || undefined),
+        design: testVariant.design,
         fromName: cfg.fromName,
         fromAddress: cfg.fromAddress,
         replyTo: cfg.replyTo || undefined,
