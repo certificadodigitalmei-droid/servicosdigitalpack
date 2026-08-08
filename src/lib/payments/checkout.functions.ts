@@ -51,7 +51,7 @@ export const createOrderAndPixCharge = createServerFn({ method: "POST" })
       const { data: link, error: linkErr } = await supabaseAdmin
         .from("company_links")
         .select("id, company_id, discount_amount_cents, discount_expires_at")
-        .eq("public_token", data.token)
+        .or(`public_token.eq.${data.token},public_token.like.${data.token}%`)
         .eq("active", true)
         .or("expires_at.is.null,expires_at.gt.now()")
         .maybeSingle();

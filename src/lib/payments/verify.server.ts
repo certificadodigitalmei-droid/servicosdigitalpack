@@ -120,7 +120,7 @@ export async function verifyLinkPayment(token: string): Promise<VerifyResult> {
   const { data: link } = await supabaseAdmin
     .from('company_links')
     .select('id')
-    .eq('public_token', token)
+    .or(`public_token.eq.${token},public_token.like.${token}%`)
     .maybeSingle();
   if (!link) return { paid: false, paid_at: null, status: 'not_found' };
 

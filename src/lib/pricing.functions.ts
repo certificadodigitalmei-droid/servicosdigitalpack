@@ -103,7 +103,7 @@ export const getLinkPricing = createServerFn({ method: 'GET' })
     const { data: link } = await supabaseAdmin
       .from('company_links')
       .select('discount_amount_cents, discount_expires_at')
-      .eq('public_token', data.token)
+      .or(`public_token.eq.${data.token},public_token.like.${data.token}%`)
       .maybeSingle();
 
     const cents = (link as any)?.discount_amount_cents as number | null | undefined;

@@ -112,7 +112,7 @@ export const getLinkPaymentStatus = createServerFn({ method: 'GET' })
     const { data: link } = await supabaseAdmin
       .from('company_links')
       .select('id')
-      .eq('public_token', data.token)
+      .or(`public_token.eq.${data.token},public_token.like.${data.token}%`)
       .maybeSingle();
     if (!link) return { paid: false, paid_at: null };
     const { data: order } = await supabaseAdmin
@@ -148,7 +148,7 @@ export const getLinkLoaderState = createServerFn({ method: 'GET' })
     const { data: link } = await supabaseAdmin
       .from('company_links')
       .select('loader_shown_at')
-      .eq('public_token', data.token)
+      .or(`public_token.eq.${data.token},public_token.like.${data.token}%`)
       .maybeSingle();
     return { shown: Boolean(link?.loader_shown_at) };
   });
@@ -160,7 +160,7 @@ export const markLinkLoaderShown = createServerFn({ method: 'POST' })
     await supabaseAdmin
       .from('company_links')
       .update({ loader_shown_at: new Date().toISOString() })
-      .eq('public_token', data.token)
+      .or(`public_token.eq.${data.token},public_token.like.${data.token}%`)
       .is('loader_shown_at', null);
     return { ok: true };
   });
