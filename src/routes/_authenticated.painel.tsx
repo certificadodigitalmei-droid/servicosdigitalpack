@@ -106,6 +106,7 @@ function PanelLayout() {
         
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
+        { title: 'Entregabilidade', icon: Activity, to: '/painel/entregabilidade' },
       ],
     },
     {
