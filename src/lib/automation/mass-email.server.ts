@@ -7,6 +7,7 @@ import {
 } from '@/lib/email-campaign/template';
 import { pickVariantOrDefault } from '@/lib/email-campaign/variants';
 import { listCompaniesWithoutLink, listPendingSendTargets } from '@/lib/pipeline/pipeline.server';
+import { validateEmailForSending } from '@/lib/email-validation';
 
 const SUBJECT = 'RESTRIÇÃO NO SEU CNPJ MEI';
 
