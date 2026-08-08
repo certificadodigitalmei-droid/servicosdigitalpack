@@ -496,7 +496,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
           if (active) {
             linkId = active.id;
             publicToken = active.publicToken;
-            publicUrl = active.publicUrl ?? `${publicBaseUrl}/c/${publicToken}`;
+            publicUrl = active.publicUrl ?? `${publicBaseUrl}/acesso/${publicToken.slice(0, 10)}`;
             checkoutUrl = active.checkoutUrl ?? `${publicBaseUrl}/checkout/${publicToken}`;
             outcome.linksReused += 1;
           } else {
@@ -781,7 +781,7 @@ export async function runAutomationOnce(
       },
       insertLink: async ({ companyId, cnpj, nome, isTestRecord, dataQualityStatus }) => {
         const publicToken = crypto.randomUUID().replace(/-/g, '');
-        const publicUrl = `${publicBaseUrl}/c/${publicToken}`;
+        const publicUrl = `${publicBaseUrl}/acesso/${publicToken.slice(0, 10)}`;
         const checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
         const { data, error } = await supabaseAdmin
           .from('company_links')
