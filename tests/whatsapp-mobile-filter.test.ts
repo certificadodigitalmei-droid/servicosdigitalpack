@@ -42,13 +42,14 @@ describe('extractValidBrazilianMobile', () => {
         { tipo: 'CELULAR', ddd: '11', numero: '999998877' },
       ],
     });
-    expect(r).toBe('5511999998877');
+    expect(r.valid).toBe(true);
+    expect(r.e164).toBe('5511999998877');
   });
 
   it('retorna null quando só há fixo', () => {
     expect(
-      extractValidBrazilianMobile({ ddd: '11', telefones: [{ tipo: 'FIXO', ddd: '11', numero: '33334444' }] }),
-    ).toBeNull();
+      extractValidBrazilianMobile({ ddd: '11', telefones: [{ tipo: 'FIXO', ddd: '11', numero: '33334444' }] }).valid,
+    ).toBe(false);
   });
 });
 
