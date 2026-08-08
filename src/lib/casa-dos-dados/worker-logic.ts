@@ -306,6 +306,7 @@ export function normalizeCasaDosDadosCompany(item: Record<string, unknown>): Nor
     quadro_societario: (item as any).qsa ?? (item as any).quadro_societario ?? null,
     email: (isEmailLike(contatoEmail) ? contatoEmail : null) ?? extractEmail(item),
     telefone: contatoTelefone ?? extractPhone(item),
+    celular: extractMobile(item),
     raw: item,
   };
 }
