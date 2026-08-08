@@ -423,7 +423,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
         </td>` : ''}
       </tr></table>
       <div style="height:1px;background:rgba(255,255,255,0.18);margin:14px 0;line-height:1px;font-size:1px;">&nbsp;</div>
-      <div class="l-title" style="text-transform:uppercase;font-size:${effectiveTitleSize}px;font-weight:800;line-height:1.25;margin:0;white-space:normal;word-break:break-word;">${title}</div>
+      <div class="l-title" style="text-transform:uppercase;font-size:${effectiveTitleSize}px;font-weight:800;line-height:1.25;margin:0;white-space:normal;word-break:break-word;color:#fbbf24;">${title}</div>
       <div class="l-sub" style="font-size:${D.subtitleSize}px;opacity:0.85;margin-top:10px;">${subtitle}</div>
     </td></tr>
     ${D.heroImageUrl ? `<tr><td style="padding:0;"><img src="${esc(D.heroImageUrl)}" alt="" style="display:block;width:100%;max-width:${D.containerWidth}px;height:auto;border:0;outline:none;text-decoration:none;" /></td></tr>` : ''}
@@ -444,7 +444,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
     ${D.showHero ? `
     <tr><td class="l-pad" style="padding:44px ${px}px 20px ${px}px;text-align:center;">
-      <h2 style="font-size:${D.heroTitleSize}px;font-weight:800;color:${D.heroTitleColor};margin:0;line-height:1.25;">${heroTitle}</h2>
+      <h2 style="font-size:${D.heroTitleSize}px;font-weight:800;color:#d97706;margin:0;line-height:1.25;">${heroTitle}</h2>
       <div style="width:48px;height:1px;background:#e5e7eb;margin:28px auto;"></div>
     </td></tr>` : ''}
 
