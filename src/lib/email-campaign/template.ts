@@ -444,7 +444,7 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
     ${D.showHero ? `
     <tr><td class="l-pad" style="padding:44px ${px}px 20px ${px}px;text-align:center;">
-      <h2 style="font-size:${D.heroTitleSize}px;font-weight:800;color:#d97706;margin:0;line-height:1.25;">${heroTitle}</h2>
+      <h2 style="font-size:${D.heroTitleSize}px;font-weight:800;color:${D.heroTitleColor};margin:0;line-height:1.25;">${heroTitle}</h2>
       <div style="width:48px;height:1px;background:#e5e7eb;margin:28px auto;"></div>
     </td></tr>` : ''}
 
