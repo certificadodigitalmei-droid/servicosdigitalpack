@@ -8,7 +8,12 @@ export type CasaFilters = {
   only_active?: boolean;
   only_matriz?: boolean;
   require_email?: boolean;
+  /** Exige celular na própria pesquisa — evita consumir créditos com fixo/sem telefone. */
+  require_mobile_phone?: boolean;
 };
+
+/** Limite defensivo de CNPJs enviados em `excluir.cnpj`. */
+export const MAX_EXCLUDED_CNPJS = 200;
 
 export type SanitizedRequestLog = {
   url: string;
@@ -167,10 +172,14 @@ export function buildSearchBody(opts: {
   limit: number;
   page?: number;
   date?: string; // YYYY-MM-DD (America/Sao_Paulo). Defaults to today.
+  /** CNPJs da lista permanente de rejeição — excluídos já na pesquisa. */
+  excludeCnpjs?: string[];
 }): Record<string, unknown> {
   const date = opts.date && isValidISODate(opts.date) ? opts.date : todayBR();
   const f = opts.filters ?? {};
-  return {
+  const requireMobile = !!f.require_mobile_phone;
+
+  const body: Record<string, unknown> = {
     data_abertura: { inicio: date, fim: date },
     situacao_cadastral: f.only_active ? ['ATIVA'] : [],
     matriz_filial: f.only_matriz ? 'MATRIZ' : '',
@@ -182,10 +191,25 @@ export function buildSearchBody(opts: {
       somente_matriz: !!f.only_matriz,
       somente_filial: false,
       com_email: !!f.require_email,
+      ...(requireMobile
+        ? {
+            com_telefone: true,
+            somente_celular: true,
+            somente_fixo: false,
+            excluir_empresas_visualizadas: true,
+          }
+        : {}),
     },
     limite: opts.limit,
     pagina: opts.page ?? 1,
   };
+
+  const excluded = Array.from(
+    new Set((opts.excludeCnpjs ?? []).map((c) => String(c).replace(/\D+/g, '')).filter((c) => c.length === 14)),
+  ).slice(0, MAX_EXCLUDED_CNPJS);
+  if (excluded.length) body.excluir = { cnpj: excluded };
+
+  return body;
 }
 
 // Back-compat alias.
@@ -196,6 +220,7 @@ export async function searchOpeningsByDate(opts: {
   limit: number;
   page?: number;
   date?: string;
+  excludeCnpjs?: string[];
   /**
    * Quando true, adiciona `?tipo_resultado=completo` — devolve endereço,
    * UF, município, matriz/filial, contato_email etc. **e CONSOME créditos**

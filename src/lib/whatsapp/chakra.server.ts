@@ -1,3 +1,5 @@
+import { extractValidBrazilianMobile, validateBrazilianMobile } from '@/lib/phone/brazilian-mobile';
+
 // Helpers server-only para envio oficial de WhatsApp via ChakraHQ (WhatsApp Business API).
 // Nunca registrar o Bearer token em logs ou mensagens de erro.
 
@@ -48,11 +50,60 @@ export function normalizePhone(raw: string | null | undefined, ddd?: string | nu
   return '55' + national;
 }
 
-export function pickCompanyPhone(company: { ddd?: string | null; telefones?: unknown }): string | null {
-  const list = Array.isArray(company.telefones) ? (company.telefones as any[]) : [];
-  const celular = list.find((t) => String(t?.tipo ?? '').toLowerCase() === 'celular') ?? list[0];
-  return normalizePhone(celular?.numero ?? null, celular?.ddd ?? company.ddd ?? null);
+/**
+ * Devolve SOMENTE celular brasileiro válido (E.164 sem "+").
+ * Prefere `whatsapp_phone_e164` já validado; nunca devolve fixo.
+ */
+export function pickCompanyPhone(company: {
+  ddd?: string | null;
+  telefones?: unknown;
+  whatsapp_phone_e164?: string | null;
+}): string | null {
+  const stored = company.whatsapp_phone_e164 ? validateBrazilianMobile(company.whatsapp_phone_e164) : null;
+  if (stored?.valid) return stored.e164;
+  const list = Array.isArray(company.telefones) ? (company.telefones as unknown[]) : [];
+  const r = extractValidBrazilianMobile(list as any, company.ddd ?? null);
+  return r.valid ? r.e164 : null;
 }
+
+export type WaErrorKind = 'temporary' | 'config' | 'permanent_recipient';
+
+const PERMANENT_RECIPIENT_PATTERNS = [
+  /not\s*(a\s*)?(valid\s*)?whatsapp\s*(user|number)/i,
+  /n[aã]o\s*(possui|tem)\s*whatsapp/i,
+  /recipient\s*(is\s*)?not\s*(registered|found|valid)/i,
+  /invalid\s*(recipient|phone|wa_id|number)/i,
+  /telefone\s*inv[aá]lido/i,
+  /n[uú]mero\s*inv[aá]lido/i,
+  /undeliverable/i,
+  /n[aã]o\s*entreg[aá]vel/i,
+  /does\s*not\s*exist/i,
+];
+
+const CONFIG_PATTERNS = [
+  /unauthor/i, /forbidden/i, /token/i, /credential/i, /permission/i,
+  /template/i, /pending/i, /rejected/i, /plugin/i, /configura/i,
+];
+
+/**
+ * Classifica a falha de envio para decidir bloqueio permanente x retry.
+ * Só erro de destinatário bloqueia o telefone.
+ */
+export function classifyWhatsappError(status: number | null, message: string): WaErrorKind {
+  const msg = String(message ?? '');
+  if (status === 429 || (typeof status === 'number' && status >= 500)) return 'temporary';
+  if (/timeout|network|falha de rede|ECONN|socket|fetch failed/i.test(msg)) return 'temporary';
+  if (status === 401 || status === 403) return 'config';
+  if (PERMANENT_RECIPIENT_PATTERNS.some((r) => r.test(msg))) return 'permanent_recipient';
+  if (CONFIG_PATTERNS.some((r) => r.test(msg))) return 'config';
+  return 'temporary';
+}
+
+export function statusFromError(error: string): number | null {
+  const m = /^\[(\d{3})\]/.exec(String(error ?? ''));
+  return m ? Number(m[1]) : null;
+}
+
 
 export function formatCnpj(raw: string | null | undefined): string {
   const digits = String(raw ?? '').replace(/\D/g, '');
@@ -118,7 +169,7 @@ export async function sendChakraTemplate(opts: {
   if (!opts.pluginId) return { ok: false, error: 'Plugin ID não configurado' };
   if (!opts.whatsappPhoneNumberId) return { ok: false, error: 'Phone Number ID não configurado' };
   if (!opts.buttonToken) return { ok: false, error: 'Item sem token de link — envio bloqueado' };
-  if (!normalizePhone(opts.to)) return { ok: false, error: 'Telefone inválido — envio bloqueado' };
+  if (!validateBrazilianMobile(opts.to).valid) return { ok: false, error: 'Celular inválido — envio bloqueado' };
   if (!String(opts.razao ?? '').trim()) return { ok: false, error: 'Item sem razão social — envio bloqueado' };
   if (!String(opts.cnpj ?? '').trim()) return { ok: false, error: 'Item sem CNPJ — envio bloqueado' };
 

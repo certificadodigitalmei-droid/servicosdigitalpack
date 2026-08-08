@@ -1,5 +1,6 @@
 // Pure helpers for the automation worker.
 // No supabase / no fetch — safe to unit-test with mocks.
+import { extractValidBrazilianMobile } from '@/lib/phone/brazilian-mobile';
 
 export type ItemClassification =
   | { kind: 'missing_cnpj' }
@@ -144,40 +145,53 @@ export function extractEmail(item: Record<string, unknown>): string | null {
   return null;
 }
 
-function extractPhone(item: Record<string, unknown>): string | null {
-  const direct = pickStr(item, ['telefone', 'telefone_contato']);
-  if (direct) return direct;
-  // v4: contato_telefonico: [{ completo, ddd, numero, tipo }]
-  const contatoTel = (item as any).contato_telefonico;
-  if (Array.isArray(contatoTel)) {
-    for (const t of contatoTel) {
-      if (t && typeof t === 'object') {
-        const s = pickStr(t as Record<string, unknown>, ['completo', 'numero']);
-        if (s) return s;
-      } else if (typeof t === 'string' && t.trim()) return t.trim();
-    }
-  }
-  const tels = (item as any).telefones;
-  if (Array.isArray(tels)) {
-    for (const t of tels) {
-      if (typeof t === 'string' && t.trim()) return t.trim();
-      if (t && typeof t === 'object') {
-        const s = pickStr(t as Record<string, unknown>, ['numero', 'telefone', 'completo']);
-        if (s) return s;
-      }
-    }
-  }
+/** Reúne todos os contatos telefônicos do payload preservando tipo e DDD. */
+export function collectPhoneCandidates(item: Record<string, unknown>): unknown[] {
+  const out: unknown[] = [];
+  const push = (v: unknown) => {
+    if (v === null || v === undefined || v === '') return;
+    if (Array.isArray(v)) out.push(...v);
+    else out.push(v);
+  };
+  push((item as any).contato_telefonico);
+  push((item as any).telefones);
+  push((item as any).telefone);
+  push((item as any).telefone_contato);
   const contato = (item as any).contato;
   if (contato && typeof contato === 'object') {
-    const s = pickStr(contato as Record<string, unknown>, ['telefone', 'ddd_telefone']);
-    if (s) return s;
+    push((contato as any).telefones);
+    push((contato as any).telefone);
+    push((contato as any).ddd_telefone);
   }
   const estab = (item as any).estabelecimento;
   if (estab && typeof estab === 'object') {
-    const s = pickStr(estab as Record<string, unknown>, ['telefone', 'ddd_telefone_1', 'ddd_telefone']);
-    if (s) return s;
+    push((estab as any).telefones);
+    push((estab as any).telefone);
+    push((estab as any).ddd_telefone_1);
+    push((estab as any).ddd_telefone);
+  }
+  return out;
+}
+
+function itemDdd(item: Record<string, unknown>): string | null {
+  const direct = (item as any).ddd ?? (item as any).ddd_1;
+  if (direct != null && String(direct).trim()) return String(direct);
+  const estab = (item as any).estabelecimento;
+  if (estab && typeof estab === 'object') {
+    const v = (estab as any).ddd ?? (estab as any).ddd_1;
+    if (v != null && String(v).trim()) return String(v);
   }
   return null;
+}
+
+/** Celular brasileiro válido (E.164 sem "+") extraído do payload, ou null. */
+export function extractMobile(item: Record<string, unknown>): string | null {
+  const r = extractValidBrazilianMobile(collectPhoneCandidates(item) as any, itemDdd(item));
+  return r.valid ? r.e164 : null;
+}
+
+function extractPhone(item: Record<string, unknown>): string | null {
+  return extractMobile(item);
 }
 
 export type NormalizedCompany = {
@@ -194,6 +208,8 @@ export type NormalizedCompany = {
   quadro_societario: unknown;
   email: string | null;
   telefone: string | null;
+  /** Celular brasileiro validado em E.164 sem "+" (55DD9XXXXXXXX). */
+  celular: string | null;
   raw: Record<string, unknown>;
 };
 
@@ -271,7 +287,6 @@ export function normalizeCasaDosDadosCompany(item: Record<string, unknown>): Nor
 
   // Contato override — v4 exposes contato.{email,telefone}
   const contatoEmail = contatoObj ? pickStr(contatoObj, ['email']) : null;
-  const contatoTelefone = contatoObj ? pickStr(contatoObj, ['telefone', 'ddd_telefone']) : null;
 
   return {
     cnpj: cnpj ? cnpj.replace(/\D+/g, '') : null,
@@ -289,7 +304,9 @@ export function normalizeCasaDosDadosCompany(item: Record<string, unknown>): Nor
     capital_social: descOf(pickAny(item, ['capital_social'])),
     quadro_societario: (item as any).qsa ?? (item as any).quadro_societario ?? null,
     email: (isEmailLike(contatoEmail) ? contatoEmail : null) ?? extractEmail(item),
-    telefone: contatoTelefone ?? extractPhone(item),
+    // Só expomos telefone quando é celular válido — fixo nunca entra no fluxo.
+    telefone: extractMobile(item),
+    celular: extractMobile(item),
     raw: item,
   };
 }
@@ -298,18 +315,23 @@ export type DataQualityResult = {
   complete: boolean;
   missingFields: string[];
   email: string | null;
+  /** Celular validado (E.164 sem "+") ou null. */
+  mobile: string | null;
   normalized: NormalizedCompany;
 };
 
-export type ValidationFilters = { require_email?: boolean; only_matriz?: boolean };
+export type ValidationFilters = {
+  require_email?: boolean;
+  only_matriz?: boolean;
+  require_mobile_phone?: boolean;
+};
 
 /**
  * Validates the raw Casa dos Dados item against the seven required fields:
  *   cnpj, razao_social, situacao_cadastral, data_abertura,
  *   matriz_filial, municipio, uf.
- * Email/telefone stay OPTIONAL — never mark a record incomplete.
- * Normalization runs first so nested payload shapes (`municipio: {descricao}`,
- * `estabelecimento.*`, etc.) are correctly recognized.
+ * E-mail continua OPCIONAL. Celular é obrigatório quando
+ * `require_mobile_phone` está ativo (fluxo real de importação p/ WhatsApp).
  */
 export function validateCompanyItem(
   item: Record<string, unknown>,
@@ -324,6 +346,13 @@ export function validateCompanyItem(
   if (!filters?.only_matriz && !n.matriz_filial) missing.push('matriz_filial');
   if (!n.municipio) missing.push('municipio');
   if (!n.uf) missing.push('uf');
-  return { complete: missing.length === 0, missingFields: missing, email: n.email, normalized: n };
+  if (filters?.require_mobile_phone && !n.celular) missing.push('celular');
+  return {
+    complete: missing.length === 0,
+    missingFields: missing,
+    email: n.email,
+    mobile: n.celular,
+    normalized: n,
+  };
 }
 

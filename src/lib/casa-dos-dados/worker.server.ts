@@ -43,6 +43,8 @@ type SkipReason =
   | 'invalid_cnpj_length'
   | 'duplicate'
   | 'incomplete'
+  | 'invalid_mobile'
+  | 'blocked_number'
   | 'detail_lookup_error'
   | 'company_upsert_error'
   | 'link_error'
@@ -147,6 +149,8 @@ export type WorkerDeps = {
   insertLink: (args: { companyId: string; cnpj: string; nome: string; isTestRecord: boolean; dataQualityStatus: string }) =>
     Promise<{ id: string; publicToken: string; publicUrl: string; checkoutUrl: string }>;
   updateQueueRow: (args: { queueId: string; companyId: string | null; companyLinkId: string | null; wasNewCompany: boolean; wasNewLink: boolean }) => Promise<void>;
+  /** Lista permanente de rejeição — telefone bloqueado nunca reimporta. */
+  isPhoneBlocked?: (e164: string) => Promise<boolean> | boolean;
 };
 
 export type CoreLoopInput = {
@@ -355,13 +359,29 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
       // Validate data quality directly from search payload.
       await progress('validacao_dos_campos', { page, item_offset: i, cnpj });
+      const requireMobile = !!automation.filters?.require_mobile_phone && !isTestRun;
       const validation = validateCompanyItem(enrichedItem, automation.filters ?? {});
+      const mobile = validation.mobile;
+
+      // ---- CELULAR OBRIGATÓRIO (execução real) ----
+      // Sem celular válido o registro é apenas ignorado: não entra na fila,
+      // não vira company nem link e NÃO consome a quantidade solicitada.
+      if (requireMobile && !mobile) {
+        outcome.skipped.push({ index: i, page, cnpj, reason: 'invalid_mobile', detail: 'celular brasileiro válido ausente' });
+        continue;
+      }
+      if (mobile && deps.isPhoneBlocked && (await deps.isPhoneBlocked(mobile))) {
+        outcome.skipped.push({ index: i, page, cnpj, reason: 'blocked_number', detail: 'telefone na lista permanente de rejeição' });
+        continue;
+      }
+
       const isValid = validation.complete;
       const dataQualityStatus: 'complete' | 'test_partial' | 'pending_enrichment' = isValid
         ? 'complete'
         : isTestRun
           ? 'test_partial'
           : 'pending_enrichment';
+
 
       // ---- NORMAL MODE + INCOMPLETE ----
       // Enqueue as pending_enrichment (best effort), skip everything else,
@@ -459,6 +479,11 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         fonte: 'casa_dos_dados',
         last_seen_at: new Date().toISOString(),
         possui_email: !!validEmail,
+        // Celular validado — única fonte de verdade para o WhatsApp.
+        whatsapp_phone_e164: mobile,
+        possui_telefone: !!mobile,
+        ddd: mobile ? mobile.slice(2, 4) : null,
+        telefones: mobile ? [{ tipo: 'celular', ddd: mobile.slice(2, 4), numero: mobile.slice(4), completo: mobile }] : [],
         is_test_record: isTestRun,
         data_quality_status: dataQualityStatus,
         missing_fields: validation.missingFields,
@@ -691,11 +716,18 @@ export async function runAutomationOnce(
 
     if (!publicBaseUrl) throw new Error('PUBLIC_APP_URL não configurado');
 
+    const { loadBlockedPhones, loadBlockedCnpjs } = await import('@/lib/whatsapp/blocklist.server');
+    const blockedPhones = await loadBlockedPhones();
+    const blockedCnpjs = await loadBlockedCnpjs();
+
     const deps: WorkerDeps = {
       fetchPage: async (o) => {
         await touchHeartbeat('pesquisa_avancada', { page: o.page, limit: o.limit, date: o.date });
-        return searchOpeningsByDate(o);
+        // Execução real importa empresas → precisa do resultado completo,
+        // mas SOMENTE depois dos filtros oficiais (com_telefone/somente_celular).
+        return searchOpeningsByDate({ ...o, excludeCnpjs: blockedCnpjs, completo: !isTestRun });
       },
+      isPhoneBlocked: (e164) => blockedPhones.has(e164),
       // fetchDetails intentionally omitted: response.cnpjs already carries
       // the seven required fields. GET /v5/cnpj/{cnpj} is no longer called
       // per-result to keep every run inside the timeout budget.
@@ -812,7 +844,11 @@ export async function runAutomationOnce(
 
     const res = await runCoreLoop(
       {
-        automation,
+        // Fluxo real de importação para WhatsApp exige celular por padrão.
+        automation: {
+          ...automation,
+          filters: { require_mobile_phone: true, ...(automation.filters ?? {}) },
+        },
         requested,
         queryDate,
         runId,

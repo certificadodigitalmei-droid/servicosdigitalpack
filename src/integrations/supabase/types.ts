@@ -506,6 +506,45 @@ export type Database = {
           },
         ]
       }
+      blocked_contact_numbers: {
+        Row: {
+          cnpj_snapshot: string | null
+          company_id: string | null
+          created_at: string
+          id: string
+          phone_canonical: string | null
+          phone_e164: string | null
+          provider_code: string | null
+          provider_status: number | null
+          reason: string
+          source: string
+        }
+        Insert: {
+          cnpj_snapshot?: string | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          phone_canonical?: string | null
+          phone_e164?: string | null
+          provider_code?: string | null
+          provider_status?: number | null
+          reason?: string
+          source?: string
+        }
+        Update: {
+          cnpj_snapshot?: string | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          phone_canonical?: string | null
+          phone_e164?: string | null
+          provider_code?: string | null
+          provider_status?: number | null
+          reason?: string
+          source?: string
+        }
+        Relationships: []
+      }
       campaign_variant_settings: {
         Row: {
           id: number
@@ -645,6 +684,7 @@ export type Database = {
           tipo_telefone: string | null
           uf: string | null
           updated_at: string
+          whatsapp_phone_e164: string | null
         }
         Insert: {
           bairro?: string | null
@@ -694,6 +734,7 @@ export type Database = {
           tipo_telefone?: string | null
           uf?: string | null
           updated_at?: string
+          whatsapp_phone_e164?: string | null
         }
         Update: {
           bairro?: string | null
@@ -743,6 +784,7 @@ export type Database = {
           tipo_telefone?: string | null
           uf?: string | null
           updated_at?: string
+          whatsapp_phone_e164?: string | null
         }
         Relationships: []
       }

@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
-import { Loader2, MessageCircle, Send, Trash2, Users, CheckCircle2, XCircle, RefreshCw, Link2 } from 'lucide-react';
+import { Loader2, MessageCircle, Send, Trash2, Users, CheckCircle2, XCircle, RefreshCw, Link2, Ban, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ import {
   sendWaBatch,
   clearWaApiQueue,
   sendWaTestMessage,
+  cleanupWaQueue,
 } from '@/lib/whatsapp/chakra.functions';
 
 export const Route = createFileRoute('/_authenticated/painel/whatsapp-massa')({
@@ -80,12 +81,13 @@ function WhatsappMassaPage() {
   const send = useServerFn(sendWaBatch);
   const clear = useServerFn(clearWaApiQueue);
   const sendTest = useServerFn(sendWaTestMessage);
+  const cleanup = useServerFn(cleanupWaQueue);
 
   const [cfg, setCfg] = useState<Cfg>(EMPTY);
   const [templateStatus, setTemplateStatus] = useState('PENDING');
   const [lastError, setLastError] = useState<string | null>(null);
   const [hasApiKey, setHasApiKey] = useState(false);
-  const [stats, setStats] = useState({ pending: 0, sent: 0, failed: 0, audience: 0 });
+  const [stats, setStats] = useState({ pending: 0, sent: 0, failed: 0, audience: 0, blocked: 0 });
   const [recent, setRecent] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -200,12 +202,13 @@ function WhatsappMassaPage() {
         </Alert>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[
-          { label: 'Empresas com telefone', value: stats.audience, icon: Users },
+          { label: 'Empresas com celular válido', value: stats.audience, icon: Users },
           { label: 'Na fila', value: stats.pending, icon: Send },
           { label: 'Enviadas', value: stats.sent, icon: CheckCircle2 },
           { label: 'Falhas', value: stats.failed, icon: XCircle },
+          { label: 'Bloqueados/rejeitados', value: stats.blocked, icon: Ban },
         ].map((s) => (
           <Card key={s.label}>
             <CardContent className="flex items-center gap-3 p-4">
@@ -481,7 +484,7 @@ function WhatsappMassaPage() {
               run('enq', async () => {
                 const r: any = await enqueue({ data: { limit: Math.max(1, Math.min(2000, qty)) } });
                 toast.success(
-                  `${r.inserted} contatos adicionados · ${r.skippedNoLink ?? 0} sem link ativo · ${r.skippedNoPhone ?? 0} sem telefone válido · ${r.skippedNoCnpj ?? 0} sem CNPJ`,
+                  `${r.inserted} contatos adicionados · ${r.skippedNoLink ?? 0} sem link ativo · ${r.skippedNoPhone ?? 0} sem celular válido · ${r.skippedNoCnpj ?? 0} sem CNPJ · ${r.skippedBlocked ?? 0} bloqueados`,
                 );
               })
             }
@@ -489,12 +492,28 @@ function WhatsappMassaPage() {
             {busy === 'enq' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Adicionar à fila
           </Button>
           <Button
+            variant="outline"
+            disabled={busy === 'cln'}
+            onClick={() =>
+              run('cln', async () => {
+                const r: any = await cleanup({});
+                toast.success(`${r.removed} contatos inválidos ou bloqueados removidos da fila`);
+              })
+            }
+          >
+            {busy === 'cln' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+            Limpar inválidos
+          </Button>
+          <Button
             disabled={busy === 'send' || !approved || !cfg.active}
             onClick={() =>
               run('send', async () => {
                 const r: any = await send({ data: {} });
                 if (r.error) toast.error(r.error);
-                else toast.success(`Enviadas: ${r.sent} · Falhas: ${r.failed}`);
+                else
+                  toast.success(
+                    `Enviadas: ${r.sent} · Falhas: ${r.failed}${r.blockedPermanently ? ` · Bloqueados: ${r.blockedPermanently}` : ''}`,
+                  );
               })
             }
           >
