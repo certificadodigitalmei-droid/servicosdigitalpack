@@ -20,6 +20,7 @@ import {
   Bot,
   Loader2,
   Trash2,
+  Monitor,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -114,6 +115,7 @@ function PanelLayout() {
 
         
         { title: 'Exibição do Site', icon: LayoutDashboard, to: '/painel/exibicao-site' },
+        { title: 'Visual da Página', icon: Monitor, to: '/painel/visual-pagina' },
         { title: 'Pop-up do Site', icon: MessageSquare, to: '/painel/pop-up-site' },
         { title: 'API Casa dos Dados', icon: KeyRound, to: '/painel/api-casa-dos-dados' },
         { title: 'Auditoria de Fluxo', icon: ClipboardList, to: '/painel/auditoria' },
@@ -136,6 +138,7 @@ function PanelLayout() {
     if (path === '/painel/configuracoes-pagamento') return 'Configurações de Pagamento';
     if (path === '/painel/precos') return 'Preços';
     if (path === '/painel/exibicao-site') return 'Exibição do Site';
+    if (path === '/painel/visual-pagina') return 'Visual da Página';
     if (path === '/painel/pop-up-site') return 'Pop-up do Site';
     if (path === '/painel/api-casa-dos-dados') return 'API Casa dos Dados';
     if (path === '/painel/auditoria') return 'Auditoria de Fluxo';
