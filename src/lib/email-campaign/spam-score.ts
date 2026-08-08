@@ -294,7 +294,7 @@ export function analyzeSpamScore(input: SpamScoreInput): SpamReport {
     score: rounded,
     rules,
     issues: rules.filter((r) => r.penalty > 0).sort((a, b) => b.penalty - a.penalty),
-    verdict: rounded >= 9 ? 'excelente' : rounded >= 7.5 ? 'bom' : rounded >= 5 ? 'atencao' : 'risco',
+    verdict: rounded >= 8 ? 'excelente' : rounded >= 6.5 ? 'bom' : rounded >= 4.5 ? 'atencao' : 'risco',
     stats: {
       subjectLength: subject.length,
       textLength: plain.length,
