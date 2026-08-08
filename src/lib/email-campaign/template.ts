@@ -144,12 +144,12 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   signatureSize: 12,
   disclaimerSize: 11,
 
-  title: 'CNPJ com restrição · pendente',
+  title: 'CNPJ sem certificado digital ativo',
   subtitle: 'Central de Emissão · MEI',
-  heroTitle: 'Certificado Digital pendente',
+  heroTitle: 'Certificado Digital não localizado',
   showHero: true,
   intro:
-    'Prezado(a) *{{NOME_TITULAR}}*,\n\nSeu CNPJ consta como *pendente*: sem Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
+    'Prezado(a) *{{NOME_TITULAR}}*,\n\nNa consulta ao CNPJ *{{CNPJ}}*, não localizamos um Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
   cardTitle: 'Dados do requerente',
   showCard: true,
   buttonLabel: 'Regularizar meu CNPJ',
@@ -158,11 +158,11 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   showWarning: true,
   warningTitle: 'Atenção · pontos em aberto no seu CNPJ',
   warningItems:
-    'Impossibilitado de emitir nota fiscal (NFS-e).\nImpossibilitado de assinar contratos digitais e físicos com CNPJ.\nLimites de crédito empresarial podem ficar restritos em bancos e financeiras PJ.\nA regularidade do CNPJ perante a Receita Federal pode ser afetada.\nO acesso a alguns sistemas do governo pode exigir o certificado digital.\nConsultas cadastrais podem apresentar o CNPJ com situação incompleta.',
-  warningBg: '#fff8ed',
-  warningBorder: '#b45309',
-  warningTitleColor: '#7c2d12',
-  warningTextColor: '#78350f',
+    'A emissão de nota fiscal pode ficar impedida sem o certificado ativo.\nA assinatura de contratos digitais com CNPJ pode ter validade limitada.\nLinhas de crédito empresarial podem ser restringidas em bancos e financeiras.\nA regularidade do CNPJ perante a Receita Federal pode ser afetada.\nO acesso a alguns sistemas do governo pode exigir o certificado digital.\nConsultas cadastrais podem apresentar o CNPJ com situação incompleta.',
+  warningBg: '#eff6ff',
+  warningBorder: '#2563eb',
+  warningTitleColor: '#1e3a8a',
+  warningTextColor: '#1e40af',
 
   showSignature: false,
   signature: '',
@@ -180,10 +180,10 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   avatarUrl: AVATAR_URL,
   avatarSize: 58,
 
-  showGovBar: true,
+  showGovBar: false,
   govBarText: 'Central de emissão · Protocolo {{REFERENCIA}}',
-  govBarBg: '#f2c200',
-  govBarColor: '#4a3800',
+  govBarBg: '#e2e8f0',
+  govBarColor: '#334155',
 
   showBadges: true,
   badgesText: 'SSL 256-bits · LGPD · Validade 12 meses',
@@ -197,9 +197,9 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
 
 
-export const DEFAULT_SUBJECT = 'Restrição no seu CNPJ MEI — regularização pendente';
+export const DEFAULT_SUBJECT = 'Aviso sobre o CNPJ {{CNPJ}} — Certificado Digital';
 export const DEFAULT_PREHEADER =
-  'Verificação de restituição e pendências para o CNPJ {{CNPJ}}.';
+  'Seu CNPJ está sem Certificado Digital ativo. Regularize para evitar limitações.';
 
 export type Vars = Record<string, string>;
 
