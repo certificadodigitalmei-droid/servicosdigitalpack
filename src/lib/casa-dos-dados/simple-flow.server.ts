@@ -188,6 +188,39 @@ export async function runImportBatch(
         continue;
       }
 
+      // Varredura anti-bounce na importação: CNPJ/e-mail já descartados
+      // por risco nunca voltam para a base.
+      {
+        const filters = [`cnpj.eq.${cnpj}`];
+        if (validEmail) filters.push(`email.eq.${validEmail}`);
+        const { data: blocked } = await supabaseAdmin
+          .from('suppression_list')
+          .select('id')
+          .or(filters.join(','))
+          .maybeSingle();
+        if (blocked) {
+          skipped++;
+          continue;
+        }
+        if (validEmail) {
+          const { assessBounceRisk, discardRiskyCompany } = await import(
+            '@/lib/email-hygiene/pre-send-scan.server'
+          );
+          const verdict = await assessBounceRisk(validEmail);
+          if (!verdict.ok) {
+            await discardRiskyCompany(verdict.email, verdict.reason ?? 'risco de bounce', null);
+            try {
+              await supabaseAdmin
+                .from('suppression_list')
+                .insert({ cnpj, reason: verdict.reason ?? 'risco de bounce', source: 'pre_send_scan' } as any);
+            } catch { /* já existe */ }
+            failed.push({ cnpj, error: `descartado: ${verdict.reason ?? 'risco de bounce'}` });
+            continue;
+          }
+        }
+      }
+
+
       const rawAny = raw as any;
       const estab =
         rawAny?.estabelecimento && typeof rawAny.estabelecimento === 'object'
