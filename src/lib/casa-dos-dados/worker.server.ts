@@ -149,6 +149,8 @@ export type WorkerDeps = {
   insertLink: (args: { companyId: string; cnpj: string; nome: string; isTestRecord: boolean; dataQualityStatus: string }) =>
     Promise<{ id: string; publicToken: string; publicUrl: string; checkoutUrl: string }>;
   updateQueueRow: (args: { queueId: string; companyId: string | null; companyLinkId: string | null; wasNewCompany: boolean; wasNewLink: boolean }) => Promise<void>;
+  /** Lista permanente de rejeição — telefone bloqueado nunca reimporta. */
+  isPhoneBlocked?: (e164: string) => Promise<boolean> | boolean;
 };
 
 export type CoreLoopInput = {
