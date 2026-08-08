@@ -305,7 +305,8 @@ export function normalizeCasaDosDadosCompany(item: Record<string, unknown>): Nor
     capital_social: descOf(pickAny(item, ['capital_social'])),
     quadro_societario: (item as any).qsa ?? (item as any).quadro_societario ?? null,
     email: (isEmailLike(contatoEmail) ? contatoEmail : null) ?? extractEmail(item),
-    telefone: contatoTelefone ?? extractPhone(item),
+    // Só expomos telefone quando é celular válido — fixo nunca entra no fluxo.
+    telefone: extractMobile(item),
     celular: extractMobile(item),
     raw: item,
   };
