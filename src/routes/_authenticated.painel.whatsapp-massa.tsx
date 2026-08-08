@@ -481,7 +481,7 @@ function WhatsappMassaPage() {
               run('enq', async () => {
                 const r: any = await enqueue({ data: { limit: Math.max(1, Math.min(2000, qty)) } });
                 toast.success(
-                  `${r.inserted} contatos adicionados · ${r.skippedNoLink ?? 0} sem link ativo · ${r.skippedNoPhone ?? 0} sem telefone válido`,
+                  `${r.inserted} contatos adicionados · ${r.skippedNoLink ?? 0} sem link ativo · ${r.skippedNoPhone ?? 0} sem telefone válido · ${r.skippedNoCnpj ?? 0} sem CNPJ`,
                 );
               })
             }
