@@ -21,7 +21,7 @@ const base = {
   pluginId: '3f095662-d969-42b0-a41e-e729e1f46328',
   whatsappPhoneNumberId: '1290004607527438',
   to: '5511999999999',
-  templateName: 'consulta_certificado_mei_v1',
+  templateName: 'certificado1',
   language: 'pt_BR',
   razao: 'Empresa Teste',
   cnpj: '12345678000199',
@@ -51,7 +51,7 @@ describe('sendChakraTemplate', () => {
     const body = JSON.parse(init.body);
     expect(body).toEqual({
       whatsappPhoneNumberId: '1290004607527438',
-      templateName: 'consulta_certificado_mei_v1',
+      templateName: 'certificado1',
       mapping: [
         { schemaPropertyName: 'razao', schemaPropertyValue: 'Empresa Teste' },
         { schemaPropertyName: 'cnpj', schemaPropertyValue: '12345678000199' },
@@ -92,14 +92,14 @@ describe('sendChakraTemplate', () => {
 describe('fetchChakraTemplateStatus', () => {
   it('localiza o template e devolve o status', async () => {
     const fetchImpl = vi.fn(async () =>
-      jsonRes({ _data: { data: [{ name: 'outro', status: 'APPROVED' }, { name: 'consulta_certificado_mei_v1', status: 'pending' }] } }),
+      jsonRes({ _data: { data: [{ name: 'outro', status: 'APPROVED' }, { name: 'certificado1', status: 'pending' }] } }),
     );
     const res = await fetchChakraTemplateStatus({
       apiBaseUrl: 'https://api.chakrahq.com',
       apiKey: 'secret-key',
       apiVersion: 'v19.0',
       wabaId: '1996285911002627',
-      templateName: 'consulta_certificado_mei_v1',
+      templateName: 'certificado1',
       fetchImpl: fetchImpl as any,
     });
     expect(res).toEqual({ ok: true, status: 'PENDING' });
@@ -115,7 +115,7 @@ describe('fetchChakraTemplateStatus', () => {
       apiKey: 'secret-key',
       apiVersion: 'v99.0',
       wabaId: '1996285911002627',
-      templateName: 'consulta_certificado_mei_v1',
+      templateName: 'certificado1',
       fetchImpl: fetchImpl as any,
     });
     expect(res.ok).toBe(false);

@@ -54,7 +54,7 @@ const EMPTY: Cfg = {
   waba_id: '',
   whatsapp_api_version: 'v19.0',
   button_base_url: 'https://seu-certificado-mei-digital.online/c/',
-  template_name: 'consulta_certificado_mei_v1',
+  template_name: 'certificado1',
   template_language: 'pt_BR',
   template_body: '',
   active: false,
