@@ -53,7 +53,7 @@ function testNormalizerNested() {
   assert(n.municipio === 'SAO PAULO', `municipio=${n.municipio}`);
   assert(n.uf === 'SP', `uf=${n.uf}`);
   assert(n.email === 'ceo@acme.com', `email=${n.email}`);
-  assert(n.telefone === '11 99999-0000', `tel=${n.telefone}`);
+  assert(n.telefone === '5511999990000', `tel=${n.telefone}`);
   assert(!!n.endereco && n.endereco.includes('DAS FLORES'), `endereco=${n.endereco}`);
   const v = validateCompanyItem(raw);
   assert(v.complete === true, `nested payload must validate as complete, missing=${v.missingFields.join(',')}`);
