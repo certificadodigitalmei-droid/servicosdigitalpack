@@ -35,20 +35,20 @@ describe('validateBrazilianMobile', () => {
 
 describe('extractValidBrazilianMobile', () => {
   it('prefere o contato marcado como celular', () => {
-    const r = extractValidBrazilianMobile({
-      ddd: '11',
-      telefones: [
+    const r = extractValidBrazilianMobile(
+      [
         { tipo: 'FIXO', ddd: '11', numero: '33334444' },
         { tipo: 'CELULAR', ddd: '11', numero: '999998877' },
       ],
-    });
+      '11',
+    );
     expect(r.valid).toBe(true);
     expect(r.e164).toBe('5511999998877');
   });
 
   it('retorna null quando só há fixo', () => {
     expect(
-      extractValidBrazilianMobile({ ddd: '11', telefones: [{ tipo: 'FIXO', ddd: '11', numero: '33334444' }] }).valid,
+      extractValidBrazilianMobile([{ tipo: 'FIXO', ddd: '11', numero: '33334444' }], '11').valid,
     ).toBe(false);
   });
 });
