@@ -430,13 +430,13 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
     ${D.showStatusBar !== false ? `
     <tr><td style="padding:0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#fffbeb" style="background:#fffbeb;border-bottom:1px solid #d97706;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#eff6ff" style="background:#eff6ff;border-bottom:1px solid #2563eb;">
         <tr><td class="l-pad" style="padding:14px ${px}px;font-family:Arial,sans-serif;">
-          <div style="font-size:10px;letter-spacing:1.2px;color:#92400e;font-weight:700;margin-bottom:6px;text-transform:uppercase;">${esc(S(D.statusLabel || 'Situação do cadastro'))}</div>
-          <div style="font-size:16px;font-weight:800;color:#92400e;letter-spacing:0.5px;text-transform:uppercase;">
-            <span style="display:inline-block;width:9px;height:9px;background:#d97706;border-radius:50%;vertical-align:middle;margin-right:8px;"></span>${esc(S(D.statusValue || 'Pendente'))}
+          <div style="font-size:10px;letter-spacing:1.2px;color:#1e3a8a;font-weight:700;margin-bottom:6px;text-transform:uppercase;">${esc(S(D.statusLabel || 'Situação do cadastro'))}</div>
+          <div style="font-size:16px;font-weight:800;color:#1e40af;letter-spacing:0.5px;text-transform:uppercase;">
+            <span style="display:inline-block;width:9px;height:9px;background:#2563eb;border-radius:50%;vertical-align:middle;margin-right:8px;"></span>${esc(S(D.statusValue || 'Pendente'))}
           </div>
-          ${D.statusNote ? `<div style="font-size:11.5px;color:#78350f;margin-top:6px;line-height:1.5;">${esc(S(D.statusNote))}</div>` : ''}
+          ${D.statusNote ? `<div style="font-size:11.5px;color:#334155;margin-top:6px;line-height:1.5;">${esc(S(D.statusNote))}</div>` : ''}
         </td></tr>
       </table>
     </td></tr>` : ''}
