@@ -88,9 +88,44 @@ const BLUE_PALETTES = {
     warningTitleColor: '#3730a3',
     warningTextColor: '#4f46e5',
   },
+  azulAlerta: {
+    headerBg: '#1e3a8a',
+    heroTitleColor: '#1e3a8a',
+    buttonBg: '#1e40af',
+    govBarBg: '#dbeafe',
+    govBarColor: '#1e3a8a',
+    warningBg: '#fffbeb',
+    warningBorder: '#d97706',
+    warningTitleColor: '#92400e',
+    warningTextColor: '#78350f',
+  },
 } as const;
 
 export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
+  {
+    id: 'azul-alerta',
+    name: 'Alerta — Riscos ativos no CNPJ',
+    description: 'Tom de alerta institucional. Destaca riscos sem cair em spam.',
+    accent: BLUE_PALETTES.azulAlerta.headerBg,
+    subject: 'Riscos ativos no CNPJ {{CNPJ}} — regularize agora',
+    preheader: 'Seu CNPJ está sem Certificado Digital ativo e pode ter operações limitadas.',
+    design: {
+      ...base,
+      ...BLUE_PALETTES.azulAlerta,
+      govBarText: 'ALERTA CADASTRAL · PROTOCOLO {{REFERENCIA}}',
+      title: 'Riscos ativos no seu CNPJ',
+      subtitle: 'Central de Emissão · MEI',
+      heroTitle: 'Sua empresa pode estar impedida de operar regularmente',
+      intro:
+        'Prezado(a) *{{NOME_TITULAR}}*,\n\nIdentificamos que o CNPJ *{{CNPJ}}* está *sem Certificado Digital ativo*. Essa pendência pode limitar operações importantes do seu negócio.\n\nVeja abaixo o que está em risco enquanto a situação não for regularizada:',
+      warningTitle: 'O que pode estar comprometido no seu CNPJ',
+      warningItems:
+        'Emissão de nota fiscal (NFS-e) pode ficar indisponível.\nAssinatura de contratos digitais com validade jurídica pode ser bloqueada.\nAcesso a linhas de crédito empresarial pode ser limitado por bancos.\nO cadastro pode ser considerado incompleto em consultas oficiais.',
+      buttonLabel: 'REGULARIZAR MEU CNPJ AGORA',
+      statusValue: 'PENDENTE',
+      statusNote: 'Certificado e-CNPJ não localizado. Regularização recomendada.',
+    },
+  },
   {
     id: 'azul-cadastral',
     name: 'Redação 1 — Azul institucional',
