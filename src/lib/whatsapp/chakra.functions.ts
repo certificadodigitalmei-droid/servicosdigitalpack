@@ -310,8 +310,8 @@ export const sendWaBatch = createServerFn({ method: 'POST' })
         to: item.phone,
         templateName: cfg.template_name,
         language: cfg.template_language ?? 'pt_BR',
-        razao: item.company_name ?? '',
-        cnpj: item.cnpj ?? '',
+        razao,
+        cnpj,
         buttonToken: token,
       });
 
