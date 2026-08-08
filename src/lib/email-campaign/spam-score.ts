@@ -242,9 +242,53 @@ export function analyzeSpamScore(input: SpamScoreInput): SpamReport {
     push('from_domain', 'Domínio do remetente', 1.5, 'Remetente em domínio gratuito.', true);
   else push('from_domain', 'Domínio do remetente', 0, 'Domínio próprio de envio.');
 
+  // 15. Variáveis não substituídas ({{X}} sobrando quebra a leitura e é gatilho)
+  const leftovers = Array.from(
+    new Set([...(`${subject} ${plain}`.match(/\{\{\s*[A-Z0-9_]+\s*\}\}/g) ?? [])]),
+  );
+  if (leftovers.length)
+    push(
+      'unresolved_vars',
+      'Variáveis substituídas',
+      1.0,
+      `Sobraram: ${leftovers.join(', ')}.`,
+      true,
+    );
+  else push('unresolved_vars', 'Variáveis substituídas', 0, 'Nenhuma variável sobrando.');
+
+  // 16. Imagens sem texto alternativo
+  const imgsNoAlt = (html.match(/<img\b(?![^>]*\balt\s*=)[^>]*>/gi) ?? []).length;
+  if (imgsNoAlt > 0)
+    push('img_alt', 'Texto alternativo nas imagens', 0.4, `${imgsNoAlt} imagem(ns) sem alt.`);
+  else push('img_alt', 'Texto alternativo nas imagens', 0, 'Todas as imagens têm alt.');
+
+  // 17. Tamanho do HTML (acima de ~102 KB o Gmail corta a mensagem)
+  if (html.length > 102000)
+    push('html_size', 'Tamanho do HTML', 0.8, `${Math.round(html.length / 1024)} KB — o Gmail corta.`);
+  else push('html_size', 'Tamanho do HTML', 0, `${Math.round(html.length / 1024)} KB.`);
+
+  // 18. Cabeçalho List-Unsubscribe — o Mail-Tester penaliza a ausência e a API
+  // de envio atual não permite injetar esse cabeçalho.
+  push(
+    'list_unsubscribe',
+    'Cabeçalho List-Unsubscribe',
+    0.8,
+    'O provedor de envio não expõe esse cabeçalho; o Mail-Tester desconta por isso.',
+  );
+
+  // 19. Fatores que só um teste real mede (SPF/DKIM/DMARC, blacklists,
+  // reputação do IP e do domínio). Nunca damos nota cheia sem esse teste.
+  push(
+    'infra_unverified',
+    'Autenticação e reputação (não verificável aqui)',
+    0.7,
+    'SPF, DKIM, DMARC, blacklists e reputação do IP só são medidos no envio real (Mail-Tester).',
+  );
+
   const totalPenalty = rules.reduce((s, r) => s + r.penalty, 0);
   const score = Math.max(0, Math.min(10, 10 - totalPenalty));
   const rounded = Number(score.toFixed(1));
+
 
   return {
     score: rounded,
