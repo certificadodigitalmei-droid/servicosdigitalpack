@@ -148,6 +148,7 @@ function PanelLayout() {
     if (path === '/painel/remetente-email') return 'Remetente de E-mail';
     if (path === '/painel/envio-massa') return 'Envio em Massa';
     if (path === '/painel/enviados') return 'E-mails Enviados';
+    if (path === '/painel/entregabilidade') return 'Entregabilidade';
     return 'Painel';
   };
 
