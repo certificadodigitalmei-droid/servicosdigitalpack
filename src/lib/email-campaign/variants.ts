@@ -108,7 +108,6 @@ const IMPACTO_ACESSO_GOV = 'O acesso a alguns sistemas do governo pode exigir o 
 const IMPACTO_CONSULTAS = 'Consultas cadastrais podem mostrar o CNPJ com situação incompleta.';
 const IMPACTO_RECEITA = 'A Receita Federal recomenda manter o certificado digital atualizado.';
 const IMPACTO_REGULARIDADE = 'A regularidade da empresa pode ser prejudicada em processos que exigem o certificado.';
-const IMPACTO_PRAZO = 'Resolver logo evita burocracia extra e atrasos em obrigações.';
 
 export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
   {
@@ -136,7 +135,6 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
         IMPACTO_CONSULTAS,
         IMPACTO_REGULARIDADE,
         IMPACTO_RECEITA,
-        IMPACTO_PRAZO,
       ].join('\n'),
       buttonLabel: 'REGULARIZAR MEU CNPJ AGORA',
       statusValue: 'EM ABERTO',
@@ -167,7 +165,6 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
         IMPACTO_ACESSO_GOV,
         IMPACTO_CONSULTAS,
         IMPACTO_RECEITA,
-        IMPACTO_PRAZO,
       ].join('\n'),
       buttonLabel: 'REGULARIZAR MEU CNPJ',
       statusValue: 'EM ABERTO',
@@ -198,7 +195,6 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
         IMPACTO_ACESSO_GOV,
         IMPACTO_REGULARIDADE,
         IMPACTO_RECEITA,
-        IMPACTO_PRAZO,
       ].join('\n'),
       buttonLabel: 'REGULARIZAR AGORA MEU CNPJ',
       statusValue: 'EM ABERTO',
@@ -263,7 +259,6 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
         IMPACTO_ACESSO_GOV,
         IMPACTO_REGULARIDADE,
         IMPACTO_RECEITA,
-        IMPACTO_PRAZO,
       ].join('\n'),
       buttonLabel: 'QUERO REGULARIZAR MEU CNPJ',
       statusValue: 'EM ABERTO',
@@ -296,7 +291,6 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
         IMPACTO_CREDITO,
         IMPACTO_ACESSO_GOV,
         IMPACTO_RECEITA,
-        IMPACTO_PRAZO,
       ].join('\n'),
       buttonLabel: 'REGULARIZAR MEU CNPJ',
       statusValue: 'EM ABERTO',
@@ -328,7 +322,6 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
         IMPACTO_CREDITO,
         IMPACTO_REGULARIDADE,
         IMPACTO_RECEITA,
-        IMPACTO_PRAZO,
       ].join('\n'),
       buttonLabel: 'REGULARIZAR MEU CNPJ',
       statusValue: 'EM ABERTO',
