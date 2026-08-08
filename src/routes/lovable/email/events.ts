@@ -3,22 +3,18 @@ import { createFileRoute } from '@tanstack/react-router'
 
 // Recebe eventos de entrega da infraestrutura de e-mail e limpa
 // automaticamente da base qualquer endereço que deu bounce/reclamação.
+async function purge(recipient: string, reason: 'bounce' | 'complaint' | 'unsubscribe') {
+  if (!recipient) return
+  const { purgeBouncedEmail } = await import('@/lib/email-hygiene/bounce-cleanup.server')
+  await purgeBouncedEmail(recipient, reason)
+}
+
 const handler = createEmailWebhookHandler({
-  onEvent: async (event: any) => {
-    const email: string | undefined =
-      event?.data?.recipient ?? event?.data?.to ?? event?.data?.email
-
-    if (!email) return
-
-    const reason =
-      event.type === 'email.complaint'
-        ? 'complaint'
-        : event.type === 'email.unsubscribed'
-          ? 'unsubscribe'
-          : 'bounce'
-
-    const { purgeBouncedEmail } = await import('@/lib/email-hygiene/bounce-cleanup.server')
-    await purgeBouncedEmail(email, reason as any)
+  apiKey: process.env.LOVABLE_API_KEY!,
+  on: {
+    'email.bounced': (event) => purge(event.data.recipient, 'bounce'),
+    'email.complaint': (event) => purge(event.data.recipient, 'complaint'),
+    'email.unsubscribed': (event) => purge(event.data.recipient, 'unsubscribe'),
   },
 })
 
