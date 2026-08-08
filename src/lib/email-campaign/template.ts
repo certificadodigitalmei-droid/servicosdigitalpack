@@ -344,10 +344,10 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
       const border = last ? '' : 'border-bottom:1px solid #e6eaef;';
       const isAlert = k === 'Situação' || k === 'Validade';
       const valStyle = isAlert
-        ? `color:${D.warningTitleColor};font-weight:700;`
+        ? `color:#d97706;font-weight:700;`
         : `color:${D.textColor};font-weight:700;`;
       const icon = isAlert
-        ? `<span style="color:${D.warningTitleColor};font-weight:700;font-size:15px;">&#10007;</span>`
+        ? `<span style="color:#d97706;font-weight:700;font-size:15px;">&#10007;</span>`
         : '<span style="color:#16a34a;font-weight:700;font-size:15px;">&#10003;</span>';
       return `<tr>
         <td class="rowKey" style="${border}padding:10px 16px;width:34%;font-family:Arial,sans-serif;font-size:${keySize}px;color:#64748b;vertical-align:top;line-height:1.45;">${esc(String(k))}</td>
