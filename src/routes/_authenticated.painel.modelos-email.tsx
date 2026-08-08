@@ -15,6 +15,7 @@ import {
   saveCampaignVariantSelection,
 } from '@/lib/email-campaign/variants.functions';
 import { CAMPAIGN_VARIANTS } from '@/lib/email-campaign/variants';
+import { SpamScorePanel } from '@/components/painel/SpamScorePanel';
 import {
   DEFAULT_DESIGN,
   DEFAULT_SUBJECT,
@@ -84,6 +85,7 @@ function ModelosEmailPage() {
         <TabsList>
           <TabsTrigger value="transacionais">Visão geral</TabsTrigger>
           <TabsTrigger value="rotacao">Modelos de campanha (rotação)</TabsTrigger>
+          <TabsTrigger value="spam">Teste de spam</TabsTrigger>
         </TabsList>
 
         <TabsContent value="transacionais" className="mt-4">
@@ -92,6 +94,10 @@ function ModelosEmailPage() {
 
         <TabsContent value="rotacao" className="mt-4">
           <RotacaoModelos />
+        </TabsContent>
+
+        <TabsContent value="spam" className="mt-4">
+          <SpamScorePanel vars={PREVIEW_VARS} />
         </TabsContent>
       </Tabs>
     </div>
