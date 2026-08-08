@@ -19,10 +19,28 @@ export type WaApiSettings = {
 export function normalizePhone(raw: string | null | undefined, ddd?: string | null): string | null {
   if (!raw) return null;
   let digits = String(raw).replace(/\D/g, '');
-  if (digits.length <= 9 && ddd) digits = String(ddd).replace(/\D/g, '') + digits;
-  if (digits.startsWith('55') && digits.length >= 12) return digits;
-  if (digits.length === 10 || digits.length === 11) return '55' + digits;
-  return digits.length >= 12 ? digits : null;
+  if (!digits) return null;
+
+  // Remove prefixo internacional 55 já presente (evita duplicar depois)
+  let national = digits;
+  if (national.length > 11 && national.startsWith('55')) national = national.slice(2);
+
+  // Completa com o DDD separado apenas se ainda for número local (8 ou 9 dígitos)
+  if ((national.length === 8 || national.length === 9) && ddd) {
+    const d = String(ddd).replace(/\D/g, '');
+    if (d.length === 2) national = d + national;
+  }
+
+  // Remove DDD duplicado (ex.: 1111999999999)
+  if (
+    (national.length === 12 || national.length === 13) &&
+    national.slice(0, 2) === national.slice(2, 4)
+  ) {
+    national = national.slice(2);
+  }
+
+  if (national.length !== 10 && national.length !== 11) return null;
+  return '55' + national;
 }
 
 export function pickCompanyPhone(company: { ddd?: string | null; telefones?: unknown }): string | null {
