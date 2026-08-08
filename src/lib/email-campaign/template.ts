@@ -462,16 +462,16 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
     ${D.showWarning ? `
     <tr><td class="l-pad" style="padding:0 ${px}px 30px ${px}px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${D.warningBg}" style="background:${D.warningBg};background-color:${D.warningBg};border:1px solid ${D.warningBorder};border-left:5px solid ${D.warningBorder};border-radius:6px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#fffbeb" style="background:#fffbeb;background-color:#fffbeb;border:1px solid #d97706;border-left:5px solid #d97706;border-radius:6px;">
         <tr><td style="padding:16px 22px 8px 22px;font-family:Arial,sans-serif;">
-          <div style="color:${D.warningTitleColor};font-size:${D.warningTitleSize || 14}px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;line-height:1.35;">
-            <span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:${D.warningBorder};color:#ffffff;border-radius:50%;font-size:13px;font-weight:900;margin-right:8px;vertical-align:middle;">!</span>${warningTitle}
+          <div style="color:#92400e;font-size:${D.warningTitleSize || 14}px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;line-height:1.35;">
+            <span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:#d97706;color:#ffffff;border-radius:50%;font-size:13px;font-weight:900;margin-right:8px;vertical-align:middle;">!</span>${warningTitle}
           </div>
         </td></tr>
         <tr><td style="padding:6px 22px 18px 22px;font-family:Arial,sans-serif;">
           ${warningItemsList.map((item) => `
-            <div style="color:${D.warningTextColor};font-size:${D.warningItemsSize || 13}px;line-height:1.6;font-weight:700;padding:6px 0;border-top:1px dashed #e5e7eb;">
-              <span style="color:${D.warningBorder};font-weight:900;margin-right:8px;">✕</span>${inlineFormat(item)}
+            <div style="color:#78350f;font-size:${D.warningItemsSize || 13}px;line-height:1.6;font-weight:700;padding:6px 0;border-top:1px dashed #e5e7eb;">
+              <span style="color:#d97706;font-weight:900;margin-right:8px;">✕</span>${inlineFormat(item)}
             </div>`).join('')}
         </td></tr>
       </table>
