@@ -44,6 +44,39 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { GlobalFloatingPanels } from '@/components/painel/GlobalFloatingPanels';
 
+type CleanupReport = {
+  success: boolean;
+  message: string;
+  removed: Record<string, number>;
+  remaining: Record<string, number>;
+  error?: string;
+};
+
+const CLEANUP_LABELS: Record<string, string> = {
+  companies: 'Empresas',
+  company_links: 'Links',
+  email_send_queue: 'Fila/histórico de e-mail',
+  contact_queue: 'Fila antiga de contato',
+  automatic_company_queue: 'Fila de importação',
+  automatic_company_query_runs: 'Execuções de importação',
+  email_campaign_recipients: 'Destinatários de campanha',
+  email_campaigns: 'Campanhas de e-mail',
+  whatsapp_queue: 'Fila WhatsApp',
+  whatsapp_campaign_items: 'Itens WhatsApp',
+  whatsapp_campaigns: 'Campanhas WhatsApp',
+  orders: 'Pedidos não pagos',
+  orders_paid: 'Vendas pagas preservadas',
+  customers: 'Clientes preservados',
+  unprotected_companies: 'Empresas não protegidas',
+  unprotected_company_links: 'Links não protegidos',
+};
+
+function formatCleanupCounts(counts: Record<string, number>) {
+  const entries = Object.entries(counts).filter(([, count]) => count !== 0);
+  if (entries.length === 0) return 'Nenhum registro.';
+  return entries.map(([key, count]) => `• ${CLEANUP_LABELS[key] ?? key}: ${count.toLocaleString('pt-BR')}`).join('\n');
+}
+
 export const Route = createFileRoute('/_authenticated/painel')({
   component: PanelLayout,
 });
@@ -61,6 +94,7 @@ function PanelLayout() {
   const [hydrated, setHydrated] = useState(false);
   const doCleanup = useServerFn(cleanupUnsentCompanies);
   const [cleaning, setCleaning] = useState(false);
+  const [cleanupReport, setCleanupReport] = useState<CleanupReport | null>(null);
 
   const handleCleanup = async () => {
 
@@ -82,13 +116,13 @@ function PanelLayout() {
     setCleaning(true);
     try {
       const result = await doCleanup({ data: { confirm: true } });
+      const report = result as CleanupReport;
+      setCleanupReport(report);
       if (result.success) {
-        const removed = (result as any).removed as Record<string, number> | undefined;
-        const total = removed ? Object.values(removed).reduce((a, b) => a + b, 0) : 0;
-        toast.success(`${result.message}${removed ? ` (${total} registro(s) removido(s))` : ''}`);
-        if (removed) console.table(removed);
+        const total = Object.values(report.removed).reduce((a, b) => a + b, 0);
+        toast.success(`${result.message} ${total.toLocaleString('pt-BR')} registro(s) removido(s).`);
       } else {
-        toast.error('Erro na limpeza: ' + (result.message || result.error));
+        toast.error('Erro na limpeza: ' + (report.error || result.message));
       }
     } catch (e: any) {
       toast.error('Falha ao executar limpeza: ' + (e?.message ?? 'erro'));
@@ -275,6 +309,32 @@ function PanelLayout() {
           </div>
 
           <div className="mx-auto max-w-7xl px-6 py-8 md:px-8">
+            {cleanupReport && (
+              <div className={cn(
+                'mb-6 border p-4 shadow-sm',
+                cleanupReport.success ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50',
+              )}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="font-semibold text-slate-900">
+                      {cleanupReport.success ? 'Limpeza concluída e verificada' : 'Limpeza não concluída'}
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-700">{cleanupReport.error ?? cleanupReport.message}</p>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => setCleanupReport(null)}>Fechar</Button>
+                </div>
+                <div className="mt-4 grid gap-4 text-sm md:grid-cols-2">
+                  <div>
+                    <div className="font-semibold text-slate-800">Removido</div>
+                    <pre className="mt-1 whitespace-pre-wrap font-sans text-slate-700">{formatCleanupCounts(cleanupReport.removed)}</pre>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-slate-800">Restante após verificação</div>
+                    <pre className="mt-1 whitespace-pre-wrap font-sans text-slate-700">{formatCleanupCounts(cleanupReport.remaining)}</pre>
+                  </div>
+                </div>
+              </div>
+            )}
             {hydrated ? (
               <Outlet />
             ) : (

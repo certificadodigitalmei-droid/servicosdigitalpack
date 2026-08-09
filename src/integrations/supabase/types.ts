@@ -2369,6 +2369,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_cleanup_unpaid_data: { Args: never; Returns: Json }
       claim_automation_by_id: {
         Args: { _id: string }
         Returns: {
