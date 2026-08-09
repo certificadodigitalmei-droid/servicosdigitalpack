@@ -4,6 +4,8 @@ import { Info, FileCheck2, Lock, User, CheckCircle2, BadgeCheck, CalendarCheck, 
 
 
 import { CertificatePopup } from '@/components/CertificatePopup';
+import { GovConsultaLoader } from '@/components/GovConsultaLoader';
+import { hasSeenIntro, markIntroSeen, prefersReducedMotion, shouldPlayIntro } from '@/lib/intro-animation';
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
@@ -126,11 +128,41 @@ function TokenHomePage() {
     trackEvent(token, 'view_link');
   }, [token]);
 
+  // Animação de consulta: toda entrada direta em /c/$token passa por ela uma
+  // única vez por sessão (o /acesso/$token já marca antes de navegar).
+  const [introReady, setIntroReady] = useState(false);
+  const [playIntro, setPlayIntro] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const store = window.sessionStorage;
+    const play =
+      search.issuing !== 1 &&
+      shouldPlayIntro({ seen: hasSeenIntro(store, token), reducedMotion: prefersReducedMotion(window) });
+    if (play) {
+      setPlayIntro(true);
+      return;
+    }
+    markIntroSeen(store, token);
+    setIntroReady(true);
+  }, [token, search.issuing]);
 
-
-
+  if (!introReady) {
+    if (!playIntro) return <div className="min-h-screen bg-white" />;
+    return (
+      <GovConsultaLoader
+        cnpj={row.cnpj ?? undefined}
+        nome={nomeFmt !== '—' ? nomeFmt : undefined}
+        onFinish={() => {
+          markIntroSeen(typeof window !== 'undefined' ? window.sessionStorage : null, token);
+          setPlayIntro(false);
+          setIntroReady(true);
+        }}
+      />
+    );
+  }
 
   return (
+
     <Page>
       {issuing && <IssuingOverlay cnpjFmt={cnpjFmt} />}
 

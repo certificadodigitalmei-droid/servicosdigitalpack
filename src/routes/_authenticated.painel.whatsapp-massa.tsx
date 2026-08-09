@@ -8,7 +8,6 @@ import {
   Send,
   Users,
   CheckCircle2,
-  XCircle,
   RefreshCw,
   Ban,
   Play,
@@ -17,6 +16,9 @@ import {
   Search,
   Trash2,
   Clock,
+  HeartPulse,
+  Download,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,8 +40,11 @@ import {
   messagesPerHour,
   type PacePresetId,
 } from '@/lib/whatsapp/campaign-logic';
+import { healthLabel, NOT_REPORTED } from '@/lib/whatsapp/health-logic';
 import {
   getWaCampaignDashboard,
+  getWaAccountHealth,
+  exportWaCampaignCsv,
   syncWaTemplates,
   selectWaTemplate,
   createWaCampaign,
@@ -57,7 +62,7 @@ export const Route = createFileRoute('/_authenticated/painel/whatsapp-massa')({
       { title: 'Campanhas de WhatsApp | Central MEI' },
       {
         name: 'description',
-        content: 'Gerencie campanhas oficiais de WhatsApp: modelos aprovados, ritmo de envio, fila e acompanhamento.',
+        content: 'Painel operacional do WhatsApp: saúde da conta, consumo em 24 h, modelos aprovados, fila e campanhas.',
       },
     ],
   }),
@@ -82,13 +87,34 @@ const CAMPAIGN_LABEL: Record<string, string> = {
 const ITEM_LABEL: Record<string, string> = {
   pending: 'Na fila',
   sending: 'Enviando',
-  sent: 'Enviada',
+  sent: 'Aceita pela API',
   failed: 'Falhou',
   blocked: 'Bloqueada',
 };
 
+function fmtDate(v: string | null | undefined): string {
+  if (!v) return '—';
+  try {
+    return new Date(v).toLocaleString('pt-BR');
+  } catch {
+    return '—';
+  }
+}
+
+function Field({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  const missing = value === NOT_REPORTED;
+  return (
+    <div className="rounded-lg border bg-white p-3" title={missing ? hint ?? 'Confira no WhatsApp Manager da Meta.' : undefined}>
+      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
+      <div className={`text-sm font-semibold ${missing ? 'text-slate-400' : 'text-slate-800'}`}>{value}</div>
+    </div>
+  );
+}
+
 function WhatsappCampanhasPage() {
   const loadDash = useServerFn(getWaCampaignDashboard);
+  const loadHealth = useServerFn(getWaAccountHealth);
+  const doExport = useServerFn(exportWaCampaignCsv);
   const doSync = useServerFn(syncWaTemplates);
   const doSelect = useServerFn(selectWaTemplate);
   const doCreate = useServerFn(createWaCampaign);
@@ -102,6 +128,7 @@ function WhatsappCampanhasPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [dash, setDash] = useState<any>(null);
+  const [health, setHealth] = useState<any>(null);
   const [selectedTemplate, setSelectedTemplate] = useState('');
 
   // Campanha nova
@@ -135,6 +162,8 @@ function WhatsappCampanhasPage() {
   const finalQty = Math.max(1, Number(customQty || qty) || 1);
   const eta = estimateDurationSeconds(finalQty, interval);
 
+  const canSend = health?.verdict?.canSend !== false;
+
   const refresh = async () => {
     try {
       const res: any = await loadDash({});
@@ -148,6 +177,15 @@ function WhatsappCampanhasPage() {
     }
   };
 
+  const refreshHealth = async (force = false) => {
+    try {
+      const res: any = await loadHealth({ data: { force } });
+      setHealth(res);
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao consultar a saúde da conta');
+    }
+  };
+
   const refreshDetail = async (id: string, p = page, f = itemFilter) => {
     const res: any = await loadDetail({ data: { id, status: f, page: p } });
     setDetail(res);
@@ -155,13 +193,21 @@ function WhatsappCampanhasPage() {
 
   useEffect(() => {
     void refresh();
+    void refreshHealth(false);
+    // Autoatualização moderada: painel a cada 30 s, saúde a cada 5 min.
+    const t1 = window.setInterval(() => void refresh(), 30_000);
+    const t2 = window.setInterval(() => void refreshHealth(false), 300_000);
+    return () => {
+      window.clearInterval(t1);
+      window.clearInterval(t2);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!activeId) return;
     void refreshDetail(activeId, page, itemFilter);
-    const t = window.setInterval(() => void refreshDetail(activeId, page, itemFilter), 8000);
+    const t = window.setInterval(() => void refreshDetail(activeId, page, itemFilter), 15000);
     return () => window.clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, page, itemFilter]);
@@ -187,7 +233,10 @@ function WhatsappCampanhasPage() {
     );
   }
 
-  const m = dash?.metrics ?? { audience: 0, sentToday: 0, sent24h: 0, sentHour: 0, blocked: 0 };
+  const m = dash?.metrics ?? {};
+  const h = health?.health ?? null;
+  const log = (dash?.log ?? []) as any[];
+  const failures = log.filter((l) => l.status === 'failed' || l.status === 'blocked');
   const lastSync = templates.reduce<string | null>(
     (acc, t) => (t.synced_at && (!acc || t.synced_at > acc) ? t.synced_at : acc),
     null,
@@ -199,10 +248,10 @@ function WhatsappCampanhasPage() {
         <div className="min-w-0">
           <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
             <MessageCircle className="h-6 w-6 text-emerald-600" />
-            Campanhas de WhatsApp
+            WhatsApp em Massa
           </h1>
           <p className="text-sm text-slate-500">
-            Escolha um modelo aprovado, defina o ritmo e acompanhe cada mensagem enviada.
+            Acompanhe a saúde da conta, o consumo das últimas 24 horas e cada mensagem enviada.
           </p>
         </div>
         <Badge variant={hasApproved ? 'default' : 'secondary'}>
@@ -218,43 +267,224 @@ function WhatsappCampanhasPage() {
         </Alert>
       )}
 
-      {!hasApproved && (
-        <Alert>
-          <AlertDescription>
-            Nenhum modelo está aprovado no momento, então iniciar e enviar continuam bloqueados. A aprovação depende da
-            Meta — sincronize os modelos depois que ela liberar.
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* 1. SAÚDE DA CONTA */}
+      <Card className={canSend ? '' : 'border-red-300'}>
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <HeartPulse className="h-5 w-5 text-emerald-600" /> Saúde da conta WhatsApp
+            </CardTitle>
+            <CardDescription>
+              Dados lidos direto da conta oficial. Última atualização: {fmtDate(h?.checkedAt)}.
+            </CardDescription>
+          </div>
+          <Button variant="secondary" disabled={busy === 'health'} onClick={() => run('health', () => refreshHealth(true))}>
+            {busy === 'health' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Atualizar saúde
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {!canSend && (
+            <Alert className="border-red-300 bg-red-50">
+              <AlertDescription className="text-red-800">
+                <b>Envios bloqueados.</b> {health?.verdict?.blockReason} As campanhas em andamento foram pausadas.
+              </AlertDescription>
+            </Alert>
+          )}
+          {(health?.verdict?.warnings ?? []).map((w: string) => (
+            <Alert key={w}>
+              <AlertDescription className="text-amber-800">{w}</AlertDescription>
+            </Alert>
+          ))}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label="Número" value={h?.displayPhoneNumber ?? NOT_REPORTED} />
+            <Field label="Nome verificado" value={h?.verifiedName ?? NOT_REPORTED} />
+            <Field label="Conexão do número" value={healthLabel(h?.connectionStatus)} />
+            <Field label="Qualidade" value={healthLabel(h?.qualityRating)} />
+            <Field
+              label="Limite de conversas em 24 h"
+              value={h?.messagingLimit ? String(h.messagingLimit) : h?.messagingLimitTier ?? NOT_REPORTED}
+              hint="A Chakra nem sempre devolve este campo. Confira em WhatsApp Manager › Visão geral › Limite de mensagens."
+            />
+            <Field label="Situação do nome" value={healthLabel(h?.nameStatus)} />
+            <Field label="Conta (WABA)" value={healthLabel(h?.wabaStatus)} />
+            <Field label="Análise da WABA" value={healthLabel(h?.wabaReviewStatus)} />
+          </div>
+          <p className="text-xs text-slate-500">
+            Campos com “{NOT_REPORTED}” não são devolvidos pela API — confira no WhatsApp Manager da Meta. Nenhum limite é
+            estimado por aqui.
+          </p>
+        </CardContent>
+      </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {[
-          { label: 'Empresas com celular válido', value: m.audience, icon: Users },
-          { label: 'Enviadas hoje', value: m.sentToday, icon: CheckCircle2 },
-          { label: 'Últimas 24 h', value: m.sent24h, icon: Clock },
-          { label: 'Na última hora', value: m.sentHour, icon: Send },
-          { label: 'Bloqueados/rejeitados', value: m.blocked, icon: Ban },
-        ].map((s) => (
-          <Card key={s.label}>
-            <CardContent className="flex items-center gap-3 p-4">
-              <s.icon className="h-5 w-5 text-slate-400" />
-              <div className="min-w-0">
-                <div className="text-2xl font-bold text-slate-900">{s.value}</div>
-                <div className="truncate text-xs text-slate-500">{s.label}</div>
+      {/* 2. CONSUMO E DESEMPENHO 24 h */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Consumo e desempenho nas últimas 24 horas</CardTitle>
+          <CardDescription>
+            Números calculados pelo próprio banco. “Aceita pela API” não significa entregue nem lida — a entrega só
+            aparece quando a Meta enviar eventos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: 'Pessoas diferentes em 24 h', value: m.uniqueRecipients24h ?? 0, icon: Users },
+              { label: 'Aceitas pela API em 24 h', value: m.sent24h ?? 0, icon: CheckCircle2 },
+              { label: 'Tentativas em 24 h', value: m.attempts24h ?? 0, icon: Send },
+              { label: 'Taxa de sucesso', value: m.successRate === null || m.successRate === undefined ? '—' : `${m.successRate}%`, icon: CheckCircle2 },
+              { label: 'Ritmo real (última hora)', value: m.realPacePerHour ?? 0, icon: Clock },
+              { label: 'Ainda na fila', value: m.pendingQueue ?? 0, icon: Clock },
+              { label: 'Campanhas ativas / pausadas', value: `${m.activeCampaigns ?? 0} / ${m.pausedCampaigns ?? 0}`, icon: Play },
+              { label: 'Números bloqueados', value: m.blocked ?? 0, icon: Ban },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center gap-3 rounded-lg border bg-white p-3">
+                <s.icon className="h-5 w-5 text-slate-400" />
+                <div className="min-w-0">
+                  <div className="text-xl font-bold text-slate-900">{s.value}</div>
+                  <div className="truncate text-xs text-slate-500">{s.label}</div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            ))}
+          </div>
 
-      {/* MODELOS */}
+          {h?.messagingLimit ? (
+            <div>
+              <div className="mb-1 flex justify-between text-xs text-slate-600">
+                <span>
+                  Consumo do limite oficial: {m.uniqueRecipients24h ?? 0} de {h.messagingLimit} pessoas
+                </span>
+                <span>Restam {Math.max(0, h.messagingLimit - (m.uniqueRecipients24h ?? 0))}</span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full bg-emerald-500"
+                  style={{ width: `${Math.min(100, ((m.uniqueRecipients24h ?? 0) / h.messagingLimit) * 100)}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">
+              A API não informou o limite oficial de conversas, então mostramos apenas o consumo observado — sem calcular
+              quanto “resta”.
+            </p>
+          )}
+
+          <div className="grid gap-3 text-sm sm:grid-cols-2">
+            <div className="rounded-lg border p-3">
+              <div className="text-xs font-semibold uppercase text-slate-500">Último envio aceito</div>
+              <div className="text-slate-800">{fmtDate(m.lastSentAt)}</div>
+            </div>
+            <div className="rounded-lg border p-3">
+              <div className="text-xs font-semibold uppercase text-slate-500">Última falha</div>
+              <div className="text-slate-800">{fmtDate(m.lastFailureAt)}</div>
+              {m.lastFailureMessage && <div className="text-xs text-red-600">{m.lastFailureMessage}</div>}
+            </div>
+          </div>
+
+          {(dash?.byTemplate ?? []).length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs uppercase text-slate-500">
+                    <th className="py-2">Modelo</th>
+                    <th>Aceitas</th>
+                    <th>Falhas</th>
+                    <th>Bloqueadas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(dash.byTemplate as any[]).map((t) => (
+                    <tr key={t.template} className="border-b last:border-0">
+                      <td className="py-2 font-medium text-slate-800">{t.template}</td>
+                      <td>{t.sent}</td>
+                      <td>{t.failed}</td>
+                      <td>{t.blocked}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {(dash?.byCampaign ?? []).length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[620px] text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs uppercase text-slate-500">
+                    <th className="py-2">Campanha</th>
+                    <th>Situação</th>
+                    <th>Aceitas</th>
+                    <th>Falhas</th>
+                    <th>Bloqueadas</th>
+                    <th>Na fila</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(dash.byCampaign as any[]).map((c) => (
+                    <tr key={c.id} className="border-b last:border-0">
+                      <td className="py-2 font-medium text-slate-800">{c.name}</td>
+                      <td>{CAMPAIGN_LABEL[c.status] ?? c.status}</td>
+                      <td>{c.sent}</td>
+                      <td>{c.failed}</td>
+                      <td>{c.blocked}</td>
+                      <td>{c.pending}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div>
+            <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Log operacional</div>
+            <div className="max-h-72 overflow-auto rounded-lg border">
+              <table className="w-full min-w-[720px] text-sm">
+                <thead className="bg-slate-50">
+                  <tr className="text-left text-xs uppercase text-slate-500">
+                    <th className="px-3 py-2">Quando</th>
+                    <th>Campanha</th>
+                    <th>Empresa</th>
+                    <th>Telefone</th>
+                    <th>Modelo</th>
+                    <th>Situação</th>
+                    <th>Erro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {log.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-4 text-slate-400">
+                        Nenhum envio registrado ainda.
+                      </td>
+                    </tr>
+                  )}
+                  {log.map((l) => (
+                    <tr key={l.id} className="border-t">
+                      <td className="px-3 py-2 whitespace-nowrap">{fmtDate(l.at)}</td>
+                      <td>{l.campaign}</td>
+                      <td className="max-w-[180px] truncate">{l.company}</td>
+                      <td>{l.phone}</td>
+                      <td>{l.template}</td>
+                      <td>{ITEM_LABEL[l.status] ?? l.status}</td>
+                      <td className="max-w-[220px] truncate text-red-600">{l.error ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 3. MODELOS */}
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle>Modelos de mensagem</CardTitle>
+            <CardTitle>Modelos e sincronização</CardTitle>
             <CardDescription>
               A lista vem direto da sua conta oficial. Só modelos aprovados podem ser usados no envio.
-              {lastSync ? ` Última sincronização: ${new Date(lastSync).toLocaleString('pt-BR')}.` : ' Nunca sincronizado.'}
+              {lastSync ? ` Última sincronização: ${fmtDate(lastSync)}.` : ' Nunca sincronizado.'}
             </CardDescription>
           </div>
           <Button
@@ -273,6 +503,14 @@ function WhatsappCampanhasPage() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
+          {!hasApproved && (
+            <Alert>
+              <AlertDescription>
+                Nenhum modelo está aprovado no momento, então iniciar e enviar continuam bloqueados. A aprovação depende
+                da Meta — sincronize os modelos depois que ela liberar.
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="tpl">Modelo usado nos envios</Label>
             <select
@@ -306,9 +544,7 @@ function WhatsappCampanhasPage() {
 
           {others.length > 0 && (
             <div className="rounded-lg border bg-slate-50 p-3">
-              <div className="mb-2 text-xs font-semibold uppercase text-slate-500">
-                Modelos indisponíveis para envio
-              </div>
+              <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Modelos indisponíveis para envio</div>
               <div className="flex flex-wrap gap-2">
                 {others.map((t: any) => (
                   <Badge key={t.name} variant="secondary">
@@ -321,13 +557,13 @@ function WhatsappCampanhasPage() {
         </CardContent>
       </Card>
 
-      {/* TESTE */}
+      {/* 4. TESTE */}
       <Card className="border-emerald-200">
         <CardHeader>
           <CardTitle>Envio de teste</CardTitle>
           <CardDescription>
             Escolha uma empresa já importada e um número de destino. A mensagem usa os dados da empresa, mas chega
-            somente no número que você digitar.
+            somente no número que você digitar — o telefone salvo não é alterado.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -375,9 +611,7 @@ function WhatsappCampanhasPage() {
                 onChange={(e) => setTestPhone(e.target.value)}
                 placeholder="(11) 99999-9999"
               />
-              <p className="text-xs text-slate-500">
-                O telefone salvo da empresa não é alterado e o teste não entra na fila.
-              </p>
+              <p className="text-xs text-slate-500">O teste não entra na fila e não conta como campanha.</p>
             </div>
           </div>
 
@@ -392,7 +626,7 @@ function WhatsappCampanhasPage() {
           )}
 
           <Button
-            disabled={busy === 'test' || !chosen || !testPhone.trim() || !selectedTemplate}
+            disabled={busy === 'test' || !chosen || !testPhone.trim() || !selectedTemplate || !canSend}
             onClick={() => {
               if (
                 !window.confirm(
@@ -415,13 +649,13 @@ function WhatsappCampanhasPage() {
         </CardContent>
       </Card>
 
-      {/* NOVA CAMPANHA */}
+      {/* 5. NOVA CAMPANHA */}
       <Card>
         <CardHeader>
           <CardTitle>Nova campanha</CardTitle>
           <CardDescription>
             Monta a fila com as empresas mais antigas que tenham celular válido, link ativo e nunca tenham recebido esta
-            campanha.
+            campanha. Hoje há {m.audience ?? 0} empresa(s) com celular válido cadastrado.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
@@ -509,9 +743,16 @@ function WhatsappCampanhasPage() {
 
           <div className="md:col-span-2">
             <Button
-              disabled={busy === 'create' || !hasApproved || !selectedTemplate || !campName.trim()}
-              onClick={() =>
-                run('create', async () => {
+              disabled={busy === 'create' || !hasApproved || !selectedTemplate || !campName.trim() || !canSend}
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    `Criar a campanha "${campName.trim()}" com até ${finalQty} empresa(s), 1 mensagem a cada ${interval} s ` +
+                      `(${messagesPerHour(interval)}/h), teto de ${dailyCap} pessoas em 24 h e previsão de ${formatDuration(eta)}?`,
+                  )
+                )
+                  return;
+                void run('create', async () => {
                   const r: any = await doCreate({
                     data: {
                       name: campName.trim(),
@@ -532,8 +773,8 @@ function WhatsappCampanhasPage() {
                   toast.success(
                     `Campanha criada com ${r.inserted} empresa(s) · ${r.skipped.noPhone} sem celular · ${r.skipped.noLink} sem link · ${r.skipped.blocked} bloqueadas · ${r.skipped.duplicate} repetidas`,
                   );
-                })
-              }
+                });
+              }}
             >
               {busy === 'create' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar campanha
             </Button>
@@ -541,11 +782,11 @@ function WhatsappCampanhasPage() {
         </CardContent>
       </Card>
 
-      {/* CAMPANHAS */}
+      {/* 6. CAMPANHAS / FILA */}
       <Card>
         <CardHeader>
-          <CardTitle>Suas campanhas</CardTitle>
-          <CardDescription>Elas continuam funcionando mesmo com esta página fechada.</CardDescription>
+          <CardTitle>Campanhas e fila</CardTitle>
+          <CardDescription>Elas continuam funcionando no servidor mesmo com esta página fechada.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {campaigns.length === 0 && <p className="py-4 text-sm text-slate-400">Nenhuma campanha criada ainda.</p>}
@@ -566,17 +807,18 @@ function WhatsappCampanhasPage() {
                   {c.status !== 'running' && c.status !== 'finished' && (
                     <Button
                       size="sm"
-                      disabled={busy === `st${c.id}` || !hasApproved}
-                      onClick={() =>
-                        run(`st${c.id}`, async () => {
+                      disabled={busy === `st${c.id}` || !hasApproved || !canSend}
+                      onClick={() => {
+                        if (!window.confirm(`Iniciar os envios da campanha "${c.name}" agora?`)) return;
+                        void run(`st${c.id}`, async () => {
                           const r: any = await doControl({ data: { id: c.id, action: 'resume' } });
                           if (!r.ok) toast.error(r.error);
                           else {
                             toast.success('Campanha em andamento');
                             void doTick({ data: { id: c.id } });
                           }
-                        })
-                      }
+                        });
+                      }}
                     >
                       <Play className="mr-1 h-3.5 w-3.5" />
                       {c.status === 'paused' ? 'Continuar' : 'Iniciar'}
@@ -597,6 +839,29 @@ function WhatsappCampanhasPage() {
                       <Pause className="mr-1 h-3.5 w-3.5" />Pausar
                     </Button>
                   )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={busy === `csv${c.id}`}
+                    onClick={() =>
+                      run(`csv${c.id}`, async () => {
+                        const r: any = await doExport({ data: { id: c.id } });
+                        if (!r.ok) {
+                          toast.error(r.error);
+                          return;
+                        }
+                        const blob = new Blob(['\ufeff' + r.csv], { type: 'text/csv;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = r.filename;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      })
+                    }
+                  >
+                    <Download className="mr-1 h-3.5 w-3.5" />CSV
+                  </Button>
                   {c.status !== 'finished' && (
                     <Button
                       size="sm"
@@ -619,144 +884,107 @@ function WhatsappCampanhasPage() {
               {c.paused_reason && <p className="mt-2 text-xs text-amber-700">{c.paused_reason}</p>}
             </div>
           ))}
-        </CardContent>
-      </Card>
 
-      {/* DETALHE */}
-      {detail?.campaign && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{detail.campaign.name}</CardTitle>
-            <CardDescription>Acompanhe cada etapa da fila desta campanha.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2 text-sm">
-              {[
-                ['Na fila', detail.counts?.pending ?? 0],
-                ['Enviando', detail.counts?.sending ?? 0],
-                ['Enviadas', detail.counts?.sent ?? 0],
-                ['Falhas', detail.counts?.failed ?? 0],
-                ['Bloqueadas', detail.counts?.blocked ?? 0],
-              ].map(([label, value]) => (
-                <div key={String(label)} className="rounded-md border px-3 py-1.5">
-                  <span className="text-slate-500">{label}: </span>
-                  <b className="text-slate-800">{value as number}</b>
+          {detail?.campaign && (
+            <div className="space-y-4 rounded-lg border bg-slate-50 p-3">
+              <div className="font-semibold text-slate-800">{detail.campaign.name}</div>
+              <div className="flex flex-wrap gap-2 text-sm">
+                {[
+                  ['Na fila', detail.counts?.pending ?? 0],
+                  ['Enviando', detail.counts?.sending ?? 0],
+                  ['Aceitas pela API', detail.counts?.sent ?? 0],
+                  ['Falhas', detail.counts?.failed ?? 0],
+                  ['Bloqueadas', detail.counts?.blocked ?? 0],
+                ].map(([label, value]) => (
+                  <div key={String(label)} className="rounded-md border bg-white px-3 py-1.5">
+                    <span className="text-slate-500">{label}: </span>
+                    <b className="text-slate-800">{value as number}</b>
+                  </div>
+                ))}
+                <div className="rounded-md border bg-white px-3 py-1.5">
+                  <span className="text-slate-500">Previsão de término: </span>
+                  <b className="text-slate-800">
+                    {formatDuration(
+                      estimateDurationSeconds(detail.counts?.pending ?? 0, detail.campaign.interval_seconds ?? 30),
+                    )}
+                  </b>
                 </div>
-              ))}
-              <div className="rounded-md border px-3 py-1.5">
-                <span className="text-slate-500">Previsão de término: </span>
-                <b className="text-slate-800">
-                  {formatDuration(
-                    estimateDurationSeconds(detail.counts?.pending ?? 0, detail.campaign.interval_seconds ?? 30),
-                  )}
-                </b>
               </div>
-            </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {(['all', 'pending', 'sent', 'failed', 'blocked'] as const).map((f) => (
+              <div className="flex flex-wrap items-center gap-2">
+                {(['all', 'pending', 'sent', 'failed', 'blocked'] as const).map((f) => (
+                  <Button
+                    key={f}
+                    size="sm"
+                    variant={itemFilter === f ? 'default' : 'outline'}
+                    onClick={() => {
+                      setItemFilter(f);
+                      setPage(1);
+                    }}
+                  >
+                    {f === 'all' ? 'Todas' : ITEM_LABEL[f]}
+                  </Button>
+                ))}
                 <Button
-                  key={f}
                   size="sm"
-                  variant={itemFilter === f ? 'default' : 'outline'}
+                  variant="secondary"
+                  disabled={busy === 'refill'}
+                  onClick={() =>
+                    run('refill', async () => {
+                      const r: any = await doRefill({
+                        data: { id: detail.campaign.id, quantity: detail.campaign.target_count ?? 50 },
+                      });
+                      toast.success(`${r.inserted} empresa(s) adicionada(s) à fila`);
+                    })
+                  }
+                >
+                  Completar fila
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-slate-500 hover:text-red-600"
+                  disabled={busy === 'clrp'}
                   onClick={() => {
-                    setItemFilter(f);
-                    setPage(1);
+                    if (!window.confirm('Remover as mensagens que ainda não saíram? O histórico de envios é mantido.')) return;
+                    void run('clrp', async () => {
+                      await doControl({ data: { id: detail.campaign.id, action: 'clear_pending' } });
+                      toast.success('Pendentes removidas');
+                    });
                   }}
                 >
-                  {f === 'all' ? 'Todas' : ITEM_LABEL[f]}
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />Remover pendentes
                 </Button>
-              ))}
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={busy === 'refill'}
-                onClick={() =>
-                  run('refill', async () => {
-                    const r: any = await doRefill({
-                      data: { id: detail.campaign.id, quantity: detail.campaign.target_count ?? 50 },
-                    });
-                    toast.success(`${r.inserted} empresa(s) adicionada(s) à fila`);
-                  })
-                }
-              >
-                Completar fila
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-slate-500 hover:text-red-600"
-                disabled={busy === 'clrp'}
-                onClick={() => {
-                  if (!window.confirm('Remover as mensagens que ainda não saíram? O histórico de envios é mantido.')) return;
-                  void run('clrp', async () => {
-                    await doControl({ data: { id: detail.campaign.id, action: 'clear_pending' } });
-                    toast.success('Pendentes removidas');
-                  });
-                }}
-              >
-                <Trash2 className="mr-1 h-3.5 w-3.5" />Remover pendentes
-              </Button>
-            </div>
+              </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[780px] text-sm">
-                <thead>
-                  <tr className="border-b text-left text-xs uppercase text-slate-400">
-                    <th className="py-2">Empresa</th>
-                    <th className="py-2">Telefone</th>
-                    <th className="py-2">Modelo</th>
-                    <th className="py-2">Tentativa</th>
-                    <th className="py-2">Situação</th>
-                    <th className="py-2">Detalhe</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(detail.items ?? []).length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="py-6 text-center text-slate-400">Nada por aqui.</td>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-xs uppercase text-slate-500">
+                      <th className="py-2">Empresa</th>
+                      <th>CNPJ</th>
+                      <th>Situação</th>
+                      <th>Erro</th>
                     </tr>
-                  )}
-                  {(detail.items ?? []).map((it: any) => (
-                    <tr key={it.id} className="border-b last:border-0">
-                      <td className="py-2">
-                        <div className="font-medium text-slate-800">{it.company_name ?? '—'}</div>
-                        <div className="text-xs text-slate-400">{formatCNPJ(it.cnpj)}</div>
-                      </td>
-                      <td className="py-2 text-slate-600">{it.phone}</td>
-                      <td className="py-2 text-xs text-slate-500">{it.template_name}</td>
-                      <td className="py-2 text-xs text-slate-500">
-                        {it.attempts}
-                        {it.status === 'pending' && it.next_attempt_at
-                          ? ` · próx. ${new Date(it.next_attempt_at).toLocaleTimeString('pt-BR')}`
-                          : ''}
-                      </td>
-                      <td className="py-2">
-                        <Badge
-                          variant={
-                            it.status === 'sent' ? 'default' : it.status === 'pending' || it.status === 'sending' ? 'secondary' : 'destructive'
-                          }
-                        >
-                          {ITEM_LABEL[it.status] ?? it.status}
-                        </Badge>
-                      </td>
-                      <td className="max-w-[260px] truncate py-2 text-xs text-slate-500">
-                        {it.error_message ?? it.provider_message_id ?? ''}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {((detail.items ?? []) as any[]).map((i) => (
+                      <tr key={i.id} className="border-b last:border-0">
+                        <td className="max-w-[220px] truncate py-2">{i.company_name ?? '—'}</td>
+                        <td>{i.cnpj ? formatCNPJ(i.cnpj) : '—'}</td>
+                        <td>{ITEM_LABEL[i.status] ?? i.status}</td>
+                        <td className="max-w-[240px] truncate text-red-600">{i.error_message ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-            <div className="flex items-center justify-between text-sm text-slate-500">
-              <span>
-                {detail.total} registro(s) · página {page}
-              </span>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
                   Anterior
                 </Button>
+                <span className="text-xs text-slate-500">Página {page}</span>
                 <Button
                   size="sm"
                   variant="outline"
@@ -767,14 +995,52 @@ function WhatsappCampanhasPage() {
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
-      <div className="flex items-center gap-2 text-xs text-slate-400">
-        <XCircle className="h-3.5 w-3.5" />
-        Contatos com número inexistente entram na lista de bloqueio e nunca recebem novas mensagens.
-      </div>
+      {/* 7. FALHAS E BLOQUEIOS */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-600" /> Falhas e bloqueios
+          </CardTitle>
+          <CardDescription>
+            Números com falha permanente entram na lista de bloqueio e nunca mais recebem mensagens. Total bloqueado
+            hoje: {m.blocked ?? 0}.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {failures.length === 0 ? (
+            <p className="text-sm text-slate-400">Nenhuma falha nas últimas 24 horas.</p>
+          ) : (
+            <div className="max-h-72 overflow-auto rounded-lg border">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead className="bg-slate-50">
+                  <tr className="text-left text-xs uppercase text-slate-500">
+                    <th className="px-3 py-2">Quando</th>
+                    <th>Empresa</th>
+                    <th>Telefone</th>
+                    <th>Situação</th>
+                    <th>Motivo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {failures.map((l) => (
+                    <tr key={l.id} className="border-t">
+                      <td className="px-3 py-2 whitespace-nowrap">{fmtDate(l.at)}</td>
+                      <td className="max-w-[180px] truncate">{l.company}</td>
+                      <td>{l.phone}</td>
+                      <td>{ITEM_LABEL[l.status] ?? l.status}</td>
+                      <td className="max-w-[260px] truncate text-red-600">{l.error ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
