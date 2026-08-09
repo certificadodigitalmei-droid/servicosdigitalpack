@@ -203,9 +203,11 @@ export function addImported(cnpjs: string[]) {
 export async function runCountOnce(opts: { silent?: boolean } = {}) {
   const { filters } = consultaStore.get();
   const date = effectiveDate();
+  const epoch = consultaStore.get().queryEpoch;
   consultaStore.set({ isCounting: true });
   try {
     const r: any = await countByDate({ data: { date, filters } });
+    if (isStaleEpoch(epoch)) return;
     consultaStore.set((s) => {
       const now = new Date().toISOString();
       const prev = s.autoStats;
@@ -230,9 +232,10 @@ export async function runCountOnce(opts: { silent?: boolean } = {}) {
     });
     if (!opts.silent && !r.ok) toast.error(`API respondeu ${r.status}`);
   } catch (e: any) {
+    if (isStaleEpoch(epoch)) return;
     if (!opts.silent) toast.error(e?.message ?? 'Erro');
   } finally {
-    consultaStore.set({ isCounting: false });
+    if (!isStaleEpoch(epoch)) consultaStore.set({ isCounting: false });
   }
 }
 
