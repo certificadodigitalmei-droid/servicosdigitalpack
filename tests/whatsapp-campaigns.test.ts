@@ -253,3 +253,49 @@ describe('envio por item usa o modelo da campanha', () => {
     expect(body.buttonMapping[0].schemaPropertyValue).toBe('TOKEN_DA_EMPRESA');
   });
 });
+
+describe('sincronização paginada', () => {
+  it('percorre todas as páginas e persiste todos os modelos, incluindo consulta_certificado_mei_v1', async () => {
+    const all = [
+      ...Array.from({ length: 10 }, (_, i) => ({
+        name: `aviso_cnpj_mei_${String(i + 1).padStart(2, '0')}`,
+        language: 'pt_BR',
+        status: 'PENDING',
+      })),
+      { name: 'certificado1', language: 'pt_BR', status: 'PENDING' },
+      { name: 'consulta_certificado_mei_v1', language: 'pt_BR', status: 'APPROVED' },
+      { name: 'aprovado_extra', language: 'pt_BR', status: 'APPROVED' },
+    ];
+    const pageSize = 5;
+    const fetchImpl = vi.fn(async (url: string) => {
+      const m = /after=([^&]+)/.exec(url);
+      const start = m ? Number(decodeURIComponent(m[1]!)) : 0;
+      const slice = all.slice(start, start + pageSize);
+      const next = start + pageSize < all.length ? { cursors: { after: String(start + pageSize) }, next: 'x' } : {};
+      return jsonRes({ _data: { data: slice, paging: next } });
+    });
+
+    const res = await fetchChakraTemplates({
+      apiBaseUrl: 'https://api.chakrahq.com',
+      apiKey: 'k',
+      apiVersion: 'v19.0',
+      wabaId: '1996285911002627',
+      pageSize,
+      fetchImpl: fetchImpl as any,
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(fetchImpl.mock.calls.length).toBeGreaterThan(1);
+    expect(res.templates).toHaveLength(13);
+    const names = res.templates.map((t) => t.name);
+    expect(names).toContain('consulta_certificado_mei_v1');
+    expect(names).toContain('aviso_cnpj_mei_10');
+
+    const sendable = approvedTemplates(res.templates).map((t) => t.name);
+    expect(sendable.sort()).toEqual(['aprovado_extra', 'consulta_certificado_mei_v1']);
+    const unavailable = otherTemplates(res.templates).map((t) => t.name);
+    expect(unavailable).toHaveLength(11);
+    expect(unavailable).toContain('certificado1');
+  });
+});
