@@ -88,6 +88,8 @@ type State = {
   isImporting: boolean;
   flashes: Array<{ id: number; count: number }>;
   listDialogOpen: boolean;
+  /** Incrementado a cada troca efetiva de dia; invalida respostas em voo. */
+  queryEpoch: number;
 };
 
 function todayBRString(): string {
