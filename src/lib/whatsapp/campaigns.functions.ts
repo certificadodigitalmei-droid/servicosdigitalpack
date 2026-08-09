@@ -139,35 +139,6 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
     };
   });
 
-/** Saúde real da conta (número + WABA), consultada só no servidor. */
-export const getWaAccountHealth = createServerFn({ method: 'POST' })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ force: z.boolean().default(false) }).parse(d ?? {}))
-  .handler(async ({ data, context }) => {
-    const { assertAdmin } = await import('./admin.server');
-    await assertAdmin(context.supabase, context.userId);
-    const { loadAccountHealth } = await import('./health.server');
-    const { evaluateHealth } = await import('./health-logic');
-    const health = await loadAccountHealth(data.force);
-
-    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-    const since24 = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: rows } = await (supabaseAdmin as any)
-      .from('whatsapp_campaign_items')
-      .select('phone')
-      .eq('status', 'sent')
-      .gte('sent_at', since24)
-      .limit(5000);
-    const used24h = new Set(((rows ?? []) as any[]).map((r) => String(r.phone))).size;
-
-    const verdict = evaluateHealth(health, used24h);
-    if (!verdict.canSend) {
-      const { pauseRunningCampaigns } = await import('./campaign.server');
-      await pauseRunningCampaigns(`Saúde da conta: ${verdict.blockReason}`);
-    }
-    return { health, verdict, used24h };
-  });
-
 /** Exporta o relatório da campanha (todas as linhas) para CSV. */
 export const exportWaCampaignCsv = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])

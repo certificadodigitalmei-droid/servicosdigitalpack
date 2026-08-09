@@ -219,8 +219,6 @@ export type TickDeps = {
   send?: typeof sendChakraTemplate;
   maxWallMs?: number;
   maxMessages?: number;
-  /** Injetável nos testes: evita qualquer chamada real à Chakra/Meta. */
-  health?: () => Promise<import('./health-logic').AccountHealth | null>;
   /** Pausa automática quando a taxa de falhas do tick ficar anormal. */
   failureRateLimit?: number;
 };
@@ -242,24 +240,6 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
   if (!cfg.plugin_id || !cfg.whatsapp_phone_number_id) {
     await pauseCampaign(campaignId, 'Conexão incompleta: informe Plugin ID e Phone Number ID.');
     return { sent: 0, failed: 0, blocked: 0, stopped: 'config' as const };
-  }
-
-  // Saúde da conta: número desconectado, qualidade baixa, WABA não aprovada,
-  // limite oficial esgotado ou falha de autenticação impedem qualquer disparo.
-  const loadHealth = deps.health ?? (async () => (await import('./health.server')).loadAccountHealth(false));
-  const { evaluateHealth } = await import('./health-logic');
-  const since24h = new Date(now() - 24 * 60 * 60 * 1000).toISOString();
-  const { data: uniqRows } = await db()
-    .from('whatsapp_campaign_items')
-    .select('phone')
-    .eq('status', 'sent')
-    .gte('sent_at', since24h)
-    .limit(5000);
-  const unique24h = new Set(((uniqRows ?? []) as any[]).map((r) => String(r.phone))).size;
-  const verdict = evaluateHealth(await loadHealth(), unique24h);
-  if (!verdict.canSend) {
-    await pauseCampaign(campaignId, `Saúde da conta: ${verdict.blockReason}`);
-    return { sent: 0, failed: 0, blocked: 0, stopped: 'account_health' as const };
   }
 
   let sent = 0;

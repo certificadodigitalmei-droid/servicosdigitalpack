@@ -16,7 +16,6 @@ import {
   Search,
   Trash2,
   Clock,
-  HeartPulse,
   Download,
   AlertTriangle,
 } from 'lucide-react';
@@ -40,10 +39,8 @@ import {
   messagesPerHour,
   type PacePresetId,
 } from '@/lib/whatsapp/campaign-logic';
-import { healthLabel, NOT_REPORTED } from '@/lib/whatsapp/health-logic';
 import {
   getWaCampaignDashboard,
-  getWaAccountHealth,
   exportWaCampaignCsv,
   syncWaTemplates,
   selectWaTemplate,
@@ -116,19 +113,8 @@ function fmtDate(v: string | null | undefined): string {
   }
 }
 
-function Field({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  const missing = value === NOT_REPORTED;
-  return (
-    <div className="rounded-lg border bg-white p-3" title={missing ? hint ?? 'Confira no WhatsApp Manager da Meta.' : undefined}>
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={`text-sm font-semibold ${missing ? 'text-slate-400' : 'text-slate-800'}`}>{value}</div>
-    </div>
-  );
-}
-
 function WhatsappCampanhasPage() {
   const loadDash = useServerFn(getWaCampaignDashboard);
-  const loadHealth = useServerFn(getWaAccountHealth);
   const doExport = useServerFn(exportWaCampaignCsv);
   const doSync = useServerFn(syncWaTemplates);
   const doSelect = useServerFn(selectWaTemplate);
@@ -144,7 +130,6 @@ function WhatsappCampanhasPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [dash, setDash] = useState<any>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [health, setHealth] = useState<any>(null);
   const [selectedTemplate, setSelectedTemplate] = useState('');
 
   // Campanha nova
@@ -178,8 +163,6 @@ function WhatsappCampanhasPage() {
   const finalQty = Math.max(1, Number(customQty || qty) || 1);
   const eta = estimateDurationSeconds(finalQty, interval);
 
-  const canSend = health?.verdict?.canSend !== false;
-
   const refresh = async () => {
     try {
       const res: any = await loadDash({});
@@ -195,15 +178,6 @@ function WhatsappCampanhasPage() {
     }
   };
 
-  const refreshHealth = async (force = false) => {
-    try {
-      const res: any = await loadHealth({ data: { force } });
-      setHealth(res);
-    } catch (e: any) {
-      toast.error(e?.message ?? 'Falha ao consultar a saúde da conta');
-    }
-  };
-
   const refreshDetail = async (id: string, p = page, f = itemFilter) => {
     const res: any = await loadDetail({ data: { id, status: f, page: p } });
     setDetail(res);
@@ -211,14 +185,9 @@ function WhatsappCampanhasPage() {
 
   useEffect(() => {
     void refresh();
-    void refreshHealth(false);
-    // Autoatualização moderada: painel a cada 30 s, saúde a cada 5 min.
+    // Autoatualização moderada: painel a cada 30 s.
     const t1 = window.setInterval(() => void refresh(), 30_000);
-    const t2 = window.setInterval(() => void refreshHealth(false), 300_000);
-    return () => {
-      window.clearInterval(t1);
-      window.clearInterval(t2);
-    };
+    return () => window.clearInterval(t1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -252,7 +221,6 @@ function WhatsappCampanhasPage() {
   }
 
   const m = dash?.metrics ?? {};
-  const h = health?.health ?? null;
   const log = (dash?.log ?? []) as any[];
   const failures = log.filter((l) => l.status === 'failed' || l.status === 'blocked');
   const lastSync = templates.reduce<string | null>(
@@ -269,7 +237,7 @@ function WhatsappCampanhasPage() {
             WhatsApp em Massa
           </h1>
           <p className="text-sm text-slate-500">
-            Acompanhe a saúde da conta, o consumo das últimas 24 horas e cada mensagem enviada.
+            Acompanhe o consumo das últimas 24 horas e cada mensagem enviada.
           </p>
         </div>
         <Badge variant={hasApproved ? 'default' : 'secondary'}>
@@ -294,57 +262,8 @@ function WhatsappCampanhasPage() {
         </Alert>
       )}
 
-      {/* 1. SAÚDE DA CONTA */}
-      <Card className={canSend ? '' : 'border-red-300'}>
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <HeartPulse className="h-5 w-5 text-emerald-600" /> Saúde da conta WhatsApp
-            </CardTitle>
-            <CardDescription>
-              Dados lidos direto da conta oficial. Última atualização: {fmtDate(h?.checkedAt)}.
-            </CardDescription>
-          </div>
-          <Button variant="secondary" disabled={busy === 'health'} onClick={() => run('health', () => refreshHealth(true))}>
-            {busy === 'health' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Atualizar saúde
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {!canSend && (
-            <Alert className="border-red-300 bg-red-50">
-              <AlertDescription className="text-red-800">
-                <b>Envios bloqueados.</b> {health?.verdict?.blockReason} As campanhas em andamento foram pausadas.
-              </AlertDescription>
-            </Alert>
-          )}
-          {(health?.verdict?.warnings ?? []).map((w: string) => (
-            <Alert key={w}>
-              <AlertDescription className="text-amber-800">{w}</AlertDescription>
-            </Alert>
-          ))}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="Número" value={h?.displayPhoneNumber ?? NOT_REPORTED} />
-            <Field label="Nome verificado" value={h?.verifiedName ?? NOT_REPORTED} />
-            <Field label="Conexão do número" value={healthLabel(h?.connectionStatus)} />
-            <Field label="Qualidade" value={healthLabel(h?.qualityRating)} />
-            <Field
-              label="Limite de conversas em 24 h"
-              value={h?.messagingLimit ? String(h.messagingLimit) : h?.messagingLimitTier ?? NOT_REPORTED}
-              hint="A Chakra nem sempre devolve este campo. Confira em WhatsApp Manager › Visão geral › Limite de mensagens."
-            />
-            <Field label="Situação do nome" value={healthLabel(h?.nameStatus)} />
-            <Field label="Conta (WABA)" value={healthLabel(h?.wabaStatus)} />
-            <Field label="Análise da WABA" value={healthLabel(h?.wabaReviewStatus)} />
-          </div>
-          <p className="text-xs text-slate-500">
-            Campos com “{NOT_REPORTED}” não são devolvidos pela API — confira no WhatsApp Manager da Meta. Nenhum limite é
-            estimado por aqui.
-          </p>
-        </CardContent>
-      </Card>
+      {/* 1. CONSUMO E DESEMPENHO 24 h */}
 
-      {/* 2. CONSUMO E DESEMPENHO 24 h */}
       <Card>
         <CardHeader>
           <CardTitle>Consumo e desempenho nas últimas 24 horas</CardTitle>
@@ -375,27 +294,10 @@ function WhatsappCampanhasPage() {
             ))}
           </div>
 
-          {h?.messagingLimit ? (
-            <div>
-              <div className="mb-1 flex justify-between text-xs text-slate-600">
-                <span>
-                  Consumo do limite oficial: {m.uniqueRecipients24h ?? 0} de {h.messagingLimit} pessoas
-                </span>
-                <span>Restam {Math.max(0, h.messagingLimit - (m.uniqueRecipients24h ?? 0))}</span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className="h-full bg-emerald-500"
-                  style={{ width: `${Math.min(100, ((m.uniqueRecipients24h ?? 0) / h.messagingLimit) * 100)}%` }}
-                />
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-slate-500">
-              A API não informou o limite oficial de conversas, então mostramos apenas o consumo observado — sem calcular
-              quanto “resta”.
-            </p>
-          )}
+          <p className="text-xs text-slate-500">
+            Mostramos apenas o consumo observado nas últimas 24 horas — nenhum limite é estimado por aqui.
+          </p>
+
 
           <div className="grid gap-3 text-sm sm:grid-cols-2">
             <div className="rounded-lg border p-3">
@@ -653,7 +555,7 @@ function WhatsappCampanhasPage() {
           )}
 
           <Button
-            disabled={busy === 'test' || !chosen || !testPhone.trim() || !selectedTemplate || !canSend}
+            disabled={busy === 'test' || !chosen || !testPhone.trim() || !selectedTemplate || false}
             onClick={() => {
               if (
                 !window.confirm(
@@ -770,7 +672,7 @@ function WhatsappCampanhasPage() {
 
           <div className="md:col-span-2">
             <Button
-              disabled={busy === 'create' || !hasApproved || !selectedTemplate || !campName.trim() || !canSend}
+              disabled={busy === 'create' || !hasApproved || !selectedTemplate || !campName.trim() || false}
               onClick={() => {
                 if (
                   !window.confirm(
@@ -834,7 +736,7 @@ function WhatsappCampanhasPage() {
                   {c.status !== 'running' && c.status !== 'finished' && (
                     <Button
                       size="sm"
-                      disabled={busy === `st${c.id}` || !hasApproved || !canSend}
+                      disabled={busy === `st${c.id}` || !hasApproved || false}
                       onClick={() => {
                         if (!window.confirm(`Iniciar os envios da campanha "${c.name}" agora?`)) return;
                         void run(`st${c.id}`, async () => {
