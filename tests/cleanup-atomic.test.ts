@@ -79,3 +79,28 @@ describe('limpeza total transacional', () => {
     expect(sql.indexOf('RAISE EXCEPTION USING')).toBeLessThan(sql.indexOf("RETURN jsonb_build_object(\n    'success', true"));
   });
 });
+describe('migração corrigida sem DELETE/UPDATE sem WHERE', () => {
+  const fixedSql = readFileSync(
+    new URL('../supabase/migrations/20260809223453_97b74a9c-e0b2-4023-8739-d663c7ec3490.sql', import.meta.url),
+    'utf8',
+  );
+
+  it('todo DELETE de tabela inteira usa WHERE explícito', () => {
+    const bare = fixedSql.match(/DELETE FROM public\.[a-z_]+\s*;/g);
+    expect(bare).toBeNull();
+  });
+
+  it('todo UPDATE de tabela inteira usa WHERE explícito', () => {
+    const updates = fixedSql.split(/UPDATE public\./).slice(1);
+    for (const chunk of updates) {
+      const stmt = chunk.slice(0, chunk.indexOf(';'));
+      expect(stmt.toUpperCase()).toContain('WHERE');
+    }
+  });
+
+  it('mantém rollback por exceção e preserva pedidos pagos', () => {
+    expect(fixedSql).toContain("MESSAGE = 'cleanup post-condition failed'");
+    expect(fixedSql).toContain("DELETE FROM public.orders\n  WHERE status <> 'paid'");
+    expect(fixedSql).not.toContain('TRUNCATE');
+  });
+});
