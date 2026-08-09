@@ -200,6 +200,38 @@ export function addImported(cnpjs: string[]) {
 
 /* --------------------------------- actions -------------------------------- */
 
+/** true quando a resposta em voo pertence a um dia que já não é o atual. */
+export function isStaleEpoch(epoch: number): boolean {
+  return consultaStore.get().queryEpoch !== epoch;
+}
+
+/**
+ * Zera SOMENTE o estado de resultados da consulta (lista, contagem, cursor,
+ * seleção, flashes e diálogo). Nada persistido no banco é tocado.
+ */
+export function resetQueryResults() {
+  consultaStore.set((s) => ({
+    queryEpoch: s.queryEpoch + 1,
+    foundList: [],
+    foundListKey: '',
+    countResult: null,
+    flashes: [],
+    listDialogOpen: false,
+    isCounting: false,
+    autoStats: {
+      checks: 0,
+      lastTotal: null,
+      prevTotal: null,
+      delta: 0,
+      peak: null,
+      lastCheckAt: null,
+      startedAt: null,
+    },
+  }));
+}
+
+
+
 export async function runCountOnce(opts: { silent?: boolean } = {}) {
   const { filters } = consultaStore.get();
   const date = effectiveDate();
