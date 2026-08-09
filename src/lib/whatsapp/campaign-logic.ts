@@ -295,3 +295,24 @@ export function canImportNextBatch(input: {
 }): boolean {
   return input.continuousMode && input.status === 'running' && input.pendingItems === 0;
 }
+
+/**
+ * Pausa automática por taxa de falhas anormal.
+ * Só avalia depois de um mínimo de tentativas para não pausar por azar inicial.
+ */
+export const FAILURE_RATE_LIMIT = 0.5;
+export const FAILURE_RATE_MIN_ATTEMPTS = 6;
+
+export function shouldPauseForFailureRate(input: {
+  sent: number;
+  failed: number;
+  blocked: number;
+  limit?: number;
+  minAttempts?: number;
+}): boolean {
+  const limit = input.limit ?? FAILURE_RATE_LIMIT;
+  const min = input.minAttempts ?? FAILURE_RATE_MIN_ATTEMPTS;
+  const attempts = input.sent + input.failed + input.blocked;
+  if (attempts < min) return false;
+  return (input.failed + input.blocked) / attempts >= limit;
+}

@@ -3,13 +3,13 @@ import { useEffect, useState } from 'react';
 
 import { GovConsultaLoader } from '@/components/GovConsultaLoader';
 import { resolveCompanyLink, markLinkLoaderShown, type ResolvedCompany } from '@/lib/company-links.functions';
+import { markIntroSeen, prefersReducedMotion, shouldPlayIntro, hasSeenIntro } from '@/lib/intro-animation';
 
 /**
- * Rota de "acesso" — é o link público que enviamos ao cliente.
- * Todo acesso passa por aqui primeiro. Se alguém abrir /c/$token direto,
- * o loader daquela rota redireciona para cá enquanto a animação não tiver sido exibida.
- * Mobile: exibe a animação e depois vai para /c/$token.
- * Desktop: marca como vista e vai direto para /c/$token, sem animação.
+ * Rota de "acesso" — é o link público enviado por e-mail.
+ * Exibe a animação de consulta e depois entra em /c/$token.
+ * A entrada direta em /c/$token roda a mesma animação por conta própria;
+ * aqui marcamos a sessão para o cliente nunca ver duas vezes seguidas.
  */
 export const Route = createFileRoute('/acesso/$token')({
   loader: async ({ params }) => {
@@ -30,35 +30,34 @@ function AcessoPage() {
   const navigate = useNavigate();
   const [showLoader, setShowLoader] = useState(false);
 
+  const goToPage = () => {
+    markIntroSeen(typeof window !== 'undefined' ? window.sessionStorage : null, token);
+    markLinkLoaderShown({ data: { token } }).catch(() => {});
+    navigate({ to: '/c/$token', params: { token }, search: { issuing: undefined }, replace: true });
+  };
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const isMobile = window.matchMedia('(max-width: 767px)').matches;
-    if (!isMobile) {
-      // Desktop: marca como visto (para evitar redirect loop na /c) e redireciona sem animação.
-      markLinkLoaderShown({ data: { token } }).catch(() => {});
-      navigate({ to: '/c/$token', params: { token }, search: { issuing: undefined }, replace: true });
+    const play = shouldPlayIntro({
+      seen: hasSeenIntro(window.sessionStorage, token),
+      reducedMotion: prefersReducedMotion(window),
+    });
+    if (!play) {
+      goToPage();
       return;
     }
-    // Mobile: mostra a animação; onFinish marca e redireciona.
     setShowLoader(true);
-  }, [token, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const nome = cleanPersonName(row?.nome) || cleanPersonName(row?.razao_social) || undefined;
   const cnpj = row?.cnpj ?? undefined;
 
   if (!showLoader) {
-    // Enquanto decide (SSR/desktop) mantém a tela limpa e clara — sem flash dos dados.
+    // Enquanto decide (SSR/hidratação) mantém a tela limpa — sem flash dos dados.
     return <div className="min-h-screen bg-white" />;
   }
 
-  return (
-    <GovConsultaLoader
-      cnpj={cnpj}
-      nome={nome}
-      onFinish={() => {
-        markLinkLoaderShown({ data: { token } }).catch(() => {});
-        navigate({ to: '/c/$token', params: { token }, search: { issuing: undefined }, replace: true });
-      }}
-    />
-  );
+  return <GovConsultaLoader cnpj={cnpj} nome={nome} onFinish={goToPage} />;
 }
+

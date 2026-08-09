@@ -64,13 +64,29 @@ function PanelLayout() {
 
   const handleCleanup = async () => {
 
-    if (!confirm('Deseja apagar TODOS os dados (empresas, links, pedidos pendentes, clientes sem compra) e deixar o painel limpo? Apenas vendas confirmadas serão preservadas.')) return;
+    if (
+      !confirm(
+        'Limpeza total para recomeçar do zero.\n\nSerá APAGADO:\n' +
+          '• empresas importadas, links gerados e execuções de importação\n' +
+          '• filas e históricos de e-mail (envios, destinatários, campanhas)\n' +
+          '• filas, campanhas e itens de WhatsApp\n' +
+          '• pedidos não pagos, clientes sem compra, eventos e registros\n\n' +
+          'Será MANTIDO:\n' +
+          '• vendas pagas e tudo ligado a elas\n' +
+          '• configurações, chaves e modelos sincronizados\n' +
+          '• a lista permanente de números bloqueados\n\nConfirmar?',
+      )
+    )
+      return;
     
     setCleaning(true);
     try {
       const result = await doCleanup({ data: { confirm: true } });
       if (result.success) {
-        toast.success(result.message);
+        const removed = (result as any).removed as Record<string, number> | undefined;
+        const total = removed ? Object.values(removed).reduce((a, b) => a + b, 0) : 0;
+        toast.success(`${result.message}${removed ? ` (${total} registro(s) removido(s))` : ''}`);
+        if (removed) console.table(removed);
       } else {
         toast.error('Erro na limpeza: ' + (result.message || result.error));
       }

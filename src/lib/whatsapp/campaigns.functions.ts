@@ -5,13 +5,14 @@ import { resolveIntervalSeconds, type PacePresetId } from './campaign-logic';
 
 const paceSchema = z.enum(['cautious', 'recommended', 'moderate', 'custom']);
 
-/** Painel: modelos sincronizados + campanhas + métricas gerais. */
+/** Painel: modelos sincronizados + campanhas + métricas calculadas no banco. */
 export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { assertAdmin } = await import('./admin.server');
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { maskPhone, friendlyError } = await import('./health-logic');
     const db = supabaseAdmin as any;
 
     const [{ data: templates }, { data: campaigns }, { data: settings }] = await Promise.all([
@@ -30,14 +31,74 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const [sent24, sent1h, sentToday, audience] = await Promise.all([
-      db.from('whatsapp_campaign_items').select('id', { count: 'exact', head: true }).eq('status', 'sent').gte('sent_at', since24),
-      db.from('whatsapp_campaign_items').select('id', { count: 'exact', head: true }).eq('status', 'sent').gte('sent_at', since1h),
-      db.from('whatsapp_campaign_items').select('id', { count: 'exact', head: true }).eq('status', 'sent').gte('sent_at', todayStart.toISOString()),
+    // Janela móvel de 24h com todos os itens tocados — base de todas as contas.
+    const [{ data: window24 }, audience, { data: recent }, { data: pendingRows }] = await Promise.all([
+      db
+        .from('whatsapp_campaign_items')
+        .select('campaign_id,template_name,phone,status,sent_at,updated_at,error_message')
+        .gte('updated_at', since24)
+        .limit(5000),
       db.from('companies').select('id', { count: 'exact', head: true }).not('whatsapp_phone_e164', 'is', null),
+      db
+        .from('whatsapp_campaign_items')
+        .select('id,campaign_id,company_name,cnpj,phone,template_name,status,error_message,sent_at,updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(40),
+      db.from('whatsapp_campaign_items').select('campaign_id,status').in('status', ['pending', 'sending']).limit(5000),
     ]);
 
+    const rows = (window24 ?? []) as any[];
+    const sentRows = rows.filter((r) => r.status === 'sent');
+    const uniqueRecipients24h = new Set(sentRows.map((r) => String(r.phone))).size;
+    const sent24h = sentRows.length;
+    const failed24h = rows.filter((r) => r.status === 'failed').length;
+    const blocked24h = rows.filter((r) => r.status === 'blocked').length;
+    const attempts24h = sent24h + failed24h + blocked24h;
+    const sentHour = sentRows.filter((r) => r.sent_at && r.sent_at >= since1h).length;
+    const sentToday = sentRows.filter((r) => r.sent_at && r.sent_at >= todayStart.toISOString()).length;
+    const successRate = attempts24h ? Math.round((sent24h / attempts24h) * 100) : null;
+
+    // Desempenho por modelo (últimas 24h).
+    const byTemplate = new Map<string, { template: string; sent: number; failed: number; blocked: number }>();
+    for (const r of rows) {
+      const key = String(r.template_name ?? '—');
+      const acc = byTemplate.get(key) ?? { template: key, sent: 0, failed: 0, blocked: 0 };
+      if (r.status === 'sent') acc.sent++;
+      else if (r.status === 'failed') acc.failed++;
+      else if (r.status === 'blocked') acc.blocked++;
+      byTemplate.set(key, acc);
+    }
+
+    // Desempenho por campanha (últimas 24h) + fila restante.
+    const pendingByCampaign = new Map<string, number>();
+    for (const p of ((pendingRows ?? []) as any[])) {
+      pendingByCampaign.set(String(p.campaign_id), (pendingByCampaign.get(String(p.campaign_id)) ?? 0) + 1);
+    }
+    const byCampaign = ((campaigns ?? []) as any[]).map((c) => {
+      const mine = rows.filter((r) => String(r.campaign_id) === String(c.id));
+      return {
+        id: c.id as string,
+        name: c.name as string,
+        status: c.status as string,
+        sent: mine.filter((r) => r.status === 'sent').length,
+        failed: mine.filter((r) => r.status === 'failed').length,
+        blocked: mine.filter((r) => r.status === 'blocked').length,
+        pending: pendingByCampaign.get(String(c.id)) ?? 0,
+      };
+    });
+
+    const lastSent = sentRows
+      .map((r) => r.sent_at)
+      .filter(Boolean)
+      .sort()
+      .pop() ?? null;
+    const lastFailureRow = rows
+      .filter((r) => r.status === 'failed' || r.status === 'blocked')
+      .sort((a, b) => String(a.updated_at).localeCompare(String(b.updated_at)))
+      .pop();
+
     const { countBlockedNumbers } = await import('./blocklist.server');
+    const campaignName = new Map(((campaigns ?? []) as any[]).map((c) => [String(c.id), String(c.name)]));
 
     return {
       templates: templates ?? [],
@@ -45,14 +106,123 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
       settings: settings ?? null,
       hasApiKey: Boolean(process.env['CHAKRA_API_KEY']),
       metrics: {
-        sent24h: sent24.count ?? 0,
-        sentHour: sent1h.count ?? 0,
-        sentToday: sentToday.count ?? 0,
+        sent24h,
+        sentHour,
+        sentToday,
         audience: audience.count ?? 0,
         blocked: await countBlockedNumbers(),
+        uniqueRecipients24h,
+        attempts24h,
+        failed24h,
+        blocked24h,
+        pendingQueue: (pendingRows ?? []).length,
+        successRate,
+        realPacePerHour: sentHour,
+        activeCampaigns: ((campaigns ?? []) as any[]).filter((c) => c.status === 'running').length,
+        pausedCampaigns: ((campaigns ?? []) as any[]).filter((c) => c.status === 'paused').length,
+        lastSentAt: lastSent,
+        lastFailureAt: lastFailureRow?.updated_at ?? null,
+        lastFailureMessage: lastFailureRow ? friendlyError(lastFailureRow.error_message) : null,
       },
+      byTemplate: Array.from(byTemplate.values()),
+      byCampaign,
+      log: ((recent ?? []) as any[]).map((r) => ({
+        id: r.id as string,
+        at: (r.updated_at ?? r.sent_at) as string,
+        campaign: campaignName.get(String(r.campaign_id)) ?? '—',
+        company: (r.company_name ?? '—') as string,
+        phone: maskPhone(r.phone),
+        template: (r.template_name ?? '—') as string,
+        status: r.status as string,
+        error: r.error_message ? friendlyError(r.error_message) : null,
+      })),
     };
   });
+
+/** Saúde real da conta (número + WABA), consultada só no servidor. */
+export const getWaAccountHealth = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ force: z.boolean().default(false) }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { loadAccountHealth } = await import('./health.server');
+    const { evaluateHealth } = await import('./health-logic');
+    const health = await loadAccountHealth(data.force);
+
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const since24 = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: rows } = await (supabaseAdmin as any)
+      .from('whatsapp_campaign_items')
+      .select('phone')
+      .eq('status', 'sent')
+      .gte('sent_at', since24)
+      .limit(5000);
+    const used24h = new Set(((rows ?? []) as any[]).map((r) => String(r.phone))).size;
+
+    const verdict = evaluateHealth(health, used24h);
+    if (!verdict.canSend) {
+      const { pauseRunningCampaigns } = await import('./campaign.server');
+      await pauseRunningCampaigns(`Saúde da conta: ${verdict.blockReason}`);
+    }
+    return { health, verdict, used24h };
+  });
+
+/** Exporta o relatório da campanha (todas as linhas) para CSV. */
+export const exportWaCampaignCsv = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { maskPhone, friendlyError } = await import('./health-logic');
+    const db = supabaseAdmin as any;
+
+    const { data: campaign } = await db
+      .from('whatsapp_campaigns')
+      .select('id,name')
+      .eq('id', data.id)
+      .eq('owner_user_id', context.userId)
+      .maybeSingle();
+    if (!campaign) return { ok: false as const, error: 'Campanha não encontrada', csv: '', filename: '' };
+
+    const { data: items } = await db
+      .from('whatsapp_campaign_items')
+      .select('company_name,cnpj,phone,template_name,status,attempts,error_message,sent_at,created_at')
+      .eq('campaign_id', data.id)
+      .order('created_at', { ascending: true })
+      .limit(20000);
+
+    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const header = ['Empresa', 'CNPJ', 'Telefone', 'Modelo', 'Situação', 'Tentativas', 'Erro', 'Aceita pela API em', 'Criada em'];
+    const lines = [header.map(esc).join(';')];
+    for (const i of ((items ?? []) as any[])) {
+      lines.push(
+        [
+          i.company_name,
+          i.cnpj,
+          maskPhone(i.phone),
+          i.template_name,
+          i.status,
+          i.attempts,
+          i.error_message ? friendlyError(i.error_message) : '',
+          i.sent_at ?? '',
+          i.created_at ?? '',
+        ]
+          .map(esc)
+          .join(';'),
+      );
+    }
+    return {
+      ok: true as const,
+      error: null,
+      csv: lines.join('\n'),
+      filename: `campanha-${String(campaign.name).replace(/[^\w-]+/g, '-').toLowerCase()}.csv`,
+    };
+  });
+
+
 
 export const syncWaTemplates = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
