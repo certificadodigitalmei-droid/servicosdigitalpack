@@ -294,57 +294,8 @@ function WhatsappCampanhasPage() {
         </Alert>
       )}
 
-      {/* 1. SAÚDE DA CONTA */}
-      <Card className={canSend ? '' : 'border-red-300'}>
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <HeartPulse className="h-5 w-5 text-emerald-600" /> Saúde da conta WhatsApp
-            </CardTitle>
-            <CardDescription>
-              Dados lidos direto da conta oficial. Última atualização: {fmtDate(h?.checkedAt)}.
-            </CardDescription>
-          </div>
-          <Button variant="secondary" disabled={busy === 'health'} onClick={() => run('health', () => refreshHealth(true))}>
-            {busy === 'health' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Atualizar saúde
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {!canSend && (
-            <Alert className="border-red-300 bg-red-50">
-              <AlertDescription className="text-red-800">
-                <b>Envios bloqueados.</b> {health?.verdict?.blockReason} As campanhas em andamento foram pausadas.
-              </AlertDescription>
-            </Alert>
-          )}
-          {(health?.verdict?.warnings ?? []).map((w: string) => (
-            <Alert key={w}>
-              <AlertDescription className="text-amber-800">{w}</AlertDescription>
-            </Alert>
-          ))}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="Número" value={h?.displayPhoneNumber ?? NOT_REPORTED} />
-            <Field label="Nome verificado" value={h?.verifiedName ?? NOT_REPORTED} />
-            <Field label="Conexão do número" value={healthLabel(h?.connectionStatus)} />
-            <Field label="Qualidade" value={healthLabel(h?.qualityRating)} />
-            <Field
-              label="Limite de conversas em 24 h"
-              value={h?.messagingLimit ? String(h.messagingLimit) : h?.messagingLimitTier ?? NOT_REPORTED}
-              hint="A Chakra nem sempre devolve este campo. Confira em WhatsApp Manager › Visão geral › Limite de mensagens."
-            />
-            <Field label="Situação do nome" value={healthLabel(h?.nameStatus)} />
-            <Field label="Conta (WABA)" value={healthLabel(h?.wabaStatus)} />
-            <Field label="Análise da WABA" value={healthLabel(h?.wabaReviewStatus)} />
-          </div>
-          <p className="text-xs text-slate-500">
-            Campos com “{NOT_REPORTED}” não são devolvidos pela API — confira no WhatsApp Manager da Meta. Nenhum limite é
-            estimado por aqui.
-          </p>
-        </CardContent>
-      </Card>
+      {/* 1. CONSUMO E DESEMPENHO 24 h */}
 
-      {/* 2. CONSUMO E DESEMPENHO 24 h */}
       <Card>
         <CardHeader>
           <CardTitle>Consumo e desempenho nas últimas 24 horas</CardTitle>
