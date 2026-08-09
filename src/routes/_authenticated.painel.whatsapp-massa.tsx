@@ -67,6 +67,21 @@ export const Route = createFileRoute('/_authenticated/painel/whatsapp-massa')({
     ],
   }),
   component: WhatsappCampanhasPage,
+  // Nunca deixar a tela em branco: se algo falhar (ex.: servidor reiniciando),
+  // mostramos um aviso com botão de tentar de novo.
+  errorComponent: ({ error }: { error: Error }) => (
+    <div className="mx-auto max-w-lg space-y-3 py-16 text-center">
+      <h1 className="text-lg font-semibold text-slate-900">Não foi possível abrir o painel do WhatsApp</h1>
+      <p className="text-sm text-slate-500">{error?.message ?? 'Erro inesperado.'}</p>
+      <Button onClick={() => window.location.reload()}>Tentar de novo</Button>
+    </div>
+  ),
+  notFoundComponent: () => <div className="py-16 text-center text-sm text-slate-500">Página não encontrada.</div>,
+  pendingComponent: () => (
+    <div className="flex items-center justify-center py-24 text-sm text-muted-foreground">
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando…
+    </div>
+  ),
 });
 
 const STATUS_LABEL: Record<string, string> = {
@@ -128,6 +143,7 @@ function WhatsappCampanhasPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [dash, setDash] = useState<any>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [health, setHealth] = useState<any>(null);
   const [selectedTemplate, setSelectedTemplate] = useState('');
 
@@ -170,8 +186,10 @@ function WhatsappCampanhasPage() {
       setDash(res);
       const current = res?.settings?.template_name ?? '';
       setSelectedTemplate((prev) => prev || current);
+      setLoadError(null);
     } catch (e: any) {
-      toast.error(e?.message ?? 'Falha ao carregar');
+      // Servidor reiniciando ou rede instável: mantemos a última leitura na tela.
+      setLoadError(e?.message ?? 'Falha ao carregar os dados');
     } finally {
       setLoading(false);
     }
@@ -258,6 +276,15 @@ function WhatsappCampanhasPage() {
           {hasApproved ? `${approved.length} modelo(s) aprovado(s)` : 'Nenhum modelo aprovado'}
         </Badge>
       </header>
+
+      {loadError && (
+        <Alert>
+          <AlertDescription>
+            Não foi possível atualizar os números agora ({loadError}). Os dados na tela podem estar desatualizados —
+            tentaremos de novo automaticamente.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {!dash?.hasApiKey && (
         <Alert>
