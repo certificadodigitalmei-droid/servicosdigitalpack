@@ -349,6 +349,7 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
 
 
     // Atualiza countResult / autoStats
+    if (isStaleEpoch(epoch)) return;
     consultaStore.set((cur) => {
       const prev = cur.autoStats;
       const nextStats: AutoStats = {
@@ -380,9 +381,10 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
     // Sincroniza importedSet consultando DB
     await syncImportedFromDb();
   } catch (e: any) {
+    if (isStaleEpoch(epoch)) return;
     if (!opts.silent) toast.error(e?.message ?? 'Erro');
   } finally {
-    consultaStore.set({ isCounting: false });
+    if (!isStaleEpoch(epoch)) consultaStore.set({ isCounting: false });
   }
 }
 
