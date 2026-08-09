@@ -280,6 +280,7 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
   const date = effectiveDate();
   const filters = s.filters;
   const key = `${date}|${JSON.stringify(filters)}`;
+  const epoch = s.queryEpoch;
 
   // Se mudou a chave (data/filtros), zera lista.
   if (key !== s.foundListKey) {
