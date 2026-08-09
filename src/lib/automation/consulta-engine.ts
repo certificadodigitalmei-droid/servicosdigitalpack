@@ -310,6 +310,7 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
       const r: any = await listByDate({
         data: { date, filters, limit: pageSize, page },
       });
+      if (isStaleEpoch(epoch)) return;
 
       lastStatus = { date: r.date, total: r.total, ok: r.ok, status: r.status };
       const items = r.items ?? [];
