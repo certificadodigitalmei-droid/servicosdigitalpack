@@ -122,7 +122,7 @@ function PanelLayout() {
         const total = Object.values(report.removed).reduce((a, b) => a + b, 0);
         toast.success(`${result.message} ${total.toLocaleString('pt-BR')} registro(s) removido(s).`);
       } else {
-        toast.error('Erro na limpeza: ' + (result.message || result.error));
+        toast.error('Erro na limpeza: ' + (report.error || result.message));
       }
     } catch (e: any) {
       toast.error('Falha ao executar limpeza: ' + (e?.message ?? 'erro'));
