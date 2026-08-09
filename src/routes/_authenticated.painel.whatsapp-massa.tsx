@@ -375,27 +375,10 @@ function WhatsappCampanhasPage() {
             ))}
           </div>
 
-          {h?.messagingLimit ? (
-            <div>
-              <div className="mb-1 flex justify-between text-xs text-slate-600">
-                <span>
-                  Consumo do limite oficial: {m.uniqueRecipients24h ?? 0} de {h.messagingLimit} pessoas
-                </span>
-                <span>Restam {Math.max(0, h.messagingLimit - (m.uniqueRecipients24h ?? 0))}</span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className="h-full bg-emerald-500"
-                  style={{ width: `${Math.min(100, ((m.uniqueRecipients24h ?? 0) / h.messagingLimit) * 100)}%` }}
-                />
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-slate-500">
-              A API não informou o limite oficial de conversas, então mostramos apenas o consumo observado — sem calcular
-              quanto “resta”.
-            </p>
-          )}
+          <p className="text-xs text-slate-500">
+            Mostramos apenas o consumo observado nas últimas 24 horas — nenhum limite é estimado por aqui.
+          </p>
+
 
           <div className="grid gap-3 text-sm sm:grid-cols-2">
             <div className="rounded-lg border p-3">
