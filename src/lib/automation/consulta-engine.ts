@@ -135,6 +135,7 @@ const initial: State = {
   isImporting: false,
   flashes: [],
   listDialogOpen: false,
+  queryEpoch: 0,
 };
 
 export const consultaStore = createStore<State>(initial, {
