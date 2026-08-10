@@ -497,7 +497,7 @@ export async function runImportBatch(
         cnpj,
         companyName: displayName,
         phone: mobileE164,
-        companyLinkId: (existingLink as any)?.id ?? null,
+        companyLinkId: linkId,
         token: publicToken,
         source: 'importacao_simples',
       });
