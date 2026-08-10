@@ -2114,6 +2114,7 @@ export type Database = {
       }
       whatsapp_campaign_items: {
         Row: {
+          accepted_at: string | null
           attempts: number
           campaign_id: string
           cnpj: string | null
@@ -2121,20 +2122,30 @@ export type Database = {
           company_link_id: string | null
           company_name: string | null
           created_at: string
+          delivered_at: string | null
+          delivery_status: string | null
+          error_code: string | null
+          error_details: string | null
           error_message: string | null
+          error_title: string | null
+          failed_at: string | null
           id: string
           lock_token: string | null
           locked_at: string | null
           next_attempt_at: string
           phone: string
+          provider_internal_id: string | null
           provider_message_id: string | null
+          read_at: string | null
           sent_at: string | null
           status: string
           template_name: string
           token: string | null
           updated_at: string
+          wamid: string | null
         }
         Insert: {
+          accepted_at?: string | null
           attempts?: number
           campaign_id: string
           cnpj?: string | null
@@ -2142,20 +2153,30 @@ export type Database = {
           company_link_id?: string | null
           company_name?: string | null
           created_at?: string
+          delivered_at?: string | null
+          delivery_status?: string | null
+          error_code?: string | null
+          error_details?: string | null
           error_message?: string | null
+          error_title?: string | null
+          failed_at?: string | null
           id?: string
           lock_token?: string | null
           locked_at?: string | null
           next_attempt_at?: string
           phone: string
+          provider_internal_id?: string | null
           provider_message_id?: string | null
+          read_at?: string | null
           sent_at?: string | null
           status?: string
           template_name: string
           token?: string | null
           updated_at?: string
+          wamid?: string | null
         }
         Update: {
+          accepted_at?: string | null
           attempts?: number
           campaign_id?: string
           cnpj?: string | null
@@ -2163,18 +2184,27 @@ export type Database = {
           company_link_id?: string | null
           company_name?: string | null
           created_at?: string
+          delivered_at?: string | null
+          delivery_status?: string | null
+          error_code?: string | null
+          error_details?: string | null
           error_message?: string | null
+          error_title?: string | null
+          failed_at?: string | null
           id?: string
           lock_token?: string | null
           locked_at?: string | null
           next_attempt_at?: string
           phone?: string
+          provider_internal_id?: string | null
           provider_message_id?: string | null
+          read_at?: string | null
           sent_at?: string | null
           status?: string
           template_name?: string
           token?: string | null
           updated_at?: string
+          wamid?: string | null
         }
         Relationships: [
           {
@@ -2262,6 +2292,101 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      whatsapp_failure_audit: {
+        Row: {
+          campaign_id: string | null
+          cnpj: string | null
+          company_id: string | null
+          company_name: string | null
+          created_at: string
+          error_code: string | null
+          id: string
+          phone_e164: string | null
+          reason: string
+          source: string
+          template_name: string | null
+          wamid: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          cnpj?: string | null
+          company_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          phone_e164?: string | null
+          reason: string
+          source?: string
+          template_name?: string | null
+          wamid?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          cnpj?: string | null
+          company_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          phone_e164?: string | null
+          reason?: string
+          source?: string
+          template_name?: string | null
+          wamid?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_message_events: {
+        Row: {
+          campaign_item_id: string | null
+          created_at: string
+          error_code: string | null
+          error_details: string | null
+          error_title: string | null
+          id: string
+          occurred_at: string
+          raw: Json | null
+          recipient: string | null
+          status: string
+          wamid: string
+        }
+        Insert: {
+          campaign_item_id?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_details?: string | null
+          error_title?: string | null
+          id?: string
+          occurred_at?: string
+          raw?: Json | null
+          recipient?: string | null
+          status: string
+          wamid: string
+        }
+        Update: {
+          campaign_item_id?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_details?: string | null
+          error_title?: string | null
+          id?: string
+          occurred_at?: string
+          raw?: Json | null
+          recipient?: string | null
+          status?: string
+          wamid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_message_events_campaign_item_id_fkey"
+            columns: ["campaign_item_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_campaign_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_queue: {
         Row: {

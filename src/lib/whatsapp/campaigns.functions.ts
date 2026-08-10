@@ -2,6 +2,8 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { resolveIntervalSeconds, type PacePresetId } from './campaign-logic';
+import { computePendingQueue } from './webhook-logic';
+
 
 const paceSchema = z.enum(['cautious', 'recommended', 'moderate', 'custom']);
 
@@ -35,16 +37,22 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
     const [{ data: window24 }, audience, { data: recent }, { data: pendingRows }] = await Promise.all([
       db
         .from('whatsapp_campaign_items')
-        .select('campaign_id,template_name,phone,status,sent_at,updated_at,error_message')
+        .select('campaign_id,template_name,phone,status,delivery_status,sent_at,updated_at,error_message')
         .gte('updated_at', since24)
         .limit(5000),
       db.from('companies').select('id', { count: 'exact', head: true }).not('whatsapp_phone_e164', 'is', null),
       db
         .from('whatsapp_campaign_items')
-        .select('id,campaign_id,company_name,cnpj,phone,template_name,status,error_message,sent_at,updated_at')
+        .select(
+          'id,campaign_id,company_name,cnpj,phone,template_name,status,delivery_status,error_message,error_code,error_title,error_details,wamid,accepted_at,sent_at,delivered_at,read_at,failed_at,updated_at',
+        )
         .order('updated_at', { ascending: false })
-        .limit(40),
-      db.from('whatsapp_campaign_items').select('campaign_id,status').in('status', ['pending', 'sending']).limit(5000),
+        .limit(60),
+      db
+        .from('whatsapp_campaign_items')
+        .select('campaign_id,status,delivery_status,wamid,locked_at')
+        .in('status', ['pending', 'sending'])
+        .limit(5000),
     ]);
 
     const rows = (window24 ?? []) as any[];
@@ -58,6 +66,13 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
     const sentToday = sentRows.filter((r) => r.sent_at && r.sent_at >= todayStart.toISOString()).length;
     const successRate = attempts24h ? Math.round((sent24h / attempts24h) * 100) : null;
 
+    // Situação real informada pela Meta (webhook) nas últimas 24 h.
+    const deliveryCount = (s: string) => rows.filter((r) => String(r.delivery_status ?? '') === s).length;
+    const metaSent24h = deliveryCount('sent');
+    const delivered24h = deliveryCount('delivered');
+    const read24h = deliveryCount('read');
+    const rejected24h = deliveryCount('failed');
+
     // Desempenho por modelo (últimas 24h).
     const byTemplate = new Map<string, { template: string; sent: number; failed: number; blocked: number }>();
     for (const r of rows) {
@@ -69,9 +84,14 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
       byTemplate.set(key, acc);
     }
 
-    // Desempenho por campanha (últimas 24h) + fila restante.
+    // Fila real: só pending/sending que ainda não foram aceitos pela API.
+    const pendingAll = (pendingRows ?? []) as any[];
+    const pendingBreakdown = computePendingQueue(pendingAll);
     const pendingByCampaign = new Map<string, number>();
-    for (const p of ((pendingRows ?? []) as any[])) {
+    for (const p of pendingAll) {
+      if (p.wamid) continue;
+      const delivery = String(p.delivery_status ?? '');
+      if (delivery && delivery !== 'accepted') continue;
       pendingByCampaign.set(String(p.campaign_id), (pendingByCampaign.get(String(p.campaign_id)) ?? 0) + 1);
     }
     const byCampaign = ((campaigns ?? []) as any[]).map((c) => {
@@ -115,7 +135,13 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
         attempts24h,
         failed24h,
         blocked24h,
-        pendingQueue: (pendingRows ?? []).length,
+        metaSent24h,
+        delivered24h,
+        read24h,
+        rejected24h,
+        pendingQueue: pendingBreakdown.pending,
+        stuckQueue: pendingBreakdown.stuck,
+        acceptedNotFlushed: pendingBreakdown.acceptedButUnflushed,
         successRate,
         realPacePerHour: sentHour,
         activeCampaigns: ((campaigns ?? []) as any[]).filter((c) => c.status === 'running').length,
@@ -134,10 +160,50 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
         phone: maskPhone(r.phone),
         template: (r.template_name ?? '—') as string,
         status: r.status as string,
+        apiStatus: r.accepted_at || r.wamid ? 'accepted' : r.status === 'failed' ? 'rejected' : 'pending',
+        deliveryStatus: (r.delivery_status ?? null) as string | null,
+        errorCode: (r.error_code ?? null) as string | null,
+        errorReason: r.error_title ?? r.error_details ?? (r.error_message ? friendlyError(r.error_message) : null),
+        wamid: (r.wamid ?? null) as string | null,
+        acceptedAt: (r.accepted_at ?? r.sent_at ?? null) as string | null,
+        deliveredAt: (r.delivered_at ?? null) as string | null,
+        readAt: (r.read_at ?? null) as string | null,
+        failedAt: (r.failed_at ?? null) as string | null,
         error: r.error_message ? friendlyError(r.error_message) : null,
       })),
     };
   });
+
+/**
+ * Reconciliação segura: aplica fatos já confirmados no provedor
+ * (sem reenviar nenhuma mensagem) a itens localizados por telefone.
+ */
+export const reconcileWaDeliveries = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        facts: z
+          .array(
+            z.object({
+              phone: z.string().min(8),
+              status: z.enum(['sent', 'delivered', 'read', 'failed']),
+              code: z.string().nullish(),
+              reason: z.string().nullish(),
+            }),
+          )
+          .min(1)
+          .max(200),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { reconcileDeliveryFacts } = await import('./reconcile.server');
+    return reconcileDeliveryFacts(data.facts);
+  });
+
 
 /** Exporta o relatório da campanha (todas as linhas) para CSV. */
 export const exportWaCampaignCsv = createServerFn({ method: 'POST' })

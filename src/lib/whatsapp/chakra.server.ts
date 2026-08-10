@@ -135,6 +135,27 @@ export function extractMessageId(json: any): string | null {
   return id ? String(id) : null;
 }
 
+/** wamid da Meta (externalId). É a chave idempotente dos webhooks. */
+export function extractExternalId(json: any): string | null {
+  const d = json?._data ?? {};
+  const id = d.externalId ?? d.whatsappMessageId ?? json?.messages?.[0]?.id ?? json?.externalId ?? null;
+  return id ? String(id) : null;
+}
+
+/** Identificador interno da Chakra (_data.id). */
+export function extractProviderId(json: any): string | null {
+  const d = json?._data ?? {};
+  const id = d.id ?? json?.id ?? json?.data?.id ?? null;
+  return id ? String(id) : null;
+}
+
+export function extractDeliveryStatus(json: any): string | null {
+  const d = json?._data ?? {};
+  const s = d.deliveryStatus ?? d.status ?? json?.deliveryStatus ?? null;
+  return s ? String(s) : null;
+}
+
+
 export function extractErrorMessage(json: any, fallback: string): string {
   const errs = json?._errors ?? json?.errors ?? null;
   if (Array.isArray(errs) && errs.length) {
@@ -151,7 +172,18 @@ export function extractErrorMessage(json: any, fallback: string): string {
   return fallback.slice(0, 500);
 }
 
-export type SendResult = { ok: true; messageId: string | null } | { ok: false; error: string };
+export type SendResult =
+  | {
+      ok: true;
+      messageId: string | null;
+      /** wamid da Meta — chave idempotente dos webhooks. */
+      externalId: string | null;
+      /** Identificador interno da Chakra. */
+      providerId: string | null;
+      deliveryStatus: string | null;
+    }
+  | { ok: false; error: string };
+
 
 export async function sendChakraTemplate(opts: {
   apiBaseUrl: string;
@@ -216,7 +248,14 @@ export async function sendChakraTemplate(opts: {
   if (Array.isArray(errs) && errs.length) {
     return { ok: false, error: extractErrorMessage(json, 'erro desconhecido') };
   }
-  return { ok: true, messageId: extractMessageId(json) };
+  return {
+    ok: true,
+    messageId: extractMessageId(json),
+    externalId: extractExternalId(json),
+    providerId: extractProviderId(json),
+    deliveryStatus: extractDeliveryStatus(json),
+  };
+
 }
 
 export type TemplateStatusResult =

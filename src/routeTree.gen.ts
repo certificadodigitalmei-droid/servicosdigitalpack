@@ -47,6 +47,7 @@ import { Route as AuthenticatedPainelEmpresasImportadasIndexRouteImport } from '
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as ApiPublicWhatsappReportRouteImport } from './routes/api/public/whatsapp/report'
 import { Route as ApiPublicWhatsappNextRouteImport } from './routes/api/public/whatsapp/next'
 import { Route as ApiPublicWhatsappHeartbeatRouteImport } from './routes/api/public/whatsapp/heartbeat'
@@ -271,6 +272,12 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWhatsappWebhookRoute =
+  ApiPublicWhatsappWebhookRouteImport.update({
+    id: '/api/public/whatsapp/webhook',
+    path: '/api/public/whatsapp/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicWhatsappReportRoute = ApiPublicWhatsappReportRouteImport.update({
   id: '/api/public/whatsapp/report',
   path: '/api/public/whatsapp/report',
@@ -373,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/api/public/whatsapp/heartbeat': typeof ApiPublicWhatsappHeartbeatRoute
   '/api/public/whatsapp/next': typeof ApiPublicWhatsappNextRoute
   '/api/public/whatsapp/report': typeof ApiPublicWhatsappReportRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -420,6 +428,7 @@ export interface FileRoutesByTo {
   '/api/public/whatsapp/heartbeat': typeof ApiPublicWhatsappHeartbeatRoute
   '/api/public/whatsapp/next': typeof ApiPublicWhatsappNextRoute
   '/api/public/whatsapp/report': typeof ApiPublicWhatsappReportRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -471,6 +480,7 @@ export interface FileRoutesById {
   '/api/public/whatsapp/heartbeat': typeof ApiPublicWhatsappHeartbeatRoute
   '/api/public/whatsapp/next': typeof ApiPublicWhatsappNextRoute
   '/api/public/whatsapp/report': typeof ApiPublicWhatsappReportRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -522,6 +532,7 @@ export interface FileRouteTypes {
     | '/api/public/whatsapp/heartbeat'
     | '/api/public/whatsapp/next'
     | '/api/public/whatsapp/report'
+    | '/api/public/whatsapp/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -569,6 +580,7 @@ export interface FileRouteTypes {
     | '/api/public/whatsapp/heartbeat'
     | '/api/public/whatsapp/next'
     | '/api/public/whatsapp/report'
+    | '/api/public/whatsapp/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -619,6 +631,7 @@ export interface FileRouteTypes {
     | '/api/public/whatsapp/heartbeat'
     | '/api/public/whatsapp/next'
     | '/api/public/whatsapp/report'
+    | '/api/public/whatsapp/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -648,6 +661,7 @@ export interface RootRouteChildren {
   ApiPublicWhatsappHeartbeatRoute: typeof ApiPublicWhatsappHeartbeatRoute
   ApiPublicWhatsappNextRoute: typeof ApiPublicWhatsappNextRoute
   ApiPublicWhatsappReportRoute: typeof ApiPublicWhatsappReportRoute
+  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -921,6 +935,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/whatsapp/webhook': {
+      id: '/api/public/whatsapp/webhook'
+      path: '/api/public/whatsapp/webhook'
+      fullPath: '/api/public/whatsapp/webhook'
+      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/whatsapp/report': {
       id: '/api/public/whatsapp/report'
       path: '/api/public/whatsapp/report'
@@ -1104,6 +1125,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicWhatsappHeartbeatRoute: ApiPublicWhatsappHeartbeatRoute,
   ApiPublicWhatsappNextRoute: ApiPublicWhatsappNextRoute,
   ApiPublicWhatsappReportRoute: ApiPublicWhatsappReportRoute,
+  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
@@ -1111,3 +1133,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

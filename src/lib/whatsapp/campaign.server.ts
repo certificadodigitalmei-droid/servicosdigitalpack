@@ -361,13 +361,22 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
 
     if (result.ok) {
       sent++;
+      const acceptedAt = new Date(now()).toISOString();
       await db()
         .from('whatsapp_campaign_items')
         .update({
+          // "sent" aqui = aceita pela API. A entrega real chega pelo webhook.
           status: 'sent',
-          sent_at: new Date(now()).toISOString(),
+          delivery_status: 'accepted',
+          sent_at: acceptedAt,
+          accepted_at: acceptedAt,
+          wamid: result.externalId,
+          provider_internal_id: result.providerId,
           provider_message_id: result.messageId,
           error_message: null,
+          error_code: null,
+          error_title: null,
+          error_details: null,
           locked_at: null,
           lock_token: null,
         })
@@ -375,6 +384,7 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
       if (item.company_id) await markReadySent(String(item.company_id));
       continue;
     }
+
 
     const status = statusFromError(result.error);
     const kind = classifyWhatsappError(status, result.error);
@@ -384,7 +394,14 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
       blocked++;
       await db()
         .from('whatsapp_campaign_items')
-        .update({ status: 'blocked', error_message: result.error, locked_at: null, lock_token: null })
+        .update({
+          status: 'blocked',
+          delivery_status: 'failed',
+          failed_at: new Date(now()).toISOString(),
+          error_message: result.error,
+          locked_at: null,
+          lock_token: null,
+        })
         .eq('id', item.id);
       // Falha permanente do destinatário → exclusão definitiva transacional.
       await blockPhoneAndQuarantine({
@@ -396,6 +413,7 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
         providerStatus: status,
       });
     } else if (decision.action === 'retry') {
+
 
       await db()
         .from('whatsapp_campaign_items')
@@ -420,7 +438,15 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
       failed++;
       await db()
         .from('whatsapp_campaign_items')
-        .update({ status: 'failed', error_message: result.error, locked_at: null, lock_token: null })
+        .update({
+          status: 'failed',
+          delivery_status: 'failed',
+          failed_at: new Date(now()).toISOString(),
+          error_message: result.error,
+          locked_at: null,
+          lock_token: null,
+        })
+
         .eq('id', item.id);
     }
 
