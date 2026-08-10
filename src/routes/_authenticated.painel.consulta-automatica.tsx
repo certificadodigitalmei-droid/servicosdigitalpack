@@ -398,7 +398,17 @@ function ConsultaPage() {
 
           </div>
 
-          {countResult && (
+          {isCounting && (
+            <div
+              data-testid="consulta-loading"
+              className="flex items-center gap-2 rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Consultando {formatBR(effectiveDate)}…
+            </div>
+          )}
+
+          {!isCounting && countResult && (
             <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm space-y-2">
               <div>
                 <strong>Data:</strong> {formatBR(countResult.date)} —{' '}
