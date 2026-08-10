@@ -133,8 +133,54 @@ export async function pauseCampaignsWithUnapprovedTemplate() {
 // Montagem da fila
 // ---------------------------------------------------------------------------
 
+/** Data de hoje no fuso de São Paulo (yyyy-mm-dd). */
+function todayBR(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+/**
+ * Quando a fila de prontidão não tem empresas suficientes, a campanha puxa
+ * novas empresas do MESMO motor de consulta/importação (Casa dos Dados),
+ * sempre do dia atual e só com celular. Nada é enviado aqui.
+ */
+async function refillReadyQueue(missing: number): Promise<number> {
+  const target = Math.min(Math.max(missing, 0), 30);
+  if (!target) return 0;
+  const { runImportBatch } = await import('@/lib/casa-dos-dados/simple-flow.server');
+  let imported = 0;
+  let guard = 0;
+  try {
+    while (imported < target && guard < 4) {
+      guard += 1;
+      const r: any = await runImportBatch({
+        date: todayBR(),
+        filters: {
+          only_mei: true,
+          only_active: true,
+          only_matriz: true,
+          require_email: false,
+          require_mobile_phone: true,
+        },
+        limit: Math.min(15, target - imported),
+        page: 1,
+        skipExisting: true,
+      });
+      const got = (r?.imported ?? []).length;
+      imported += got;
+      if (!r?.ok || got === 0) break;
+    }
+  } catch {
+    // Importação é oportunista: falha aqui nunca derruba o envio.
+  }
+  return imported;
+}
+
 export async function buildCampaignQueue(campaignId: string, limit: number) {
-  const cfg = await loadWaSettings();
   const buttonBase = String(cfg?.button_base_url ?? 'https://seu-certificado-mei-digital.online/c/');
 
   const { data: campaign } = await db()
