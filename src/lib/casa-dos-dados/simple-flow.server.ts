@@ -174,6 +174,9 @@ export async function runImportBatch(
   skipped += beforeBlockFilter - toEnrich.length;
 
   for (const { cnpj, raw: rawBase } of toEnrich) {
+    // Para assim que atingir a quantidade pedida de empresas PRONTAS.
+    if (imported.length >= input.limit) break;
+
 
     const nBase = normalizeCasaDosDadosCompany(rawBase);
     try {
