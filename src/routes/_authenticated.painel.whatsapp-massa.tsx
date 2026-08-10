@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatCNPJ } from '@/lib/format';
 import { WhatsappReadyPanel } from '@/components/painel/WhatsappReadyPanel';
+import { ConsultaInline } from '@/components/painel/ConsultaInline';
 import {
   PACE_LIST,
   QUANTITY_OPTIONS,
