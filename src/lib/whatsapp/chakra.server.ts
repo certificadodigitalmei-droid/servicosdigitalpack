@@ -172,7 +172,18 @@ export function extractErrorMessage(json: any, fallback: string): string {
   return fallback.slice(0, 500);
 }
 
-export type SendResult = { ok: true; messageId: string | null } | { ok: false; error: string };
+export type SendResult =
+  | {
+      ok: true;
+      messageId: string | null;
+      /** wamid da Meta — chave idempotente dos webhooks. */
+      externalId: string | null;
+      /** Identificador interno da Chakra. */
+      providerId: string | null;
+      deliveryStatus: string | null;
+    }
+  | { ok: false; error: string };
+
 
 export async function sendChakraTemplate(opts: {
   apiBaseUrl: string;
