@@ -14,6 +14,14 @@ import { searchOpeningsByDate, fetchCompanyDetailsByCnpj } from './client.server
 import { normalizeCasaDosDadosCompany } from './worker-logic';
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
 import { validateEmailForImport } from '@/lib/email-validation';
+import { extractValidBrazilianMobile } from '@/lib/phone/brazilian-mobile';
+import { isPhoneBlocked } from '@/lib/whatsapp/blocklist.server';
+import {
+  blockCnpjForImport,
+  enqueueReadyCompany,
+  loadBlockedCnpjSet,
+} from '@/lib/whatsapp/ready-queue.server';
+
 
 export type RunImportBatchInput = {
   date: string; // YYYY-MM-DD
