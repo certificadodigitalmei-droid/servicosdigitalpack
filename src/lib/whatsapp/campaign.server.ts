@@ -438,7 +438,15 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
       failed++;
       await db()
         .from('whatsapp_campaign_items')
-        .update({ status: 'failed', error_message: result.error, locked_at: null, lock_token: null })
+        .update({
+          status: 'failed',
+          delivery_status: 'failed',
+          failed_at: new Date(now()).toISOString(),
+          error_message: result.error,
+          locked_at: null,
+          lock_token: null,
+        })
+
         .eq('id', item.id);
     }
 
