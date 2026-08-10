@@ -44,7 +44,6 @@ import {
 import {
   getWaCampaignDashboard,
   exportWaCampaignCsv,
-  syncWaTemplates,
   selectWaTemplate,
   createWaCampaign,
   controlWaCampaign,
@@ -55,6 +54,12 @@ import {
   refillWaCampaign,
   reconcileWaDeliveries,
 } from '@/lib/whatsapp/campaigns.functions';
+import {
+  getWaSenders,
+  selectWaSender,
+  syncWaConnectionAndTemplates,
+} from '@/lib/whatsapp/senders.functions';
+
 import { CONFIRMED_REJECTIONS } from '@/lib/whatsapp/known-facts';
 
 export const Route = createFileRoute('/_authenticated/painel/whatsapp-massa')({
