@@ -89,9 +89,16 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
           rejected += 1;
           if (reasons.length < 6) reasons.push(`${formatCNPJ(f.cnpj)}: ${f.error}`);
         }
-        remaining -= Math.max(got, 1);
-        setProgress({ done: Math.min(target, target - Math.max(remaining, 0)), total: target });
-        if (got === 0 && (r.discovered ?? 0) === 0) break;
+        // Só conta o que realmente entrou pronto (com celular).
+        remaining = target - imported;
+        setProgress({ done: Math.min(target, imported), total: target });
+        if (got === 0) {
+          emptyRounds += 1;
+          if (emptyRounds >= 3 || (r.discovered ?? 0) === 0) break;
+        } else {
+          emptyRounds = 0;
+        }
+
       }
       setLastRun({ imported, rejected, skipped, reasons });
       toast.success(`Importação concluída: ${imported} empresa(s) pronta(s)`);
