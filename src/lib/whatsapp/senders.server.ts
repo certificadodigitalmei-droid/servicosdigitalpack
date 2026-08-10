@@ -210,11 +210,41 @@ export type SendGuard =
   | { ok: false; sender: SelectedSender | null; template: any; error: string };
 
 /**
- * Guarda única usada por sendWaBatch, teste e tick: remetente CONNECTED +
- * modelo APPROVED da MESMA WABA. Nunca confia só nos campos antigos.
+ * Guarda única usada por sendWaBatch, teste e tick: conexão confirmada há
+ * pouco + remetente CONNECTED + modelo APPROVED da MESMA WABA.
+ * Nunca confia só nos campos antigos.
  */
-export async function assertSendableSender(templateName: string | null | undefined): Promise<SendGuard> {
-  const sender = await loadSelectedSender();
+export async function assertSendableSender(
+  templateName: string | null | undefined,
+  opts?: { now?: number; fetchImpl?: typeof fetch },
+): Promise<SendGuard> {
+  const now = opts?.now ?? Date.now();
+  let sender = await loadSelectedSender();
+
+  // Confirmação vencida: tenta uma nova consulta antes de decidir.
+  if (sender && !isConnectionFresh(sender.last_seen_at, now, SEND_CONNECTION_MAX_AGE_MS)) {
+    let resyncOk = false;
+    let resyncError: string | null = null;
+    try {
+      const r = await syncWaConnection(opts?.fetchImpl);
+      resyncOk = r.ok;
+      resyncError = r.error;
+    } catch (e: any) {
+      resyncOk = false;
+      resyncError = e?.message ?? 'falha ao consultar a conexão';
+    }
+    // A seleção nunca é apagada aqui — apenas relida.
+    sender = await loadSelectedSender();
+    const fresh = decideConnectionFreshness({
+      lastSeenAt: sender?.last_seen_at ?? null,
+      now: opts?.now ?? Date.now(),
+      resyncAttempted: true,
+      resyncOk,
+      resyncError,
+    });
+    if (!fresh.ok) return { ok: false, sender, template: null, error: fresh.error ?? 'Envio bloqueado' };
+  }
+
   const name = String(templateName ?? '').trim() || null;
   let template: any = null;
   if (name && sender?.waba_id) {
@@ -230,3 +260,4 @@ export async function assertSendableSender(templateName: string | null | undefin
   if (!check.ok) return { ok: false, sender, template, error: check.error ?? 'Envio bloqueado' };
   return { ok: true, sender: sender as SelectedSender, template, error: null };
 }
+
