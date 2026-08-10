@@ -401,43 +401,73 @@ function WhatsappCampanhasPage() {
           )}
 
           <div>
-            <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Log operacional</div>
-            <div className="max-h-72 overflow-auto rounded-lg border">
-              <table className="w-full min-w-[720px] text-sm">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-semibold uppercase text-slate-500">Últimos envios</div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="secondary" onClick={() => void refresh()}>
+                  <RefreshCw className="mr-1 h-3.5 w-3.5" /> Atualizar agora
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy === 'reconcile'}
+                  onClick={() =>
+                    run('reconcile', async () => {
+                      const r: any = await doReconcile({ data: { facts: CONFIRMED_REJECTIONS } });
+                      toast.success(`${r.updated} registro(s) reconciliado(s)`);
+                    })
+                  }
+                >
+                  Reconciliar rejeições confirmadas
+                </Button>
+              </div>
+            </div>
+            <div className="max-h-96 overflow-auto rounded-lg border">
+              <table className="w-full min-w-[1040px] text-sm">
                 <thead className="bg-slate-50">
                   <tr className="text-left text-xs uppercase text-slate-500">
-                    <th className="px-3 py-2">Quando</th>
-                    <th>Campanha</th>
-                    <th>Empresa</th>
+                    <th className="px-3 py-2">Empresa</th>
                     <th>Telefone</th>
                     <th>Modelo</th>
-                    <th>Situação</th>
-                    <th>Erro</th>
+                    <th>API</th>
+                    <th>Meta</th>
+                    <th>Código / motivo</th>
+                    <th>wamid</th>
+                    <th>Aceita</th>
+                    <th>Entregue</th>
+                    <th>Lida</th>
                   </tr>
                 </thead>
                 <tbody>
                   {log.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-3 py-4 text-slate-400">
+                      <td colSpan={10} className="px-3 py-4 text-slate-400">
                         Nenhum envio registrado ainda.
                       </td>
                     </tr>
                   )}
                   {log.map((l) => (
-                    <tr key={l.id} className="border-t">
-                      <td className="px-3 py-2 whitespace-nowrap">{fmtDate(l.at)}</td>
-                      <td>{l.campaign}</td>
-                      <td className="max-w-[180px] truncate">{l.company}</td>
-                      <td>{l.phone}</td>
+                    <tr key={l.id} className="border-t align-top">
+                      <td className="max-w-[180px] truncate px-3 py-2">{l.company}</td>
+                      <td className="whitespace-nowrap">{l.phone}</td>
                       <td>{l.template}</td>
-                      <td>{ITEM_LABEL[l.status] ?? l.status}</td>
-                      <td className="max-w-[220px] truncate text-red-600">{l.error ?? '—'}</td>
+                      <td>{API_STATUS_LABEL[l.apiStatus] ?? ITEM_LABEL[l.status] ?? l.status}</td>
+                      <td>{l.deliveryStatus ? DELIVERY_LABEL[l.deliveryStatus] ?? l.deliveryStatus : 'Aguardando evento'}</td>
+                      <td className="max-w-[220px] truncate text-red-600">
+                        {l.errorCode ? `${l.errorCode} — ` : ''}
+                        {l.errorReason ?? l.error ?? '—'}
+                      </td>
+                      <td className="max-w-[160px] truncate font-mono text-xs text-slate-500">{l.wamid ?? '—'}</td>
+                      <td className="whitespace-nowrap text-xs">{fmtDate(l.acceptedAt)}</td>
+                      <td className="whitespace-nowrap text-xs">{fmtDate(l.deliveredAt)}</td>
+                      <td className="whitespace-nowrap text-xs">{fmtDate(l.readAt)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
+
         </CardContent>
       </Card>
 
