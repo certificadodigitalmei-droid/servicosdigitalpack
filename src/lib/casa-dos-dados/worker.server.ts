@@ -151,6 +151,19 @@ export type WorkerDeps = {
   updateQueueRow: (args: { queueId: string; companyId: string | null; companyLinkId: string | null; wasNewCompany: boolean; wasNewLink: boolean }) => Promise<void>;
   /** Lista permanente de rejeição — telefone bloqueado nunca reimporta. */
   isPhoneBlocked?: (e164: string) => Promise<boolean> | boolean;
+  /** Bloqueio permanente por CNPJ — evita gastar crédito de novo. */
+  isCnpjBlocked?: (cnpj: string) => Promise<boolean> | boolean;
+  blockCnpj?: (cnpj: string, reason: string) => Promise<void> | void;
+  /** Fila de prontidão do WhatsApp (empresa com celular + link ativo). */
+  enqueueReady?: (args: {
+    companyId: string;
+    cnpj: string;
+    companyName: string | null;
+    phone: string;
+    companyLinkId: string | null;
+    token: string | null;
+  }) => Promise<void> | void;
+
 };
 
 export type CoreLoopInput = {
@@ -359,14 +372,25 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
       // Validate data quality directly from search payload.
       await progress('validacao_dos_campos', { page, item_offset: i, cnpj });
-      const requireMobile = !!automation.filters?.require_mobile_phone && !isTestRun;
+      // Celular brasileiro válido é OBRIGATÓRIO em qualquer execução real,
+      // independentemente dos filtros escolhidos: sem ele a empresa nunca
+      // chegaria ao WhatsApp e só ocuparia base e crédito.
+      const requireMobile = !isTestRun;
+
+      // Bloqueio permanente por CNPJ — antes de qualquer enriquecimento pago.
+      if (deps.isCnpjBlocked && (await deps.isCnpjBlocked(cnpj))) {
+        outcome.skipped.push({ index: i, page, cnpj, reason: 'blocked_number', detail: 'CNPJ na lista permanente de rejeição' });
+        continue;
+      }
+
       const validation = validateCompanyItem(enrichedItem, automation.filters ?? {});
       const mobile = validation.mobile;
 
       // ---- CELULAR OBRIGATÓRIO (execução real) ----
-      // Sem celular válido o registro é apenas ignorado: não entra na fila,
-      // não vira company nem link e NÃO consome a quantidade solicitada.
+      // Sem celular válido nada é criado: nem fila, nem company, nem link.
+      // Fica só o registro mínimo de rejeição por CNPJ.
       if (requireMobile && !mobile) {
+        if (deps.blockCnpj) await deps.blockCnpj(cnpj, 'sem celular brasileiro válido');
         outcome.skipped.push({ index: i, page, cnpj, reason: 'invalid_mobile', detail: 'celular brasileiro válido ausente' });
         continue;
       }
@@ -374,6 +398,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         outcome.skipped.push({ index: i, page, cnpj, reason: 'blocked_number', detail: 'telefone na lista permanente de rejeição' });
         continue;
       }
+
 
       const isValid = validation.complete;
       const dataQualityStatus: 'complete' | 'test_partial' | 'pending_enrichment' = isValid
@@ -549,7 +574,23 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
       await progress('atualizacao_da_fila', { page, item_offset: i, cnpj, company_id: companyId, company_link_id: linkId });
       await deps.updateQueueRow({ queueId, companyId, companyLinkId: linkId, wasNewCompany, wasNewLink });
 
+      // Fila de prontidão do WhatsApp — mesma operação server-side da importação.
+      if (mobile && linkId && !isTestRun && deps.enqueueReady) {
+        await deps.enqueueReady({
+          companyId,
+          cnpj,
+          companyName:
+            (companyPayload.nome_titular_exibicao as string) ??
+            (companyPayload.razao_social_original as string) ??
+            null,
+          phone: mobile,
+          companyLinkId: linkId,
+          token: publicToken,
+        });
+      }
+
       outcome.imported += 1;
+
       if (!sampleSet) {
         outcome.sample = {
           cnpj,
@@ -717,17 +758,36 @@ export async function runAutomationOnce(
     if (!publicBaseUrl) throw new Error('PUBLIC_APP_URL não configurado');
 
     const { loadBlockedPhones, loadBlockedCnpjs } = await import('@/lib/whatsapp/blocklist.server');
+    const {
+      loadBlockedCnpjSet,
+      blockCnpjForImport,
+      enqueueReadyCompany,
+    } = await import('@/lib/whatsapp/ready-queue.server');
     const blockedPhones = await loadBlockedPhones();
     const blockedCnpjs = await loadBlockedCnpjs();
+    const blockedImportCnpjs = await loadBlockedCnpjSet();
 
     const deps: WorkerDeps = {
       fetchPage: async (o) => {
         await touchHeartbeat('pesquisa_avancada', { page: o.page, limit: o.limit, date: o.date });
         // Execução real importa empresas → precisa do resultado completo,
         // mas SOMENTE depois dos filtros oficiais (com_telefone/somente_celular).
-        return searchOpeningsByDate({ ...o, excludeCnpjs: blockedCnpjs, completo: !isTestRun });
+        return searchOpeningsByDate({
+          ...o,
+          excludeCnpjs: Array.from(new Set([...blockedCnpjs, ...blockedImportCnpjs])),
+          completo: !isTestRun,
+        });
       },
       isPhoneBlocked: (e164) => blockedPhones.has(e164),
+      isCnpjBlocked: (cnpj) => blockedImportCnpjs.has(String(cnpj).replace(/\D/g, '')),
+      blockCnpj: async (cnpj, reason) => {
+        blockedImportCnpjs.add(String(cnpj).replace(/\D/g, ''));
+        await blockCnpjForImport({ cnpj, reason, source: 'casa_dos_dados' });
+      },
+      enqueueReady: async (args) => {
+        await enqueueReadyCompany({ ...args, source: 'importacao_automatica' });
+      },
+
       // fetchDetails intentionally omitted: response.cnpjs already carries
       // the seven required fields. GET /v5/cnpj/{cnpj} is no longer called
       // per-result to keep every run inside the timeout budget.

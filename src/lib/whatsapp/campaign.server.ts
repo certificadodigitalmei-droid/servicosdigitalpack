@@ -14,11 +14,11 @@ import {
   normalizeTemplateStatus,
   remainingDailyCap,
   SENDABLE_TEMPLATE_STATUS,
-  selectEligibleCompanies,
-  type CompanyLike,
 } from './campaign-logic';
 import { loadBlockedPhones } from './blocklist.server';
 import { blockPhoneAndQuarantine } from './blocklist.server';
+import { markReadySent } from './ready-queue.server';
+
 
 const db = () => supabaseAdmin as any;
 
@@ -144,56 +144,26 @@ export async function buildCampaignQueue(campaignId: string, limit: number) {
     .maybeSingle();
   if (!campaign) throw new Error('Campanha não encontrada');
 
-  const { data: companies } = await db()
-    .from('companies')
-    .select(
-      'id,cnpj,razao_social_original,nome_titular_exibicao,nome_fantasia,ddd,telefones,whatsapp_phone_e164,created_at',
-    )
-    .not('whatsapp_phone_e164', 'is', null)
-    .order('created_at', { ascending: true })
-    .limit(Math.max(limit * 4, 200));
-
-  const ids = ((companies ?? []) as any[]).map((c) => c.id);
-  const linkByCompany = new Map<string, { id: string; token: string }>();
-  for (let i = 0; i < ids.length; i += 200) {
-    const { data: links } = await db()
-      .from('company_links')
-      .select('id,company_id,public_token')
-      .in('company_id', ids.slice(i, i + 200))
-      .eq('active', true);
-    for (const l of ((links ?? []) as any[])) {
-      if (l.company_id && l.public_token && !linkByCompany.has(l.company_id)) {
-        linkByCompany.set(l.company_id, { id: l.id, token: String(l.public_token).trim() });
-      }
-    }
-  }
+  // Consome a fila de prontidão de forma atômica: dois workers nunca pegam a
+  // mesma empresa e nada é criado sem campanha/modelo.
+  const { data: reserved, error } = await db().rpc('wa_reserve_ready', {
+    _campaign_id: campaignId,
+    _limit: limit,
+  });
+  if (error) throw new Error(error.message);
 
   const blockedPhones = await loadBlockedPhones();
+  const rowsIn = ((reserved ?? []) as any[]).filter((r) => !blockedPhones.has(String(r.phone_e164)));
+  const skipped = ((reserved ?? []) as any[]).length - rowsIn.length;
 
-  const { data: existing } = await db()
-    .from('whatsapp_campaign_items')
-    .select('company_id,phone')
-    .eq('campaign_id', campaignId);
-  const usedPhones = new Set(((existing ?? []) as any[]).map((r) => String(r.phone)));
-  const usedCompanies = new Set(((existing ?? []) as any[]).map((r) => String(r.company_id)));
-
-  const result = selectEligibleCompanies({
-    companies: (companies ?? []) as CompanyLike[],
-    linkByCompany,
-    blockedPhones,
-    alreadyUsedPhones: usedPhones,
-    alreadyUsedCompanyIds: usedCompanies,
-    limit,
-  });
-
-  if (result.selected.length) {
-    const rows = result.selected.map((s) => ({
+  if (rowsIn.length) {
+    const rows = rowsIn.map((s) => ({
       campaign_id: campaignId,
-      company_id: s.companyId,
-      company_link_id: s.companyLinkId,
-      company_name: s.companyName,
+      company_id: s.company_id,
+      company_link_id: s.company_link_id,
+      company_name: s.company_name,
       cnpj: s.cnpj,
-      phone: s.phone,
+      phone: s.phone_e164,
       token: s.token,
       template_name: campaign.template_name,
       status: 'pending',
@@ -204,8 +174,9 @@ export async function buildCampaignQueue(campaignId: string, limit: number) {
     });
   }
 
-  return { inserted: result.selected.length, skipped: result.skipped, buttonBase };
+  return { inserted: rowsIn.length, skipped, buttonBase };
 }
+
 
 // ---------------------------------------------------------------------------
 // Worker
@@ -340,6 +311,7 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
           lock_token: null,
         })
         .eq('id', item.id);
+      if (item.company_id) await markReadySent(String(item.company_id));
       continue;
     }
 
@@ -353,6 +325,7 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
         .from('whatsapp_campaign_items')
         .update({ status: 'blocked', error_message: result.error, locked_at: null, lock_token: null })
         .eq('id', item.id);
+      // Falha permanente do destinatário → exclusão definitiva transacional.
       await blockPhoneAndQuarantine({
         phone: item.phone,
         cnpj: item.cnpj ?? null,
@@ -362,6 +335,7 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
         providerStatus: status,
       });
     } else if (decision.action === 'retry') {
+
       await db()
         .from('whatsapp_campaign_items')
         .update({

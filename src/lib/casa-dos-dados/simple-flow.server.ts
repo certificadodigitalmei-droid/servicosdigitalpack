@@ -14,6 +14,14 @@ import { searchOpeningsByDate, fetchCompanyDetailsByCnpj } from './client.server
 import { normalizeCasaDosDadosCompany } from './worker-logic';
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
 import { validateEmailForImport } from '@/lib/email-validation';
+import { extractValidBrazilianMobile } from '@/lib/phone/brazilian-mobile';
+import { isPhoneBlocked } from '@/lib/whatsapp/blocklist.server';
+import {
+  blockCnpjForImport,
+  enqueueReadyCompany,
+  loadBlockedCnpjSet,
+} from '@/lib/whatsapp/ready-queue.server';
+
 
 export type RunImportBatchInput = {
   date: string; // YYYY-MM-DD
@@ -148,7 +156,14 @@ export async function runImportBatch(
   const imported: ImportedRow[] = [];
   const failed: Array<{ cnpj: string; error: string }> = [];
 
+  // Bloqueio permanente por CNPJ — checado ANTES do enriquecimento pago.
+  const blockedImportCnpjs = await loadBlockedCnpjSet();
+  const beforeBlockFilter = toEnrich.length;
+  toEnrich = toEnrich.filter((c) => !blockedImportCnpjs.has(c.cnpj));
+  skipped += beforeBlockFilter - toEnrich.length;
+
   for (const { cnpj, raw: rawBase } of toEnrich) {
+
     const nBase = normalizeCasaDosDadosCompany(rawBase);
     try {
       // 3) Enrichment (paid): /v4/cnpj/{cnpj}
@@ -303,7 +318,30 @@ export async function runImportBatch(
         rawAny?.natureza_juridica ??
         null;
 
+      // ---- CELULAR BRASILEIRO OBRIGATÓRIO ----
+      // Sem celular válido nada é criado: nem empresa, nem link, nem filas.
+      // Fica só o registro mínimo de rejeição por CNPJ.
+      const mobileCheck = extractValidBrazilianMobile(
+        telefonesArr as any,
+        (telefonesArr?.[0]?.ddd ?? estab?.ddd ?? rawAny?.ddd ?? null) as any,
+      );
+      if (!mobileCheck.valid) {
+        await blockCnpjForImport({
+          cnpj,
+          reason: `sem celular brasileiro válido (${mobileCheck.reason})`,
+          source: 'importacao_simples',
+        });
+        failed.push({ cnpj, error: 'descartado: sem celular brasileiro válido' });
+        continue;
+      }
+      const mobileE164 = mobileCheck.e164;
+      if (await isPhoneBlocked(mobileE164)) {
+        skipped++;
+        continue;
+      }
+
       const companyPayload: Record<string, unknown> = {
+
         cnpj,
         razao_social_original: n.razao_social ?? nBase.razao_social,
         nome_fantasia: n.nome_fantasia ?? nBase.nome_fantasia,
@@ -346,7 +384,9 @@ export async function runImportBatch(
         nivel_dados: 'completo',
         complete_data_fetched_at: new Date().toISOString(),
         possui_email: !!n.email,
-        possui_telefone: Array.isArray(telefonesArr) && telefonesArr.length > 0,
+        possui_telefone: true,
+        whatsapp_phone_e164: mobileE164,
+
         fonte: 'casa_dos_dados',
         last_seen_at: new Date().toISOString(),
         is_test_record: false,
@@ -404,6 +444,7 @@ export async function runImportBatch(
       let publicUrl: string;
       let checkoutUrl: string;
       let isNewLink = false;
+      let linkId: string | null = (existingLink as any)?.id ?? null;
 
       if (existingLink) {
         publicToken = (existingLink as any).public_token as string;
@@ -416,24 +457,30 @@ export async function runImportBatch(
         publicToken = crypto.randomUUID().replace(/-/g, '');
         publicUrl = `${publicBaseUrl}/acesso/${publicToken.slice(0, 10)}`;
         checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
-        const { error: lErr } = await supabaseAdmin.from('company_links').insert({
-          company_id: companyId,
-          public_token: publicToken,
-          token: publicToken,
-          public_url: publicUrl,
-          checkout_url: checkoutUrl,
-          active: true,
-          status: 'active',
-          is_test_record: false,
-          data_quality_status: 'complete',
-          company_data: {
-            cnpj,
-            nome: displayName,
-            origin: 'casa_dos_dados_simple',
-          } as any,
-        });
+        const { data: newLink, error: lErr } = await supabaseAdmin
+          .from('company_links')
+          .insert({
+            company_id: companyId,
+            public_token: publicToken,
+            token: publicToken,
+            public_url: publicUrl,
+            checkout_url: checkoutUrl,
+            active: true,
+            status: 'active',
+            is_test_record: false,
+            data_quality_status: 'complete',
+            company_data: {
+              cnpj,
+              nome: displayName,
+              origin: 'casa_dos_dados_simple',
+            } as any,
+          })
+          .select('id')
+          .single();
         if (lErr) throw new Error(`insert link: ${lErr.message}`);
+        linkId = (newLink as any)?.id ?? null;
         isNewLink = true;
+
 
         // Log de auditoria: Link Criado
         await supabaseAdmin.from('automation_audit_logs').insert({
@@ -444,6 +491,17 @@ export async function runImportBatch(
         });
       }
 
+      // Fila de prontidão do WhatsApp — mesma operação server-side da importação.
+      await enqueueReadyCompany({
+        companyId,
+        cnpj,
+        companyName: displayName,
+        phone: mobileE164,
+        companyLinkId: linkId,
+        token: publicToken,
+        source: 'importacao_simples',
+      });
+
       imported.push({
         cnpj,
         nome: displayName,
@@ -452,6 +510,7 @@ export async function runImportBatch(
         isNewCompany,
         isNewLink,
       });
+
     } catch (err: any) {
       failed.push({ cnpj, error: err?.message ?? String(err) });
     }

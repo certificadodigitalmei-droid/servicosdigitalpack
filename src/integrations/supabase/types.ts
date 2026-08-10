@@ -545,6 +545,36 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_import_cnpjs: {
+        Row: {
+          cnpj: string
+          created_at: string
+          id: string
+          phone_canonical: string | null
+          phone_raw: string | null
+          reason: string
+          source: string
+        }
+        Insert: {
+          cnpj: string
+          created_at?: string
+          id?: string
+          phone_canonical?: string | null
+          phone_raw?: string | null
+          reason: string
+          source?: string
+        }
+        Update: {
+          cnpj?: string
+          created_at?: string
+          id?: string
+          phone_canonical?: string | null
+          phone_raw?: string | null
+          reason?: string
+          source?: string
+        }
+        Relationships: []
+      }
       campaign_variant_settings: {
         Row: {
           id: number
@@ -2310,6 +2340,79 @@ export type Database = {
           },
         ]
       }
+      whatsapp_ready_queue: {
+        Row: {
+          campaign_id: string | null
+          cnpj: string
+          company_id: string
+          company_link_id: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          phone_canonical: string | null
+          phone_e164: string
+          reserved_at: string | null
+          source: string
+          status: string
+          token: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          cnpj: string
+          company_id: string
+          company_link_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          phone_canonical?: string | null
+          phone_e164: string
+          reserved_at?: string | null
+          source?: string
+          status?: string
+          token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string | null
+          cnpj?: string
+          company_id?: string
+          company_link_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          phone_canonical?: string | null
+          phone_e164?: string
+          reserved_at?: string | null
+          source?: string
+          status?: string
+          token?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_ready_queue_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_ready_queue_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_ready_queue_company_link_id_fkey"
+            columns: ["company_link_id"]
+            isOneToOne: false
+            referencedRelation: "company_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_templates: {
         Row: {
           body_text: string | null
@@ -2370,6 +2473,16 @@ export type Database = {
     }
     Functions: {
       admin_cleanup_unpaid_data: { Args: never; Returns: Json }
+      admin_purge_company_permanent: {
+        Args: {
+          _cnpj: string
+          _company_id: string
+          _phone: string
+          _reason: string
+          _source?: string
+        }
+        Returns: Json
+      }
       claim_automation_by_id: {
         Args: { _id: string }
         Returns: {
@@ -2430,6 +2543,17 @@ export type Database = {
           id: string
           phone: string
           template_name: string
+          token: string
+        }[]
+      }
+      wa_reserve_ready: {
+        Args: { _campaign_id: string; _limit: number }
+        Returns: {
+          cnpj: string
+          company_id: string
+          company_link_id: string
+          company_name: string
+          phone_e164: string
           token: string
         }[]
       }

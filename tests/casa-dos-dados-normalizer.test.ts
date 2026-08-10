@@ -99,7 +99,7 @@ const automation = { id: 'a', owner_user_id: 'u', mode: 'openings_today', quanti
 // 50 incompletes → must stop early, status partial (via partialReason set), no timeout.
 async function testAllIncompleteStopsPartial() {
   const items: Array<Record<string, unknown>> = [];
-  for (let i = 0; i < 50; i += 1) items.push({ cnpj: String(70000000000000n + BigInt(i)), razao_social: 'X' });
+  for (let i = 0; i < 50; i += 1) items.push({ cnpj: String(70000000000000n + BigInt(i)), razao_social: 'X', ddd_telefone_1: '11 99887-6655' });
   const { deps } = makeDeps([makePage(items, 50)]);
   const { outcome } = await runCoreLoop(
     { automation, requested: 1, queryDate: '2026-07-21', runId: 'r', startPage: 1, startOffset: 0, maxPages: 5, pageSize: 50, publicBaseUrl: 'https://x', maxRunMs: 30_000, softLimitMs: 20_000, maxItemsAnalyzed: 50 },
@@ -115,7 +115,7 @@ async function testAllIncompleteStopsPartial() {
 async function testTestManualCap() {
   const cnpjs: string[] = [];
   for (let i = 0; i < 30; i += 1) cnpjs.push(String(80000000000000n + BigInt(i)));
-  const items = cnpjs.map((c) => ({ cnpj: c, razao_social: 'X' }));
+  const items = cnpjs.map((c) => ({ cnpj: c, razao_social: 'X', ddd_telefone_1: '11 99887-6655' }));
   const { deps } = makeDeps([makePage(items, 30)], new Set(cnpjs));
   const { outcome } = await runCoreLoop(
     { automation, requested: 1, queryDate: '2026-07-21', runId: 'r', startPage: 1, startOffset: 0, maxPages: 5, pageSize: 50, publicBaseUrl: 'https://x', isTestRun: true, maxTestManualItems: 10 },
@@ -129,7 +129,7 @@ async function testTestManualCap() {
 // Incomplete-branch duplicate must count as duplicated (not silent).
 async function testIncompleteDuplicateCounts() {
   const cnpj = '90000000000001';
-  const item = { cnpj, razao_social: 'X' }; // incomplete
+  const item = { cnpj, razao_social: 'X', ddd_telefone_1: '11 99887-6655' }; // incomplete
   const { deps } = makeDeps([makePage([item], 1)], new Set([cnpj])); // already in queue
   const { outcome } = await runCoreLoop(
     { automation, requested: 1, queryDate: '2026-07-21', runId: 'r', startPage: 1, startOffset: 0, maxPages: 1, pageSize: 50, publicBaseUrl: 'https://x' },

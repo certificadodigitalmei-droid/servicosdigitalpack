@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatCNPJ } from '@/lib/format';
+import { WhatsappReadyPanel } from '@/components/painel/WhatsappReadyPanel';
 import {
   PACE_LIST,
   QUANTITY_OPTIONS,
@@ -578,7 +579,11 @@ function WhatsappCampanhasPage() {
         </CardContent>
       </Card>
 
+      {/* 4b. FILA DE PRONTIDÃO + IMPORTAÇÃO */}
+      <WhatsappReadyPanel onChanged={() => void refresh()} />
+
       {/* 5. NOVA CAMPANHA */}
+
       <Card>
         <CardHeader>
           <CardTitle>Nova campanha</CardTitle>

@@ -157,6 +157,9 @@ export function collectPhoneCandidates(item: Record<string, unknown>): unknown[]
   push((item as any).telefones);
   push((item as any).telefone);
   push((item as any).telefone_contato);
+  push((item as any).ddd_telefone_1);
+  push((item as any).ddd_telefone_2);
+
   const contato = (item as any).contato;
   if (contato && typeof contato === 'object') {
     push((contato as any).telefones);
