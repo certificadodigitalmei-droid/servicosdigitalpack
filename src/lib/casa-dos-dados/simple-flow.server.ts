@@ -444,6 +444,17 @@ export async function runImportBatch(
         });
       }
 
+      // Fila de prontidão do WhatsApp — mesma operação server-side da importação.
+      await enqueueReadyCompany({
+        companyId,
+        cnpj,
+        companyName: displayName,
+        phone: mobileE164,
+        companyLinkId: (existingLink as any)?.id ?? null,
+        token: publicToken,
+        source: 'importacao_simples',
+      });
+
       imported.push({
         cnpj,
         nome: displayName,
@@ -452,6 +463,7 @@ export async function runImportBatch(
         isNewCompany,
         isNewLink,
       });
+
     } catch (err: any) {
       failed.push({ cnpj, error: err?.message ?? String(err) });
     }
