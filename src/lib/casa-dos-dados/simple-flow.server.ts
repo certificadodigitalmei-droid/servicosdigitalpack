@@ -156,7 +156,14 @@ export async function runImportBatch(
   const imported: ImportedRow[] = [];
   const failed: Array<{ cnpj: string; error: string }> = [];
 
+  // Bloqueio permanente por CNPJ — checado ANTES do enriquecimento pago.
+  const blockedImportCnpjs = await loadBlockedCnpjSet();
+  const beforeBlockFilter = toEnrich.length;
+  toEnrich = toEnrich.filter((c) => !blockedImportCnpjs.has(c.cnpj));
+  skipped += beforeBlockFilter - toEnrich.length;
+
   for (const { cnpj, raw: rawBase } of toEnrich) {
+
     const nBase = normalizeCasaDosDadosCompany(rawBase);
     try {
       // 3) Enrichment (paid): /v4/cnpj/{cnpj}
