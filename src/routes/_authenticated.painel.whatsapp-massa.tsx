@@ -44,7 +44,6 @@ import {
 import {
   getWaCampaignDashboard,
   exportWaCampaignCsv,
-  syncWaTemplates,
   selectWaTemplate,
   createWaCampaign,
   controlWaCampaign,
@@ -55,6 +54,12 @@ import {
   refillWaCampaign,
   reconcileWaDeliveries,
 } from '@/lib/whatsapp/campaigns.functions';
+import {
+  getWaSenders,
+  selectWaSender,
+  syncWaConnectionAndTemplates,
+} from '@/lib/whatsapp/senders.functions';
+
 import { CONFIRMED_REJECTIONS } from '@/lib/whatsapp/known-facts';
 
 export const Route = createFileRoute('/_authenticated/painel/whatsapp-massa')({
@@ -135,7 +140,9 @@ function fmtDate(v: string | null | undefined): string {
 function WhatsappCampanhasPage() {
   const loadDash = useServerFn(getWaCampaignDashboard);
   const doExport = useServerFn(exportWaCampaignCsv);
-  const doSync = useServerFn(syncWaTemplates);
+  const doSync = useServerFn(syncWaConnectionAndTemplates);
+  const loadSenders = useServerFn(getWaSenders);
+  const doSelectSender = useServerFn(selectWaSender);
   const doSelect = useServerFn(selectWaTemplate);
   const doCreate = useServerFn(createWaCampaign);
   const doControl = useServerFn(controlWaCampaign);
@@ -149,8 +156,10 @@ function WhatsappCampanhasPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [dash, setDash] = useState<any>(null);
+  const [senders, setSenders] = useState<any>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState('');
+
 
   // Campanha nova
   const [campName, setCampName] = useState('');
@@ -185,8 +194,9 @@ function WhatsappCampanhasPage() {
 
   const refresh = async () => {
     try {
-      const res: any = await loadDash({});
+      const [res, snd]: any[] = await Promise.all([loadDash({}), loadSenders({})]);
       setDash(res);
+      setSenders(snd);
       const current = res?.settings?.template_name ?? '';
       setSelectedTemplate((prev) => prev || current);
       setLoadError(null);
@@ -204,12 +214,21 @@ function WhatsappCampanhasPage() {
   };
 
   useEffect(() => {
-    void refresh();
+    void (async () => {
+      // Sincronização automática ao abrir (o servidor limita a repetição).
+      try {
+        await doSync({ data: { auto: true } });
+      } catch {
+        /* sem conexão: o painel segue mostrando o último estado */
+      }
+      await refresh();
+    })();
     // Autoatualização moderada: painel a cada 30 s.
     const t1 = window.setInterval(() => void refresh(), 30_000);
     return () => window.clearInterval(t1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   useEffect(() => {
     if (!activeId) return;
@@ -489,14 +508,14 @@ function WhatsappCampanhasPage() {
         </CardContent>
       </Card>
 
-      {/* 3. MODELOS */}
+      {/* 3. NÚMERO REMETENTE */}
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle>Modelos e sincronização</CardTitle>
+            <CardTitle>Número remetente</CardTitle>
             <CardDescription>
-              A lista vem direto da sua conta oficial. Só modelos aprovados podem ser usados no envio.
-              {lastSync ? ` Última sincronização: ${fmtDate(lastSync)}.` : ' Nunca sincronizado.'}
+              O número que aparece para quem recebe. Ele é lido direto da sua conta oficial — nada é digitado à mão.
+              {senders?.lastSyncAt ? ` Última sincronização: ${fmtDate(senders.lastSyncAt)}.` : ' Nunca sincronizado.'}
             </CardDescription>
           </div>
           <Button
@@ -504,16 +523,93 @@ function WhatsappCampanhasPage() {
             disabled={busy === 'sync'}
             onClick={() =>
               run('sync', async () => {
-                const r: any = await doSync({});
-                if (r.ok) toast.success(`${r.synced} modelo(s) sincronizado(s)`);
-                else toast.error(r.error ?? 'Não foi possível sincronizar');
+                const r: any = await doSync({ data: { auto: false } });
+                if (r?.connection?.ok) {
+                  toast.success(
+                    `${r.connection.senders?.length ?? 0} número(s) e ${r.templates?.synced ?? 0} modelo(s) sincronizados`,
+                  );
+                } else {
+                  toast.error(r?.connection?.error ?? 'Não foi possível sincronizar');
+                }
               })
             }
           >
             {busy === 'sync' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Sincronizar modelos
+            Sincronizar conexão e modelos
           </Button>
         </CardHeader>
+        <CardContent className="space-y-3">
+          {senders?.selected ? (
+            <div className="rounded-md border p-3">
+              <div className="font-medium">{senders.selected.display_phone_number ?? senders.selected.phone_number_id}</div>
+              <div className="text-sm text-muted-foreground">
+                {senders.selected.verified_name ?? 'Sem nome verificado'} · {senders.selected.status ?? '—'}
+              </div>
+            </div>
+          ) : (
+            <Alert>
+              <AlertDescription>
+                Nenhum número conectado no momento. Sincronize a conexão para carregar os números disponíveis.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {senders?.needsManualChoice && (
+            <Alert>
+              <AlertDescription>
+                Há mais de um número conectado. Escolha qual deve enviar as campanhas.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {(senders?.senders ?? []).length > 1 && (
+            <div className="space-y-1.5">
+              <Label htmlFor="sender">Número usado nos envios</Label>
+              <select
+                id="sender"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={senders?.selected?.phone_number_id ?? ''}
+                onChange={(e) =>
+                  run('sender', async () => {
+                    const r: any = await doSelectSender({ data: { phoneNumberId: e.target.value } });
+                    if (r.ok) toast.success('Número remetente atualizado');
+                    else toast.error(r.error ?? 'Não foi possível usar este número');
+                    await refresh();
+                  })
+                }
+              >
+                <option value="">Selecione…</option>
+                {(senders?.senders ?? [])
+                  .filter((s: any) => s.is_active)
+                  .map((s: any) => (
+                    <option key={s.phone_number_id} value={s.phone_number_id}>
+                      {s.display_phone_number ?? s.phone_number_id} — {s.verified_name ?? 'sem nome'}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+
+          {senders?.sendBlockedReason && (
+            <Alert variant="destructive">
+              <AlertDescription>{senders.sendBlockedReason}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 4. MODELOS */}
+      <Card>
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle>Modelos e sincronização</CardTitle>
+            <CardDescription>
+              A lista vem direto da conta do número selecionado. Só modelos aprovados podem ser usados no envio.
+              {lastSync ? ` Última sincronização: ${fmtDate(lastSync)}.` : ' Nunca sincronizado.'}
+            </CardDescription>
+          </div>
+        </CardHeader>
+
         <CardContent className="space-y-4">
           {!hasApproved && (
             <Alert>

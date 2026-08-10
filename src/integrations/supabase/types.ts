@@ -2137,6 +2137,8 @@ export type Database = {
           provider_internal_id: string | null
           provider_message_id: string | null
           read_at: string | null
+          sender_phone_number_id: string | null
+          sender_waba_id: string | null
           sent_at: string | null
           status: string
           template_name: string
@@ -2168,6 +2170,8 @@ export type Database = {
           provider_internal_id?: string | null
           provider_message_id?: string | null
           read_at?: string | null
+          sender_phone_number_id?: string | null
+          sender_waba_id?: string | null
           sent_at?: string | null
           status?: string
           template_name: string
@@ -2199,6 +2203,8 @@ export type Database = {
           provider_internal_id?: string | null
           provider_message_id?: string | null
           read_at?: string | null
+          sender_phone_number_id?: string | null
+          sender_waba_id?: string | null
           sent_at?: string | null
           status?: string
           template_name?: string
@@ -2244,6 +2250,8 @@ export type Database = {
           owner_user_id: string
           pace_preset: string
           paused_reason: string | null
+          sender_phone_number_id: string | null
+          sender_waba_id: string | null
           started_at: string | null
           status: string
           target_count: number
@@ -2264,6 +2272,8 @@ export type Database = {
           owner_user_id: string
           pace_preset?: string
           paused_reason?: string | null
+          sender_phone_number_id?: string | null
+          sender_waba_id?: string | null
           started_at?: string | null
           status?: string
           target_count?: number
@@ -2284,6 +2294,8 @@ export type Database = {
           owner_user_id?: string
           pace_preset?: string
           paused_reason?: string | null
+          sender_phone_number_id?: string | null
+          sender_waba_id?: string | null
           started_at?: string | null
           status?: string
           target_count?: number
@@ -2538,6 +2550,69 @@ export type Database = {
           },
         ]
       }
+      whatsapp_senders: {
+        Row: {
+          account_mode: string | null
+          chakra_status: string | null
+          created_at: string
+          display_phone_number: string | null
+          id: string
+          is_active: boolean
+          is_selected: boolean
+          last_seen_at: string | null
+          messaging_limit_tier: string | null
+          name_status: string | null
+          phone_number_id: string
+          plugin_id: string
+          quality_score: string | null
+          raw: Json | null
+          status: string | null
+          updated_at: string
+          verified_name: string | null
+          waba_id: string | null
+        }
+        Insert: {
+          account_mode?: string | null
+          chakra_status?: string | null
+          created_at?: string
+          display_phone_number?: string | null
+          id?: string
+          is_active?: boolean
+          is_selected?: boolean
+          last_seen_at?: string | null
+          messaging_limit_tier?: string | null
+          name_status?: string | null
+          phone_number_id: string
+          plugin_id: string
+          quality_score?: string | null
+          raw?: Json | null
+          status?: string | null
+          updated_at?: string
+          verified_name?: string | null
+          waba_id?: string | null
+        }
+        Update: {
+          account_mode?: string | null
+          chakra_status?: string | null
+          created_at?: string
+          display_phone_number?: string | null
+          id?: string
+          is_active?: boolean
+          is_selected?: boolean
+          last_seen_at?: string | null
+          messaging_limit_tier?: string | null
+          name_status?: string | null
+          phone_number_id?: string
+          plugin_id?: string
+          quality_score?: string | null
+          raw?: Json | null
+          status?: string | null
+          updated_at?: string
+          verified_name?: string | null
+          waba_id?: string | null
+        }
+        Relationships: []
+      }
       whatsapp_templates: {
         Row: {
           body_text: string | null
@@ -2555,6 +2630,7 @@ export type Database = {
           synced_at: string | null
           updated_at: string
           variables: Json
+          waba_id: string | null
         }
         Insert: {
           body_text?: string | null
@@ -2572,6 +2648,7 @@ export type Database = {
           synced_at?: string | null
           updated_at?: string
           variables?: Json
+          waba_id?: string | null
         }
         Update: {
           body_text?: string | null
@@ -2589,6 +2666,7 @@ export type Database = {
           synced_at?: string | null
           updated_at?: string
           variables?: Json
+          waba_id?: string | null
         }
         Relationships: []
       }

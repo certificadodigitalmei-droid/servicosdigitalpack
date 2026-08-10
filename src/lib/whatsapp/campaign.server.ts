@@ -41,11 +41,19 @@ export async function syncTemplates(fetchImpl?: typeof fetch) {
   const cfg = await loadWaSettings();
   if (!cfg) return { ok: false as const, error: 'Configuração não encontrada', synced: 0 };
 
+  // Só a WABA do remetente selecionado. Modelos de outra conta nunca entram.
+  const { loadSelectedSender } = await import('./senders.server');
+  const sender = await loadSelectedSender();
+  const wabaId = String(sender?.waba_id ?? cfg.waba_id ?? '').trim();
+  if (!wabaId) {
+    return { ok: false as const, error: 'Nenhuma conta do WhatsApp (WABA) selecionada', synced: 0 };
+  }
+
   const res = await fetchChakraTemplates({
     apiBaseUrl: cfg.base_url,
     apiKey,
     apiVersion: cfg.whatsapp_api_version ?? 'v19.0',
-    wabaId: cfg.waba_id ?? '',
+    wabaId,
     ...(fetchImpl ? { fetchImpl } : {}),
   });
   if (!res.ok) {
@@ -59,6 +67,7 @@ export async function syncTemplates(fetchImpl?: typeof fetch) {
       .from('whatsapp_templates')
       .upsert(
         {
+          waba_id: wabaId,
           name: t.name,
           language: t.language,
           category: t.category,
@@ -72,9 +81,13 @@ export async function syncTemplates(fetchImpl?: typeof fetch) {
           raw: t.raw as any,
           synced_at: now,
         },
-        { onConflict: 'name' },
+        { onConflict: 'waba_id,name,language' },
       );
   }
+
+  // Modelos de outras WABAs não podem aparecer nem ser selecionados.
+  await db().from('whatsapp_templates').delete().neq('waba_id', wabaId);
+  await db().from('whatsapp_templates').delete().is('waba_id', null);
 
   // Mantém o status do modelo atualmente escolhido em sincronia.
   const selected = res.templates.find((t) => t.name === cfg.template_name);
@@ -88,7 +101,10 @@ export async function syncTemplates(fetchImpl?: typeof fetch) {
       })
       .eq('id', 1);
   } else {
-    await db().from('whatsapp_api_settings').update({ last_error: null }).eq('id', 1);
+    await db()
+      .from('whatsapp_api_settings')
+      .update({ template_status: 'PENDING', active: false, last_error: null })
+      .eq('id', 1);
   }
 
   // Modelos aprovados que sumiram da conta deixam de ser enviáveis.
@@ -97,13 +113,15 @@ export async function syncTemplates(fetchImpl?: typeof fetch) {
     await db()
       .from('whatsapp_templates')
       .update({ status: 'DISABLED' })
+      .eq('waba_id', wabaId)
       .not('name', 'in', `(${names.map((n) => `"${n}"`).join(',')})`);
   }
 
   await pauseCampaignsWithUnapprovedTemplate();
 
-  return { ok: true as const, error: null, synced: res.templates.length, syncedAt: now };
+  return { ok: true as const, error: null, synced: res.templates.length, syncedAt: now, wabaId };
 }
+
 
 export async function pauseCampaignsWithUnapprovedTemplate() {
   const { data: templates } = await db().from('whatsapp_templates').select('name,status');
@@ -227,7 +245,10 @@ export async function buildCampaignQueue(campaignId: string, limit: number) {
       phone: s.phone_e164,
       token: s.token,
       template_name: campaign.template_name,
+      sender_phone_number_id: campaign.sender_phone_number_id ?? null,
+      sender_waba_id: campaign.sender_waba_id ?? null,
       status: 'pending',
+
     }));
     await db().from('whatsapp_campaign_items').upsert(rows, {
       onConflict: 'campaign_id,company_id',
@@ -269,10 +290,35 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
 
   const cfg = await loadWaSettings();
   if (!cfg) return { sent: 0, failed: 0, blocked: 0, stopped: 'no_config' as const };
-  if (!cfg.plugin_id || !cfg.whatsapp_phone_number_id) {
-    await pauseCampaign(campaignId, 'Conexão incompleta: informe Plugin ID e Phone Number ID.');
+  if (!cfg.plugin_id) {
+    await pauseCampaign(campaignId, 'Conexão incompleta: informe o Plugin ID.');
     return { sent: 0, failed: 0, blocked: 0, stopped: 'config' as const };
   }
+
+  // Remetente precisa estar CONNECTED e o modelo aprovado na MESMA WABA.
+  const { data: campaignRow } = await db()
+    .from('whatsapp_campaigns')
+    .select('template_name,sender_phone_number_id,sender_waba_id')
+    .eq('id', campaignId)
+    .maybeSingle();
+  const { assertSendableSender } = await import('./senders.server');
+  const guard = await assertSendableSender(campaignRow?.template_name ?? cfg.template_name);
+  if (!guard.ok) {
+    await pauseCampaign(campaignId, guard.error);
+    return { sent: 0, failed: 0, blocked: 0, stopped: 'sender_blocked' as const };
+  }
+  const sender = guard.sender;
+  if (
+    campaignRow?.sender_phone_number_id &&
+    String(campaignRow.sender_phone_number_id) !== String(sender.phone_number_id)
+  ) {
+    await pauseCampaign(
+      campaignId,
+      'Esta campanha foi criada com outro número remetente — recrie a campanha para enviar com o número atual.',
+    );
+    return { sent: 0, failed: 0, blocked: 0, stopped: 'sender_changed' as const };
+  }
+
 
   let sent = 0;
   let failed = 0;
@@ -296,12 +342,14 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
       break;
     }
 
-    // Modelo precisa continuar aprovado.
+    // Modelo precisa continuar aprovado — e sempre na WABA do remetente.
     const { data: tpl } = await db()
       .from('whatsapp_templates')
-      .select('name,status,language')
+      .select('name,status,language,waba_id')
       .eq('name', campaign.template_name)
+      .eq('waba_id', sender.waba_id)
       .maybeSingle();
+
     if (tpl && normalizeTemplateStatus(tpl.status) !== SENDABLE_TEMPLATE_STATUS) {
       await pauseCampaign(campaignId, 'O modelo deixou de estar aprovado pela Meta.');
       stopped = 'template_not_approved';
@@ -344,8 +392,9 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
       apiBaseUrl: cfg.base_url,
       apiKey,
       pluginId: cfg.plugin_id,
-      whatsappPhoneNumberId: cfg.whatsapp_phone_number_id,
+      whatsappPhoneNumberId: sender.phone_number_id,
       to: item.phone,
+
       templateName: item.template_name,
       language: tpl?.language ?? campaign.template_language ?? 'pt_BR',
       razao: String(item.company_name ?? '').trim(),
@@ -370,8 +419,11 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
           delivery_status: 'accepted',
           sent_at: acceptedAt,
           accepted_at: acceptedAt,
+          sender_phone_number_id: sender.phone_number_id,
+          sender_waba_id: sender.waba_id,
           wamid: result.externalId,
           provider_internal_id: result.providerId,
+
           provider_message_id: result.messageId,
           error_message: null,
           error_code: null,
