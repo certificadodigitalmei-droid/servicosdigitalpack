@@ -87,6 +87,10 @@ export async function runImportBatch(
   // regra do envio: importar 1 → enviar 1 → importar o próximo.
   const discoveryLimit = input.skipExisting ? Math.max(15, input.limit) : input.limit;
   const maxPages = input.skipExisting ? 100 : 1;
+  // Reserva: buscamos mais candidatos do que o pedido para compensar as
+  // rejeições (sem celular, bloqueio, e-mail de risco) e ainda entregar
+  // `input.limit` empresas prontas.
+  const poolTarget = input.skipExisting ? input.limit * 4 + 10 : input.limit;
   let page = startPage;
   let lastStatus = 0;
   let apiTotal: number | null = null;
@@ -96,7 +100,8 @@ export async function runImportBatch(
 
   for (let attempt = 0; attempt < maxPages; attempt++) {
     const r = await searchOpeningsByDate({
-      filters: input.filters,
+      // Filtro oficial: a própria API só devolve empresas com CELULAR.
+      filters: { ...input.filters, require_mobile_phone: true },
       date: input.date,
       limit: discoveryLimit,
       page,
@@ -143,14 +148,20 @@ export async function runImportBatch(
       skipped += candidates.length - pageToEnrich.length;
     }
 
-    if (pageToEnrich.length > 0) {
-      toEnrich = pageToEnrich.slice(0, input.limit);
-      break;
+    const seen = new Set(toEnrich.map((c) => c.cnpj));
+    for (const c of pageToEnrich) {
+      if (!seen.has(c.cnpj)) {
+        seen.add(c.cnpj);
+        toEnrich.push(c);
+      }
     }
 
-    // Nada novo nesta página — tenta a próxima.
+    if (toEnrich.length >= poolTarget) break;
+
+    // Ainda faltam candidatos — tenta a próxima página.
     page += 1;
   }
+
 
 
   const imported: ImportedRow[] = [];
@@ -163,6 +174,9 @@ export async function runImportBatch(
   skipped += beforeBlockFilter - toEnrich.length;
 
   for (const { cnpj, raw: rawBase } of toEnrich) {
+    // Para assim que atingir a quantidade pedida de empresas PRONTAS.
+    if (imported.length >= input.limit) break;
+
 
     const nBase = normalizeCasaDosDadosCompany(rawBase);
     try {
