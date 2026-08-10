@@ -302,7 +302,13 @@ export const sendWaBatch = createServerFn({ method: 'POST' })
     if (!cfg.active) return { sent: 0, failed: 0, error: 'Envio desativado nas configurações' };
     if (!cfg.template_name) return { sent: 0, failed: 0, error: 'Informe o nome do template aprovado' };
     if (!cfg.plugin_id) return { sent: 0, failed: 0, error: 'Informe o Plugin ID da ChakraHQ' };
-    if (!cfg.whatsapp_phone_number_id) return { sent: 0, failed: 0, error: 'Informe o Phone Number ID' };
+
+    // Remetente CONNECTED + modelo APPROVED na mesma WABA (nunca só o campo antigo).
+    const { assertSendableSender } = await import('./senders.server');
+    const guard = await assertSendableSender(cfg.template_name);
+    if (!guard.ok) return { sent: 0, failed: 0, error: guard.error };
+    const sender = guard.sender;
+
 
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { count: sentToday } = await supabaseAdmin
@@ -355,7 +361,8 @@ export const sendWaBatch = createServerFn({ method: 'POST' })
         apiBaseUrl: cfg.base_url,
         apiKey,
         pluginId: cfg.plugin_id,
-        whatsappPhoneNumberId: cfg.whatsapp_phone_number_id,
+        whatsappPhoneNumberId: sender.phone_number_id,
+
         to: item.phone,
         templateName: cfg.template_name,
         language: cfg.template_language ?? 'pt_BR',
@@ -447,7 +454,11 @@ export const sendWaTestMessage = createServerFn({ method: 'POST' })
     }
     if (!cfg.template_name) return { ok: false as const, error: 'Informe o nome do template aprovado' };
     if (!cfg.plugin_id) return { ok: false as const, error: 'Informe o Plugin ID da ChakraHQ' };
-    if (!cfg.whatsapp_phone_number_id) return { ok: false as const, error: 'Informe o Phone Number ID' };
+    const { assertSendableSender } = await import('./senders.server');
+    const guard = await assertSendableSender(cfg.template_name);
+    if (!guard.ok) return { ok: false as const, error: guard.error };
+    const sender = guard.sender;
+
 
     let token = String(data.token ?? '').trim();
     if (!token) {
@@ -467,7 +478,7 @@ export const sendWaTestMessage = createServerFn({ method: 'POST' })
       apiBaseUrl: cfg.base_url,
       apiKey,
       pluginId: cfg.plugin_id,
-      whatsappPhoneNumberId: cfg.whatsapp_phone_number_id,
+      whatsappPhoneNumberId: sender.phone_number_id,
       to: phone,
       templateName: cfg.template_name,
       language: cfg.template_language ?? 'pt_BR',

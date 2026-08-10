@@ -280,12 +280,19 @@ export const selectWaTemplate = createServerFn({ method: 'POST' })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const db = supabaseAdmin as any;
 
+    const { loadSelectedSender } = await import('./senders.server');
+    const sender = await loadSelectedSender();
+    if (!sender?.waba_id) {
+      return { ok: false as const, error: 'Nenhum número remetente selecionado — sincronize a conexão primeiro.' };
+    }
+
     const { data: tpl } = await db
       .from('whatsapp_templates')
-      .select('name,status,language')
+      .select('name,status,language,waba_id')
       .eq('name', data.name)
+      .eq('waba_id', sender.waba_id)
       .maybeSingle();
-    if (!tpl) return { ok: false as const, error: 'Modelo não encontrado. Sincronize os modelos primeiro.' };
+    if (!tpl) return { ok: false as const, error: 'Modelo não encontrado nesta conta do WhatsApp. Sincronize os modelos.' };
     if (String(tpl.status).toUpperCase() !== 'APPROVED') {
       return { ok: false as const, error: 'Só é possível escolher modelos aprovados pela Meta.' };
     }
@@ -296,6 +303,7 @@ export const selectWaTemplate = createServerFn({ method: 'POST' })
     if (error) throw new Error(error.message);
     return { ok: true as const, error: null };
   });
+
 
 export const createWaCampaign = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
@@ -318,10 +326,17 @@ export const createWaCampaign = createServerFn({ method: 'POST' })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const db = supabaseAdmin as any;
 
+    // Modelo aprovado + remetente conectado, sempre na mesma WABA.
+    const { assertSendableSender } = await import('./senders.server');
+    const guard = await assertSendableSender(data.templateName);
+    if (!guard.ok) return { ok: false as const, error: guard.error, id: null };
+    const sender = guard.sender;
+
     const { data: tpl } = await db
       .from('whatsapp_templates')
-      .select('name,status,language')
+      .select('name,status,language,waba_id')
       .eq('name', data.templateName)
+      .eq('waba_id', sender.waba_id)
       .maybeSingle();
     if (!tpl || String(tpl.status).toUpperCase() !== 'APPROVED') {
       return { ok: false as const, error: 'Escolha um modelo aprovado pela Meta para criar a campanha.', id: null };
@@ -336,6 +351,8 @@ export const createWaCampaign = createServerFn({ method: 'POST' })
         name: data.name,
         template_name: tpl.name,
         template_language: tpl.language ?? 'pt_BR',
+        sender_phone_number_id: sender.phone_number_id,
+        sender_waba_id: sender.waba_id,
         status: 'draft',
         pace_preset: data.pacePreset,
         interval_seconds: interval,
@@ -343,6 +360,7 @@ export const createWaCampaign = createServerFn({ method: 'POST' })
         daily_unique_cap: data.dailyCap,
         continuous_mode: data.continuousMode,
       })
+
       .select('id')
       .single();
     if (error) throw new Error(error.message);
@@ -394,14 +412,29 @@ export const controlWaCampaign = createServerFn({ method: 'POST' })
       return { ok: true as const, error: null };
     }
 
+    const { assertSendableSender } = await import('./senders.server');
+    const guard = await assertSendableSender(campaign.template_name);
+    if (!guard.ok) return { ok: false as const, error: guard.error };
+    if (
+      campaign.sender_phone_number_id &&
+      String(campaign.sender_phone_number_id) !== String(guard.sender.phone_number_id)
+    ) {
+      return {
+        ok: false as const,
+        error: 'Esta campanha foi criada com outro número remetente — crie uma nova campanha para o número atual.',
+      };
+    }
+
     const { data: tpl } = await db
       .from('whatsapp_templates')
       .select('status')
       .eq('name', campaign.template_name)
+      .eq('waba_id', guard.sender.waba_id)
       .maybeSingle();
     if (!tpl || String(tpl.status).toUpperCase() !== 'APPROVED') {
       return { ok: false as const, error: 'O modelo desta campanha não está aprovado pela Meta.' };
     }
+
 
     await db
       .from('whatsapp_campaigns')
