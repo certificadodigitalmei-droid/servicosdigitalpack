@@ -151,6 +151,19 @@ export type WorkerDeps = {
   updateQueueRow: (args: { queueId: string; companyId: string | null; companyLinkId: string | null; wasNewCompany: boolean; wasNewLink: boolean }) => Promise<void>;
   /** Lista permanente de rejeição — telefone bloqueado nunca reimporta. */
   isPhoneBlocked?: (e164: string) => Promise<boolean> | boolean;
+  /** Bloqueio permanente por CNPJ — evita gastar crédito de novo. */
+  isCnpjBlocked?: (cnpj: string) => Promise<boolean> | boolean;
+  blockCnpj?: (cnpj: string, reason: string) => Promise<void> | void;
+  /** Fila de prontidão do WhatsApp (empresa com celular + link ativo). */
+  enqueueReady?: (args: {
+    companyId: string;
+    cnpj: string;
+    companyName: string | null;
+    phone: string;
+    companyLinkId: string | null;
+    token: string | null;
+  }) => Promise<void> | void;
+
 };
 
 export type CoreLoopInput = {
