@@ -66,6 +66,8 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
     try {
       let remaining = target;
       let guard = 0;
+      let emptyRounds = 0;
+
       while (remaining > 0 && guard < 40) {
         guard += 1;
         const take = Math.min(BATCH, remaining);
