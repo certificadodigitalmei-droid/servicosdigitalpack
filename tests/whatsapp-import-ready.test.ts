@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractMobile, normalizeCompany, evaluateQuality } from '@/lib/casa-dos-dados/worker-logic';
+import { extractMobile, normalizeCasaDosDadosCompany, validateCompanyItem } from '@/lib/casa-dos-dados/worker-logic';
 
 describe('importação voltada ao WhatsApp', () => {
   it('extrai celular a partir de ddd_telefone_1', () => {
@@ -12,14 +12,14 @@ describe('importação voltada ao WhatsApp', () => {
 
   it('marca celular como campo faltante quando exigido', () => {
     const item = { cnpj: '12345678000199', razao_social: 'X', ddd_telefone_1: '1133334444' };
-    const q = evaluateQuality(normalizeCompany(item as any), { require_mobile_phone: true } as any);
+    const q = validateCompanyItem(normalizeCasaDosDadosCompany(item as any), { require_mobile_phone: true } as any);
     expect(q.missing).toContain('celular');
     expect(q.mobile).toBeNull();
   });
 
   it('aprova empresa com celular válido', () => {
     const item = { cnpj: '12345678000199', razao_social: 'X', ddd_telefone_1: '11999998877' };
-    const q = evaluateQuality(normalizeCompany(item as any), { require_mobile_phone: true } as any);
+    const q = validateCompanyItem(normalizeCasaDosDadosCompany(item as any), { require_mobile_phone: true } as any);
     expect(q.missing).not.toContain('celular');
     expect(q.mobile).toBe('5511999998877');
   });
