@@ -193,11 +193,25 @@ export async function buildCampaignQueue(campaignId: string, limit: number) {
 
   // Consome a fila de prontidão de forma atômica: dois workers nunca pegam a
   // mesma empresa e nada é criado sem campanha/modelo.
-  const { data: reserved, error } = await db().rpc('wa_reserve_ready', {
-    _campaign_id: campaignId,
-    _limit: limit,
-  });
-  if (error) throw new Error(error.message);
+  const reserve = async () => {
+    const { data, error } = await db().rpc('wa_reserve_ready', {
+      _campaign_id: campaignId,
+      _limit: limit,
+    });
+    if (error) throw new Error(error.message);
+    return (data ?? []) as any[];
+  };
+
+  let reserved = await reserve();
+  // Fila curta: puxa novas empresas do motor de consulta e tenta de novo.
+  if (reserved.length < limit) {
+    const added = await refillReadyQueue(limit - reserved.length);
+    if (added > 0) {
+      const more = await reserve();
+      if (more.length) reserved = [...reserved, ...more];
+    }
+  }
+
 
   const blockedPhones = await loadBlockedPhones();
   const rowsIn = ((reserved ?? []) as any[]).filter((r) => !blockedPhones.has(String(r.phone_e164)));
