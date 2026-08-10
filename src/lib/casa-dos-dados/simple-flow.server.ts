@@ -303,7 +303,30 @@ export async function runImportBatch(
         rawAny?.natureza_juridica ??
         null;
 
+      // ---- CELULAR BRASILEIRO OBRIGATÓRIO ----
+      // Sem celular válido nada é criado: nem empresa, nem link, nem filas.
+      // Fica só o registro mínimo de rejeição por CNPJ.
+      const mobileCheck = extractValidBrazilianMobile(
+        telefonesArr as any,
+        (telefonesArr?.[0]?.ddd ?? estab?.ddd ?? rawAny?.ddd ?? null) as any,
+      );
+      if (!mobileCheck.valid) {
+        await blockCnpjForImport({
+          cnpj,
+          reason: `sem celular brasileiro válido (${mobileCheck.reason})`,
+          source: 'importacao_simples',
+        });
+        failed.push({ cnpj, error: 'descartado: sem celular brasileiro válido' });
+        continue;
+      }
+      const mobileE164 = mobileCheck.e164;
+      if (await isPhoneBlocked(mobileE164)) {
+        skipped++;
+        continue;
+      }
+
       const companyPayload: Record<string, unknown> = {
+
         cnpj,
         razao_social_original: n.razao_social ?? nBase.razao_social,
         nome_fantasia: n.nome_fantasia ?? nBase.nome_fantasia,
