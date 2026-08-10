@@ -135,7 +135,9 @@ function fmtDate(v: string | null | undefined): string {
 function WhatsappCampanhasPage() {
   const loadDash = useServerFn(getWaCampaignDashboard);
   const doExport = useServerFn(exportWaCampaignCsv);
-  const doSync = useServerFn(syncWaTemplates);
+  const doSync = useServerFn(syncWaConnectionAndTemplates);
+  const loadSenders = useServerFn(getWaSenders);
+  const doSelectSender = useServerFn(selectWaSender);
   const doSelect = useServerFn(selectWaTemplate);
   const doCreate = useServerFn(createWaCampaign);
   const doControl = useServerFn(controlWaCampaign);
@@ -149,8 +151,10 @@ function WhatsappCampanhasPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [dash, setDash] = useState<any>(null);
+  const [senders, setSenders] = useState<any>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState('');
+
 
   // Campanha nova
   const [campName, setCampName] = useState('');
