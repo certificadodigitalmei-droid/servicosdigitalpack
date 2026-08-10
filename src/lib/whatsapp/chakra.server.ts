@@ -248,7 +248,14 @@ export async function sendChakraTemplate(opts: {
   if (Array.isArray(errs) && errs.length) {
     return { ok: false, error: extractErrorMessage(json, 'erro desconhecido') };
   }
-  return { ok: true, messageId: extractMessageId(json) };
+  return {
+    ok: true,
+    messageId: extractMessageId(json),
+    externalId: extractExternalId(json),
+    providerId: extractProviderId(json),
+    deliveryStatus: extractDeliveryStatus(json),
+  };
+
 }
 
 export type TemplateStatusResult =
