@@ -42,7 +42,14 @@ describe('sendChakraTemplate', () => {
     const fetchImpl = vi.fn(async () => jsonRes({ _data: { externalId: 'wamid.1' } }));
     const res = await sendChakraTemplate({ ...base, fetchImpl: fetchImpl as any });
 
-    expect(res).toEqual({ ok: true, messageId: 'wamid.1' });
+    expect(res).toEqual({
+      ok: true,
+      messageId: 'wamid.1',
+      externalId: 'wamid.1',
+      providerId: null,
+      deliveryStatus: null,
+    });
+
     const [url, init] = fetchImpl.mock.calls[0] as any[];
     expect(url).toBe(
       `https://api.chakrahq.com/v1/ext/plugin/whatsapp/${base.pluginId}/phoneNumber/5511999998877/send-template-message`,
