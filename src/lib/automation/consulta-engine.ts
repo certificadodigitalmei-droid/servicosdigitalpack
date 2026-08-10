@@ -88,6 +88,8 @@ type State = {
   isImporting: boolean;
   flashes: Array<{ id: number; count: number }>;
   listDialogOpen: boolean;
+  /** Incrementado a cada troca efetiva de dia; invalida respostas em voo. */
+  queryEpoch: number;
 };
 
 function todayBRString(): string {
@@ -133,6 +135,7 @@ const initial: State = {
   isImporting: false,
   flashes: [],
   listDialogOpen: false,
+  queryEpoch: 0,
 };
 
 export const consultaStore = createStore<State>(initial, {
@@ -197,12 +200,46 @@ export function addImported(cnpjs: string[]) {
 
 /* --------------------------------- actions -------------------------------- */
 
+/** true quando a resposta em voo pertence a um dia que já não é o atual. */
+export function isStaleEpoch(epoch: number): boolean {
+  return consultaStore.get().queryEpoch !== epoch;
+}
+
+/**
+ * Zera SOMENTE o estado de resultados da consulta (lista, contagem, cursor,
+ * seleção, flashes e diálogo). Nada persistido no banco é tocado.
+ */
+export function resetQueryResults() {
+  consultaStore.set((s) => ({
+    queryEpoch: s.queryEpoch + 1,
+    foundList: [],
+    foundListKey: '',
+    countResult: null,
+    flashes: [],
+    listDialogOpen: false,
+    isCounting: false,
+    autoStats: {
+      checks: 0,
+      lastTotal: null,
+      prevTotal: null,
+      delta: 0,
+      peak: null,
+      lastCheckAt: null,
+      startedAt: null,
+    },
+  }));
+}
+
+
+
 export async function runCountOnce(opts: { silent?: boolean } = {}) {
   const { filters } = consultaStore.get();
   const date = effectiveDate();
+  const epoch = consultaStore.get().queryEpoch;
   consultaStore.set({ isCounting: true });
   try {
     const r: any = await countByDate({ data: { date, filters } });
+    if (isStaleEpoch(epoch)) return;
     consultaStore.set((s) => {
       const now = new Date().toISOString();
       const prev = s.autoStats;
@@ -227,9 +264,10 @@ export async function runCountOnce(opts: { silent?: boolean } = {}) {
     });
     if (!opts.silent && !r.ok) toast.error(`API respondeu ${r.status}`);
   } catch (e: any) {
+    if (isStaleEpoch(epoch)) return;
     if (!opts.silent) toast.error(e?.message ?? 'Erro');
   } finally {
-    consultaStore.set({ isCounting: false });
+    if (!isStaleEpoch(epoch)) consultaStore.set({ isCounting: false });
   }
 }
 
@@ -242,6 +280,7 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
   const date = effectiveDate();
   const filters = s.filters;
   const key = `${date}|${JSON.stringify(filters)}`;
+  const epoch = s.queryEpoch;
 
   // Se mudou a chave (data/filtros), zera lista.
   if (key !== s.foundListKey) {
@@ -271,6 +310,7 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
       const r: any = await listByDate({
         data: { date, filters, limit: pageSize, page },
       });
+      if (isStaleEpoch(epoch)) return;
 
       lastStatus = { date: r.date, total: r.total, ok: r.ok, status: r.status };
       const items = r.items ?? [];
@@ -309,6 +349,7 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
 
 
     // Atualiza countResult / autoStats
+    if (isStaleEpoch(epoch)) return;
     consultaStore.set((cur) => {
       const prev = cur.autoStats;
       const nextStats: AutoStats = {
@@ -340,9 +381,10 @@ export async function runListOnce(opts: { silent?: boolean; maxPages?: number } 
     // Sincroniza importedSet consultando DB
     await syncImportedFromDb();
   } catch (e: any) {
+    if (isStaleEpoch(epoch)) return;
     if (!opts.silent) toast.error(e?.message ?? 'Erro');
   } finally {
-    consultaStore.set({ isCounting: false });
+    if (!isStaleEpoch(epoch)) consultaStore.set({ isCounting: false });
   }
 }
 
@@ -587,17 +629,39 @@ export function setBufferTarget(n: number) {
 }
 
 
-export function setDateMode(m: 'today' | 'specific') {
-  consultaStore.set({ dateMode: m });
-  if (m === 'today') consultaStore.set({ selectedDate: todayBRString() });
+/**
+ * Operação ÚNICA de troca de dia consultado.
+ * Zera só o estado de resultados, reinicia os loops e dispara a nova consulta.
+ * Nunca apaga dados persistidos (empresas, links, filas, histórico, config).
+ */
+export function changeQueryDate(next: { mode: 'today' | 'specific'; date?: string }) {
+  const cur = consultaStore.get();
+  const curEffective = cur.dateMode === 'today' ? todayBRString() : cur.selectedDate;
+  const nextDate =
+    next.mode === 'today' ? todayBRString() : next.date || cur.selectedDate || todayBRString();
+
+  const changedDay = nextDate !== curEffective;
+  const changedMode = next.mode !== cur.dateMode;
+  if (!changedDay && !changedMode) return;
+
+  if (changedDay) resetQueryResults();
+  consultaStore.set({ dateMode: next.mode, selectedDate: nextDate });
+
   if (consultaStore.get().autoCount) restartListLoop();
   if (consultaStore.get().autoImport) restartImportLoop();
+
+  if (changedDay) {
+    consultaStore.set({ isCounting: true });
+    void runCountOnce({ silent: true });
+  }
+}
+
+export function setDateMode(m: 'today' | 'specific') {
+  changeQueryDate({ mode: m });
 }
 
 export function setSelectedDate(iso: string) {
-  consultaStore.set({ selectedDate: iso });
-  if (consultaStore.get().autoCount) restartListLoop();
-  if (consultaStore.get().autoImport) restartImportLoop();
+  changeQueryDate({ mode: 'specific', date: iso });
 }
 
 export function setFilters(patch: Partial<Filters>) {
