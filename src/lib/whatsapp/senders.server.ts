@@ -4,12 +4,16 @@
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
 import { extractErrorMessage } from './chakra.server';
 import {
+  decideConnectionFreshness,
   decideSenderSelection,
+  isConnectionFresh,
   isEligibleSender,
   parseChakraPhoneNumbers,
+  SEND_CONNECTION_MAX_AGE_MS,
   validateSenderForSend,
   type ChakraPhoneNumber,
 } from './senders-logic';
+
 
 const db = () => supabaseAdmin as any;
 
