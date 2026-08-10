@@ -31,7 +31,7 @@ export const Route = createFileRoute("/checkout")({
   },
   head: () => ({
     meta: [
-      { title: "Pagamento — Central MEI Digital" },
+      { title: "Pagamento — Digital Certifica A1" },
       {
         name: "description",
         content:

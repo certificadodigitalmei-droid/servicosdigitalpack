@@ -44,7 +44,7 @@ const PREVIEW_VARS: Record<string, string> = {
   TOKEN: 'exemplo',
   REFERENCIA: 'REF-000001',
   NOME_REMETENTE: 'Central de Atendimento',
-  EMPRESA_REMETENTE: 'Certificado Digital MEI',
+  EMPRESA_REMETENTE: 'Digital Certifica A1',
 };
 
 function ModelosEmailPage() {

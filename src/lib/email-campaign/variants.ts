@@ -267,7 +267,7 @@ export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
       ...BLUE_PALETTES.cobalt,
       showGovBar: false,
       cardBg: '#f8fafc',
-      title: 'Certificado Digital MEI',
+      title: 'Digital Certifica A1',
       subtitle: 'Consulta {{REFERENCIA}}',
       heroTitle: 'Seu CNPJ está sem certificado ativo',
       heroTitleSize: 22,

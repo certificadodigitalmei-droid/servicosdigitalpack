@@ -140,8 +140,8 @@ export const testEmailWorker = createServerFn({ method: 'POST' })
           mode: recipient ? 'send-test' : 'ping',
           to: recipient || undefined,
           subject: 'Teste de conexão — Central MEI',
-          html: '<p>Este é um envio de teste do painel Central MEI Digital.</p>',
-          text: 'Este é um envio de teste do painel Central MEI Digital.',
+          html: '<p>Este é um envio de teste do painel Digital Certifica A1.</p>',
+          text: 'Este é um envio de teste do painel Digital Certifica A1.',
         }),
       });
       const bodyText = await res.text();

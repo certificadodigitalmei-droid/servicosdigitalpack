@@ -50,7 +50,7 @@ export const Route = createFileRoute('/checkout_/$token')({
 
 
   head: () => ({
-    meta: [{ title: 'Pagamento — Central MEI Digital' }],
+    meta: [{ title: 'Pagamento — Digital Certifica A1' }],
   }),
   notFoundComponent: () => (
     <Page>

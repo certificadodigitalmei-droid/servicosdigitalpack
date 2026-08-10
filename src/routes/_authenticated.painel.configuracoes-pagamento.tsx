@@ -216,8 +216,8 @@ function PaymentGatewaysPage() {
           TOKEN: res.public_token,
         },
         {
-          name: loadSavedFromName() || 'Certificado Digital MEI',
-          company: loadSavedFromName() || 'Certificado Digital MEI',
+          name: loadSavedFromName() || 'Digital Certifica A1',
+          company: loadSavedFromName() || 'Digital Certifica A1',
           reference: `MEI-${new Date().getFullYear()}`,
         },
       );

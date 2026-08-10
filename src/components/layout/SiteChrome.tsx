@@ -47,7 +47,7 @@ export function SiteHeader({ userName, userDoc }: HeaderProps) {
       <div className="bg-[#002a4d] text-primary-foreground shadow-sm">
         <div className="mx-auto flex max-w-[1280px] items-center gap-3 px-4 py-2.5">
           <Menu className="h-5 w-5 cursor-pointer" />
-          <span className="text-[15px] font-bold tracking-tight">Portal do Empreendedor</span>
+          <span className="text-[15px] font-bold tracking-tight">Digital Certifica A1</span>
         </div>
       </div>
 
