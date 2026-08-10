@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
-import { Loader2, Download, RefreshCw, CheckCircle2, Ban, Link2Off, Users } from 'lucide-react';
+import { Loader2, Download, RefreshCw, CheckCircle2, Ban, Link2Off, Users, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,15 +10,21 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatCNPJ } from '@/lib/format';
 import { getWaReadyOverview, reconcileWaReadyQueue } from '@/lib/whatsapp/ready-queue.functions';
+import { purgeNoMobileCompanies, purgeSendFailedCompanies } from '@/lib/whatsapp/maintenance.functions';
 import { importBatch } from '@/lib/casa-dos-dados/simple-flow.functions';
+import { useStore } from '@/lib/automation/store';
+import { consultaStore } from '@/lib/automation/consulta-engine';
 
 const QTY = [10, 20, 50, 100];
 const BATCH = 15; // limite por chamada do importBatch
 
 function todayBR(): string {
-  const now = new Date();
-  const br = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-  return br.toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
 }
 
 type Overview = Awaited<ReturnType<typeof getWaReadyOverview>>;
@@ -27,11 +33,18 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
   const loadOverview = useServerFn(getWaReadyOverview);
   const doReconcile = useServerFn(reconcileWaReadyQueue);
   const doImport = useServerFn(importBatch);
+  const doPurgeNoMobile = useServerFn(purgeNoMobileCompanies);
+  const doPurgeFailed = useServerFn(purgeSendFailedCompanies);
+
+  // Data e filtros vêm da Consulta automática logo acima (fonte única).
+  const dateMode = useStore(consultaStore, (s) => s.dateMode);
+  const selectedDate = useStore(consultaStore, (s) => s.selectedDate);
+  const storeFilters = useStore(consultaStore, (s) => s.filters);
+  const date = dateMode === 'today' ? todayBR() : selectedDate || todayBR();
 
   const [data, setData] = useState<Overview | null>(null);
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState<string | null>(null);
-  const [date, setDate] = useState(todayBR());
   const [qty, setQty] = useState(10);
   const [customQty, setCustomQty] = useState('');
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -74,7 +87,14 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
         const r: any = await doImport({
           data: {
             date,
-            filters: { only_mei: true, only_active: true, only_matriz: true, require_email: false },
+            filters: {
+              only_mei: storeFilters.only_mei,
+              only_active: storeFilters.only_active,
+              only_matriz: storeFilters.only_matriz,
+              // E-mail é irrelevante no WhatsApp; celular é obrigatório.
+              require_email: false,
+              require_mobile_phone: true,
+            },
             limit: take,
             page: 1,
             skipExisting: true,
@@ -115,6 +135,26 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
     }
   };
 
+  const purge = async (kind: 'noMobile' | 'failed') => {
+    const label = kind === 'noMobile' ? 'sem celular válido' : 'com falha de envio';
+    if (!window.confirm(`Excluir definitivamente as empresas ${label} (e seus links)? Vendas pagas são preservadas.`)) {
+      return;
+    }
+    setBusy(kind);
+    try {
+      const r: any = kind === 'noMobile' ? await doPurgeNoMobile({ data: {} }) : await doPurgeFailed({ data: {} });
+      toast.success(`${r.removed} empresa(s) excluída(s)${r.keptPaid ? ` · ${r.keptPaid} preservada(s) por venda paga` : ''}`);
+      await refresh(1);
+      setPage(1);
+      onChanged?.();
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha na limpeza');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+
   const reconcile = async (apply: boolean) => {
     setBusy(apply ? 'apply' : 'preview');
     try {
@@ -141,15 +181,19 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
             <Download className="h-5 w-5" /> Importar empresas para WhatsApp
           </CardTitle>
           <CardDescription>
-            Usa o mesmo motor da Importação Automática. Só entra empresa com celular brasileiro válido e link ativo.
-            Importar <strong>não envia nada</strong> — quem consome a fila é a campanha selecionada.
+            Usa a data e os filtros da <strong>Consulta automática</strong> acima. Só entra empresa com celular
+            brasileiro válido e link ativo. Importar <strong>não envia nada</strong> — quem consome a fila é a
+            campanha selecionada.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="wa-imp-date">Data de abertura</Label>
-            <Input id="wa-imp-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Label>Data de abertura</Label>
+            <div className="flex h-10 items-center rounded-md border px-3 text-sm text-muted-foreground">
+              {date} {dateMode === 'today' ? '(hoje)' : ''}
+            </div>
           </div>
+
           <div className="space-y-1.5">
             <Label>Quantidade</Label>
             <div className="flex flex-wrap items-center gap-2">
@@ -221,10 +265,44 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
             <Stat label="Prontas" value={counts.ready ?? 0} icon={<CheckCircle2 className="h-4 w-4 text-emerald-600" />} />
             <Stat label="Aguardando link" value={counts.awaitingLink ?? 0} icon={<Link2Off className="h-4 w-4 text-amber-600" />} />
-            <Stat label="Sem celular" value={counts.rejectedNoMobile ?? 0} icon={<Ban className="h-4 w-4 text-destructive" />} />
+            <div className="rounded-md border p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Ban className="h-4 w-4 text-destructive" />
+                Sem celular
+              </div>
+              <div className="mt-1 text-2xl font-semibold">{counts.rejectedNoMobile ?? 0}</div>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="mt-2 h-7 w-full text-xs"
+                disabled={busy !== null || !(counts.rejectedNoMobile ?? 0)}
+                onClick={() => void purge('noMobile')}
+              >
+                {busy === 'noMobile' ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1 h-3 w-3" />}
+                Excluir todas
+              </Button>
+            </div>
             <Stat label="Bloqueadas" value={counts.blocked ?? 0} icon={<Ban className="h-4 w-4 text-destructive" />} />
             <Stat label="Reservadas / enviadas" value={(counts.reserved ?? 0) + (counts.sent ?? 0)} icon={<Users className="h-4 w-4" />} />
           </div>
+
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+            <div className="text-sm font-medium">Manutenção da base</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Limpezas definitivas. Empresas com venda paga nunca são apagadas.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button size="sm" variant="destructive" disabled={busy !== null} onClick={() => void purge('failed')}>
+                {busy === 'failed' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Excluir empresas com falha de envio
+              </Button>
+              <Button size="sm" variant="destructive" disabled={busy !== null} onClick={() => void purge('noMobile')}>
+                {busy === 'noMobile' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Excluir importações e links sem celular
+              </Button>
+            </div>
+          </div>
+
 
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={() => void refresh(page)} disabled={busy !== null}>
