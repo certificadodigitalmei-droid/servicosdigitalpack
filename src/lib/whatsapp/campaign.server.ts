@@ -14,11 +14,11 @@ import {
   normalizeTemplateStatus,
   remainingDailyCap,
   SENDABLE_TEMPLATE_STATUS,
-  selectEligibleCompanies,
-  type CompanyLike,
 } from './campaign-logic';
 import { loadBlockedPhones } from './blocklist.server';
 import { blockPhoneAndQuarantine } from './blocklist.server';
+import { markReadySent } from './ready-queue.server';
+
 
 const db = () => supabaseAdmin as any;
 
