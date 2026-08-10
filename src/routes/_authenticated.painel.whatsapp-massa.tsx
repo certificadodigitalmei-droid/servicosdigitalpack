@@ -194,8 +194,9 @@ function WhatsappCampanhasPage() {
 
   const refresh = async () => {
     try {
-      const res: any = await loadDash({});
+      const [res, snd]: any[] = await Promise.all([loadDash({}), loadSenders({})]);
       setDash(res);
+      setSenders(snd);
       const current = res?.settings?.template_name ?? '';
       setSelectedTemplate((prev) => prev || current);
       setLoadError(null);
@@ -213,12 +214,21 @@ function WhatsappCampanhasPage() {
   };
 
   useEffect(() => {
-    void refresh();
+    void (async () => {
+      // Sincronização automática ao abrir (o servidor limita a repetição).
+      try {
+        await doSync({ data: { auto: true } });
+      } catch {
+        /* sem conexão: o painel segue mostrando o último estado */
+      }
+      await refresh();
+    })();
     // Autoatualização moderada: painel a cada 30 s.
     const t1 = window.setInterval(() => void refresh(), 30_000);
     return () => window.clearInterval(t1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   useEffect(() => {
     if (!activeId) return;
