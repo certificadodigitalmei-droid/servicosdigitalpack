@@ -181,6 +181,7 @@ async function refillReadyQueue(missing: number): Promise<number> {
 }
 
 export async function buildCampaignQueue(campaignId: string, limit: number) {
+  const cfg = await loadWaSettings();
   const buttonBase = String(cfg?.button_base_url ?? 'https://seu-certificado-mei-digital.online/c/');
 
   const { data: campaign } = await db()
