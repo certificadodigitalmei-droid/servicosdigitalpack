@@ -71,9 +71,9 @@ export async function countBlockedNumbers(): Promise<number> {
 }
 
 /**
- * Bloqueia permanentemente um número: registra na lista, cancela filas,
- * desativa links e coloca a empresa em quarentena (delete quando possível).
- * Nunca apaga pedidos/pagamentos — histórico financeiro é preservado.
+ * Falha PERMANENTE do destinatário: bloqueia telefone + CNPJ e remove tudo em
+ * uma única transação no banco (função admin-only security definer).
+ * Vendas pagas nunca são apagadas — nesse caso a empresa vai para quarentena.
  */
 export async function blockPhoneAndQuarantine(input: BlockInput): Promise<{
   blocked: boolean;
@@ -84,60 +84,25 @@ export async function blockPhoneAndQuarantine(input: BlockInput): Promise<{
   const validated = validateBrazilianMobile(input.phone ?? '');
   const e164 = validated.valid ? validated.e164 : null;
   const canonical = canonicalPhoneKey(input.phone) ?? null;
-  if (!e164 && !canonical) return { blocked: false, companyRemoved: false, companyQuarantined: false };
-
-  await db
-    .from('blocked_contact_numbers')
-    .upsert(
-      {
-        phone_e164: e164,
-        phone_canonical: canonical,
-        reason: input.reason,
-        source: input.source ?? 'whatsapp',
-        cnpj_snapshot: input.cnpj ?? null,
-        company_id: input.companyId ?? null,
-        provider_status: input.providerStatus ?? null,
-        provider_code: input.providerCode ?? null,
-      },
-      { onConflict: 'phone_e164', ignoreDuplicates: true },
-    );
-
-  // Remove qualquer fila pendente/erro para este telefone (nunca reenviar).
-  if (e164) await db.from('whatsapp_queue').delete().eq('phone', e164).neq('status', 'sent');
-  if (canonical && canonical !== e164) {
-    await db.from('whatsapp_queue').delete().eq('phone', canonical).neq('status', 'sent');
+  const phone = e164 ?? canonical;
+  if (!phone && !input.cnpj && !input.companyId) {
+    return { blocked: false, companyRemoved: false, companyQuarantined: false };
   }
 
-  let companyId = input.companyId ?? null;
-  if (!companyId && input.cnpj) {
-    const { data } = await db.from('companies').select('id').eq('cnpj', input.cnpj).maybeSingle();
-    companyId = (data as any)?.id ?? null;
-  }
-  if (!companyId) return { blocked: true, companyRemoved: false, companyQuarantined: false };
+  const { data, error } = await db.rpc('admin_purge_company_permanent', {
+    _company_id: input.companyId ?? null,
+    _cnpj: input.cnpj ?? null,
+    _phone: phone,
+    _reason: input.reason,
+    _source: input.source ?? 'whatsapp',
+  });
+  if (error) throw new Error(error.message);
 
-  await db.from('company_links').update({ active: false }).eq('company_id', companyId);
-  await db.from('automatic_company_queue').delete().eq('company_id', companyId);
-
-  const { count: orders } = await db
-    .from('orders')
-    .select('id', { count: 'exact', head: true })
-    .eq('company_id', companyId);
-
-  if (!orders) {
-    const { error: delErr } = await db.from('companies').delete().eq('id', companyId);
-    if (!delErr) return { blocked: true, companyRemoved: true, companyQuarantined: false };
-  }
-
-  // FK/pagamento impede delete físico → quarentena: sem telefone, fora das buscas.
-  await db
-    .from('companies')
-    .update({
-      status: 'bloqueada',
-      possui_telefone: false,
-      whatsapp_phone_e164: null,
-      telefones: [],
-      ddd: null,
-    })
-    .eq('id', companyId);
-  return { blocked: true, companyRemoved: false, companyQuarantined: true };
+  const r = (data ?? {}) as any;
+  return {
+    blocked: !!r.blocked,
+    companyRemoved: !!r.company_removed,
+    companyQuarantined: !!r.company_quarantined,
+  };
 }
+
