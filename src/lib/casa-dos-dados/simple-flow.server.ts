@@ -444,6 +444,7 @@ export async function runImportBatch(
       let publicUrl: string;
       let checkoutUrl: string;
       let isNewLink = false;
+      let linkId: string | null = (existingLink as any)?.id ?? null;
 
       if (existingLink) {
         publicToken = (existingLink as any).public_token as string;
@@ -456,24 +457,30 @@ export async function runImportBatch(
         publicToken = crypto.randomUUID().replace(/-/g, '');
         publicUrl = `${publicBaseUrl}/acesso/${publicToken.slice(0, 10)}`;
         checkoutUrl = `${publicBaseUrl}/checkout/${publicToken}`;
-        const { error: lErr } = await supabaseAdmin.from('company_links').insert({
-          company_id: companyId,
-          public_token: publicToken,
-          token: publicToken,
-          public_url: publicUrl,
-          checkout_url: checkoutUrl,
-          active: true,
-          status: 'active',
-          is_test_record: false,
-          data_quality_status: 'complete',
-          company_data: {
-            cnpj,
-            nome: displayName,
-            origin: 'casa_dos_dados_simple',
-          } as any,
-        });
+        const { data: newLink, error: lErr } = await supabaseAdmin
+          .from('company_links')
+          .insert({
+            company_id: companyId,
+            public_token: publicToken,
+            token: publicToken,
+            public_url: publicUrl,
+            checkout_url: checkoutUrl,
+            active: true,
+            status: 'active',
+            is_test_record: false,
+            data_quality_status: 'complete',
+            company_data: {
+              cnpj,
+              nome: displayName,
+              origin: 'casa_dos_dados_simple',
+            } as any,
+          })
+          .select('id')
+          .single();
         if (lErr) throw new Error(`insert link: ${lErr.message}`);
+        linkId = (newLink as any)?.id ?? null;
         isNewLink = true;
+
 
         // Log de auditoria: Link Criado
         await supabaseAdmin.from('automation_audit_logs').insert({
