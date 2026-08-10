@@ -16,6 +16,7 @@ function makeCompleteItem(cnpj: string, overrides: Partial<Item> = {}): Item {
     municipio: 'SAO PAULO',
     uf: 'SP',
     email: `contato-${cnpj}@example.com`,
+    ddd_telefone_1: '11 99887-6655',
     ...overrides,
   };
 }
