@@ -578,7 +578,11 @@ function WhatsappCampanhasPage() {
         </CardContent>
       </Card>
 
+      {/* 4b. FILA DE PRONTIDÃO + IMPORTAÇÃO */}
+      <WhatsappReadyPanel onChanged={() => void reload()} />
+
       {/* 5. NOVA CAMPANHA */}
+
       <Card>
         <CardHeader>
           <CardTitle>Nova campanha</CardTitle>
