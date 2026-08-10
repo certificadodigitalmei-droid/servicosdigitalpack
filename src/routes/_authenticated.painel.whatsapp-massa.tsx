@@ -53,7 +53,9 @@ import {
   sendWaCampaignTest,
   tickWaCampaign,
   refillWaCampaign,
+  reconcileWaDeliveries,
 } from '@/lib/whatsapp/campaigns.functions';
+import { CONFIRMED_REJECTIONS } from '@/lib/whatsapp/known-facts';
 
 export const Route = createFileRoute('/_authenticated/painel/whatsapp-massa')({
   head: () => ({
@@ -142,6 +144,7 @@ function WhatsappCampanhasPage() {
   const doTest = useServerFn(sendWaCampaignTest);
   const doTick = useServerFn(tickWaCampaign);
   const doRefill = useServerFn(refillWaCampaign);
+  const doReconcile = useServerFn(reconcileWaDeliveries);
 
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
