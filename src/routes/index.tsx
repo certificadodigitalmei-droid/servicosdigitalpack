@@ -229,13 +229,44 @@ function LandingPage() {
       </section>
 
       <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs text-slate-500 md:flex-row">
-          <span>© {new Date().getFullYear()} Portal do Certificado Digital MEI — Informativo.</span>
-          <a href={GOV_URL} target="_blank" rel="noopener noreferrer" className="hover:text-[#0b1e3f]">
-            gov.br/empreendedor
-          </a>
+        <div className="mx-auto max-w-6xl px-6 py-10">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-[#0b1e3f]">
+            Dados da empresa responsável
+          </h2>
+          <dl className="mt-4 grid gap-x-8 gap-y-3 text-xs text-slate-600 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              ["Nome empresarial", "DIGITAL CERTIFICA A1 LTDA"],
+              ["Nome fantasia", "DIGITAL CERTIFICA A1"],
+              ["CNPJ", "68.440.896/0001-63 — Matriz"],
+              ["Natureza jurídica", "206-2 — Sociedade Empresária Limitada"],
+              ["Porte", "ME"],
+              ["Data de abertura", "06/08/2026"],
+              [
+                "Atividade principal",
+                "63.19-4-00 — Portais, provedores de conteúdo e outros serviços de informação na internet",
+              ],
+              ["Situação cadastral", "ATIVA"],
+              ["Endereço", "Av. Paulista, 1600, Andar 20 — Bela Vista, São Paulo/SP — CEP 01.310-200"],
+              ["Telefone", "(11) 97789-9296"],
+              ["E-mail", "certificado.mei.estadual@seu-certificado-mei-digital.online"],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <dt className="font-semibold text-[#0b1e3f]">{k}</dt>
+                <dd className="mt-0.5 leading-relaxed">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <div className="border-t border-slate-100">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs text-slate-500 md:flex-row">
+            <span>© {new Date().getFullYear()} DIGITAL CERTIFICA A1 LTDA — CNPJ 68.440.896/0001-63.</span>
+            <a href={GOV_URL} target="_blank" rel="noopener noreferrer" className="hover:text-[#0b1e3f]">
+              gov.br/empreendedor
+            </a>
+          </div>
         </div>
       </footer>
+
     </div>
   );
 }
