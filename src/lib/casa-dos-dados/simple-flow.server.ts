@@ -30,7 +30,10 @@ export type RunImportBatchInput = {
     only_active: boolean;
     only_matriz: boolean;
     require_email: boolean;
+    /** Sempre tratado como true: a pesquisa grátis já exige celular. */
+    require_mobile_phone?: boolean;
   };
+
   limit: number; // max NEW companies to enrich (1..15)
   page?: number; // discovery page (default 1)
   skipExisting?: boolean; // dedup by cnpj before enrichment

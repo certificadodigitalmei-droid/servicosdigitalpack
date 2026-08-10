@@ -12,8 +12,12 @@ const filtersSchema = z
     only_active: z.boolean().default(true),
     only_matriz: z.boolean().default(true),
     require_email: z.boolean().default(false),
+    // Filtro aplicado na PESQUISA (grátis) da Casa dos Dados: com_telefone +
+    // somente_celular. Empresa sem celular nem chega ao passo pago.
+    require_mobile_phone: z.boolean().default(true),
   })
-  .default({ only_mei: true, only_active: true, only_matriz: true, require_email: false });
+  .default({ only_mei: true, only_active: true, only_matriz: true, require_email: false, require_mobile_phone: true });
+
 
 async function assertAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
