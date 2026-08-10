@@ -574,7 +574,23 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
       await progress('atualizacao_da_fila', { page, item_offset: i, cnpj, company_id: companyId, company_link_id: linkId });
       await deps.updateQueueRow({ queueId, companyId, companyLinkId: linkId, wasNewCompany, wasNewLink });
 
+      // Fila de prontidão do WhatsApp — mesma operação server-side da importação.
+      if (mobile && linkId && !isTestRun && deps.enqueueReady) {
+        await deps.enqueueReady({
+          companyId,
+          cnpj,
+          companyName:
+            (companyPayload.nome_titular_exibicao as string) ??
+            (companyPayload.razao_social_original as string) ??
+            null,
+          phone: mobile,
+          companyLinkId: linkId,
+          token: publicToken,
+        });
+      }
+
       outcome.imported += 1;
+
       if (!sampleSet) {
         outcome.sample = {
           cnpj,
