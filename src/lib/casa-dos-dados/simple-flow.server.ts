@@ -377,7 +377,9 @@ export async function runImportBatch(
         nivel_dados: 'completo',
         complete_data_fetched_at: new Date().toISOString(),
         possui_email: !!n.email,
-        possui_telefone: Array.isArray(telefonesArr) && telefonesArr.length > 0,
+        possui_telefone: true,
+        whatsapp_phone_e164: mobileE164,
+
         fonte: 'casa_dos_dados',
         last_seen_at: new Date().toISOString(),
         is_test_record: false,
