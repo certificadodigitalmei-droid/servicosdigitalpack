@@ -192,7 +192,7 @@ async function testCompleteNormal() {
 
 async function testIncompleteNormalPendingEnrichment() {
   // 1 incomplete + 1 complete, requested=1. Incomplete must NOT consume quota.
-  const incomplete = { cnpj: '11111111000199', razao_social: 'Sem UF', municipio: 'SP' /* no uf, no situacao, etc */ };
+  const incomplete = { cnpj: '11111111000199', razao_social: 'Sem UF', municipio: 'SP', ddd_telefone_1: '11 99887-6655' /* no uf, no situacao, etc */ };
   const complete = makeCompleteItem('22222222000101');
   const { deps, state, enqueued } = makeDeps({
     pages: [makePage([incomplete, complete], 2)],
