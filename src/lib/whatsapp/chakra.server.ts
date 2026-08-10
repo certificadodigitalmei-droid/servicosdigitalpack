@@ -135,6 +135,27 @@ export function extractMessageId(json: any): string | null {
   return id ? String(id) : null;
 }
 
+/** wamid da Meta (externalId). É a chave idempotente dos webhooks. */
+export function extractExternalId(json: any): string | null {
+  const d = json?._data ?? {};
+  const id = d.externalId ?? d.whatsappMessageId ?? json?.messages?.[0]?.id ?? json?.externalId ?? null;
+  return id ? String(id) : null;
+}
+
+/** Identificador interno da Chakra (_data.id). */
+export function extractProviderId(json: any): string | null {
+  const d = json?._data ?? {};
+  const id = d.id ?? json?.id ?? json?.data?.id ?? null;
+  return id ? String(id) : null;
+}
+
+export function extractDeliveryStatus(json: any): string | null {
+  const d = json?._data ?? {};
+  const s = d.deliveryStatus ?? d.status ?? json?.deliveryStatus ?? null;
+  return s ? String(s) : null;
+}
+
+
 export function extractErrorMessage(json: any, fallback: string): string {
   const errs = json?._errors ?? json?.errors ?? null;
   if (Array.isArray(errs) && errs.length) {
