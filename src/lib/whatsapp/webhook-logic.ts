@@ -86,7 +86,7 @@ function parseError(entry: any): { code: string | null; title: string | null; de
 }
 
 function pushStatus(out: ParsedStatusEvent[], raw: any) {
-  const wamid = str(raw?.id ?? raw?.wamid ?? raw?.externalId ?? raw?.messageId ?? raw?.message_id);
+  const wamid = str(raw?.externalId ?? raw?.wamid ?? raw?.id ?? raw?.messageId ?? raw?.message_id);
   const status = normalizeDeliveryStatus(raw?.status ?? raw?.deliveryStatus ?? raw?.delivery_status);
   if (!wamid || !status) return;
   const err = parseError(raw);
