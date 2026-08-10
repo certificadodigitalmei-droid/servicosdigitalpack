@@ -359,14 +359,25 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
 
       // Validate data quality directly from search payload.
       await progress('validacao_dos_campos', { page, item_offset: i, cnpj });
-      const requireMobile = !!automation.filters?.require_mobile_phone && !isTestRun;
+      // Celular brasileiro válido é OBRIGATÓRIO em qualquer execução real,
+      // independentemente dos filtros escolhidos: sem ele a empresa nunca
+      // chegaria ao WhatsApp e só ocuparia base e crédito.
+      const requireMobile = !isTestRun;
+
+      // Bloqueio permanente por CNPJ — antes de qualquer enriquecimento pago.
+      if (deps.isCnpjBlocked && (await deps.isCnpjBlocked(cnpj))) {
+        outcome.skipped.push({ index: i, page, cnpj, reason: 'blocked_number', detail: 'CNPJ na lista permanente de rejeição' });
+        continue;
+      }
+
       const validation = validateCompanyItem(enrichedItem, automation.filters ?? {});
       const mobile = validation.mobile;
 
       // ---- CELULAR OBRIGATÓRIO (execução real) ----
-      // Sem celular válido o registro é apenas ignorado: não entra na fila,
-      // não vira company nem link e NÃO consome a quantidade solicitada.
+      // Sem celular válido nada é criado: nem fila, nem company, nem link.
+      // Fica só o registro mínimo de rejeição por CNPJ.
       if (requireMobile && !mobile) {
+        if (deps.blockCnpj) await deps.blockCnpj(cnpj, 'sem celular brasileiro válido');
         outcome.skipped.push({ index: i, page, cnpj, reason: 'invalid_mobile', detail: 'celular brasileiro válido ausente' });
         continue;
       }
@@ -374,6 +385,7 @@ export async function runCoreLoop(input: CoreLoopInput, deps: WorkerDeps): Promi
         outcome.skipped.push({ index: i, page, cnpj, reason: 'blocked_number', detail: 'telefone na lista permanente de rejeição' });
         continue;
       }
+
 
       const isValid = validation.complete;
       const dataQualityStatus: 'complete' | 'test_partial' | 'pending_enrichment' = isValid
