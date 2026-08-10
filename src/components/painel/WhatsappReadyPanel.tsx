@@ -135,6 +135,26 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
     }
   };
 
+  const purge = async (kind: 'noMobile' | 'failed') => {
+    const label = kind === 'noMobile' ? 'sem celular válido' : 'com falha de envio';
+    if (!window.confirm(`Excluir definitivamente as empresas ${label} (e seus links)? Vendas pagas são preservadas.`)) {
+      return;
+    }
+    setBusy(kind);
+    try {
+      const r: any = kind === 'noMobile' ? await doPurgeNoMobile({ data: {} }) : await doPurgeFailed({ data: {} });
+      toast.success(`${r.removed} empresa(s) excluída(s)${r.keptPaid ? ` · ${r.keptPaid} preservada(s) por venda paga` : ''}`);
+      await refresh(1);
+      setPage(1);
+      onChanged?.();
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha na limpeza');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+
   const reconcile = async (apply: boolean) => {
     setBusy(apply ? 'apply' : 'preview');
     try {
