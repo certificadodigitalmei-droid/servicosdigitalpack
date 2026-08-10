@@ -638,7 +638,7 @@ export function changeQueryDate(next: { mode: 'today' | 'specific'; date?: strin
   const cur = consultaStore.get();
   const curEffective = cur.dateMode === 'today' ? todayBRString() : cur.selectedDate;
   const nextDate =
-    next.mode === 'today' ? todayBRString() : (next.date ?? cur.selectedDate || todayBRString());
+    next.mode === 'today' ? todayBRString() : next.date || cur.selectedDate || todayBRString();
 
   const changedDay = nextDate !== curEffective;
   const changedMode = next.mode !== cur.dateMode;
