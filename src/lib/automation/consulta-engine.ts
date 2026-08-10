@@ -629,17 +629,39 @@ export function setBufferTarget(n: number) {
 }
 
 
-export function setDateMode(m: 'today' | 'specific') {
-  consultaStore.set({ dateMode: m });
-  if (m === 'today') consultaStore.set({ selectedDate: todayBRString() });
+/**
+ * Operação ÚNICA de troca de dia consultado.
+ * Zera só o estado de resultados, reinicia os loops e dispara a nova consulta.
+ * Nunca apaga dados persistidos (empresas, links, filas, histórico, config).
+ */
+export function changeQueryDate(next: { mode: 'today' | 'specific'; date?: string }) {
+  const cur = consultaStore.get();
+  const curEffective = cur.dateMode === 'today' ? todayBRString() : cur.selectedDate;
+  const nextDate =
+    next.mode === 'today' ? todayBRString() : (next.date ?? cur.selectedDate || todayBRString());
+
+  const changedDay = nextDate !== curEffective;
+  const changedMode = next.mode !== cur.dateMode;
+  if (!changedDay && !changedMode) return;
+
+  if (changedDay) resetQueryResults();
+  consultaStore.set({ dateMode: next.mode, selectedDate: nextDate });
+
   if (consultaStore.get().autoCount) restartListLoop();
   if (consultaStore.get().autoImport) restartImportLoop();
+
+  if (changedDay) {
+    consultaStore.set({ isCounting: true });
+    void runCountOnce({ silent: true });
+  }
+}
+
+export function setDateMode(m: 'today' | 'specific') {
+  changeQueryDate({ mode: m });
 }
 
 export function setSelectedDate(iso: string) {
-  consultaStore.set({ selectedDate: iso });
-  if (consultaStore.get().autoCount) restartListLoop();
-  if (consultaStore.get().autoImport) restartImportLoop();
+  changeQueryDate({ mode: 'specific', date: iso });
 }
 
 export function setFilters(patch: Partial<Filters>) {
