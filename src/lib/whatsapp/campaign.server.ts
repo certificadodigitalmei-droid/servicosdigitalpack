@@ -311,6 +311,7 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
           lock_token: null,
         })
         .eq('id', item.id);
+      if (item.company_id) await markReadySent(String(item.company_id));
       continue;
     }
 
@@ -324,6 +325,7 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
         .from('whatsapp_campaign_items')
         .update({ status: 'blocked', error_message: result.error, locked_at: null, lock_token: null })
         .eq('id', item.id);
+      // Falha permanente do destinatário → exclusão definitiva transacional.
       await blockPhoneAndQuarantine({
         phone: item.phone,
         cnpj: item.cnpj ?? null,
@@ -333,6 +335,7 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
         providerStatus: status,
       });
     } else if (decision.action === 'retry') {
+
       await db()
         .from('whatsapp_campaign_items')
         .update({
