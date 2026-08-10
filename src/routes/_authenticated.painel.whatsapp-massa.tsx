@@ -106,6 +106,21 @@ const ITEM_LABEL: Record<string, string> = {
   blocked: 'Bloqueada',
 };
 
+const API_STATUS_LABEL: Record<string, string> = {
+  accepted: 'Aceita pela API',
+  pending: 'Aguardando tentativa',
+  rejected: 'Recusada na chamada',
+};
+
+const DELIVERY_LABEL: Record<string, string> = {
+  accepted: 'Aceita (sem evento)',
+  sent: 'Enviada',
+  delivered: 'Entregue',
+  read: 'Lida',
+  failed: 'Rejeitada',
+};
+
+
 function fmtDate(v: string | null | undefined): string {
   if (!v) return '—';
   try {
