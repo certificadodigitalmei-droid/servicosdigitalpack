@@ -17,13 +17,13 @@ const GOV_URL = "https://www.gov.br/empresas-e-negocios/pt-br/empreendedor";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Certificado Digital MEI — Emissão para o seu CNPJ" },
+      { title: "Digital Certifica A1 — Certificado digital para o seu CNPJ" },
       {
         name: "description",
         content:
           "Certificado Digital para Microempreendedor Individual (MEI). Vinculado ao seu CNPJ, com validade jurídica, assinatura digital ICP-Brasil e acesso aos portais gov.br.",
       },
-      { property: "og:title", content: "Certificado Digital MEI — Emissão para o seu CNPJ" },
+      { property: "og:title", content: "Digital Certifica A1 — Certificado digital para o seu CNPJ" },
       {
         property: "og:description",
         content:
@@ -47,8 +47,8 @@ function LandingPage() {
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm font-bold leading-tight text-[#0b1e3f]">Certificado Digital MEI</div>
-              <div className="text-[11px] leading-tight text-slate-500">Portal do Microempreendedor Individual</div>
+              <div className="text-sm font-bold leading-tight text-[#0b1e3f]">Digital Certifica A1</div>
+              <div className="text-[11px] leading-tight text-slate-500">Certificado digital para o MEI</div>
             </div>
           </div>
           <a

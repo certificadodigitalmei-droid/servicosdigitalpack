@@ -33,8 +33,8 @@ export const Route = createFileRoute('/c/$token')({
 
   head: () => ({
     meta: [
-      { title: 'Portal do Empreendedor — Certificado Digital MEI' },
-      { name: 'description', content: 'Portal do Empreendedor — Certificado Digital MEI' },
+      { title: 'Digital Certifica A1' },
+      { name: 'description', content: 'Digital Certifica A1' },
     ],
   }),
   notFoundComponent: NotFoundPage,
@@ -383,7 +383,7 @@ function TokenHomePage() {
           </div>
 
           <div className="pt-4 text-center text-[10.5px] text-muted-foreground/60">
-            Todo o conteúdo deste site está publicado sob a licença Portal Certificado Digital MEI - Microempreendedor Individual.
+            Todo o conteúdo deste site está publicado sob a licença Digital Certifica A1.
           </div>
           </>
             );

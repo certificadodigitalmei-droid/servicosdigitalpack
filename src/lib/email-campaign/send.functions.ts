@@ -6,7 +6,7 @@ import { recordEmailAudit } from '@/lib/emails/email-audit';
 
 const SENDER_DOMAIN = 'notify.seu-certificado-mei-digital.online';
 const FALLBACK_FROM_ADDRESS = 'certificado.mei.estadual@seu-certificado-mei-digital.online';
-const FALLBACK_FROM_NAME = 'Certificado Digital MEI';
+const FALLBACK_FROM_NAME = 'Digital Certifica A1';
 const TEST_RECIPIENT_ENV = 'CAMPAIGN_TEST_RECIPIENT';
 
 async function loadSenderSettings(supabase: any): Promise<{ name: string; email: string }> {

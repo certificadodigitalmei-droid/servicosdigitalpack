@@ -108,7 +108,7 @@ const AVATAR_URL = govbrAvatarAsset.url.startsWith('http')
  * automáticos (faixa dourada, cabeçalho azul, protocolo, quadro de dados e selos).
  */
 export const DEFAULT_DESIGN: CampaignDesign = {
-  logoText: 'Portal Certificado Digital MEI',
+  logoText: 'Digital Certifica A1',
   logoSize: 12,
   headerBg: '#0e3a70',
   headerText: '#ffffff',
@@ -169,7 +169,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
   footer: '',
   disclaimer:
-    'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nAutomated message — do not reply.\nIf you no longer wish to receive these notices, unsubscribe below.',
+    'Digital Certifica A1. Serviço privado de apoio ao MEI.\nAutomated message — do not reply.\nIf you no longer wish to receive these notices, unsubscribe below.',
   showFooter: true,
   unsubText: 'unsubscribe',
   unsubHref: '{{LINK_PUBLICO}}?unsubscribe=1',

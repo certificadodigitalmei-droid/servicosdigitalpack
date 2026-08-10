@@ -201,7 +201,7 @@ const initial: State = {
   sentHour: hourStr(),
   testMode: false,
   testRecipient: '',
-  fromName: 'Certificado Digital MEI',
+  fromName: 'Digital Certifica A1',
   fromAddress: 'certificado.mei.estadual@seu-certificado-mei-digital.online',
   replyTo: '',
   showFloating: true,

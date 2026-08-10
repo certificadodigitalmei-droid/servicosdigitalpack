@@ -151,7 +151,7 @@ function EmailSenderPage() {
                     className="pl-9"
                     value={form.from_name}
                     onChange={(e) => setForm({ ...form, from_name: e.target.value })}
-                    placeholder="Ex: Central MEI Digital"
+                    placeholder="Ex: Digital Certifica A1"
                   />
                 </div>
               </div>

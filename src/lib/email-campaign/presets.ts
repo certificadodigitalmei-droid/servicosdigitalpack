@@ -94,7 +94,7 @@ export const PRESETS: Preset[] = [
 
       showFooter: true,
       disclaimer:
-        'Portal Certificado Digital MEI. Serviço privado de apoio ao MEI.\nE-mail automático; não responda.',
+        'Digital Certifica A1. Serviço privado de apoio ao MEI.\nE-mail automático; não responda.',
       disclaimerSize: 11,
 
     },
@@ -109,7 +109,7 @@ export const PRESETS: Preset[] = [
     design: {
       ...base,
       showGovBar: true,
-      govBarText: 'gov.br · Certificado Digital MEI',
+      govBarText: 'gov.br · Digital Certifica A1',
       govBarBg: '#071633',
       govBarColor: '#c9d5ec',
       showAvatar: false,
@@ -201,7 +201,7 @@ export const PRESETS: Preset[] = [
       avatarUrl: AVATAR,
       avatarSize: 72,
       showGovBar: false,
-      title: 'Certificado Digital MEI',
+      title: 'Digital Certifica A1',
       subtitle: 'Ref. {{REFERENCIA}}',
       heroTitle: 'Tudo pronto para emitir',
       buttonLabel: 'Finalizar emissão',
@@ -225,7 +225,7 @@ export const PRESETS: Preset[] = [
       showAvatar: false,
       avatarUrl: AVATAR,
       avatarSize: 60,
-      title: 'Certificado Digital MEI',
+      title: 'Digital Certifica A1',
       buttonLabel: 'Emitir Certificado',
       showBadges: true,
       badgesText: 'gov.br · Site Seguro · Receita Federal',
