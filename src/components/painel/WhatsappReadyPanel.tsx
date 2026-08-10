@@ -87,7 +87,14 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
         const r: any = await doImport({
           data: {
             date,
-            filters: { only_mei: true, only_active: true, only_matriz: true, require_email: false },
+            filters: {
+              only_mei: storeFilters.only_mei,
+              only_active: storeFilters.only_active,
+              only_matriz: storeFilters.only_matriz,
+              // E-mail é irrelevante no WhatsApp; celular é obrigatório.
+              require_email: false,
+              require_mobile_phone: true,
+            },
             limit: take,
             page: 1,
             skipExisting: true,
