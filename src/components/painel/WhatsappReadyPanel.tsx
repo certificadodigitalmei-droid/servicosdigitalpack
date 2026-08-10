@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
-import { Loader2, Download, RefreshCw, CheckCircle2, Ban, Link2Off, Users } from 'lucide-react';
+import { Loader2, Download, RefreshCw, CheckCircle2, Ban, Link2Off, Users, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,15 +10,21 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatCNPJ } from '@/lib/format';
 import { getWaReadyOverview, reconcileWaReadyQueue } from '@/lib/whatsapp/ready-queue.functions';
+import { purgeNoMobileCompanies, purgeSendFailedCompanies } from '@/lib/whatsapp/maintenance.functions';
 import { importBatch } from '@/lib/casa-dos-dados/simple-flow.functions';
+import { useStore } from '@/lib/automation/store';
+import { consultaStore } from '@/lib/automation/consulta-engine';
 
 const QTY = [10, 20, 50, 100];
 const BATCH = 15; // limite por chamada do importBatch
 
 function todayBR(): string {
-  const now = new Date();
-  const br = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-  return br.toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
 }
 
 type Overview = Awaited<ReturnType<typeof getWaReadyOverview>>;
@@ -27,11 +33,18 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
   const loadOverview = useServerFn(getWaReadyOverview);
   const doReconcile = useServerFn(reconcileWaReadyQueue);
   const doImport = useServerFn(importBatch);
+  const doPurgeNoMobile = useServerFn(purgeNoMobileCompanies);
+  const doPurgeFailed = useServerFn(purgeSendFailedCompanies);
+
+  // Data e filtros vêm da Consulta automática logo acima (fonte única).
+  const dateMode = useStore(consultaStore, (s) => s.dateMode);
+  const selectedDate = useStore(consultaStore, (s) => s.selectedDate);
+  const storeFilters = useStore(consultaStore, (s) => s.filters);
+  const date = dateMode === 'today' ? todayBR() : selectedDate || todayBR();
 
   const [data, setData] = useState<Overview | null>(null);
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState<string | null>(null);
-  const [date, setDate] = useState(todayBR());
   const [qty, setQty] = useState(10);
   const [customQty, setCustomQty] = useState('');
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
