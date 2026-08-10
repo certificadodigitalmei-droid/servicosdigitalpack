@@ -53,7 +53,7 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
   }, [page]);
 
   const counts = (data as any)?.counts ?? {};
-  const rows: any[] = (data as any)?.rows ?? [];
+  const rows: any[] = (data as any)?.items ?? [];
 
   const runImport = async () => {
     const target = Math.max(1, Number(customQty) || qty);
