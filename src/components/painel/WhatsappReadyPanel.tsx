@@ -265,10 +265,44 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
             <Stat label="Prontas" value={counts.ready ?? 0} icon={<CheckCircle2 className="h-4 w-4 text-emerald-600" />} />
             <Stat label="Aguardando link" value={counts.awaitingLink ?? 0} icon={<Link2Off className="h-4 w-4 text-amber-600" />} />
-            <Stat label="Sem celular" value={counts.rejectedNoMobile ?? 0} icon={<Ban className="h-4 w-4 text-destructive" />} />
+            <div className="rounded-md border p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Ban className="h-4 w-4 text-destructive" />
+                Sem celular
+              </div>
+              <div className="mt-1 text-2xl font-semibold">{counts.rejectedNoMobile ?? 0}</div>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="mt-2 h-7 w-full text-xs"
+                disabled={busy !== null || !(counts.rejectedNoMobile ?? 0)}
+                onClick={() => void purge('noMobile')}
+              >
+                {busy === 'noMobile' ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1 h-3 w-3" />}
+                Excluir todas
+              </Button>
+            </div>
             <Stat label="Bloqueadas" value={counts.blocked ?? 0} icon={<Ban className="h-4 w-4 text-destructive" />} />
             <Stat label="Reservadas / enviadas" value={(counts.reserved ?? 0) + (counts.sent ?? 0)} icon={<Users className="h-4 w-4" />} />
           </div>
+
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+            <div className="text-sm font-medium">Manutenção da base</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Limpezas definitivas. Empresas com venda paga nunca são apagadas.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button size="sm" variant="destructive" disabled={busy !== null} onClick={() => void purge('failed')}>
+                {busy === 'failed' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Excluir empresas com falha de envio
+              </Button>
+              <Button size="sm" variant="destructive" disabled={busy !== null} onClick={() => void purge('noMobile')}>
+                {busy === 'noMobile' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Excluir importações e links sem celular
+              </Button>
+            </div>
+          </div>
+
 
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={() => void refresh(page)} disabled={busy !== null}>
