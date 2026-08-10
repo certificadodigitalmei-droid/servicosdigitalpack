@@ -154,15 +154,19 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
             <Download className="h-5 w-5" /> Importar empresas para WhatsApp
           </CardTitle>
           <CardDescription>
-            Usa o mesmo motor da Importação Automática. Só entra empresa com celular brasileiro válido e link ativo.
-            Importar <strong>não envia nada</strong> — quem consome a fila é a campanha selecionada.
+            Usa a data e os filtros da <strong>Consulta automática</strong> acima. Só entra empresa com celular
+            brasileiro válido e link ativo. Importar <strong>não envia nada</strong> — quem consome a fila é a
+            campanha selecionada.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="wa-imp-date">Data de abertura</Label>
-            <Input id="wa-imp-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Label>Data de abertura</Label>
+            <div className="flex h-10 items-center rounded-md border px-3 text-sm text-muted-foreground">
+              {date} {dateMode === 'today' ? '(hoje)' : ''}
+            </div>
           </div>
+
           <div className="space-y-1.5">
             <Label>Quantidade</Label>
             <div className="flex flex-wrap items-center gap-2">
