@@ -154,3 +154,39 @@ export function isConnectionFresh(lastSeenAt: string | null | undefined, now: nu
   const t = Date.parse(lastSeenAt);
   return Number.isFinite(t) && now - t <= maxAgeMs;
 }
+
+/** Idade máxima da confirmação da conexão aceita antes de qualquer envio. */
+export const SEND_CONNECTION_MAX_AGE_MS = 10 * 60 * 1000;
+
+/**
+ * Decide se a conexão está confirmada o bastante para enviar, considerando
+ * uma tentativa de nova consulta quando a confirmação anterior venceu.
+ * Nunca apaga a seleção: só libera ou bloqueia com explicação.
+ */
+export function decideConnectionFreshness(input: {
+  lastSeenAt: string | null | undefined;
+  now: number;
+  resyncAttempted: boolean;
+  resyncOk?: boolean;
+  resyncError?: string | null;
+  maxAgeMs?: number;
+}): { ok: boolean; error: string | null } {
+  const maxAge = input.maxAgeMs ?? SEND_CONNECTION_MAX_AGE_MS;
+  if (isConnectionFresh(input.lastSeenAt, input.now, maxAge)) return { ok: true, error: null };
+  if (!input.resyncAttempted) {
+    return { ok: false, error: 'Conexão do WhatsApp não confirmada recentemente — sincronize a conexão.' };
+  }
+  if (input.resyncOk === false) {
+    return {
+      ok: false,
+      error: `Não foi possível confirmar a conexão do WhatsApp agora${
+        input.resyncError ? `: ${input.resyncError}` : ''
+      } — envio bloqueado até a próxima confirmação.`,
+    };
+  }
+  return {
+    ok: false,
+    error: 'A conexão do WhatsApp continua sem confirmação recente — envio bloqueado até a conexão ser confirmada.',
+  };
+}
+

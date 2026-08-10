@@ -214,20 +214,28 @@ function WhatsappCampanhasPage() {
   };
 
   useEffect(() => {
-    void (async () => {
-      // Sincronização automática ao abrir (o servidor limita a repetição).
+    const autoSync = async () => {
+      // Sincronização automática (o servidor limita a repetição).
       try {
         await doSync({ data: { auto: true } });
       } catch {
         /* sem conexão: o painel segue mostrando o último estado */
       }
       await refresh();
-    })();
-    // Autoatualização moderada: painel a cada 30 s.
+    };
+
+    void autoSync();
+    // Autoatualização moderada: painel a cada 30 s (sem chamar a API do WhatsApp).
     const t1 = window.setInterval(() => void refresh(), 30_000);
-    return () => window.clearInterval(t1);
+    // Conexão e modelos: reconfirmação a cada 5 min.
+    const t2 = window.setInterval(() => void autoSync(), 5 * 60_000);
+    return () => {
+      window.clearInterval(t1);
+      window.clearInterval(t2);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
 
   useEffect(() => {
