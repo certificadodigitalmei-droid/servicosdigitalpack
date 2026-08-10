@@ -758,17 +758,36 @@ export async function runAutomationOnce(
     if (!publicBaseUrl) throw new Error('PUBLIC_APP_URL não configurado');
 
     const { loadBlockedPhones, loadBlockedCnpjs } = await import('@/lib/whatsapp/blocklist.server');
+    const {
+      loadBlockedCnpjSet,
+      blockCnpjForImport,
+      enqueueReadyCompany,
+    } = await import('@/lib/whatsapp/ready-queue.server');
     const blockedPhones = await loadBlockedPhones();
     const blockedCnpjs = await loadBlockedCnpjs();
+    const blockedImportCnpjs = await loadBlockedCnpjSet();
 
     const deps: WorkerDeps = {
       fetchPage: async (o) => {
         await touchHeartbeat('pesquisa_avancada', { page: o.page, limit: o.limit, date: o.date });
         // Execução real importa empresas → precisa do resultado completo,
         // mas SOMENTE depois dos filtros oficiais (com_telefone/somente_celular).
-        return searchOpeningsByDate({ ...o, excludeCnpjs: blockedCnpjs, completo: !isTestRun });
+        return searchOpeningsByDate({
+          ...o,
+          excludeCnpjs: Array.from(new Set([...blockedCnpjs, ...blockedImportCnpjs])),
+          completo: !isTestRun,
+        });
       },
       isPhoneBlocked: (e164) => blockedPhones.has(e164),
+      isCnpjBlocked: (cnpj) => blockedImportCnpjs.has(String(cnpj).replace(/\D/g, '')),
+      blockCnpj: async (cnpj, reason) => {
+        blockedImportCnpjs.add(String(cnpj).replace(/\D/g, ''));
+        await blockCnpjForImport({ cnpj, reason, source: 'casa_dos_dados' });
+      },
+      enqueueReady: async (args) => {
+        await enqueueReadyCompany({ ...args, source: 'importacao_automatica' });
+      },
+
       // fetchDetails intentionally omitted: response.cnpjs already carries
       // the seven required fields. GET /v5/cnpj/{cnpj} is no longer called
       // per-result to keep every run inside the timeout budget.
