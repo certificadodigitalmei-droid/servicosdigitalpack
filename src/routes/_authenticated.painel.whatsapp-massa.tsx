@@ -579,6 +579,9 @@ function WhatsappCampanhasPage() {
         </CardContent>
       </Card>
 
+      {/* 4a. CONSULTA AUTOMÁTICA DO DIA */}
+      <ConsultaInline />
+
       {/* 4b. FILA DE PRONTIDÃO + IMPORTAÇÃO */}
       <WhatsappReadyPanel onChanged={() => void refresh()} />
 
