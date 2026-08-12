@@ -374,7 +374,12 @@ export const createWaCampaign = createServerFn({ method: 'POST' })
 export const controlWaCampaign = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ id: z.string().uuid(), action: z.enum(['start', 'pause', 'resume', 'finish', 'clear_pending']) }).parse(d),
+    z
+      .object({
+        id: z.string().uuid(),
+        action: z.enum(['start', 'pause', 'resume', 'finish', 'clear_pending', 'archive', 'delete']),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { assertAdmin } = await import('./admin.server');
@@ -390,27 +395,83 @@ export const controlWaCampaign = createServerFn({ method: 'POST' })
       .maybeSingle();
     if (!campaign) return { ok: false as const, error: 'Campanha não encontrada' };
 
+    // Liberação transacional: só sai da campanha o que NUNCA foi tentado.
+    const releaseUntried = async (hardDelete: boolean) => {
+      const { data: r } = await db.rpc('wa_release_untried', {
+        _campaign_id: data.id,
+        _hard_delete: hardDelete,
+      });
+      return (r ?? { released: 0, requeued: 0 }) as { released: number; requeued: number };
+    };
+
     if (data.action === 'clear_pending') {
-      // Nunca apaga envios concluídos — só o que ainda não saiu.
-      await db.from('whatsapp_campaign_items').delete().eq('campaign_id', data.id).eq('status', 'pending');
-      return { ok: true as const, error: null };
+      const r = await releaseUntried(true);
+      return { ok: true as const, error: null, ...r };
+    }
+
+    if (data.action === 'delete') {
+      if (campaign.status === 'running') {
+        return { ok: false as const, error: 'Pause a campanha antes de excluir.' };
+      }
+      // Histórico de tentativas nunca é apagado: a campanha é arquivada.
+      const { count: tried } = await db
+        .from('whatsapp_campaign_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('campaign_id', data.id)
+        .not('status', 'in', '(pending,cancelled)');
+      const r = await releaseUntried(true);
+      if ((tried ?? 0) > 0) {
+        await db
+          .from('whatsapp_campaigns')
+          .update({ archived_at: new Date().toISOString(), status: 'archived', next_send_at: null })
+          .eq('id', data.id);
+        return {
+          ok: true as const,
+          error: null,
+          ...r,
+          archivedInstead: true,
+          message: 'Campanha arquivada: o histórico de tentativas e bloqueios foi preservado.',
+        };
+      }
+      await db.from('whatsapp_campaigns').delete().eq('id', data.id);
+      return { ok: true as const, error: null, ...r, archivedInstead: false };
+    }
+
+    if (data.action === 'archive') {
+      const r = await releaseUntried(false);
+      await db
+        .from('whatsapp_campaigns')
+        .update({ archived_at: new Date().toISOString(), status: 'archived', next_send_at: null })
+        .eq('id', data.id);
+      return { ok: true as const, error: null, ...r };
     }
 
     if (data.action === 'finish') {
+      const { count: unconfirmed } = await db
+        .from('whatsapp_campaign_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('campaign_id', data.id)
+        .eq('status', 'confirmation_pending');
+      const r = await releaseUntried(false);
       await db
         .from('whatsapp_campaigns')
-        .update({ status: 'finished', finished_at: new Date().toISOString(), next_send_at: null })
+        .update({
+          status: (unconfirmed ?? 0) > 0 ? 'finished_partial' : 'finished',
+          finished_at: new Date().toISOString(),
+          next_send_at: null,
+        })
         .eq('id', data.id);
-      return { ok: true as const, error: null };
+      return { ok: true as const, error: null, ...r };
     }
 
     if (data.action === 'pause') {
       await db
         .from('whatsapp_campaigns')
-        .update({ status: 'paused', paused_reason: 'Pausada pelo administrador' })
+        .update({ status: 'paused', paused_reason: 'Pausada pelo administrador', next_send_at: null })
         .eq('id', data.id);
       return { ok: true as const, error: null };
     }
+
 
     const { assertSendableSender } = await import('./senders.server');
     const guard = await assertSendableSender(campaign.template_name);
