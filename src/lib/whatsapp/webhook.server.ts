@@ -4,8 +4,11 @@ import {
   parseWhatsappWebhook,
   canApplyStatus,
   itemStatusForDelivery,
+  correlateByRecipient,
+  phoneMatchKey,
   type ParsedStatusEvent,
 } from './webhook-logic';
+
 
 async function admin() {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
