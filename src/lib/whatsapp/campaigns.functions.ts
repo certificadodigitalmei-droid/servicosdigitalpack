@@ -517,7 +517,9 @@ export const getWaCampaignDetail = createServerFn({ method: 'POST' })
     z
       .object({
         id: z.string().uuid(),
-        status: z.enum(['all', 'pending', 'sent', 'failed', 'blocked']).default('all'),
+        status: z
+          .enum(['all', 'pending', 'sending', 'sent', 'failed', 'blocked', 'confirmation_pending', 'cancelled'])
+          .default('all'),
         page: z.number().int().min(1).max(500).default(1),
       })
       .parse(d),
@@ -537,7 +539,7 @@ export const getWaCampaignDetail = createServerFn({ method: 'POST' })
       .maybeSingle();
     if (!campaign) return { campaign: null, items: [], total: 0, counts: null };
 
-    const statuses = ['pending', 'sending', 'sent', 'failed', 'blocked'];
+    const statuses = ['pending', 'sending', 'sent', 'failed', 'blocked', 'confirmation_pending', 'cancelled'];
     const counts: Record<string, number> = {};
     await Promise.all(
       statuses.map(async (s) => {
@@ -715,4 +717,80 @@ export const refillWaCampaign = createServerFn({ method: 'POST' })
     await assertAdmin(context.supabase, context.userId);
     const { buildCampaignQueue } = await import('./campaign.server');
     return buildCampaignQueue(data.id, data.quantity);
+  });
+
+/**
+ * Reparo administrativo de campanha. Idempotente e auditável:
+ * recupera rejeitados a partir da auditoria, correlaciona eventos soltos,
+ * marca confirmação pendente e libera reservas órfãs. NUNCA reenvia.
+ */
+export const repairWaCampaign = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid(), apply: z.boolean().default(false) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const db = supabaseAdmin as any;
+
+    const { data: campaign } = await db
+      .from('whatsapp_campaigns')
+      .select('id,status')
+      .eq('id', data.id)
+      .eq('owner_user_id', context.userId)
+      .maybeSingle();
+    if (!campaign) return { ok: false as const, error: 'Campanha não encontrada', report: null };
+    if (campaign.status === 'running') {
+      return { ok: false as const, error: 'Pause a campanha antes de reparar.', report: null };
+    }
+
+    const { data: report, error } = await db.rpc('wa_repair_campaign', {
+      _campaign_id: data.id,
+      _apply: data.apply,
+    });
+    if (error) return { ok: false as const, error: error.message, report: null };
+    if (data.apply) {
+      await db
+        .from('automation_audit_logs')
+        .insert({ event_type: 'whatsapp_campaign_repair', details: report as any });
+    }
+    return { ok: true as const, error: null, report };
+  });
+
+/** Lista permanente de números e CNPJs bloqueados, com motivo e origem. */
+export const getWaBlockedList = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ page: z.number().int().min(1).max(200).default(1) }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { maskPhone, friendlyError } = await import('./health-logic');
+    const db = supabaseAdmin as any;
+    const pageSize = 25;
+    const from = (data.page - 1) * pageSize;
+
+    const [{ data: numbers, count }, { count: cnpjCount }] = await Promise.all([
+      db
+        .from('blocked_contact_numbers')
+        .select('id,phone_e164,cnpj_snapshot,reason,source,provider_code,created_at', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1),
+      db.from('blocked_import_cnpjs').select('id', { count: 'exact', head: true }),
+    ]);
+
+    return {
+      pageSize,
+      total: count ?? 0,
+      blockedCnpjs: cnpjCount ?? 0,
+      items: ((numbers ?? []) as any[]).map((b) => ({
+        id: b.id as string,
+        phone: maskPhone(b.phone_e164),
+        cnpj: (b.cnpj_snapshot ?? null) as string | null,
+        reason: friendlyError(b.reason),
+        source: (b.source ?? '—') as string,
+        code: (b.provider_code ?? null) as string | null,
+        at: b.created_at as string,
+      })),
+    };
   });
