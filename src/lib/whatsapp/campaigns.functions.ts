@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { resolveIntervalSeconds, type PacePresetId } from './campaign-logic';
-import { computePendingQueue } from './webhook-logic';
+import { computePendingQueue, cumulativeCampaignMetrics } from './webhook-logic';
 
 
 const paceSchema = z.enum(['cautious', 'recommended', 'moderate', 'custom']);
@@ -23,6 +23,7 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
         .from('whatsapp_campaigns')
         .select('*')
         .eq('owner_user_id', context.userId)
+        .is('archived_at', null)
         .order('created_at', { ascending: false })
         .limit(20),
       db.from('whatsapp_api_settings').select('*').eq('id', 1).maybeSingle(),
@@ -94,16 +95,37 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
       if (delivery && delivery !== 'accepted') continue;
       pendingByCampaign.set(String(p.campaign_id), (pendingByCampaign.get(String(p.campaign_id)) ?? 0) + 1);
     }
+    // Números por campanha são CUMULATIVOS (campanha inteira), nunca 24 h.
+    const campaignIds = ((campaigns ?? []) as any[]).map((c) => String(c.id));
+    const allItems: any[] = [];
+    if (campaignIds.length) {
+      const { data: itemsAll } = await db
+        .from('whatsapp_campaign_items')
+        .select('campaign_id,status,delivery_status,wamid,accepted_at,sent_at,attempt_started_at')
+        .in('campaign_id', campaignIds)
+        .limit(20000);
+      allItems.push(...((itemsAll ?? []) as any[]));
+    }
     const byCampaign = ((campaigns ?? []) as any[]).map((c) => {
-      const mine = rows.filter((r) => String(r.campaign_id) === String(c.id));
+      const mine = allItems.filter((r) => String(r.campaign_id) === String(c.id));
+      const m = cumulativeCampaignMetrics(mine);
       return {
         id: c.id as string,
         name: c.name as string,
         status: c.status as string,
-        sent: mine.filter((r) => r.status === 'sent').length,
-        failed: mine.filter((r) => r.status === 'failed').length,
-        blocked: mine.filter((r) => r.status === 'blocked').length,
-        pending: pendingByCampaign.get(String(c.id)) ?? 0,
+        total: m.total,
+        attempts: m.attempts,
+        accepted: m.accepted,
+        metaSent: m.metaSent,
+        delivered: m.delivered,
+        read: m.read,
+        rejected: m.rejected,
+        confirmationPending: m.confirmationPending,
+        cancelled: m.cancelled,
+        sent: m.accepted,
+        failed: m.rejected,
+        blocked: m.rejected,
+        pending: pendingByCampaign.get(String(c.id)) ?? m.queued,
       };
     });
 
