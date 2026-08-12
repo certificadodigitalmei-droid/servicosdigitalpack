@@ -13,6 +13,10 @@ import {
   shouldPauseForFailureRate,
   normalizeTemplateStatus,
   remainingDailyCap,
+  pickJitterInterval,
+  shouldStartNextBatch,
+  autopilotBatchName,
+  AUTOPILOT_DEFAULTS,
   SENDABLE_TEMPLATE_STATUS,
 } from './campaign-logic';
 import { loadBlockedPhones } from './blocklist.server';
