@@ -34,6 +34,7 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
   const doReconcile = useServerFn(reconcileWaReadyQueue);
   const doImport = useServerFn(importBatch);
   const doPurgeNoMobile = useServerFn(purgeNoMobileCompanies);
+  const doClearQueue = useServerFn(clearWaReadyQueue);
   const doPurgeFailed = useServerFn(purgeSendFailedCompanies);
 
   // Data e filtros vêm da Consulta automática logo acima (fonte única).
