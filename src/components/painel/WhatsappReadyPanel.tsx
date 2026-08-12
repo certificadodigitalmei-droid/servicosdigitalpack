@@ -300,6 +300,10 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
                 {busy === 'noMobile' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                 Excluir importações e links sem celular
               </Button>
+              <Button size="sm" variant="destructive" disabled={busy !== null} onClick={() => void clearQueue()}>
+                {busy === 'clear' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Esvaziar fila de prontidão
+              </Button>
             </div>
           </div>
 
