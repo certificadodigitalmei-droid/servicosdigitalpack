@@ -382,3 +382,111 @@ export async function fillToTarget(input: {
     rounds,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Piloto automático (lotes encadeados)
+// ---------------------------------------------------------------------------
+
+export type AutopilotSettings = {
+  enabled: boolean;
+  batch_size: number;
+  rest_minutes: number;
+  min_interval_seconds: number;
+  max_interval_seconds: number;
+  daily_cap: number;
+  /** Hora local (0–23) em que o envio pode começar. */
+  window_start: number;
+  /** Hora local (0–23) em que o envio precisa parar. */
+  window_end: number;
+};
+
+export const AUTOPILOT_DEFAULTS: AutopilotSettings = {
+  enabled: false,
+  batch_size: 20,
+  rest_minutes: 25,
+  min_interval_seconds: 40,
+  max_interval_seconds: 110,
+  daily_cap: DEFAULT_DAILY_UNIQUE_CAP,
+  window_start: 8,
+  window_end: 20,
+};
+
+/** Sorteia um intervalo diferente para cada mensagem, dentro da faixa segura. */
+export function pickJitterInterval(
+  minSeconds: number,
+  maxSeconds: number,
+  rand: () => number = Math.random,
+): number {
+  const min = Math.max(MIN_INTERVAL_SECONDS, Math.floor(Number(minSeconds) || MIN_INTERVAL_SECONDS));
+  const maxRaw = Math.floor(Number(maxSeconds) || min);
+  const max = Math.max(min, Math.min(3600, maxRaw));
+  const r = Math.min(0.999999, Math.max(0, rand()));
+  return min + Math.floor(r * (max - min + 1));
+}
+
+/** A hora local está dentro da janela permitida? Janela igual = 24 h. */
+export function isWithinWindow(hour: number, start: number, end: number): boolean {
+  const h = ((Math.floor(hour) % 24) + 24) % 24;
+  const s = ((Math.floor(start) % 24) + 24) % 24;
+  const e = ((Math.floor(end) % 24) + 24) % 24;
+  if (s === e) return true;
+  if (s < e) return h >= s && h < e;
+  return h >= s || h < e; // janela que atravessa a meia-noite
+}
+
+export type NextBatchDecision = {
+  start: boolean;
+  /** Quantas empresas o próximo lote deve tentar enviar. */
+  size: number;
+  reason:
+    | 'ok'
+    | 'disabled'
+    | 'running'
+    | 'resting'
+    | 'daily_cap'
+    | 'outside_window';
+};
+
+/**
+ * Decide se o piloto pode criar o próximo lote agora.
+ * Puro: recebe o relógio, o teto e a última conclusão.
+ */
+export function shouldStartNextBatch(input: {
+  enabled: boolean;
+  hasRunningCampaign: boolean;
+  lastFinishedAt: number | null;
+  restMinutes: number;
+  sent24: number;
+  dailyCap: number;
+  batchSize: number;
+  now: number;
+  hourLocal: number;
+  windowStart: number;
+  windowEnd: number;
+}): NextBatchDecision {
+  if (!input.enabled) return { start: false, size: 0, reason: 'disabled' };
+  if (input.hasRunningCampaign) return { start: false, size: 0, reason: 'running' };
+  if (!isWithinWindow(input.hourLocal, input.windowStart, input.windowEnd)) {
+    return { start: false, size: 0, reason: 'outside_window' };
+  }
+  const remaining = remainingDailyCap(input.dailyCap, input.sent24);
+  if (remaining <= 0) return { start: false, size: 0, reason: 'daily_cap' };
+  if (input.lastFinishedAt !== null) {
+    const restMs = Math.max(0, Math.floor(input.restMinutes)) * 60_000;
+    if (input.now - input.lastFinishedAt < restMs) {
+      return { start: false, size: 0, reason: 'resting' };
+    }
+  }
+  const size = Math.max(1, Math.min(Math.floor(input.batchSize), remaining));
+  return { start: true, size, reason: 'ok' };
+}
+
+/** Nome legível do lote automático: "Auto 12/08 · lote 3". */
+export function autopilotBatchName(sequence: number, date = new Date()): string {
+  const d = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+  }).format(date);
+  return `Auto ${d} · lote ${Math.max(1, Math.floor(sequence))}`;
+}
