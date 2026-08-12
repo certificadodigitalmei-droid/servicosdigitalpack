@@ -2055,6 +2055,63 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_autopilot_settings: {
+        Row: {
+          batch_size: number
+          daily_cap: number
+          enabled: boolean
+          id: number
+          last_batch_at: string | null
+          last_error: string | null
+          max_interval_seconds: number
+          min_interval_seconds: number
+          next_batch_at: string | null
+          rest_minutes: number
+          sender_phone_number_id: string | null
+          sequence: number
+          template_name: string | null
+          updated_at: string
+          window_end: number
+          window_start: number
+        }
+        Insert: {
+          batch_size?: number
+          daily_cap?: number
+          enabled?: boolean
+          id?: number
+          last_batch_at?: string | null
+          last_error?: string | null
+          max_interval_seconds?: number
+          min_interval_seconds?: number
+          next_batch_at?: string | null
+          rest_minutes?: number
+          sender_phone_number_id?: string | null
+          sequence?: number
+          template_name?: string | null
+          updated_at?: string
+          window_end?: number
+          window_start?: number
+        }
+        Update: {
+          batch_size?: number
+          daily_cap?: number
+          enabled?: boolean
+          id?: number
+          last_batch_at?: string | null
+          last_error?: string | null
+          max_interval_seconds?: number
+          min_interval_seconds?: number
+          next_batch_at?: string | null
+          rest_minutes?: number
+          sender_phone_number_id?: string | null
+          sequence?: number
+          template_name?: string | null
+          updated_at?: string
+          window_end?: number
+          window_start?: number
+        }
+        Relationships: []
+      }
       whatsapp_batch_config: {
         Row: {
           active: boolean
@@ -2245,6 +2302,7 @@ export type Database = {
       whatsapp_campaigns: {
         Row: {
           archived_at: string | null
+          autopilot: boolean
           continuous_mode: boolean
           created_at: string
           daily_unique_cap: number
@@ -2252,6 +2310,8 @@ export type Database = {
           id: string
           interval_seconds: number
           last_error: string | null
+          max_interval_seconds: number | null
+          min_interval_seconds: number | null
           name: string
           next_send_at: string | null
           owner_user_id: string
@@ -2268,6 +2328,7 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
+          autopilot?: boolean
           continuous_mode?: boolean
           created_at?: string
           daily_unique_cap?: number
@@ -2275,6 +2336,8 @@ export type Database = {
           id?: string
           interval_seconds?: number
           last_error?: string | null
+          max_interval_seconds?: number | null
+          min_interval_seconds?: number | null
           name: string
           next_send_at?: string | null
           owner_user_id: string
@@ -2291,6 +2354,7 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
+          autopilot?: boolean
           continuous_mode?: boolean
           created_at?: string
           daily_unique_cap?: number
@@ -2298,6 +2362,8 @@ export type Database = {
           id?: string
           interval_seconds?: number
           last_error?: string | null
+          max_interval_seconds?: number | null
+          min_interval_seconds?: number | null
           name?: string
           next_send_at?: string | null
           owner_user_id?: string
