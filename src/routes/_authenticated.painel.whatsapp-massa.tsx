@@ -326,6 +326,10 @@ function WhatsappCampanhasPage() {
         </Alert>
       )}
 
+      <WhatsappAutopilotCard approvedTemplates={approved} onChanged={() => void refresh()} />
+
+      <WhatsappPeriodStats />
+
       {/* 1. CONSUMO E DESEMPENHO 24 h */}
 
       <Card>
