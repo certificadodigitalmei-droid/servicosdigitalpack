@@ -17,9 +17,11 @@ export const Route = createFileRoute('/api/public/hooks/whatsapp-campaign-tick')
             headers: { 'content-type': 'application/json' },
           });
         }
-        const { runAllRunningCampaigns } = await import('@/lib/whatsapp/campaign.server');
+        const { runAllRunningCampaigns, runAutopilot } = await import('@/lib/whatsapp/campaign.server');
         const results = await runAllRunningCampaigns({ maxWallMs: 45_000 });
-        return new Response(JSON.stringify({ ok: true, results }), {
+        // Depois dos envios, o piloto decide se cria o próximo lote.
+        const autopilot = await runAutopilot();
+        return new Response(JSON.stringify({ ok: true, results, autopilot }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         });
