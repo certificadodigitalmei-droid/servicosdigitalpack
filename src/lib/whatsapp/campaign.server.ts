@@ -592,10 +592,21 @@ async function handleEmptyQueue(campaignId: string): Promise<string> {
   if ((pending ?? 0) > 0) return 'pending_locked';
 
   if (!campaign.continuous_mode) {
+    const { count: unconfirmed } = await db()
+      .from('whatsapp_campaign_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .eq('status', 'confirmation_pending');
     await db()
       .from('whatsapp_campaigns')
-      .update({ status: 'finished', finished_at: new Date().toISOString(), paused_reason: null })
+      .update({
+        status: (unconfirmed ?? 0) > 0 ? 'finished_partial' : 'finished',
+        finished_at: new Date().toISOString(),
+        next_send_at: null,
+        paused_reason: null,
+      })
       .eq('id', campaignId);
+    await db().rpc('wa_release_untried', { _campaign_id: campaignId, _hard_delete: false });
     return 'finished';
   }
 
@@ -615,31 +626,9 @@ async function importNextBatchForCampaign(campaign: any): Promise<boolean> {
   const built = await buildCampaignQueue(campaign.id, campaign.target_count ?? 20);
   if (built.inserted > 0) return true;
 
-  try {
-    const { runImportBatch } = await import('@/lib/casa-dos-dados/simple-flow.server');
-    const { data: auto } = await db()
-      .from('automatic_company_queries')
-      .select('filters,quantity_per_run')
-      .eq('owner_user_id', campaign.owner_user_id)
-      .maybeSingle();
-    const filters = (auto?.filters ?? {}) as any;
-    const today = new Date().toISOString().slice(0, 10);
-    const r = await runImportBatch({
-      date: today,
-      filters: {
-        only_mei: filters.only_mei ?? true,
-        only_active: filters.only_active ?? true,
-        only_matriz: filters.only_matriz ?? true,
-        require_email: false,
-      },
-      limit: Math.min(15, auto?.quantity_per_run ?? 10),
-      page: 1,
-      skipExisting: true,
-    });
-    if (!r.ok || !r.imported.length) return false;
-  } catch {
-    return false;
-  }
+  const added = await refillReadyQueue(campaign.target_count ?? 20);
+  if (!added) return false;
+
 
   const again = await buildCampaignQueue(campaign.id, campaign.target_count ?? 20);
   return again.inserted > 0;
