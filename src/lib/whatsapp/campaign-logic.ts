@@ -316,3 +316,69 @@ export function shouldPauseForFailureRate(input: {
   if (attempts < min) return false;
   return (input.failed + input.blocked) / attempts >= limit;
 }
+
+// ---------------------------------------------------------------------------
+// Preenchimento da fila da campanha por déficit real
+// ---------------------------------------------------------------------------
+
+export type FillSummary = {
+  /** Reservadas da fila de prontidão já existente (primeira rodada). */
+  reusedFromQueue: number;
+  /** Empresas importadas só para completar o que faltava. */
+  imported: number;
+  /** Total efetivamente reservado para a campanha. */
+  reserved: number;
+  /** Candidatos descartados (bloqueado, duplicado, sem link). */
+  skipped: number;
+  /** Quanto ainda falta para o alvo. */
+  missing: number;
+  complete: boolean;
+  rounds: number;
+};
+
+/**
+ * Reserva primeiro o que já está pronto e só importa o DÉFICIT real.
+ * O alvo nunca é reusado inteiro: cada rodada pede apenas `target - reservado`.
+ * Para sem laço quando a fonte não traz mais nada válido.
+ */
+export async function fillToTarget(input: {
+  target: number;
+  /** Reserva `limit` da fila de prontidão; devolve inseridos e ignorados. */
+  build: (limit: number) => Promise<{ inserted: number; skipped: number }>;
+  /** Importa no máximo `missing` empresas novas; devolve quantas entraram. */
+  refill: (missing: number) => Promise<number>;
+  maxRounds?: number;
+}): Promise<FillSummary> {
+  const maxRounds = input.maxRounds ?? 4;
+  let reserved = 0;
+  let skipped = 0;
+  let imported = 0;
+  let rounds = 0;
+
+  const first = await input.build(input.target);
+  reserved += first.inserted;
+  skipped += first.skipped;
+  const reusedFromQueue = first.inserted;
+
+  while (reserved < input.target && rounds < maxRounds) {
+    rounds += 1;
+    const deficit = input.target - reserved;
+    const got = await input.refill(deficit);
+    imported += got;
+    if (got <= 0) break;
+    const again = await input.build(input.target - reserved);
+    reserved += again.inserted;
+    skipped += again.skipped;
+    if (again.inserted <= 0) break;
+  }
+
+  return {
+    reusedFromQueue,
+    imported,
+    reserved,
+    skipped,
+    missing: Math.max(0, input.target - reserved),
+    complete: reserved >= input.target,
+    rounds,
+  };
+}

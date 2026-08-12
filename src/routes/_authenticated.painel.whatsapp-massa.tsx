@@ -438,14 +438,20 @@ function WhatsappCampanhasPage() {
                   <tr className="border-b text-left text-xs uppercase text-slate-500">
                     <th className="py-2">Campanha</th>
                     <th>Situação</th>
-                    <th>Tentativas</th>
-                    <th>Aceitas</th>
-                    <th>Enviadas (Meta)</th>
-                    <th>Entregues</th>
-                    <th>Lidas</th>
-                    <th>Rejeitadas</th>
-                    <th>Confirmação pendente</th>
-                    <th>Na fila</th>
+                    <th title="POSTs realmente feitos ao provedor, incluindo os que falharam depois.">Tentativas</th>
+                    <th title="Respostas HTTP 2xx da API — continuam contando mesmo se a Meta rejeitar depois.">
+                      Aceitas pela API
+                    </th>
+                    <th title="A Meta confirmou o envio: sent + delivered + read.">Enviadas (Meta)</th>
+                    <th title="Chegaram ao aparelho: delivered + read.">Entregues</th>
+                    <th title="Mensagens lidas pelo destinatário (read).">Lidas</th>
+                    <th title="Falha final da Meta ou recusa da API — o número entra na lista de bloqueio.">
+                      Rejeitadas
+                    </th>
+                    <th title="A chamada pode ter saído, mas não houve confirmação. Nunca é reenviada automaticamente.">
+                      Confirmação pendente
+                    </th>
+                    <th title="Reservadas para a campanha e ainda sem nenhuma tentativa.">Na fila</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -453,25 +459,27 @@ function WhatsappCampanhasPage() {
                     <tr key={c.id} className="border-b last:border-0">
                       <td className="py-2 font-medium text-slate-800">{c.name}</td>
                       <td>{CAMPAIGN_LABEL[c.status] ?? c.status}</td>
-                      <td>{c.attempts}</td>
-                      <td>{c.accepted}</td>
-                      <td>{c.metaSent}</td>
-                      <td>{c.delivered}</td>
-                      <td>{c.read}</td>
-                      <td>{c.rejected}</td>
-                      <td>{c.confirmationPending}</td>
-                      <td>{c.pending}</td>
+                      <td title="POSTs realmente feitos ao provedor.">{c.attempts}</td>
+                      <td title="Respostas HTTP 2xx da API, mesmo se rejeitadas depois.">{c.accepted}</td>
+                      <td title="sent + delivered + read confirmados pela Meta.">{c.metaSent}</td>
+                      <td title="delivered + read.">{c.delivered}</td>
+                      <td title="read.">{c.read}</td>
+                      <td title="Falha final da Meta ou recusa da API.">{c.rejected}</td>
+                      <td title="Aceita sem confirmação — nunca reenviada automaticamente.">{c.confirmationPending}</td>
+                      <td title="Sem nenhuma tentativa ainda.">{c.pending}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               <p className="mt-2 text-xs text-slate-500">
                 Números por campanha são cumulativos (campanha inteira), não uma janela de 24 horas.
-                <b> Tentativas</b> = chamadas realmente entregues à API. <b>Aceitas</b> = a API respondeu com sucesso.
-                <b> Enviadas (Meta)</b> = a Meta confirmou o envio pelo webhook.
+                <b> Tentativas</b> = POSTs realmente feitos. <b>Aceitas pela API</b> = respostas HTTP 2xx, mesmo que a
+                Meta rejeite depois. <b>Enviadas (Meta)</b> = sent + delivered + read. <b>Entregues</b> = delivered +
+                read. <b>Lidas</b> = read. <b>Rejeitadas</b> = falha final da Meta.
                 <b> Confirmação pendente</b> = a chamada pode ter saído, mas não houve confirmação — nunca é reenviada
-                automaticamente.
+                automaticamente. Testes avulsos enviados para um número digitado não entram nestes números.
               </p>
+
             </div>
           )}
 
@@ -923,14 +931,19 @@ function WhatsappCampanhasPage() {
                   }
                   setActiveId(r.id);
                   setCampName('');
-                  toast.success(
-                    `Campanha criada com ${r.inserted} de ${r.requested} pedida(s). ` +
-                      `Fila de prontidão disponível: ${r.available}. ` +
-                      `Fora: ${r.skippedReasons.blockedPhone} bloqueada(s), ` +
-                      `${r.skippedReasons.alreadyInCampaign} já nesta campanha ou sem link ativo. ` +
-                      'A criação nunca importa empresas — use "Importar empresas".',
-                  );
+                  const resumo =
+                    `Reutilizadas da fila: ${r.reusedFromQueue} · Importadas para completar: ${r.imported} · ` +
+                    `Reservadas: ${r.reserved} de ${r.requested} · Ignoradas: ${r.skipped} · Faltando: ${r.missing}.`;
+                  if (r.autoStarted) {
+                    toast.success(`Campanha criada e iniciada automaticamente. ${resumo}`);
+                  } else {
+                    toast.warning(
+                      `Campanha criada como rascunho — nenhum envio começou. ${resumo}` +
+                        (r.startError ? ` Motivo: ${r.startError}` : ''),
+                    );
+                  }
                 });
+
               }}
             >
               {busy === 'create' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar campanha
@@ -1036,8 +1049,41 @@ function WhatsappCampanhasPage() {
                       <Square className="mr-1 h-3.5 w-3.5" />Encerrar
                     </Button>
                   )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                    disabled={busy === `del${c.id}`}
+                    title="Sem nenhuma tentativa, a campanha é apagada e as reservas voltam para a fila. Com histórico, ela é arquivada para preservar a auditoria."
+                    onClick={() => {
+                      if (
+                        !window.confirm(
+                          `Excluir a campanha "${c.name}"?\n\n` +
+                            'Sem nenhuma tentativa: ela é apagada e as empresas reservadas voltam para a fila de prontidão.\n' +
+                            'Com qualquer tentativa, wamid ou evento: ela é arquivada (sai desta lista) e todo o histórico e os bloqueios são preservados.',
+                        )
+                      )
+                        return;
+                      void run(`del${c.id}`, async () => {
+                        const r: any = await doControl({ data: { id: c.id, action: 'delete' } });
+                        if (!r.ok) {
+                          toast.error(r.error);
+                          return;
+                        }
+                        setActiveId((cur) => (cur === c.id ? null : cur));
+                        toast.success(
+                          r.archivedInstead
+                            ? `Campanha arquivada: há histórico de tentativas, então tudo foi preservado. ${r.released ?? 0} reserva(s) liberada(s).`
+                            : `Campanha excluída. ${r.released ?? 0} reserva(s) devolvida(s) à fila de prontidão.`,
+                        );
+                      });
+                    }}
+                  >
+                    <Trash2 className="mr-1 h-3.5 w-3.5" />Excluir campanha
+                  </Button>
                 </div>
               </div>
+
               {c.paused_reason && <p className="mt-2 text-xs text-amber-700">{c.paused_reason}</p>}
             </div>
           ))}
@@ -1222,8 +1268,8 @@ function WhatsappCampanhasPage() {
             <AlertTriangle className="h-5 w-5 text-amber-600" /> Falhas e bloqueios
           </CardTitle>
           <CardDescription>
-            Números com falha permanente entram na lista de bloqueio e nunca mais recebem mensagens. Total bloqueado
-            hoje: {m.blocked ?? 0}.
+            Números com falha permanente entram na lista de bloqueio e nunca mais recebem mensagens. Total bloqueado:{' '}
+            {m.blocked ?? 0}.
           </CardDescription>
         </CardHeader>
         <CardContent>

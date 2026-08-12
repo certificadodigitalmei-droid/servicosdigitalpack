@@ -257,15 +257,17 @@ export type MetricItem = {
 export type CumulativeMetrics = {
   /** Itens da campanha (inclui os que nunca foram tentados). */
   total: number;
-  /** Chamadas realmente entregues à API (aceitas ou rejeitadas). */
+  /** Chamadas (POST) realmente feitas ao provedor. */
   attempts: number;
-  /** Aceitas pela API da Chakra. */
+  /** Respostas HTTP 2xx da API — conta mesmo quando a Meta rejeitou depois. */
   accepted: number;
-  /** Rejeitadas pela API ou pela Meta. */
+  /** Falha final: recusada pela API ou marcada como falha pela Meta. */
   rejected: number;
   /** Confirmadas como enviadas pela Meta (sent + delivered + read). */
   metaSent: number;
+  /** Entregues no aparelho (delivered + read). */
   delivered: number;
+  /** Lidas (read). */
   read: number;
   /** Aceitas sem nenhuma confirmação — nunca reenviar automaticamente. */
   confirmationPending: number;
@@ -291,12 +293,19 @@ export function cumulativeCampaignMetrics(items: MetricItem[]): CumulativeMetric
     if (!tried) { m.queued++; continue; }
 
     m.attempts++;
+
     if (status === 'confirmation_pending') { m.confirmationPending++; continue; }
+
+    // Aceita pela API = houve resposta 2xx (wamid/accepted_at). Uma rejeição
+    // posterior da Meta NÃO cancela essa aceitação.
+    if (it.wamid || it.accepted_at || status === 'sent') m.accepted++;
+
     if (status === 'failed' || status === 'blocked' || delivery === 'failed') { m.rejected++; continue; }
-    m.accepted++;
+
     if (delivery === 'sent' || delivery === 'delivered' || delivery === 'read') m.metaSent++;
     if (delivery === 'delivered' || delivery === 'read') m.delivered++;
     if (delivery === 'read') m.read++;
   }
   return m;
 }
+

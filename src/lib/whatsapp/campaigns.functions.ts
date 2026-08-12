@@ -387,11 +387,44 @@ export const createWaCampaign = createServerFn({ method: 'POST' })
       .single();
     if (error) throw new Error(error.message);
 
-    const { buildCampaignQueue } = await import('./campaign.server');
-    const built = await buildCampaignQueue(created.id, data.quantity);
+    // Reserva o que já está pronto e importa SOMENTE o déficit real.
+    const { fillCampaignQueueToTarget, startCampaignChecked } = await import('./campaign.server');
+    const fill = await fillCampaignQueueToTarget(created.id, data.quantity);
 
-    return { ok: true as const, error: null, id: created.id as string, ...built };
+    // Fila completa + preflight válido: o clique em "Criar campanha" já é a
+    // autorização de início. Fila incompleta nunca dispara parcialmente.
+    let autoStarted = false;
+    let startError: string | null = null;
+    if (fill.complete) {
+      const started = await startCampaignChecked(created.id);
+      autoStarted = started.ok;
+      startError = started.error;
+    } else {
+      startError = 'A fila não atingiu o alvo — a campanha ficou como rascunho.';
+      await db
+        .from('whatsapp_campaigns')
+        .update({ paused_reason: startError })
+        .eq('id', created.id);
+    }
+
+    return {
+      ok: true as const,
+      error: null,
+      id: created.id as string,
+      inserted: fill.reserved,
+      requested: data.quantity,
+      available: fill.available,
+      reusedFromQueue: fill.reusedFromQueue,
+      imported: fill.imported,
+      reserved: fill.reserved,
+      skipped: fill.skipped,
+      missing: fill.missing,
+      complete: fill.complete,
+      autoStarted,
+      startError,
+    };
   });
+
 
 export const controlWaCampaign = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
@@ -494,43 +527,12 @@ export const controlWaCampaign = createServerFn({ method: 'POST' })
       return { ok: true as const, error: null };
     }
 
-
-    const { assertSendableSender } = await import('./senders.server');
-    const guard = await assertSendableSender(campaign.template_name);
-    if (!guard.ok) return { ok: false as const, error: guard.error };
-    if (
-      campaign.sender_phone_number_id &&
-      String(campaign.sender_phone_number_id) !== String(guard.sender.phone_number_id)
-    ) {
-      return {
-        ok: false as const,
-        error: 'Esta campanha foi criada com outro número remetente — crie uma nova campanha para o número atual.',
-      };
-    }
-
-    const { data: tpl } = await db
-      .from('whatsapp_templates')
-      .select('status')
-      .eq('name', campaign.template_name)
-      .eq('waba_id', guard.sender.waba_id)
-      .maybeSingle();
-    if (!tpl || String(tpl.status).toUpperCase() !== 'APPROVED') {
-      return { ok: false as const, error: 'O modelo desta campanha não está aprovado pela Meta.' };
-    }
-
-
-    await db
-      .from('whatsapp_campaigns')
-      .update({
-        status: 'running',
-        paused_reason: null,
-        last_error: null,
-        next_send_at: new Date().toISOString(),
-        started_at: campaign.started_at ?? new Date().toISOString(),
-        finished_at: null,
-      })
-      .eq('id', data.id);
+    // start/resume usam a MESMA rotina segura do início automático.
+    const { startCampaignChecked } = await import('./campaign.server');
+    const started = await startCampaignChecked(data.id);
+    if (!started.ok) return { ok: false as const, error: started.error };
     return { ok: true as const, error: null };
+
   });
 
 export const getWaCampaignDetail = createServerFn({ method: 'POST' })
