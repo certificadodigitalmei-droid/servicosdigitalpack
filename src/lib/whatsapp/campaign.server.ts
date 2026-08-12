@@ -13,6 +13,10 @@ import {
   shouldPauseForFailureRate,
   normalizeTemplateStatus,
   remainingDailyCap,
+  pickJitterInterval,
+  shouldStartNextBatch,
+  autopilotBatchName,
+  AUTOPILOT_DEFAULTS,
   SENDABLE_TEMPLATE_STATUS,
 } from './campaign-logic';
 import { loadBlockedPhones } from './blocklist.server';
@@ -509,7 +513,11 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
     });
 
 
-    const intervalMs = Math.max(5, campaign.interval_seconds ?? 30) * 1000;
+    // Ritmo humano: cada mensagem espera um tempo diferente dentro da faixa.
+    const baseInterval = Math.max(5, campaign.interval_seconds ?? 30);
+    const minInterval = campaign.min_interval_seconds ?? baseInterval;
+    const maxInterval = campaign.max_interval_seconds ?? baseInterval;
+    const intervalMs = pickJitterInterval(minInterval, maxInterval) * 1000;
     await db()
       .from('whatsapp_campaigns')
       .update({ next_send_at: new Date(now() + intervalMs).toISOString() })
@@ -689,6 +697,7 @@ async function handleEmptyQueue(campaignId: string): Promise<string> {
       })
       .eq('id', campaignId);
     await db().rpc('wa_release_untried', { _campaign_id: campaignId, _hard_delete: false });
+    await noteAutopilotBatchFinished(campaignId);
     return 'finished';
   }
 
@@ -729,4 +738,181 @@ export async function runAllRunningCampaigns(deps: TickDeps = {}) {
     results.push({ id: c.id, ...r });
   }
   return results;
+}
+
+// ---------------------------------------------------------------------------
+// Piloto automático: lotes pequenos encadeados, com descanso entre eles
+// ---------------------------------------------------------------------------
+
+export async function loadAutopilotSettings() {
+  const { data } = await db()
+    .from('whatsapp_autopilot_settings')
+    .select('*')
+    .eq('id', 1)
+    .maybeSingle();
+  return { ...AUTOPILOT_DEFAULTS, ...(data ?? {}) } as any;
+}
+
+function hourInSaoPaulo(at = new Date()): number {
+  return Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'America/Sao_Paulo',
+      hour: '2-digit',
+      hour12: false,
+    }).format(at),
+  );
+}
+
+async function resolveAutopilotOwner(): Promise<string | null> {
+  const { data: last } = await db()
+    .from('whatsapp_campaigns')
+    .select('owner_user_id')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (last?.owner_user_id) return String(last.owner_user_id);
+  const { data: admin } = await db()
+    .from('user_roles')
+    .select('user_id')
+    .eq('role', 'admin')
+    .limit(1)
+    .maybeSingle();
+  return admin?.user_id ? String(admin.user_id) : null;
+}
+
+async function setAutopilotState(patch: Record<string, unknown>) {
+  await db()
+    .from('whatsapp_autopilot_settings')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', 1);
+}
+
+/**
+ * Cria e inicia o próximo lote automático quando não há campanha rodando,
+ * o descanso terminou, a janela de horário permite e o teto de 24 h tem espaço.
+ * Sempre puxa as empresas mais recentes do dia (via fila de prontidão).
+ */
+export async function runAutopilot(deps: { now?: () => number } = {}) {
+  const nowMs = (deps.now ?? (() => Date.now()))();
+  const cfg = await loadAutopilotSettings();
+
+  const { count: running } = await db()
+    .from('whatsapp_campaigns')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'running');
+
+  const since = new Date(nowMs - 24 * 60 * 60 * 1000).toISOString();
+  const { count: sent24 } = await db()
+    .from('whatsapp_campaign_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'sent')
+    .gte('sent_at', since);
+
+  const decision = shouldStartNextBatch({
+    enabled: !!cfg.enabled,
+    hasRunningCampaign: (running ?? 0) > 0,
+    lastFinishedAt: cfg.last_batch_at ? Date.parse(cfg.last_batch_at) : null,
+    restMinutes: cfg.rest_minutes,
+    sent24: sent24 ?? 0,
+    dailyCap: cfg.daily_cap,
+    batchSize: cfg.batch_size,
+    now: nowMs,
+    hourLocal: hourInSaoPaulo(new Date(nowMs)),
+    windowStart: cfg.window_start,
+    windowEnd: cfg.window_end,
+  });
+
+  if (!decision.start) return { started: false, reason: decision.reason, id: null as string | null };
+
+  const { assertSendableSender } = await import('./senders.server');
+  const settings = await loadWaSettings();
+  const templateName = String(cfg.template_name ?? settings?.template_name ?? '').trim();
+  if (!templateName) {
+    await setAutopilotState({ last_error: 'Escolha um modelo aprovado para o piloto automático.' });
+    return { started: false, reason: 'no_template', id: null };
+  }
+  const guard = await assertSendableSender(templateName);
+  if (!guard.ok) {
+    await setAutopilotState({ last_error: guard.error });
+    return { started: false, reason: 'sender', id: null };
+  }
+  const owner = await resolveAutopilotOwner();
+  if (!owner) {
+    await setAutopilotState({ last_error: 'Nenhum administrador encontrado para dono do lote.' });
+    return { started: false, reason: 'no_owner', id: null };
+  }
+
+  const { data: tpl } = await db()
+    .from('whatsapp_templates')
+    .select('name,status,language,waba_id')
+    .eq('name', templateName)
+    .eq('waba_id', guard.sender.waba_id)
+    .maybeSingle();
+  if (!tpl || normalizeTemplateStatus(tpl.status) !== SENDABLE_TEMPLATE_STATUS) {
+    await setAutopilotState({ last_error: 'O modelo do piloto automático não está aprovado pela Meta.' });
+    return { started: false, reason: 'template_not_approved', id: null };
+  }
+
+  const sequence = Number(cfg.sequence ?? 0) + 1;
+  const minS = Math.max(5, Number(cfg.min_interval_seconds ?? 40));
+  const maxS = Math.max(minS, Number(cfg.max_interval_seconds ?? minS));
+
+  const { data: created, error } = await db()
+    .from('whatsapp_campaigns')
+    .insert({
+      owner_user_id: owner,
+      name: autopilotBatchName(sequence, new Date(nowMs)),
+      template_name: tpl.name,
+      template_language: tpl.language ?? 'pt_BR',
+      sender_phone_number_id: guard.sender.phone_number_id,
+      sender_waba_id: guard.sender.waba_id,
+      status: 'draft',
+      pace_preset: 'custom',
+      interval_seconds: minS,
+      min_interval_seconds: minS,
+      max_interval_seconds: maxS,
+      target_count: decision.size,
+      daily_unique_cap: cfg.daily_cap,
+      continuous_mode: false,
+      autopilot: true,
+    })
+    .select('id')
+    .single();
+  if (error) {
+    await setAutopilotState({ last_error: error.message });
+    return { started: false, reason: 'insert_failed', id: null };
+  }
+
+  // Empresas mais recentes do dia: reserva o que já está pronto e importa o déficit.
+  const fill = await fillCampaignQueueToTarget(created.id, decision.size);
+  if (fill.reserved <= 0) {
+    await db()
+      .from('whatsapp_campaigns')
+      .update({ status: 'finished', finished_at: new Date(nowMs).toISOString() })
+      .eq('id', created.id);
+    await setAutopilotState({
+      last_error: 'Nenhuma empresa nova do dia disponível — aguardando novas chegarem.',
+      next_batch_at: new Date(nowMs + Math.max(1, cfg.rest_minutes) * 60_000).toISOString(),
+    });
+    return { started: false, reason: 'no_companies', id: created.id as string };
+  }
+
+  const started = await startCampaignChecked(created.id);
+  await setAutopilotState({
+    sequence,
+    last_error: started.error,
+    next_batch_at: null,
+  });
+  return { started: started.ok, reason: started.ok ? 'ok' : 'start_failed', id: created.id as string, size: fill.reserved };
+}
+
+/** Marca o fim do lote automático para começar a contar o descanso. */
+export async function noteAutopilotBatchFinished(campaignId: string) {
+  const { data: c } = await db()
+    .from('whatsapp_campaigns')
+    .select('autopilot,status')
+    .eq('id', campaignId)
+    .maybeSingle();
+  if (!c?.autopilot) return;
+  await setAutopilotState({ last_batch_at: new Date().toISOString() });
 }

@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatCNPJ } from '@/lib/format';
 import { getWaReadyOverview, reconcileWaReadyQueue } from '@/lib/whatsapp/ready-queue.functions';
 import { purgeNoMobileCompanies, purgeSendFailedCompanies } from '@/lib/whatsapp/maintenance.functions';
+import { clearWaReadyQueue } from '@/lib/whatsapp/campaigns.functions';
 import { importBatch } from '@/lib/casa-dos-dados/simple-flow.functions';
 import { useStore } from '@/lib/automation/store';
 import { consultaStore } from '@/lib/automation/consulta-engine';
@@ -34,6 +35,7 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
   const doReconcile = useServerFn(reconcileWaReadyQueue);
   const doImport = useServerFn(importBatch);
   const doPurgeNoMobile = useServerFn(purgeNoMobileCompanies);
+  const doClearQueue = useServerFn(clearWaReadyQueue);
   const doPurgeFailed = useServerFn(purgeSendFailedCompanies);
 
   // Data e filtros vêm da Consulta automática logo acima (fonte única).
@@ -149,6 +151,25 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
       onChanged?.();
     } catch (e: any) {
       toast.error(e?.message ?? 'Falha na limpeza');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const clearQueue = async () => {
+    if (!window.confirm('Esvaziar a fila de prontidão? As empresas saem da fila; vendas pagas não são afetadas.')) {
+      return;
+    }
+    setBusy('clear');
+    try {
+      const r: any = await doClearQueue({});
+      if (!r?.ok) throw new Error(r?.error ?? 'Falha ao esvaziar a fila');
+      toast.success(`${r.removed} registro(s) removido(s) da fila`);
+      await refresh(1);
+      setPage(1);
+      onChanged?.();
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao esvaziar a fila');
     } finally {
       setBusy(null);
     }
@@ -299,6 +320,10 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
               <Button size="sm" variant="destructive" disabled={busy !== null} onClick={() => void purge('noMobile')}>
                 {busy === 'noMobile' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                 Excluir importações e links sem celular
+              </Button>
+              <Button size="sm" variant="destructive" disabled={busy !== null} onClick={() => void clearQueue()}>
+                {busy === 'clear' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Esvaziar fila de prontidão
               </Button>
             </div>
           </div>
