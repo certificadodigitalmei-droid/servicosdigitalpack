@@ -822,3 +822,141 @@ export const getWaBlockedList = createServerFn({ method: 'POST' })
       })),
     };
   });
+
+// ---------------------------------------------------------------------------
+// Piloto automático + limpeza da fila de prontidão
+// ---------------------------------------------------------------------------
+
+/** Lê as configurações do piloto automático e o estado atual dos lotes. */
+export const getWaAutopilot = createServerFn({ method: 'GET' })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const db = supabaseAdmin as any;
+
+    const { data } = await db.from('whatsapp_autopilot_settings').select('*').eq('id', 1).maybeSingle();
+    const { count: running } = await db
+      .from('whatsapp_campaigns')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'running');
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: sent24 } = await db
+      .from('whatsapp_campaign_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'sent')
+      .gte('sent_at', since);
+
+    const { AUTOPILOT_DEFAULTS } = await import('./campaign-logic');
+    return {
+      settings: { ...AUTOPILOT_DEFAULTS, ...(data ?? {}) },
+      running: running ?? 0,
+      sent24: sent24 ?? 0,
+    };
+  });
+
+/** Salva as configurações do piloto automático. Nunca dispara envio aqui. */
+export const saveWaAutopilot = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        enabled: z.boolean(),
+        batchSize: z.number().int().min(1).max(250),
+        restMinutes: z.number().int().min(0).max(720),
+        minIntervalSeconds: z.number().int().min(5).max(3600),
+        maxIntervalSeconds: z.number().int().min(5).max(3600),
+        dailyCap: z.number().int().min(1).max(5000),
+        windowStart: z.number().int().min(0).max(23),
+        windowEnd: z.number().int().min(0).max(23),
+        templateName: z.string().trim().max(200).nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const db = supabaseAdmin as any;
+
+    const minS = data.minIntervalSeconds;
+    const maxS = Math.max(minS, data.maxIntervalSeconds);
+    const { error } = await db
+      .from('whatsapp_autopilot_settings')
+      .upsert(
+        {
+          id: 1,
+          enabled: data.enabled,
+          batch_size: data.batchSize,
+          rest_minutes: data.restMinutes,
+          min_interval_seconds: minS,
+          max_interval_seconds: maxS,
+          daily_cap: data.dailyCap,
+          window_start: data.windowStart,
+          window_end: data.windowEnd,
+          template_name: data.templateName ?? null,
+          last_error: null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' },
+      );
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const, error: null };
+  });
+
+/** Esvazia a fila de prontidão (reservas incluídas). Não toca em vendas pagas. */
+export const clearWaReadyQueue = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const db = supabaseAdmin as any;
+
+    const { count } = await db.from('whatsapp_ready_queue').select('id', { count: 'exact', head: true });
+    const { error } = await db.from('whatsapp_ready_queue').delete().not('id', 'is', null);
+    if (error) return { ok: false as const, error: error.message, removed: 0 };
+    return { ok: true as const, error: null, removed: count ?? 0 };
+  });
+
+/** Números do período escolhido (Hoje, 7 dias, personalizado…). */
+export const getWaPeriodStats = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        from: z.string().datetime().nullable().optional(),
+        to: z.string().datetime().nullable().optional(),
+      })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const db = supabaseAdmin as any;
+
+    let q = db
+      .from('whatsapp_campaign_items')
+      .select('campaign_id,status,delivery_status,wamid,accepted_at,sent_at,attempt_started_at,updated_at')
+      .limit(20000);
+    if (data.from) q = q.gte('updated_at', data.from);
+    if (data.to) q = q.lte('updated_at', data.to);
+    const { data: rows } = await q;
+
+    const list = (rows ?? []) as any[];
+    const m = cumulativeCampaignMetrics(list);
+    const campaigns = new Set(list.map((r) => String(r.campaign_id))).size;
+    return {
+      from: data.from ?? null,
+      to: data.to ?? null,
+      campaigns,
+      attempts: m.attempts,
+      accepted: m.accepted,
+      metaSent: m.metaSent,
+      delivered: m.delivered,
+      read: m.read,
+      rejected: m.rejected,
+    };
+  });
