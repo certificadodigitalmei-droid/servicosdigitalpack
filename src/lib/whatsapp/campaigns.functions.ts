@@ -387,11 +387,44 @@ export const createWaCampaign = createServerFn({ method: 'POST' })
       .single();
     if (error) throw new Error(error.message);
 
-    const { buildCampaignQueue } = await import('./campaign.server');
-    const built = await buildCampaignQueue(created.id, data.quantity);
+    // Reserva o que já está pronto e importa SOMENTE o déficit real.
+    const { fillCampaignQueueToTarget, startCampaignChecked } = await import('./campaign.server');
+    const fill = await fillCampaignQueueToTarget(created.id, data.quantity);
 
-    return { ok: true as const, error: null, id: created.id as string, ...built };
+    // Fila completa + preflight válido: o clique em "Criar campanha" já é a
+    // autorização de início. Fila incompleta nunca dispara parcialmente.
+    let autoStarted = false;
+    let startError: string | null = null;
+    if (fill.complete) {
+      const started = await startCampaignChecked(created.id);
+      autoStarted = started.ok;
+      startError = started.error;
+    } else {
+      startError = 'A fila não atingiu o alvo — a campanha ficou como rascunho.';
+      await db
+        .from('whatsapp_campaigns')
+        .update({ paused_reason: startError })
+        .eq('id', created.id);
+    }
+
+    return {
+      ok: true as const,
+      error: null,
+      id: created.id as string,
+      inserted: fill.reserved,
+      requested: data.quantity,
+      available: fill.available,
+      reusedFromQueue: fill.reusedFromQueue,
+      imported: fill.imported,
+      reserved: fill.reserved,
+      skipped: fill.skipped,
+      missing: fill.missing,
+      complete: fill.complete,
+      autoStarted,
+      startError,
+    };
   });
+
 
 export const controlWaCampaign = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
