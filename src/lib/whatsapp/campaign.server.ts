@@ -404,6 +404,14 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
       break;
     }
 
+    // Registra o início da tentativa ANTES da chamada: se o processo morrer no
+    // meio, o item nunca volta para "pendente" e não é reenviado.
+    const attemptId = crypto.randomUUID();
+    await db()
+      .from('whatsapp_campaign_items')
+      .update({ attempt_id: attemptId, attempt_started_at: new Date(now()).toISOString() })
+      .eq('id', item.id);
+
     const result = await send({
       apiBaseUrl: cfg.base_url,
       apiKey,
@@ -417,6 +425,7 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
       cnpj: String(item.cnpj ?? '').trim(),
       buttonToken: String(item.token ?? '').trim(),
     });
+
 
     const intervalMs = Math.max(5, campaign.interval_seconds ?? 30) * 1000;
     await db()
