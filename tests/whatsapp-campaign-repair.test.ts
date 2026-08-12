@@ -62,7 +62,8 @@ describe('cumulativeCampaignMetrics', () => {
     ]);
     expect(m.total).toBe(7);
     expect(m.attempts).toBe(5);
-    expect(m.accepted).toBe(3);
+    // "Aceitas pela API" conta HTTP 2xx, inclusive a que a Meta rejeitou depois.
+    expect(m.accepted).toBe(4);
     expect(m.metaSent).toBe(3);
     expect(m.delivered).toBe(2);
     expect(m.read).toBe(1);
