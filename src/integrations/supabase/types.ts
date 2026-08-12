@@ -2115,6 +2115,8 @@ export type Database = {
       whatsapp_campaign_items: {
         Row: {
           accepted_at: string | null
+          attempt_id: string | null
+          attempt_started_at: string | null
           attempts: number
           campaign_id: string
           cnpj: string | null
@@ -2148,6 +2150,8 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          attempt_id?: string | null
+          attempt_started_at?: string | null
           attempts?: number
           campaign_id: string
           cnpj?: string | null
@@ -2181,6 +2185,8 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          attempt_id?: string | null
+          attempt_started_at?: string | null
           attempts?: number
           campaign_id?: string
           cnpj?: string | null
@@ -2238,6 +2244,7 @@ export type Database = {
       }
       whatsapp_campaigns: {
         Row: {
+          archived_at: string | null
           continuous_mode: boolean
           created_at: string
           daily_unique_cap: number
@@ -2260,6 +2267,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           continuous_mode?: boolean
           created_at?: string
           daily_unique_cap?: number
@@ -2282,6 +2290,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           continuous_mode?: boolean
           created_at?: string
           daily_unique_cap?: number
@@ -2749,7 +2758,27 @@ export type Database = {
           token: string
         }[]
       }
+      wa_phone_key: { Args: { _p: string }; Returns: string }
+      wa_release_untried: {
+        Args: { _campaign_id: string; _hard_delete?: boolean }
+        Returns: Json
+      }
+      wa_repair_campaign: {
+        Args: { _apply?: boolean; _campaign_id: string }
+        Returns: Json
+      }
       wa_reserve_ready: {
+        Args: { _campaign_id: string; _limit: number }
+        Returns: {
+          cnpj: string
+          company_id: string
+          company_link_id: string
+          company_name: string
+          phone_e164: string
+          token: string
+        }[]
+      }
+      wa_reserve_ready_v2: {
         Args: { _campaign_id: string; _limit: number }
         Returns: {
           cnpj: string
