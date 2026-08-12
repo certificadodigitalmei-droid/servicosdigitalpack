@@ -438,14 +438,20 @@ function WhatsappCampanhasPage() {
                   <tr className="border-b text-left text-xs uppercase text-slate-500">
                     <th className="py-2">Campanha</th>
                     <th>Situação</th>
-                    <th>Tentativas</th>
-                    <th>Aceitas</th>
-                    <th>Enviadas (Meta)</th>
-                    <th>Entregues</th>
-                    <th>Lidas</th>
-                    <th>Rejeitadas</th>
-                    <th>Confirmação pendente</th>
-                    <th>Na fila</th>
+                    <th title="POSTs realmente feitos ao provedor, incluindo os que falharam depois.">Tentativas</th>
+                    <th title="Respostas HTTP 2xx da API — continuam contando mesmo se a Meta rejeitar depois.">
+                      Aceitas pela API
+                    </th>
+                    <th title="A Meta confirmou o envio: sent + delivered + read.">Enviadas (Meta)</th>
+                    <th title="Chegaram ao aparelho: delivered + read.">Entregues</th>
+                    <th title="Mensagens lidas pelo destinatário (read).">Lidas</th>
+                    <th title="Falha final da Meta ou recusa da API — o número entra na lista de bloqueio.">
+                      Rejeitadas
+                    </th>
+                    <th title="A chamada pode ter saído, mas não houve confirmação. Nunca é reenviada automaticamente.">
+                      Confirmação pendente
+                    </th>
+                    <th title="Reservadas para a campanha e ainda sem nenhuma tentativa.">Na fila</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -453,25 +459,27 @@ function WhatsappCampanhasPage() {
                     <tr key={c.id} className="border-b last:border-0">
                       <td className="py-2 font-medium text-slate-800">{c.name}</td>
                       <td>{CAMPAIGN_LABEL[c.status] ?? c.status}</td>
-                      <td>{c.attempts}</td>
-                      <td>{c.accepted}</td>
-                      <td>{c.metaSent}</td>
-                      <td>{c.delivered}</td>
-                      <td>{c.read}</td>
-                      <td>{c.rejected}</td>
-                      <td>{c.confirmationPending}</td>
-                      <td>{c.pending}</td>
+                      <td title="POSTs realmente feitos ao provedor.">{c.attempts}</td>
+                      <td title="Respostas HTTP 2xx da API, mesmo se rejeitadas depois.">{c.accepted}</td>
+                      <td title="sent + delivered + read confirmados pela Meta.">{c.metaSent}</td>
+                      <td title="delivered + read.">{c.delivered}</td>
+                      <td title="read.">{c.read}</td>
+                      <td title="Falha final da Meta ou recusa da API.">{c.rejected}</td>
+                      <td title="Aceita sem confirmação — nunca reenviada automaticamente.">{c.confirmationPending}</td>
+                      <td title="Sem nenhuma tentativa ainda.">{c.pending}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               <p className="mt-2 text-xs text-slate-500">
                 Números por campanha são cumulativos (campanha inteira), não uma janela de 24 horas.
-                <b> Tentativas</b> = chamadas realmente entregues à API. <b>Aceitas</b> = a API respondeu com sucesso.
-                <b> Enviadas (Meta)</b> = a Meta confirmou o envio pelo webhook.
+                <b> Tentativas</b> = POSTs realmente feitos. <b>Aceitas pela API</b> = respostas HTTP 2xx, mesmo que a
+                Meta rejeite depois. <b>Enviadas (Meta)</b> = sent + delivered + read. <b>Entregues</b> = delivered +
+                read. <b>Lidas</b> = read. <b>Rejeitadas</b> = falha final da Meta.
                 <b> Confirmação pendente</b> = a chamada pode ter saído, mas não houve confirmação — nunca é reenviada
-                automaticamente.
+                automaticamente. Testes avulsos enviados para um número digitado não entram nestes números.
               </p>
+
             </div>
           )}
 
