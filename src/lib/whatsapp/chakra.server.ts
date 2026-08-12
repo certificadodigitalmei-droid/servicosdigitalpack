@@ -172,6 +172,9 @@ export function extractErrorMessage(json: any, fallback: string): string {
   return fallback.slice(0, 500);
 }
 
+/** Tempo máximo de espera de uma chamada de envio. */
+export const SEND_TIMEOUT_MS = 25_000;
+
 export type SendResult =
   | {
       ok: true;
@@ -182,7 +185,16 @@ export type SendResult =
       providerId: string | null;
       deliveryStatus: string | null;
     }
-  | { ok: false; error: string };
+  | {
+      ok: false;
+      error: string;
+      /**
+       * A chamada pode ter chegado ao provedor (tempo limite, queda de rede
+       * depois do POST). Nunca reenviar automaticamente nesse caso.
+       */
+      indeterminate?: boolean;
+    };
+
 
 
 export async function sendChakraTemplate(opts: {
