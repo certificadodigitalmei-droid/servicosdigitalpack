@@ -931,14 +931,19 @@ function WhatsappCampanhasPage() {
                   }
                   setActiveId(r.id);
                   setCampName('');
-                  toast.success(
-                    `Campanha criada com ${r.inserted} de ${r.requested} pedida(s). ` +
-                      `Fila de prontidão disponível: ${r.available}. ` +
-                      `Fora: ${r.skippedReasons.blockedPhone} bloqueada(s), ` +
-                      `${r.skippedReasons.alreadyInCampaign} já nesta campanha ou sem link ativo. ` +
-                      'A criação nunca importa empresas — use "Importar empresas".',
-                  );
+                  const resumo =
+                    `Reutilizadas da fila: ${r.reusedFromQueue} · Importadas para completar: ${r.imported} · ` +
+                    `Reservadas: ${r.reserved} de ${r.requested} · Ignoradas: ${r.skipped} · Faltando: ${r.missing}.`;
+                  if (r.autoStarted) {
+                    toast.success(`Campanha criada e iniciada automaticamente. ${resumo}`);
+                  } else {
+                    toast.warning(
+                      `Campanha criada como rascunho — nenhum envio começou. ${resumo}` +
+                        (r.startError ? ` Motivo: ${r.startError}` : ''),
+                    );
+                  }
                 });
+
               }}
             >
               {busy === 'create' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar campanha
