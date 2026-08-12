@@ -209,6 +209,7 @@ export async function sendChakraTemplate(opts: {
   cnpj: string;
   buttonToken: string;
   fetchImpl?: typeof fetch;
+  timeoutMs?: number;
 }): Promise<SendResult> {
   if (!opts.pluginId) return { ok: false, error: 'Plugin ID não configurado' };
   if (!opts.whatsappPhoneNumberId) return { ok: false, error: 'Phone Number ID não configurado' };
@@ -231,6 +232,9 @@ export async function sendChakraTemplate(opts: {
 
 
   const doFetch = opts.fetchImpl ?? fetch;
+  const timeoutMs = Math.max(1_000, opts.timeoutMs ?? SEND_TIMEOUT_MS);
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
   let res: Response;
   try {
     res = await doFetch(url, {
@@ -240,12 +244,28 @@ export async function sendChakraTemplate(opts: {
         Authorization: `Bearer ${opts.apiKey}`,
       },
       body: JSON.stringify(payload),
+      ...(controller ? { signal: controller.signal } : {}),
     });
   } catch (e: any) {
-    return { ok: false, error: `falha de rede: ${e?.message ?? 'desconhecida'}` };
+    const aborted = e?.name === 'AbortError' || /abort/i.test(String(e?.message ?? ''));
+    return {
+      ok: false,
+      indeterminate: true,
+      error: aborted
+        ? `tempo limite de ${Math.round(timeoutMs / 1000)}s excedido — confirmação pendente`
+        : `falha de rede: ${e?.message ?? 'desconhecida'} — confirmação pendente`,
+    };
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 
-  const text = await res.text();
+  let text: string;
+  try {
+    text = await res.text();
+  } catch (e: any) {
+    return { ok: false, indeterminate: true, error: `resposta interrompida — confirmação pendente` };
+  }
+
   let json: any = null;
   try {
     json = JSON.parse(text);
