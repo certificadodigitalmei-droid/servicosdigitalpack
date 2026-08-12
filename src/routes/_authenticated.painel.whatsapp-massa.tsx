@@ -1268,8 +1268,8 @@ function WhatsappCampanhasPage() {
             <AlertTriangle className="h-5 w-5 text-amber-600" /> Falhas e bloqueios
           </CardTitle>
           <CardDescription>
-            Números com falha permanente entram na lista de bloqueio e nunca mais recebem mensagens. Total bloqueado
-            hoje: {m.blocked ?? 0}.
+            Números com falha permanente entram na lista de bloqueio e nunca mais recebem mensagens. Total bloqueado:{' '}
+            {m.blocked ?? 0}.
           </CardDescription>
         </CardHeader>
         <CardContent>
