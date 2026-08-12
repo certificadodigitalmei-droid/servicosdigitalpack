@@ -1255,7 +1255,60 @@ function WhatsappCampanhasPage() {
               </table>
             </div>
           )}
+
+          <div className="mt-4 border-t pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-semibold uppercase text-slate-500">Lista de bloqueios permanentes</div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy === 'blk'}
+                onClick={() =>
+                  run('blk', async () => {
+                    const r: any = await loadBlocked({ data: { page: 1 } });
+                    setBlocked(r);
+                    setBlockedOpen(true);
+                  })
+                }
+              >
+                {blockedOpen ? 'Atualizar lista' : 'Ver bloqueados'}
+              </Button>
+            </div>
+            {blockedOpen && blocked && (
+              <>
+                <p className="mt-2 text-xs text-slate-500">
+                  {blocked.total} telefone(s) e {blocked.blockedCnpjs} CNPJ(s) bloqueados. Bloqueios e histórico de
+                  falhas nunca são apagados pela limpeza de campanhas.
+                </p>
+                <div className="mt-2 max-h-72 overflow-auto rounded-lg border">
+                  <table className="w-full min-w-[640px] text-sm">
+                    <thead className="bg-slate-50">
+                      <tr className="text-left text-xs uppercase text-slate-500">
+                        <th className="px-3 py-2">Quando</th>
+                        <th>Telefone</th>
+                        <th>CNPJ</th>
+                        <th>Origem</th>
+                        <th>Motivo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {((blocked.items ?? []) as any[]).map((b) => (
+                        <tr key={b.id} className="border-t">
+                          <td className="px-3 py-2 whitespace-nowrap">{fmtDate(b.at)}</td>
+                          <td>{b.phone}</td>
+                          <td>{b.cnpj ?? '—'}</td>
+                          <td>{b.source}</td>
+                          <td className="max-w-[280px] truncate text-red-600">{b.reason}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
         </CardContent>
+
       </Card>
     </div>
   );
