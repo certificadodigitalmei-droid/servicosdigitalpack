@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatCNPJ } from '@/lib/format';
 import { getWaReadyOverview, reconcileWaReadyQueue } from '@/lib/whatsapp/ready-queue.functions';
 import { purgeNoMobileCompanies, purgeSendFailedCompanies } from '@/lib/whatsapp/maintenance.functions';
+import { clearWaReadyQueue } from '@/lib/whatsapp/campaigns.functions';
 import { importBatch } from '@/lib/casa-dos-dados/simple-flow.functions';
 import { useStore } from '@/lib/automation/store';
 import { consultaStore } from '@/lib/automation/consulta-engine';
