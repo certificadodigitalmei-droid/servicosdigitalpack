@@ -61,20 +61,22 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
     const rows = (window24 ?? []) as any[];
     const sentRows = rows.filter((r) => r.status === 'sent');
     const uniqueRecipients24h = new Set(sentRows.map((r) => String(r.phone))).size;
-    const sent24h = sentRows.length;
     const failed24h = rows.filter((r) => r.status === 'failed').length;
     const blocked24h = rows.filter((r) => r.status === 'blocked').length;
-    const attempts24h = sent24h + failed24h + blocked24h;
     const sentHour = sentRows.filter((r) => r.sent_at && r.sent_at >= since1h).length;
     const sentToday = sentRows.filter((r) => r.sent_at && r.sent_at >= todayStart.toISOString()).length;
-    const successRate = attempts24h ? Math.round((sent24h / attempts24h) * 100) : null;
 
-    // Situação real informada pela Meta (webhook) nas últimas 24 h.
-    const deliveryCount = (s: string) => rows.filter((r) => String(r.delivery_status ?? '') === s).length;
-    const metaSent24h = deliveryCount('sent');
-    const delivered24h = deliveryCount('delivered');
-    const read24h = deliveryCount('read');
-    const rejected24h = deliveryCount('failed');
+    // Cards gerais usam EXATAMENTE as mesmas regras cumulativas da tabela.
+    const w = cumulativeCampaignMetrics(rows);
+    const attempts24h = w.attempts;
+    const sent24h = w.accepted; // Aceitas pela API (todo HTTP 2xx)
+    const metaSent24h = w.metaSent; // sent + delivered + read
+    const delivered24h = w.delivered; // delivered + read
+    const read24h = w.read;
+    const rejected24h = w.rejected;
+    const successRate = attempts24h ? Math.round((w.accepted / attempts24h) * 100) : null;
+
+
 
     // Desempenho por modelo (últimas 24h).
     const byTemplate = new Map<string, { template: string; sent: number; failed: number; blocked: number }>();
