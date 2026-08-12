@@ -1049,8 +1049,41 @@ function WhatsappCampanhasPage() {
                       <Square className="mr-1 h-3.5 w-3.5" />Encerrar
                     </Button>
                   )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                    disabled={busy === `del${c.id}`}
+                    title="Sem nenhuma tentativa, a campanha é apagada e as reservas voltam para a fila. Com histórico, ela é arquivada para preservar a auditoria."
+                    onClick={() => {
+                      if (
+                        !window.confirm(
+                          `Excluir a campanha "${c.name}"?\n\n` +
+                            'Sem nenhuma tentativa: ela é apagada e as empresas reservadas voltam para a fila de prontidão.\n' +
+                            'Com qualquer tentativa, wamid ou evento: ela é arquivada (sai desta lista) e todo o histórico e os bloqueios são preservados.',
+                        )
+                      )
+                        return;
+                      void run(`del${c.id}`, async () => {
+                        const r: any = await doControl({ data: { id: c.id, action: 'delete' } });
+                        if (!r.ok) {
+                          toast.error(r.error);
+                          return;
+                        }
+                        setActiveId((cur) => (cur === c.id ? null : cur));
+                        toast.success(
+                          r.archivedInstead
+                            ? `Campanha arquivada: há histórico de tentativas, então tudo foi preservado. ${r.released ?? 0} reserva(s) liberada(s).`
+                            : `Campanha excluída. ${r.released ?? 0} reserva(s) devolvida(s) à fila de prontidão.`,
+                        );
+                      });
+                    }}
+                  >
+                    <Trash2 className="mr-1 h-3.5 w-3.5" />Excluir campanha
+                  </Button>
                 </div>
               </div>
+
               {c.paused_reason && <p className="mt-2 text-xs text-amber-700">{c.paused_reason}</p>}
             </div>
           ))}
