@@ -697,6 +697,7 @@ async function handleEmptyQueue(campaignId: string): Promise<string> {
       })
       .eq('id', campaignId);
     await db().rpc('wa_release_untried', { _campaign_id: campaignId, _hard_delete: false });
+    await noteAutopilotBatchFinished(campaignId);
     return 'finished';
   }
 
