@@ -527,43 +527,12 @@ export const controlWaCampaign = createServerFn({ method: 'POST' })
       return { ok: true as const, error: null };
     }
 
-
-    const { assertSendableSender } = await import('./senders.server');
-    const guard = await assertSendableSender(campaign.template_name);
-    if (!guard.ok) return { ok: false as const, error: guard.error };
-    if (
-      campaign.sender_phone_number_id &&
-      String(campaign.sender_phone_number_id) !== String(guard.sender.phone_number_id)
-    ) {
-      return {
-        ok: false as const,
-        error: 'Esta campanha foi criada com outro número remetente — crie uma nova campanha para o número atual.',
-      };
-    }
-
-    const { data: tpl } = await db
-      .from('whatsapp_templates')
-      .select('status')
-      .eq('name', campaign.template_name)
-      .eq('waba_id', guard.sender.waba_id)
-      .maybeSingle();
-    if (!tpl || String(tpl.status).toUpperCase() !== 'APPROVED') {
-      return { ok: false as const, error: 'O modelo desta campanha não está aprovado pela Meta.' };
-    }
-
-
-    await db
-      .from('whatsapp_campaigns')
-      .update({
-        status: 'running',
-        paused_reason: null,
-        last_error: null,
-        next_send_at: new Date().toISOString(),
-        started_at: campaign.started_at ?? new Date().toISOString(),
-        finished_at: null,
-      })
-      .eq('id', data.id);
+    // start/resume usam a MESMA rotina segura do início automático.
+    const { startCampaignChecked } = await import('./campaign.server');
+    const started = await startCampaignChecked(data.id);
+    if (!started.ok) return { ok: false as const, error: started.error };
     return { ok: true as const, error: null };
+
   });
 
 export const getWaCampaignDetail = createServerFn({ method: 'POST' })
