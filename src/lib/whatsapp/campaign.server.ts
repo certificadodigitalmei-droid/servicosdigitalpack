@@ -278,6 +278,84 @@ export async function buildCampaignQueue(campaignId: string, limit: number): Pro
   };
 }
 
+/**
+ * Completa a fila da campanha até o alvo: primeiro reserva o que já está
+ * pronto e só depois importa exatamente o déficit que restou.
+ */
+export async function fillCampaignQueueToTarget(campaignId: string, target: number) {
+  const { fillToTarget } = await import('./campaign-logic');
+  let lastBuild: BuildQueueResult | null = null;
+  const summary = await fillToTarget({
+    target,
+    build: async (limit) => {
+      const r = await buildCampaignQueue(campaignId, Math.max(1, limit));
+      lastBuild = r;
+      return { inserted: r.inserted, skipped: r.skipped + r.skippedReasons.alreadyInCampaign };
+    },
+    refill: (missing) => refillReadyQueue(missing),
+  });
+  return { ...summary, target, buttonBase: lastBuild?.buttonBase ?? '', available: lastBuild?.available ?? 0 };
+}
+
+/**
+ * Preflight + início do envio. É a MESMA rotina usada pelo botão iniciar,
+ * pelo retomar e pelo início automático depois de criar uma campanha.
+ */
+export async function startCampaignChecked(campaignId: string): Promise<{ ok: boolean; error: string | null }> {
+  const { data: campaign } = await db()
+    .from('whatsapp_campaigns')
+    .select('*')
+    .eq('id', campaignId)
+    .maybeSingle();
+  if (!campaign) return { ok: false, error: 'Campanha não encontrada' };
+
+  const { assertSendableSender } = await import('./senders.server');
+  const guard = await assertSendableSender(campaign.template_name);
+  if (!guard.ok) return { ok: false, error: guard.error };
+  if (
+    campaign.sender_phone_number_id &&
+    String(campaign.sender_phone_number_id) !== String(guard.sender.phone_number_id)
+  ) {
+    return {
+      ok: false,
+      error: 'Esta campanha foi criada com outro número remetente — crie uma nova campanha para o número atual.',
+    };
+  }
+
+  const { data: tpl } = await db()
+    .from('whatsapp_templates')
+    .select('status')
+    .eq('name', campaign.template_name)
+    .eq('waba_id', guard.sender.waba_id)
+    .maybeSingle();
+  if (!tpl || String(tpl.status).toUpperCase() !== 'APPROVED') {
+    return { ok: false, error: 'O modelo desta campanha não está aprovado pela Meta.' };
+  }
+
+  // Teto de 24 h precisa ter espaço.
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count: sent24 } = await db()
+    .from('whatsapp_campaign_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'sent')
+    .gte('sent_at', since);
+  if (remainingDailyCap(campaign.daily_unique_cap ?? 250, sent24 ?? 0) <= 0) {
+    return { ok: false, error: 'Teto de destinatários em 24 horas já atingido. Retome mais tarde.' };
+  }
+
+  await db()
+    .from('whatsapp_campaigns')
+    .update({
+      status: 'running',
+      paused_reason: null,
+      last_error: null,
+      next_send_at: new Date().toISOString(),
+      started_at: campaign.started_at ?? new Date().toISOString(),
+      finished_at: null,
+    })
+    .eq('id', campaignId);
+  return { ok: true, error: null };
+}
 
 
 // ---------------------------------------------------------------------------
