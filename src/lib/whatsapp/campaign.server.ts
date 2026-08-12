@@ -198,7 +198,21 @@ async function refillReadyQueue(missing: number): Promise<number> {
   return imported;
 }
 
-export async function buildCampaignQueue(campaignId: string, limit: number) {
+export type BuildQueueResult = {
+  inserted: number;
+  skipped: number;
+  /** Por que cada candidato ficou de fora — explicado em texto no painel. */
+  skippedReasons: { blockedPhone: number; alreadyInCampaign: number };
+  requested: number;
+  available: number;
+  buttonBase: string;
+};
+
+/**
+ * Monta a fila da campanha consumindo EXCLUSIVAMENTE a fila de prontidão.
+ * Nunca importa empresas: importar é uma ação separada e explícita.
+ */
+export async function buildCampaignQueue(campaignId: string, limit: number): Promise<BuildQueueResult> {
   const cfg = await loadWaSettings();
   const buttonBase = String(cfg?.button_base_url ?? 'https://seu-certificado-mei-digital.online/c/');
 
@@ -209,31 +223,23 @@ export async function buildCampaignQueue(campaignId: string, limit: number) {
     .maybeSingle();
   if (!campaign) throw new Error('Campanha não encontrada');
 
-  // Consome a fila de prontidão de forma atômica: dois workers nunca pegam a
-  // mesma empresa e nada é criado sem campanha/modelo.
-  const reserve = async () => {
-    const { data, error } = await db().rpc('wa_reserve_ready', {
-      _campaign_id: campaignId,
-      _limit: limit,
-    });
-    if (error) throw new Error(error.message);
-    return (data ?? []) as any[];
-  };
+  const { count: available } = await db()
+    .from('whatsapp_ready_queue')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'ready');
 
-  let reserved = await reserve();
-  // Fila curta: puxa novas empresas do motor de consulta e tenta de novo.
-  if (reserved.length < limit) {
-    const added = await refillReadyQueue(limit - reserved.length);
-    if (added > 0) {
-      const more = await reserve();
-      if (more.length) reserved = [...reserved, ...more];
-    }
-  }
-
+  // Reserva atômica: dois workers nunca pegam a mesma empresa, e a própria
+  // função já descarta telefone/CNPJ bloqueado e item repetido na campanha.
+  const { data: reservedRows, error: reserveError } = await db().rpc('wa_reserve_ready_v2', {
+    _campaign_id: campaignId,
+    _limit: limit,
+  });
+  if (reserveError) throw new Error(reserveError.message);
+  const reserved = (reservedRows ?? []) as any[];
 
   const blockedPhones = await loadBlockedPhones();
-  const rowsIn = ((reserved ?? []) as any[]).filter((r) => !blockedPhones.has(String(r.phone_e164)));
-  const skipped = ((reserved ?? []) as any[]).length - rowsIn.length;
+  const rowsIn = reserved.filter((r) => !blockedPhones.has(String(r.phone_e164)));
+  const blockedPhone = reserved.length - rowsIn.length;
 
   if (rowsIn.length) {
     const rows = rowsIn.map((s) => ({
@@ -248,7 +254,6 @@ export async function buildCampaignQueue(campaignId: string, limit: number) {
       sender_phone_number_id: campaign.sender_phone_number_id ?? null,
       sender_waba_id: campaign.sender_waba_id ?? null,
       status: 'pending',
-
     }));
     await db().from('whatsapp_campaign_items').upsert(rows, {
       onConflict: 'campaign_id,company_id',
@@ -256,8 +261,19 @@ export async function buildCampaignQueue(campaignId: string, limit: number) {
     });
   }
 
-  return { inserted: rowsIn.length, skipped, buttonBase };
+  return {
+    inserted: rowsIn.length,
+    skipped: blockedPhone,
+    skippedReasons: {
+      blockedPhone,
+      alreadyInCampaign: Math.max(0, Math.min(limit, available ?? 0) - reserved.length),
+    },
+    requested: limit,
+    available: available ?? 0,
+    buttonBase,
+  };
 }
+
 
 
 // ---------------------------------------------------------------------------
@@ -388,6 +404,14 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
       break;
     }
 
+    // Registra o início da tentativa ANTES da chamada: se o processo morrer no
+    // meio, o item nunca volta para "pendente" e não é reenviado.
+    const attemptId = crypto.randomUUID();
+    await db()
+      .from('whatsapp_campaign_items')
+      .update({ attempt_id: attemptId, attempt_started_at: new Date(now()).toISOString() })
+      .eq('id', item.id);
+
     const result = await send({
       apiBaseUrl: cfg.base_url,
       apiKey,
@@ -401,6 +425,7 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
       cnpj: String(item.cnpj ?? '').trim(),
       buttonToken: String(item.token ?? '').trim(),
     });
+
 
     const intervalMs = Math.max(5, campaign.interval_seconds ?? 30) * 1000;
     await db()
@@ -437,10 +462,26 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
       continue;
     }
 
+    // Resultado indeterminado (tempo limite / queda depois do POST):
+    // a mensagem PODE ter sido criada. Não é falha e não pode ser reenviada.
+    if (result.indeterminate) {
+      await db()
+        .from('whatsapp_campaign_items')
+        .update({
+          status: 'confirmation_pending',
+          error_message: result.error,
+          locked_at: null,
+          lock_token: null,
+        })
+        .eq('id', item.id);
+      if (item.company_id) await markReadySent(String(item.company_id));
+      continue;
+    }
 
     const status = statusFromError(result.error);
     const kind = classifyWhatsappError(status, result.error);
     const decision = decideFailureAction({ kind, status, attempts: item.attempts ?? 1 });
+
 
     if (decision.action === 'block') {
       blocked++;
@@ -551,10 +592,21 @@ async function handleEmptyQueue(campaignId: string): Promise<string> {
   if ((pending ?? 0) > 0) return 'pending_locked';
 
   if (!campaign.continuous_mode) {
+    const { count: unconfirmed } = await db()
+      .from('whatsapp_campaign_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .eq('status', 'confirmation_pending');
     await db()
       .from('whatsapp_campaigns')
-      .update({ status: 'finished', finished_at: new Date().toISOString(), paused_reason: null })
+      .update({
+        status: (unconfirmed ?? 0) > 0 ? 'finished_partial' : 'finished',
+        finished_at: new Date().toISOString(),
+        next_send_at: null,
+        paused_reason: null,
+      })
       .eq('id', campaignId);
+    await db().rpc('wa_release_untried', { _campaign_id: campaignId, _hard_delete: false });
     return 'finished';
   }
 
@@ -574,31 +626,9 @@ async function importNextBatchForCampaign(campaign: any): Promise<boolean> {
   const built = await buildCampaignQueue(campaign.id, campaign.target_count ?? 20);
   if (built.inserted > 0) return true;
 
-  try {
-    const { runImportBatch } = await import('@/lib/casa-dos-dados/simple-flow.server');
-    const { data: auto } = await db()
-      .from('automatic_company_queries')
-      .select('filters,quantity_per_run')
-      .eq('owner_user_id', campaign.owner_user_id)
-      .maybeSingle();
-    const filters = (auto?.filters ?? {}) as any;
-    const today = new Date().toISOString().slice(0, 10);
-    const r = await runImportBatch({
-      date: today,
-      filters: {
-        only_mei: filters.only_mei ?? true,
-        only_active: filters.only_active ?? true,
-        only_matriz: filters.only_matriz ?? true,
-        require_email: false,
-      },
-      limit: Math.min(15, auto?.quantity_per_run ?? 10),
-      page: 1,
-      skipExisting: true,
-    });
-    if (!r.ok || !r.imported.length) return false;
-  } catch {
-    return false;
-  }
+  const added = await refillReadyQueue(campaign.target_count ?? 20);
+  if (!added) return false;
+
 
   const again = await buildCampaignQueue(campaign.id, campaign.target_count ?? 20);
   return again.inserted > 0;

@@ -4,8 +4,11 @@ import {
   parseWhatsappWebhook,
   canApplyStatus,
   itemStatusForDelivery,
+  correlateByRecipient,
+  phoneMatchKey,
   type ParsedStatusEvent,
 } from './webhook-logic';
+
 
 async function admin() {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
@@ -85,11 +88,32 @@ export async function applyWhatsappWebhook(payload: unknown): Promise<ApplyResul
   };
 
   for (const ev of parsed.statuses) {
-    const { data: item } = await db
+    let { data: item } = await db
       .from('whatsapp_campaign_items')
       .select('id,campaign_id,company_id,company_name,cnpj,phone,template_name,status,delivery_status')
       .eq('wamid', ev.wamid)
       .maybeSingle();
+
+    // wamid desconhecido: só correlaciona quando o destinatário identifica UM
+    // único item sem wamid. Empate nunca é adivinhado.
+    if (!item && ev.recipient) {
+      const key = phoneMatchKey(ev.recipient);
+      const tail = key.slice(-8);
+      const { data: candidates } = await db
+        .from('whatsapp_campaign_items')
+        .select('id,campaign_id,company_id,company_name,cnpj,phone,template_name,status,delivery_status,wamid')
+        .is('wamid', null)
+        .in('status', ['sending', 'confirmation_pending', 'pending'])
+        .ilike('phone', `%${tail}`)
+        .limit(20);
+      const matchId = correlateByRecipient(ev.recipient, (candidates ?? []) as any[]);
+      if (matchId) {
+        item = ((candidates ?? []) as any[]).find((c) => String(c.id) === matchId) ?? null;
+        if (item) {
+          await db.from('whatsapp_campaign_items').update({ wamid: ev.wamid }).eq('id', item.id);
+        }
+      }
+    }
 
     const isNew = await recordEvent(db, ev, item?.id ?? null, payload);
     if (!isNew) {
@@ -100,6 +124,7 @@ export async function applyWhatsappWebhook(payload: unknown): Promise<ApplyResul
       result.unknown++;
       continue;
     }
+
     if (!canApplyStatus(item.delivery_status, ev.status)) {
       result.duplicated++;
       continue;

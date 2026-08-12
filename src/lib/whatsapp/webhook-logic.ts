@@ -211,3 +211,92 @@ export function computePendingQueue(
 
   return { pending, stuck, acceptedButUnflushed };
 }
+
+// ---------------------------------------------------------------------------
+// Correlação por destinatário e métricas cumulativas
+// ---------------------------------------------------------------------------
+
+/**
+ * Chave de comparação de telefone tolerante ao 9º dígito.
+ * A Meta devolve o `wa_id` sem o 9 em vários DDDs, então o número enviado
+ * (5571982836954) e o número do evento (557182836954) precisam bater.
+ */
+export function phoneMatchKey(raw: string | null | undefined): string {
+  const digits = String(raw ?? '').replace(/\D/g, '');
+  if (!digits) return '';
+  const national = digits.length > 11 && digits.startsWith('55') ? digits.slice(2) : digits;
+  if (national.length < 10) return national;
+  return national.slice(0, 2) + national.slice(-8);
+}
+
+export type CorrelationCandidate = { id: string; phone?: string | null; wamid?: string | null };
+
+/**
+ * Só correlaciona quando o telefone identifica UM único item sem wamid.
+ * Empate ou ausência devolve null — nunca adivinha.
+ */
+export function correlateByRecipient(
+  recipient: string | null | undefined,
+  candidates: CorrelationCandidate[],
+): string | null {
+  const key = phoneMatchKey(recipient);
+  if (!key) return null;
+  const matches = candidates.filter((c) => !c.wamid && phoneMatchKey(c.phone) === key);
+  return matches.length === 1 ? String(matches[0]!.id) : null;
+}
+
+export type MetricItem = {
+  status?: string | null;
+  delivery_status?: string | null;
+  wamid?: string | null;
+  accepted_at?: string | null;
+  sent_at?: string | null;
+  attempt_started_at?: string | null;
+};
+
+export type CumulativeMetrics = {
+  /** Itens da campanha (inclui os que nunca foram tentados). */
+  total: number;
+  /** Chamadas realmente entregues à API (aceitas ou rejeitadas). */
+  attempts: number;
+  /** Aceitas pela API da Chakra. */
+  accepted: number;
+  /** Rejeitadas pela API ou pela Meta. */
+  rejected: number;
+  /** Confirmadas como enviadas pela Meta (sent + delivered + read). */
+  metaSent: number;
+  delivered: number;
+  read: number;
+  /** Aceitas sem nenhuma confirmação — nunca reenviar automaticamente. */
+  confirmationPending: number;
+  /** Ainda na fila, sem nenhuma tentativa. */
+  queued: number;
+  cancelled: number;
+};
+
+/** Contagem cumulativa da campanha inteira — não é janela de 24 h. */
+export function cumulativeCampaignMetrics(items: MetricItem[]): CumulativeMetrics {
+  const m: CumulativeMetrics = {
+    total: 0, attempts: 0, accepted: 0, rejected: 0, metaSent: 0,
+    delivered: 0, read: 0, confirmationPending: 0, queued: 0, cancelled: 0,
+  };
+  for (const it of items) {
+    m.total++;
+    const status = String(it.status ?? '');
+    const delivery = normalizeDeliveryStatus(it.delivery_status);
+    const tried = Boolean(it.wamid || it.accepted_at || it.sent_at || it.attempt_started_at) ||
+      status === 'sent' || status === 'failed' || status === 'blocked' || status === 'confirmation_pending';
+
+    if (status === 'cancelled') { m.cancelled++; continue; }
+    if (!tried) { m.queued++; continue; }
+
+    m.attempts++;
+    if (status === 'confirmation_pending') { m.confirmationPending++; continue; }
+    if (status === 'failed' || status === 'blocked' || delivery === 'failed') { m.rejected++; continue; }
+    m.accepted++;
+    if (delivery === 'sent' || delivery === 'delivered' || delivery === 'read') m.metaSent++;
+    if (delivery === 'delivered' || delivery === 'read') m.delivered++;
+    if (delivery === 'read') m.read++;
+  }
+  return m;
+}

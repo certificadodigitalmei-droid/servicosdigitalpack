@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { resolveIntervalSeconds, type PacePresetId } from './campaign-logic';
-import { computePendingQueue } from './webhook-logic';
+import { computePendingQueue, cumulativeCampaignMetrics } from './webhook-logic';
 
 
 const paceSchema = z.enum(['cautious', 'recommended', 'moderate', 'custom']);
@@ -23,6 +23,7 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
         .from('whatsapp_campaigns')
         .select('*')
         .eq('owner_user_id', context.userId)
+        .is('archived_at', null)
         .order('created_at', { ascending: false })
         .limit(20),
       db.from('whatsapp_api_settings').select('*').eq('id', 1).maybeSingle(),
@@ -94,16 +95,37 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
       if (delivery && delivery !== 'accepted') continue;
       pendingByCampaign.set(String(p.campaign_id), (pendingByCampaign.get(String(p.campaign_id)) ?? 0) + 1);
     }
+    // Números por campanha são CUMULATIVOS (campanha inteira), nunca 24 h.
+    const campaignIds = ((campaigns ?? []) as any[]).map((c) => String(c.id));
+    const allItems: any[] = [];
+    if (campaignIds.length) {
+      const { data: itemsAll } = await db
+        .from('whatsapp_campaign_items')
+        .select('campaign_id,status,delivery_status,wamid,accepted_at,sent_at,attempt_started_at')
+        .in('campaign_id', campaignIds)
+        .limit(20000);
+      allItems.push(...((itemsAll ?? []) as any[]));
+    }
     const byCampaign = ((campaigns ?? []) as any[]).map((c) => {
-      const mine = rows.filter((r) => String(r.campaign_id) === String(c.id));
+      const mine = allItems.filter((r) => String(r.campaign_id) === String(c.id));
+      const m = cumulativeCampaignMetrics(mine);
       return {
         id: c.id as string,
         name: c.name as string,
         status: c.status as string,
-        sent: mine.filter((r) => r.status === 'sent').length,
-        failed: mine.filter((r) => r.status === 'failed').length,
-        blocked: mine.filter((r) => r.status === 'blocked').length,
-        pending: pendingByCampaign.get(String(c.id)) ?? 0,
+        total: m.total,
+        attempts: m.attempts,
+        accepted: m.accepted,
+        metaSent: m.metaSent,
+        delivered: m.delivered,
+        read: m.read,
+        rejected: m.rejected,
+        confirmationPending: m.confirmationPending,
+        cancelled: m.cancelled,
+        sent: m.accepted,
+        failed: m.rejected,
+        blocked: m.rejected,
+        pending: pendingByCampaign.get(String(c.id)) ?? m.queued,
       };
     });
 
@@ -374,7 +396,12 @@ export const createWaCampaign = createServerFn({ method: 'POST' })
 export const controlWaCampaign = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ id: z.string().uuid(), action: z.enum(['start', 'pause', 'resume', 'finish', 'clear_pending']) }).parse(d),
+    z
+      .object({
+        id: z.string().uuid(),
+        action: z.enum(['start', 'pause', 'resume', 'finish', 'clear_pending', 'archive', 'delete']),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { assertAdmin } = await import('./admin.server');
@@ -390,27 +417,83 @@ export const controlWaCampaign = createServerFn({ method: 'POST' })
       .maybeSingle();
     if (!campaign) return { ok: false as const, error: 'Campanha não encontrada' };
 
+    // Liberação transacional: só sai da campanha o que NUNCA foi tentado.
+    const releaseUntried = async (hardDelete: boolean) => {
+      const { data: r } = await db.rpc('wa_release_untried', {
+        _campaign_id: data.id,
+        _hard_delete: hardDelete,
+      });
+      return (r ?? { released: 0, requeued: 0 }) as { released: number; requeued: number };
+    };
+
     if (data.action === 'clear_pending') {
-      // Nunca apaga envios concluídos — só o que ainda não saiu.
-      await db.from('whatsapp_campaign_items').delete().eq('campaign_id', data.id).eq('status', 'pending');
-      return { ok: true as const, error: null };
+      const r = await releaseUntried(true);
+      return { ok: true as const, error: null, ...r };
+    }
+
+    if (data.action === 'delete') {
+      if (campaign.status === 'running') {
+        return { ok: false as const, error: 'Pause a campanha antes de excluir.' };
+      }
+      // Histórico de tentativas nunca é apagado: a campanha é arquivada.
+      const { count: tried } = await db
+        .from('whatsapp_campaign_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('campaign_id', data.id)
+        .not('status', 'in', '(pending,cancelled)');
+      const r = await releaseUntried(true);
+      if ((tried ?? 0) > 0) {
+        await db
+          .from('whatsapp_campaigns')
+          .update({ archived_at: new Date().toISOString(), status: 'archived', next_send_at: null })
+          .eq('id', data.id);
+        return {
+          ok: true as const,
+          error: null,
+          ...r,
+          archivedInstead: true,
+          message: 'Campanha arquivada: o histórico de tentativas e bloqueios foi preservado.',
+        };
+      }
+      await db.from('whatsapp_campaigns').delete().eq('id', data.id);
+      return { ok: true as const, error: null, ...r, archivedInstead: false };
+    }
+
+    if (data.action === 'archive') {
+      const r = await releaseUntried(false);
+      await db
+        .from('whatsapp_campaigns')
+        .update({ archived_at: new Date().toISOString(), status: 'archived', next_send_at: null })
+        .eq('id', data.id);
+      return { ok: true as const, error: null, ...r };
     }
 
     if (data.action === 'finish') {
+      const { count: unconfirmed } = await db
+        .from('whatsapp_campaign_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('campaign_id', data.id)
+        .eq('status', 'confirmation_pending');
+      const r = await releaseUntried(false);
       await db
         .from('whatsapp_campaigns')
-        .update({ status: 'finished', finished_at: new Date().toISOString(), next_send_at: null })
+        .update({
+          status: (unconfirmed ?? 0) > 0 ? 'finished_partial' : 'finished',
+          finished_at: new Date().toISOString(),
+          next_send_at: null,
+        })
         .eq('id', data.id);
-      return { ok: true as const, error: null };
+      return { ok: true as const, error: null, ...r };
     }
 
     if (data.action === 'pause') {
       await db
         .from('whatsapp_campaigns')
-        .update({ status: 'paused', paused_reason: 'Pausada pelo administrador' })
+        .update({ status: 'paused', paused_reason: 'Pausada pelo administrador', next_send_at: null })
         .eq('id', data.id);
       return { ok: true as const, error: null };
     }
+
 
     const { assertSendableSender } = await import('./senders.server');
     const guard = await assertSendableSender(campaign.template_name);
@@ -456,7 +539,9 @@ export const getWaCampaignDetail = createServerFn({ method: 'POST' })
     z
       .object({
         id: z.string().uuid(),
-        status: z.enum(['all', 'pending', 'sent', 'failed', 'blocked']).default('all'),
+        status: z
+          .enum(['all', 'pending', 'sending', 'sent', 'failed', 'blocked', 'confirmation_pending', 'cancelled'])
+          .default('all'),
         page: z.number().int().min(1).max(500).default(1),
       })
       .parse(d),
@@ -476,7 +561,7 @@ export const getWaCampaignDetail = createServerFn({ method: 'POST' })
       .maybeSingle();
     if (!campaign) return { campaign: null, items: [], total: 0, counts: null };
 
-    const statuses = ['pending', 'sending', 'sent', 'failed', 'blocked'];
+    const statuses = ['pending', 'sending', 'sent', 'failed', 'blocked', 'confirmation_pending', 'cancelled'];
     const counts: Record<string, number> = {};
     await Promise.all(
       statuses.map(async (s) => {
@@ -654,4 +739,80 @@ export const refillWaCampaign = createServerFn({ method: 'POST' })
     await assertAdmin(context.supabase, context.userId);
     const { buildCampaignQueue } = await import('./campaign.server');
     return buildCampaignQueue(data.id, data.quantity);
+  });
+
+/**
+ * Reparo administrativo de campanha. Idempotente e auditável:
+ * recupera rejeitados a partir da auditoria, correlaciona eventos soltos,
+ * marca confirmação pendente e libera reservas órfãs. NUNCA reenvia.
+ */
+export const repairWaCampaign = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid(), apply: z.boolean().default(false) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const db = supabaseAdmin as any;
+
+    const { data: campaign } = await db
+      .from('whatsapp_campaigns')
+      .select('id,status')
+      .eq('id', data.id)
+      .eq('owner_user_id', context.userId)
+      .maybeSingle();
+    if (!campaign) return { ok: false as const, error: 'Campanha não encontrada', report: null };
+    if (campaign.status === 'running') {
+      return { ok: false as const, error: 'Pause a campanha antes de reparar.', report: null };
+    }
+
+    const { data: report, error } = await db.rpc('wa_repair_campaign', {
+      _campaign_id: data.id,
+      _apply: data.apply,
+    });
+    if (error) return { ok: false as const, error: error.message, report: null };
+    if (data.apply) {
+      await db
+        .from('automation_audit_logs')
+        .insert({ event_type: 'whatsapp_campaign_repair', details: report as any });
+    }
+    return { ok: true as const, error: null, report };
+  });
+
+/** Lista permanente de números e CNPJs bloqueados, com motivo e origem. */
+export const getWaBlockedList = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ page: z.number().int().min(1).max(200).default(1) }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import('./admin.server');
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { maskPhone, friendlyError } = await import('./health-logic');
+    const db = supabaseAdmin as any;
+    const pageSize = 25;
+    const from = (data.page - 1) * pageSize;
+
+    const [{ data: numbers, count }, { count: cnpjCount }] = await Promise.all([
+      db
+        .from('blocked_contact_numbers')
+        .select('id,phone_e164,cnpj_snapshot,reason,source,provider_code,created_at', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1),
+      db.from('blocked_import_cnpjs').select('id', { count: 'exact', head: true }),
+    ]);
+
+    return {
+      pageSize,
+      total: count ?? 0,
+      blockedCnpjs: cnpjCount ?? 0,
+      items: ((numbers ?? []) as any[]).map((b) => ({
+        id: b.id as string,
+        phone: maskPhone(b.phone_e164),
+        cnpj: (b.cnpj_snapshot ?? null) as string | null,
+        reason: friendlyError(b.reason),
+        source: (b.source ?? '—') as string,
+        code: (b.provider_code ?? null) as string | null,
+        at: b.created_at as string,
+      })),
+    };
   });
