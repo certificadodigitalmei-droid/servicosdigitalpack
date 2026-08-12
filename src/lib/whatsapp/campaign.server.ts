@@ -284,7 +284,7 @@ export async function buildCampaignQueue(campaignId: string, limit: number): Pro
  */
 export async function fillCampaignQueueToTarget(campaignId: string, target: number) {
   const { fillToTarget } = await import('./campaign-logic');
-  let lastBuild: BuildQueueResult | null = null;
+  let lastBuild: BuildQueueResult | undefined;
   const summary = await fillToTarget({
     target,
     build: async (limit) => {
