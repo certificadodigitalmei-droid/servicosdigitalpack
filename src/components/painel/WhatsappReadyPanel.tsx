@@ -154,6 +154,25 @@ export function WhatsappReadyPanel({ onChanged }: { onChanged?: () => void }) {
     }
   };
 
+  const clearQueue = async () => {
+    if (!window.confirm('Esvaziar a fila de prontidão? As empresas saem da fila; vendas pagas não são afetadas.')) {
+      return;
+    }
+    setBusy('clear');
+    try {
+      const r: any = await doClearQueue({});
+      if (!r?.ok) throw new Error(r?.error ?? 'Falha ao esvaziar a fila');
+      toast.success(`${r.removed} registro(s) removido(s) da fila`);
+      await refresh(1);
+      setPage(1);
+      onChanged?.();
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao esvaziar a fila');
+    } finally {
+      setBusy(null);
+    }
+  };
+
 
   const reconcile = async (apply: boolean) => {
     setBusy(apply ? 'apply' : 'preview');
