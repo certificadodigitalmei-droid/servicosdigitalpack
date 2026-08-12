@@ -38,7 +38,9 @@ export const getWaCampaignDashboard = createServerFn({ method: 'GET' })
     const [{ data: window24 }, audience, { data: recent }, { data: pendingRows }] = await Promise.all([
       db
         .from('whatsapp_campaign_items')
-        .select('campaign_id,template_name,phone,status,delivery_status,sent_at,updated_at,error_message')
+        .select(
+          'campaign_id,template_name,phone,status,delivery_status,wamid,accepted_at,attempt_started_at,sent_at,updated_at,error_message',
+        )
         .gte('updated_at', since24)
         .limit(5000),
       db.from('companies').select('id', { count: 'exact', head: true }).not('whatsapp_phone_e164', 'is', null),
