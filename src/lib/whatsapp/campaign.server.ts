@@ -462,10 +462,26 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
       continue;
     }
 
+    // Resultado indeterminado (tempo limite / queda depois do POST):
+    // a mensagem PODE ter sido criada. Não é falha e não pode ser reenviada.
+    if (result.indeterminate) {
+      await db()
+        .from('whatsapp_campaign_items')
+        .update({
+          status: 'confirmation_pending',
+          error_message: result.error,
+          locked_at: null,
+          lock_token: null,
+        })
+        .eq('id', item.id);
+      if (item.company_id) await markReadySent(String(item.company_id));
+      continue;
+    }
 
     const status = statusFromError(result.error);
     const kind = classifyWhatsappError(status, result.error);
     const decision = decideFailureAction({ kind, status, attempts: item.attempts ?? 1 });
+
 
     if (decision.action === 'block') {
       blocked++;
