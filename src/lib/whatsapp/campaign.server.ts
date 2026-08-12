@@ -513,7 +513,11 @@ export async function runCampaignTick(campaignId: string, deps: TickDeps = {}) {
     });
 
 
-    const intervalMs = Math.max(5, campaign.interval_seconds ?? 30) * 1000;
+    // Ritmo humano: cada mensagem espera um tempo diferente dentro da faixa.
+    const baseInterval = Math.max(5, campaign.interval_seconds ?? 30);
+    const minInterval = campaign.min_interval_seconds ?? baseInterval;
+    const maxInterval = campaign.max_interval_seconds ?? baseInterval;
+    const intervalMs = pickJitterInterval(minInterval, maxInterval) * 1000;
     await db()
       .from('whatsapp_campaigns')
       .update({ next_send_at: new Date(now() + intervalMs).toISOString() })
