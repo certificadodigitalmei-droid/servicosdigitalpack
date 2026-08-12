@@ -53,6 +53,8 @@ import {
   tickWaCampaign,
   refillWaCampaign,
   reconcileWaDeliveries,
+  repairWaCampaign,
+  getWaBlockedList,
 } from '@/lib/whatsapp/campaigns.functions';
 import {
   getWaSenders,
@@ -103,6 +105,9 @@ const CAMPAIGN_LABEL: Record<string, string> = {
   running: 'Em andamento',
   paused: 'Pausada',
   finished: 'Encerrada',
+  finished_partial: 'Encerrada com pendências',
+  archived: 'Arquivada',
+  cancelled: 'Cancelada',
 };
 
 const ITEM_LABEL: Record<string, string> = {
@@ -111,6 +116,8 @@ const ITEM_LABEL: Record<string, string> = {
   sent: 'Aceita pela API',
   failed: 'Falhou',
   blocked: 'Bloqueada',
+  confirmation_pending: 'Confirmação pendente',
+  cancelled: 'Cancelada sem tentativa',
 };
 
 const API_STATUS_LABEL: Record<string, string> = {
@@ -152,6 +159,8 @@ function WhatsappCampanhasPage() {
   const doTick = useServerFn(tickWaCampaign);
   const doRefill = useServerFn(refillWaCampaign);
   const doReconcile = useServerFn(reconcileWaDeliveries);
+  const doRepair = useServerFn(repairWaCampaign);
+  const loadBlocked = useServerFn(getWaBlockedList);
 
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -173,8 +182,14 @@ function WhatsappCampanhasPage() {
   // Detalhe
   const [activeId, setActiveId] = useState<string | null>(null);
   const [detail, setDetail] = useState<any>(null);
-  const [itemFilter, setItemFilter] = useState<'all' | 'pending' | 'sent' | 'failed' | 'blocked'>('all');
+  const [itemFilter, setItemFilter] = useState<
+    'all' | 'pending' | 'sending' | 'sent' | 'failed' | 'blocked' | 'confirmation_pending' | 'cancelled'
+  >('all');
   const [page, setPage] = useState(1);
+
+  // Bloqueios permanentes
+  const [blocked, setBlocked] = useState<any>(null);
+  const [blockedOpen, setBlockedOpen] = useState(false);
 
   // Teste
   const [q, setQ] = useState('');
@@ -423,9 +438,13 @@ function WhatsappCampanhasPage() {
                   <tr className="border-b text-left text-xs uppercase text-slate-500">
                     <th className="py-2">Campanha</th>
                     <th>Situação</th>
+                    <th>Tentativas</th>
                     <th>Aceitas</th>
-                    <th>Falhas</th>
-                    <th>Bloqueadas</th>
+                    <th>Enviadas (Meta)</th>
+                    <th>Entregues</th>
+                    <th>Lidas</th>
+                    <th>Rejeitadas</th>
+                    <th>Confirmação pendente</th>
                     <th>Na fila</th>
                   </tr>
                 </thead>
@@ -434,14 +453,25 @@ function WhatsappCampanhasPage() {
                     <tr key={c.id} className="border-b last:border-0">
                       <td className="py-2 font-medium text-slate-800">{c.name}</td>
                       <td>{CAMPAIGN_LABEL[c.status] ?? c.status}</td>
-                      <td>{c.sent}</td>
-                      <td>{c.failed}</td>
-                      <td>{c.blocked}</td>
+                      <td>{c.attempts}</td>
+                      <td>{c.accepted}</td>
+                      <td>{c.metaSent}</td>
+                      <td>{c.delivered}</td>
+                      <td>{c.read}</td>
+                      <td>{c.rejected}</td>
+                      <td>{c.confirmationPending}</td>
                       <td>{c.pending}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              <p className="mt-2 text-xs text-slate-500">
+                Números por campanha são cumulativos (campanha inteira), não uma janela de 24 horas.
+                <b> Tentativas</b> = chamadas realmente entregues à API. <b>Aceitas</b> = a API respondeu com sucesso.
+                <b> Enviadas (Meta)</b> = a Meta confirmou o envio pelo webhook.
+                <b> Confirmação pendente</b> = a chamada pode ter saído, mas não houve confirmação — nunca é reenviada
+                automaticamente.
+              </p>
             </div>
           )}
 
@@ -894,7 +924,11 @@ function WhatsappCampanhasPage() {
                   setActiveId(r.id);
                   setCampName('');
                   toast.success(
-                    `Campanha criada com ${r.inserted} empresa(s) · ${r.skipped.noPhone} sem celular · ${r.skipped.noLink} sem link · ${r.skipped.blocked} bloqueadas · ${r.skipped.duplicate} repetidas`,
+                    `Campanha criada com ${r.inserted} de ${r.requested} pedida(s). ` +
+                      `Fila de prontidão disponível: ${r.available}. ` +
+                      `Fora: ${r.skippedReasons.blockedPhone} bloqueada(s), ` +
+                      `${r.skippedReasons.alreadyInCampaign} já nesta campanha ou sem link ativo. ` +
+                      'A criação nunca importa empresas — use "Importar empresas".',
                   );
                 });
               }}
@@ -1018,6 +1052,8 @@ function WhatsappCampanhasPage() {
                   ['Aceitas pela API', detail.counts?.sent ?? 0],
                   ['Falhas', detail.counts?.failed ?? 0],
                   ['Bloqueadas', detail.counts?.blocked ?? 0],
+                  ['Confirmação pendente', detail.counts?.confirmation_pending ?? 0],
+                  ['Canceladas sem tentativa', detail.counts?.cancelled ?? 0],
                 ].map(([label, value]) => (
                   <div key={String(label)} className="rounded-md border bg-white px-3 py-1.5">
                     <span className="text-slate-500">{label}: </span>
@@ -1035,7 +1071,18 @@ function WhatsappCampanhasPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                {(['all', 'pending', 'sent', 'failed', 'blocked'] as const).map((f) => (
+                {(
+                  [
+                    'all',
+                    'pending',
+                    'sending',
+                    'sent',
+                    'failed',
+                    'blocked',
+                    'confirmation_pending',
+                    'cancelled',
+                  ] as const
+                ).map((f) => (
                   <Button
                     key={f}
                     size="sm"
@@ -1076,9 +1123,55 @@ function WhatsappCampanhasPage() {
                     });
                   }}
                 >
-                  <Trash2 className="mr-1 h-3.5 w-3.5" />Remover pendentes
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />Remover não tentadas
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy === 'repair'}
+                  onClick={() =>
+                    run('repair', async () => {
+                      const r: any = await doRepair({ data: { id: detail.campaign.id, apply: true } });
+                      if (!r.ok) {
+                        toast.error(r.error);
+                        return;
+                      }
+                      toast.success(
+                        `Reparo aplicado: ${r.report.correlated} evento(s) correlacionado(s), ` +
+                          `${r.report.restored} rejeitada(s) recuperada(s), ` +
+                          `${r.report.confirmation_pending} em confirmação pendente, ` +
+                          `${r.report.orphan_reservations} reserva(s) órfã(s) liberada(s).`,
+                      );
+                    })
+                  }
+                >
+                  Reparar dados
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-slate-500 hover:text-red-600"
+                  disabled={busy === 'arch'}
+                  onClick={() => {
+                    if (!window.confirm('Arquivar esta campanha? O histórico de tentativas e bloqueios é preservado.')) return;
+                    void run('arch', async () => {
+                      const r: any = await doControl({ data: { id: detail.campaign.id, action: 'delete' } });
+                      if (!r.ok) {
+                        toast.error(r.error);
+                        return;
+                      }
+                      setActiveId(null);
+                      toast.success(r.message ?? 'Campanha removida');
+                    });
+                  }}
+                >
+                  Excluir campanha
                 </Button>
               </div>
+              <p className="text-xs text-slate-500">
+                "Remover não tentadas" só apaga o que nunca foi entregue à API e devolve essas empresas para a fila de
+                prontidão. Nada que já teve tentativa é apagado. "Excluir campanha" arquiva quando existe histórico.
+              </p>
 
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] text-sm">
