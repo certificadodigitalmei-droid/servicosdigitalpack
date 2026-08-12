@@ -165,15 +165,17 @@ function todayBR(): string {
  * Quando a fila de prontidão não tem empresas suficientes, a campanha puxa
  * novas empresas do MESMO motor de consulta/importação (Casa dos Dados),
  * sempre do dia atual e só com celular. Nada é enviado aqui.
+ * Importa APENAS o que falta — nunca o alvo inteiro de novo.
  */
-async function refillReadyQueue(missing: number): Promise<number> {
-  const target = Math.min(Math.max(missing, 0), 30);
+export async function refillReadyQueue(missing: number): Promise<number> {
+  const target = Math.min(Math.max(missing, 0), 200);
   if (!target) return 0;
   const { runImportBatch } = await import('@/lib/casa-dos-dados/simple-flow.server');
   let imported = 0;
   let guard = 0;
+  const maxRounds = Math.min(10, Math.ceil(target / 15) + 1);
   try {
-    while (imported < target && guard < 4) {
+    while (imported < target && guard < maxRounds) {
       guard += 1;
       const r: any = await runImportBatch({
         date: todayBR(),
@@ -190,6 +192,7 @@ async function refillReadyQueue(missing: number): Promise<number> {
       });
       const got = (r?.imported ?? []).length;
       imported += got;
+      // Sem progresso: para na hora, sem gastar crédito repetido.
       if (!r?.ok || got === 0) break;
     }
   } catch {
@@ -197,6 +200,7 @@ async function refillReadyQueue(missing: number): Promise<number> {
   }
   return imported;
 }
+
 
 export type BuildQueueResult = {
   inserted: number;
