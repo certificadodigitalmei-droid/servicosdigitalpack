@@ -4,8 +4,8 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { DEFAULT_DESIGN, renderHtml, renderText, type CampaignDesign, type Vars } from './template';
 import { recordEmailAudit } from '@/lib/emails/email-audit';
 
-const SENDER_DOMAIN = 'notify.certificadodigitalccmei.online';
-const FALLBACK_FROM_ADDRESS = 'certificado.mei.estadual@certificadodigitalccmei.online';
+const SENDER_DOMAIN = 'notify.digitalcertificaa1mei.online';
+const FALLBACK_FROM_ADDRESS = 'certificado.mei.estadual@digitalcertificaa1mei.online';
 const FALLBACK_FROM_NAME = 'Digital Certifica A1';
 const TEST_RECIPIENT_ENV = 'CAMPAIGN_TEST_RECIPIENT';
 
@@ -101,7 +101,7 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
       // exatamente a entrega das empresas.
       label: 'campaign',
       idempotency_key: idempotencyKey,
-      reply_to: data.replyTo ?? fromAddress ?? "contato@certificadodigitalccmei.online",
+      reply_to: data.replyTo ?? fromAddress ?? "contato@digitalcertificaa1mei.online",
     };
 
     // Tenta rotear via workers Lovable adicionais (outras contas) para

@@ -24,9 +24,9 @@ export const forceResetSender = createServerFn({ method: 'POST' })
       .maybeSingle();
 
     const payload = {
-      from_email: 'certificado.mei.estadual@certificadodigitalccmei.online',
+      from_email: 'certificado.mei.estadual@digitalcertificaa1mei.online',
       from_name: 'Digital Certifica A1',
-      reply_to: 'contato@certificadodigitalccmei.online',
+      reply_to: 'contato@digitalcertificaa1mei.online',
       updated_at: new Date().toISOString(),
     };
 
