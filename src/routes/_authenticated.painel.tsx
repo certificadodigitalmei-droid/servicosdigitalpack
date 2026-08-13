@@ -155,7 +155,6 @@ function PanelLayout() {
         { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
         
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
-        { title: 'WhatsApp em Massa', icon: MessageSquare, to: '/painel/whatsapp-massa' },
         { title: 'E-mails Enviados', icon: CheckCircle2, to: '/painel/enviados' },
         { title: 'Entregabilidade', icon: Activity, to: '/painel/entregabilidade' },
       ],
@@ -173,7 +172,6 @@ function PanelLayout() {
         { title: 'API Casa dos Dados', icon: KeyRound, to: '/painel/api-casa-dos-dados' },
         { title: 'Auditoria de Fluxo', icon: ClipboardList, to: '/painel/auditoria' },
         { title: 'Modelos de E-mail', icon: Mail, to: '/painel/modelos-email' },
-        { title: 'Remetente de E-mail', icon: Send, to: '/painel/remetente-email' },
       ],
     },
   ];
@@ -196,10 +194,8 @@ function PanelLayout() {
     if (path === '/painel/api-casa-dos-dados') return 'API Casa dos Dados';
     if (path === '/painel/auditoria') return 'Auditoria de Fluxo';
     if (path === '/painel/modelos-email') return 'Modelos de E-mail';
-    if (path === '/painel/remetente-email') return 'Remetente de E-mail';
     if (path === '/painel/envio-massa') return 'Envio em Massa';
     if (path === '/painel/enviados') return 'E-mails Enviados';
-    if (path === '/painel/whatsapp-massa') return 'WhatsApp em Massa';
     if (path === '/painel/entregabilidade') return 'Entregabilidade';
     return 'Painel';
   };

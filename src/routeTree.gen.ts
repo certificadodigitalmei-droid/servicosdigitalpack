@@ -25,9 +25,7 @@ import { Route as AuthenticatedPainelIndexRouteImport } from './routes/_authenti
 import { Route as LovableEmailEventsRouteImport } from './routes/lovable/email/events'
 import { Route as ApiPublicWebhookMercadopagoRouteImport } from './routes/api/public/webhook-mercadopago'
 import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/internal/casa-dos-dados-worker'
-import { Route as AuthenticatedPainelWhatsappMassaRouteImport } from './routes/_authenticated.painel.whatsapp-massa'
 import { Route as AuthenticatedPainelVisualPaginaRouteImport } from './routes/_authenticated.painel.visual-pagina'
-import { Route as AuthenticatedPainelRemetenteEmailRouteImport } from './routes/_authenticated.painel.remetente-email'
 import { Route as AuthenticatedPainelPrecosRouteImport } from './routes/_authenticated.painel.precos'
 import { Route as AuthenticatedPainelPopUpSiteRouteImport } from './routes/_authenticated.painel.pop-up-site'
 import { Route as AuthenticatedPainelPagamentosRouteImport } from './routes/_authenticated.painel.pagamentos'
@@ -47,11 +45,6 @@ import { Route as AuthenticatedPainelEmpresasImportadasIndexRouteImport } from '
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
-import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
-import { Route as ApiPublicWhatsappReportRouteImport } from './routes/api/public/whatsapp/report'
-import { Route as ApiPublicWhatsappNextRouteImport } from './routes/api/public/whatsapp/next'
-import { Route as ApiPublicWhatsappHeartbeatRouteImport } from './routes/api/public/whatsapp/heartbeat'
-import { Route as ApiPublicHooksWhatsappCampaignTickRouteImport } from './routes/api/public/hooks/whatsapp-campaign-tick'
 import { Route as ApiPublicHooksReconcilePaymentsRouteImport } from './routes/api/public/hooks/reconcile-payments'
 import { Route as ApiPublicHooksPixRemindersRouteImport } from './routes/api/public/hooks/pix-reminders'
 import { Route as ApiPublicHooksFullAutomationRouteImport } from './routes/api/public/hooks/full-automation'
@@ -142,22 +135,10 @@ const ApiInternalCasaDosDadosWorkerRoute =
     path: '/api/internal/casa-dos-dados-worker',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AuthenticatedPainelWhatsappMassaRoute =
-  AuthenticatedPainelWhatsappMassaRouteImport.update({
-    id: '/whatsapp-massa',
-    path: '/whatsapp-massa',
-    getParentRoute: () => AuthenticatedPainelRoute,
-  } as any)
 const AuthenticatedPainelVisualPaginaRoute =
   AuthenticatedPainelVisualPaginaRouteImport.update({
     id: '/visual-pagina',
     path: '/visual-pagina',
-    getParentRoute: () => AuthenticatedPainelRoute,
-  } as any)
-const AuthenticatedPainelRemetenteEmailRoute =
-  AuthenticatedPainelRemetenteEmailRouteImport.update({
-    id: '/remetente-email',
-    path: '/remetente-email',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelPrecosRoute =
@@ -272,34 +253,6 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicWhatsappWebhookRoute =
-  ApiPublicWhatsappWebhookRouteImport.update({
-    id: '/api/public/whatsapp/webhook',
-    path: '/api/public/whatsapp/webhook',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicWhatsappReportRoute = ApiPublicWhatsappReportRouteImport.update({
-  id: '/api/public/whatsapp/report',
-  path: '/api/public/whatsapp/report',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicWhatsappNextRoute = ApiPublicWhatsappNextRouteImport.update({
-  id: '/api/public/whatsapp/next',
-  path: '/api/public/whatsapp/next',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicWhatsappHeartbeatRoute =
-  ApiPublicWhatsappHeartbeatRouteImport.update({
-    id: '/api/public/whatsapp/heartbeat',
-    path: '/api/public/whatsapp/heartbeat',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksWhatsappCampaignTickRoute =
-  ApiPublicHooksWhatsappCampaignTickRouteImport.update({
-    id: '/api/public/hooks/whatsapp-campaign-tick',
-    path: '/api/public/hooks/whatsapp-campaign-tick',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicHooksReconcilePaymentsRoute =
   ApiPublicHooksReconcilePaymentsRouteImport.update({
     id: '/api/public/hooks/reconcile-payments',
@@ -363,9 +316,7 @@ export interface FileRoutesByFullPath {
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
-  '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/painel/visual-pagina': typeof AuthenticatedPainelVisualPaginaRoute
-  '/painel/whatsapp-massa': typeof AuthenticatedPainelWhatsappMassaRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
@@ -376,11 +327,6 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/full-automation': typeof ApiPublicHooksFullAutomationRoute
   '/api/public/hooks/pix-reminders': typeof ApiPublicHooksPixRemindersRoute
   '/api/public/hooks/reconcile-payments': typeof ApiPublicHooksReconcilePaymentsRoute
-  '/api/public/hooks/whatsapp-campaign-tick': typeof ApiPublicHooksWhatsappCampaignTickRoute
-  '/api/public/whatsapp/heartbeat': typeof ApiPublicWhatsappHeartbeatRoute
-  '/api/public/whatsapp/next': typeof ApiPublicWhatsappNextRoute
-  '/api/public/whatsapp/report': typeof ApiPublicWhatsappReportRoute
-  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -411,9 +357,7 @@ export interface FileRoutesByTo {
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
-  '/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/painel/visual-pagina': typeof AuthenticatedPainelVisualPaginaRoute
-  '/painel/whatsapp-massa': typeof AuthenticatedPainelWhatsappMassaRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
@@ -424,11 +368,6 @@ export interface FileRoutesByTo {
   '/api/public/hooks/full-automation': typeof ApiPublicHooksFullAutomationRoute
   '/api/public/hooks/pix-reminders': typeof ApiPublicHooksPixRemindersRoute
   '/api/public/hooks/reconcile-payments': typeof ApiPublicHooksReconcilePaymentsRoute
-  '/api/public/hooks/whatsapp-campaign-tick': typeof ApiPublicHooksWhatsappCampaignTickRoute
-  '/api/public/whatsapp/heartbeat': typeof ApiPublicWhatsappHeartbeatRoute
-  '/api/public/whatsapp/next': typeof ApiPublicWhatsappNextRoute
-  '/api/public/whatsapp/report': typeof ApiPublicWhatsappReportRoute
-  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -463,9 +402,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
   '/_authenticated/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/_authenticated/painel/precos': typeof AuthenticatedPainelPrecosRoute
-  '/_authenticated/painel/remetente-email': typeof AuthenticatedPainelRemetenteEmailRoute
   '/_authenticated/painel/visual-pagina': typeof AuthenticatedPainelVisualPaginaRoute
-  '/_authenticated/painel/whatsapp-massa': typeof AuthenticatedPainelWhatsappMassaRoute
   '/api/internal/casa-dos-dados-worker': typeof ApiInternalCasaDosDadosWorkerRoute
   '/api/public/webhook-mercadopago': typeof ApiPublicWebhookMercadopagoRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
@@ -476,11 +413,6 @@ export interface FileRoutesById {
   '/api/public/hooks/full-automation': typeof ApiPublicHooksFullAutomationRoute
   '/api/public/hooks/pix-reminders': typeof ApiPublicHooksPixRemindersRoute
   '/api/public/hooks/reconcile-payments': typeof ApiPublicHooksReconcilePaymentsRoute
-  '/api/public/hooks/whatsapp-campaign-tick': typeof ApiPublicHooksWhatsappCampaignTickRoute
-  '/api/public/whatsapp/heartbeat': typeof ApiPublicWhatsappHeartbeatRoute
-  '/api/public/whatsapp/next': typeof ApiPublicWhatsappNextRoute
-  '/api/public/whatsapp/report': typeof ApiPublicWhatsappReportRoute
-  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -515,9 +447,7 @@ export interface FileRouteTypes {
     | '/painel/pagamentos'
     | '/painel/pop-up-site'
     | '/painel/precos'
-    | '/painel/remetente-email'
     | '/painel/visual-pagina'
-    | '/painel/whatsapp-massa'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
     | '/lovable/email/events'
@@ -528,11 +458,6 @@ export interface FileRouteTypes {
     | '/api/public/hooks/full-automation'
     | '/api/public/hooks/pix-reminders'
     | '/api/public/hooks/reconcile-payments'
-    | '/api/public/hooks/whatsapp-campaign-tick'
-    | '/api/public/whatsapp/heartbeat'
-    | '/api/public/whatsapp/next'
-    | '/api/public/whatsapp/report'
-    | '/api/public/whatsapp/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -563,9 +488,7 @@ export interface FileRouteTypes {
     | '/painel/pagamentos'
     | '/painel/pop-up-site'
     | '/painel/precos'
-    | '/painel/remetente-email'
     | '/painel/visual-pagina'
-    | '/painel/whatsapp-massa'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
     | '/lovable/email/events'
@@ -576,11 +499,6 @@ export interface FileRouteTypes {
     | '/api/public/hooks/full-automation'
     | '/api/public/hooks/pix-reminders'
     | '/api/public/hooks/reconcile-payments'
-    | '/api/public/hooks/whatsapp-campaign-tick'
-    | '/api/public/whatsapp/heartbeat'
-    | '/api/public/whatsapp/next'
-    | '/api/public/whatsapp/report'
-    | '/api/public/whatsapp/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -614,9 +532,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/pagamentos'
     | '/_authenticated/painel/pop-up-site'
     | '/_authenticated/painel/precos'
-    | '/_authenticated/painel/remetente-email'
     | '/_authenticated/painel/visual-pagina'
-    | '/_authenticated/painel/whatsapp-massa'
     | '/api/internal/casa-dos-dados-worker'
     | '/api/public/webhook-mercadopago'
     | '/lovable/email/events'
@@ -627,11 +543,6 @@ export interface FileRouteTypes {
     | '/api/public/hooks/full-automation'
     | '/api/public/hooks/pix-reminders'
     | '/api/public/hooks/reconcile-payments'
-    | '/api/public/hooks/whatsapp-campaign-tick'
-    | '/api/public/whatsapp/heartbeat'
-    | '/api/public/whatsapp/next'
-    | '/api/public/whatsapp/report'
-    | '/api/public/whatsapp/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -657,11 +568,6 @@ export interface RootRouteChildren {
   ApiPublicHooksFullAutomationRoute: typeof ApiPublicHooksFullAutomationRoute
   ApiPublicHooksPixRemindersRoute: typeof ApiPublicHooksPixRemindersRoute
   ApiPublicHooksReconcilePaymentsRoute: typeof ApiPublicHooksReconcilePaymentsRoute
-  ApiPublicHooksWhatsappCampaignTickRoute: typeof ApiPublicHooksWhatsappCampaignTickRoute
-  ApiPublicWhatsappHeartbeatRoute: typeof ApiPublicWhatsappHeartbeatRoute
-  ApiPublicWhatsappNextRoute: typeof ApiPublicWhatsappNextRoute
-  ApiPublicWhatsappReportRoute: typeof ApiPublicWhatsappReportRoute
-  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -781,25 +687,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiInternalCasaDosDadosWorkerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/painel/whatsapp-massa': {
-      id: '/_authenticated/painel/whatsapp-massa'
-      path: '/whatsapp-massa'
-      fullPath: '/painel/whatsapp-massa'
-      preLoaderRoute: typeof AuthenticatedPainelWhatsappMassaRouteImport
-      parentRoute: typeof AuthenticatedPainelRoute
-    }
     '/_authenticated/painel/visual-pagina': {
       id: '/_authenticated/painel/visual-pagina'
       path: '/visual-pagina'
       fullPath: '/painel/visual-pagina'
       preLoaderRoute: typeof AuthenticatedPainelVisualPaginaRouteImport
-      parentRoute: typeof AuthenticatedPainelRoute
-    }
-    '/_authenticated/painel/remetente-email': {
-      id: '/_authenticated/painel/remetente-email'
-      path: '/remetente-email'
-      fullPath: '/painel/remetente-email'
-      preLoaderRoute: typeof AuthenticatedPainelRemetenteEmailRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/precos': {
@@ -935,41 +827,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/whatsapp/webhook': {
-      id: '/api/public/whatsapp/webhook'
-      path: '/api/public/whatsapp/webhook'
-      fullPath: '/api/public/whatsapp/webhook'
-      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/whatsapp/report': {
-      id: '/api/public/whatsapp/report'
-      path: '/api/public/whatsapp/report'
-      fullPath: '/api/public/whatsapp/report'
-      preLoaderRoute: typeof ApiPublicWhatsappReportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/whatsapp/next': {
-      id: '/api/public/whatsapp/next'
-      path: '/api/public/whatsapp/next'
-      fullPath: '/api/public/whatsapp/next'
-      preLoaderRoute: typeof ApiPublicWhatsappNextRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/whatsapp/heartbeat': {
-      id: '/api/public/whatsapp/heartbeat'
-      path: '/api/public/whatsapp/heartbeat'
-      fullPath: '/api/public/whatsapp/heartbeat'
-      preLoaderRoute: typeof ApiPublicWhatsappHeartbeatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/whatsapp-campaign-tick': {
-      id: '/api/public/hooks/whatsapp-campaign-tick'
-      path: '/api/public/hooks/whatsapp-campaign-tick'
-      fullPath: '/api/public/hooks/whatsapp-campaign-tick'
-      preLoaderRoute: typeof ApiPublicHooksWhatsappCampaignTickRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/hooks/reconcile-payments': {
       id: '/api/public/hooks/reconcile-payments'
       path: '/api/public/hooks/reconcile-payments'
@@ -1049,9 +906,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelPagamentosRoute: typeof AuthenticatedPainelPagamentosRoute
   AuthenticatedPainelPopUpSiteRoute: typeof AuthenticatedPainelPopUpSiteRoute
   AuthenticatedPainelPrecosRoute: typeof AuthenticatedPainelPrecosRoute
-  AuthenticatedPainelRemetenteEmailRoute: typeof AuthenticatedPainelRemetenteEmailRoute
   AuthenticatedPainelVisualPaginaRoute: typeof AuthenticatedPainelVisualPaginaRoute
-  AuthenticatedPainelWhatsappMassaRoute: typeof AuthenticatedPainelWhatsappMassaRoute
   AuthenticatedPainelIndexRoute: typeof AuthenticatedPainelIndexRoute
 }
 
@@ -1077,10 +932,7 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelPagamentosRoute: AuthenticatedPainelPagamentosRoute,
   AuthenticatedPainelPopUpSiteRoute: AuthenticatedPainelPopUpSiteRoute,
   AuthenticatedPainelPrecosRoute: AuthenticatedPainelPrecosRoute,
-  AuthenticatedPainelRemetenteEmailRoute:
-    AuthenticatedPainelRemetenteEmailRoute,
   AuthenticatedPainelVisualPaginaRoute: AuthenticatedPainelVisualPaginaRoute,
-  AuthenticatedPainelWhatsappMassaRoute: AuthenticatedPainelWhatsappMassaRoute,
   AuthenticatedPainelIndexRoute: AuthenticatedPainelIndexRoute,
 }
 
@@ -1120,12 +972,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksFullAutomationRoute: ApiPublicHooksFullAutomationRoute,
   ApiPublicHooksPixRemindersRoute: ApiPublicHooksPixRemindersRoute,
   ApiPublicHooksReconcilePaymentsRoute: ApiPublicHooksReconcilePaymentsRoute,
-  ApiPublicHooksWhatsappCampaignTickRoute:
-    ApiPublicHooksWhatsappCampaignTickRoute,
-  ApiPublicWhatsappHeartbeatRoute: ApiPublicWhatsappHeartbeatRoute,
-  ApiPublicWhatsappNextRoute: ApiPublicWhatsappNextRoute,
-  ApiPublicWhatsappReportRoute: ApiPublicWhatsappReportRoute,
-  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
