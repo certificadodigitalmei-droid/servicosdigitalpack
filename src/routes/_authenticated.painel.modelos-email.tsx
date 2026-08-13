@@ -107,7 +107,7 @@ function RotacaoModelos() {
         subject: substitute(v.subject, PREVIEW_VARS),
         html: renderHtml(v.design, PREVIEW_VARS),
         text: renderText(v.design, PREVIEW_VARS),
-        fromAddress: 'certificado-mei-estadual2026@seuceritificadodigitalmei.online',
+        fromAddress: 'contato@certificadodigitalmeiestadual.online',
       });
     }
     return map;
