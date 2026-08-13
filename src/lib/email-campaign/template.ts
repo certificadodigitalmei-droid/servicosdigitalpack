@@ -200,7 +200,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   statusValue: 'Pendente',
   statusNote: 'Certificado e-CNPJ não localizado.',
 
-  plainMode: true,
+  plainMode: false,
 };
 
 
