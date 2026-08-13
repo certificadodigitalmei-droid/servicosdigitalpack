@@ -103,23 +103,44 @@ function EnvioMassa() {
     staleTime: 60_000,
   });
   const [nameDraft, setNameDraft] = useState('');
+  const [emailDraft, setEmailDraft] = useState('');
   const [savingName, setSavingName] = useState(false);
   useEffect(() => {
     if (settingsQ.data?.from_name) setNameDraft(settingsQ.data.from_name);
   }, [settingsQ.data?.from_name]);
+  useEffect(() => {
+    if (settingsQ.data?.from_email) setEmailDraft(settingsQ.data.from_email);
+  }, [settingsQ.data?.from_email]);
+
+  const ALLOWED_DOMAIN = 'digitalcertificaa1mei.online';
+  const emailOk = (v: string) => {
+    const e = v.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return false;
+    const d = e.split('@')[1] ?? '';
+    return d === ALLOWED_DOMAIN || d.endsWith(`.${ALLOWED_DOMAIN}`);
+  };
+
+  const dirtySender =
+    nameDraft.trim() !== (settingsQ.data?.from_name ?? '') ||
+    emailDraft.trim().toLowerCase() !== (settingsQ.data?.from_email ?? '');
 
   const handleSaveName = async () => {
     const s = settingsQ.data;
     const name = nameDraft.trim();
+    const email = emailDraft.trim().toLowerCase();
     if (!s || !name) {
       toast.error('Informe o nome do remetente.');
+      return;
+    }
+    if (!emailOk(email)) {
+      toast.error(`O e-mail do remetente precisa terminar em @${ALLOWED_DOMAIN}.`);
       return;
     }
     setSavingName(true);
     try {
       await saveSenderSettings({
         data: {
-          from_email: s.from_email,
+          from_email: email,
           from_name: name,
           reply_to: s.reply_to ?? '',
           logo_url: s.logo_url ?? '',
@@ -127,13 +148,14 @@ function EnvioMassa() {
       });
       await Promise.all([settingsQ.refetch(), senderQ.refetch()]);
       await syncSenderFromServer();
-      toast.success(`Nome do remetente salvo: ${name}`);
+      toast.success(`Remetente salvo: ${name} <${email}>`);
     } catch (e) {
-      toast.error((e as Error)?.message ?? 'Não foi possível salvar o nome.');
+      toast.error((e as Error)?.message ?? 'Não foi possível salvar o remetente.');
     } finally {
       setSavingName(false);
     }
   };
+
 
   const [previewIdx, setPreviewIdx] = useState(0);
   const [designTick, setDesignTick] = useState(0);
@@ -347,9 +369,9 @@ function EnvioMassa() {
                 readOnly
                 className="bg-slate-50 text-slate-600"
               />
-              <div className="mt-2">
-                <Label className="text-xs">Nome exibido no e-mail</Label>
-                <div className="flex gap-2">
+              <div className="mt-2 space-y-2">
+                <div>
+                  <Label className="text-xs">Nome exibido no e-mail</Label>
                   <Input
                     value={nameDraft}
                     onChange={(e) => setNameDraft(e.target.value)}
@@ -357,24 +379,44 @@ function EnvioMassa() {
                     maxLength={200}
                     disabled={settingsQ.isLoading || savingName || running}
                   />
-                  <Button
-                    onClick={handleSaveName}
-                    disabled={
-                      savingName ||
-                      running ||
-                      !nameDraft.trim() ||
-                      nameDraft.trim() === (settingsQ.data?.from_name ?? '')
-                    }
-                  >
-                    {savingName ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
-                    Salvar
-                  </Button>
+                </div>
+                <div>
+                  <Label className="text-xs">E-mail que fará o envio</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={emailDraft}
+                      onChange={(e) => setEmailDraft(e.target.value)}
+                      placeholder={`atendimento@${ALLOWED_DOMAIN}`}
+                      maxLength={200}
+                      disabled={settingsQ.isLoading || savingName || running}
+                      className={
+                        emailDraft && !emailOk(emailDraft) ? 'border-rose-400 focus-visible:ring-rose-400' : ''
+                      }
+                    />
+                    <Button
+                      onClick={handleSaveName}
+                      disabled={
+                        savingName ||
+                        running ||
+                        !nameDraft.trim() ||
+                        !emailOk(emailDraft) ||
+                        !dirtySender
+                      }
+                    >
+                      {savingName ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
+                      Salvar
+                    </Button>
+                  </div>
                 </div>
                 <p className="mt-1 text-[11px] text-slate-500">
-                  Salve o nome antes de iniciar o envio — ele passa a valer para todos os disparos seguintes.
-                  {running ? ' Pare o envio para alterar o nome.' : ''}
+                  Você escolhe qualquer endereço terminado em <strong>@{ALLOWED_DOMAIN}</strong> (ex.:
+                  atendimento@, suporte@, contato@). Endereços de outros domínios (Gmail, Hotmail, etc.) não
+                  podem ser usados: eles não têm SPF/DKIM configurados aqui e cairiam direto em spam. Salve
+                  antes de iniciar o envio.
+                  {running ? ' Pare o envio para alterar o remetente.' : ''}
                 </p>
               </div>
+
               <p className="mt-1 text-[11px] text-slate-500">
                 Domínio de envio: <strong>{sender?.domain ?? '—'}</strong> · infraestrutura verificada:{' '}
                 <strong>{sender?.senderDomain ?? '—'}</strong>. Todos os disparos saem exclusivamente por este
