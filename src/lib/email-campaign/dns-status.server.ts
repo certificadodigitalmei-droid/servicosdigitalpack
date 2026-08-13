@@ -31,6 +31,7 @@ export type SenderDnsStatus = {
   spf: DnsCheck;
   dkim: DnsCheck & { selector: string | null };
   mx: DnsCheck;
+  dmarc: DnsCheck & { policy: string | null; foundAt: string | null };
   allReady: boolean;
 };
 
@@ -75,6 +76,51 @@ export async function checkSenderDns(domain = SENDER_DOMAIN): Promise<SenderDnsS
   }
 
   const dkimOk = dkimValues.length > 0;
+
+  // DMARC: procura no subdomínio de envio e, se ausente, no domínio organizacional (herança).
+  const rootDomain = domain.split('.').slice(-2).join('.');
+  const dmarcNames = domain === rootDomain ? [domain] : [domain, rootDomain];
+  let dmarcValues: string[] = [];
+  let dmarcFoundAt: string | null = null;
+  for (const name of dmarcNames) {
+    const values = (await resolve(`_dmarc.${name}`, 'TXT')).filter((v) =>
+      v.toLowerCase().replace(/\s/g, '').startsWith('v=dmarc1'),
+    );
+    if (values.length > 0) {
+      dmarcValues = values;
+      dmarcFoundAt = name;
+      break;
+    }
+  }
+  const dmarcRecord = dmarcValues[0] ?? '';
+  const policyMatch = /(?:^|;)\s*p\s*=\s*([a-zA-Z]+)/.exec(dmarcRecord);
+  const dmarcPolicy = policyMatch ? policyMatch[1]!.toLowerCase() : null;
+  const dmarcMultiple = dmarcValues.length > 1;
+  const dmarcValidPolicy = dmarcPolicy === 'none' || dmarcPolicy === 'quarantine' || dmarcPolicy === 'reject';
+  const dmarcOk = dmarcValues.length === 1 && dmarcValidPolicy;
+
+  const dmarcMessage = (() => {
+    if (dmarcValues.length === 0) {
+      return 'DMARC ausente. Sem um registro TXT "v=DMARC1" em _dmarc, provedores como Gmail e Outlook podem rejeitar ou marcar como spam os envios em massa. Publique, no seu provedor de DNS, um TXT em "_dmarc.' +
+        rootDomain +
+        '" com o valor: v=DMARC1; p=none; rua=mailto:dmarc@' +
+        rootDomain +
+        ' (comece com p=none para monitorar e depois evolua para quarantine/reject).';
+    }
+    if (dmarcMultiple) {
+      return 'DMARC mal configurado: há mais de um registro "v=DMARC1" publicado, o que invalida a política inteira. Mantenha apenas um registro TXT em _dmarc.';
+    }
+    if (!dmarcValidPolicy) {
+      return dmarcPolicy
+        ? `DMARC mal configurado: política "p=${dmarcPolicy}" não é válida. Use p=none, p=quarantine ou p=reject.`
+        : 'DMARC mal configurado: o registro não define a tag obrigatória "p=". Acrescente, por exemplo, p=none.';
+    }
+    const scope = dmarcFoundAt === domain ? 'no subdomínio de envio' : `herdado de ${dmarcFoundAt}`;
+    return dmarcPolicy === 'none'
+      ? `DMARC publicado (${scope}) com política de monitoramento (p=none). Válido para envio; considere evoluir para quarantine após acompanhar os relatórios.`
+      : `DMARC publicado e ativo (${scope}) com política p=${dmarcPolicy}.`;
+  })();
+
 
   return {
     domain,
