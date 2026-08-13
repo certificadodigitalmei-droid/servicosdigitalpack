@@ -184,10 +184,10 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   govBarBg: '#e2e8f0',
   govBarColor: '#334155',
 
-  showBadges: true,
+  showBadges: false,
   badgesText: 'SSL 256-bits · LGPD · Validade 12 meses',
 
-  showStatusBar: true,
+  showStatusBar: false,
   statusLabel: 'Situação do cadastro',
   statusValue: 'Pendente',
   statusNote: 'Certificado e-CNPJ não localizado.',
