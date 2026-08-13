@@ -18,7 +18,11 @@ import { getSiteDisplay, type SiteDisplaySettings } from '@/lib/site-display.fun
 
 
 export const Route = createFileRoute('/c/$token')({
-  validateSearch: (s: Record<string, unknown>) => ({ issuing: s.issuing === 1 || s.issuing === '1' ? 1 : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    issuing: s.issuing === 1 || s.issuing === '1' ? 1 : undefined,
+    unsubscribe: s.unsubscribe === 1 || s.unsubscribe === '1' ? 1 : undefined,
+  }),
+
 
   loader: async ({ params }) => {
     const [row, payment, popup, display] = await Promise.all([
