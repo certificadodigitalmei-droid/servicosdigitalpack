@@ -10,9 +10,9 @@ export type EmailSenderSettings = {
 };
 
 const DEFAULTS: EmailSenderSettings = {
-  from_email: 'certificado.mei.estadual@digitalcertificaa1mei.online',
+  from_email: 'certificado-mei-estadual2026@digitalcertificaa1mei.online',
   from_name: 'Digital Certifica A1',
-  reply_to: 'contato@digitalcertificaa1mei.online',
+  reply_to: 'certificado-mei-estadual2026@digitalcertificaa1mei.online',
   logo_url: null,
 };
 

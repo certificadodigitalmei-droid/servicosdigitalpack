@@ -6,7 +6,7 @@ import { recordEmailAudit } from '@/lib/emails/email-audit';
 
 const SENDER_DOMAIN = 'notify.digitalcertificaa1mei.online';
 export const ROOT_SENDER_DOMAIN = 'digitalcertificaa1mei.online';
-const FALLBACK_FROM_ADDRESS = 'certificado.mei.estadual@digitalcertificaa1mei.online';
+const FALLBACK_FROM_ADDRESS = 'certificado-mei-estadual2026@digitalcertificaa1mei.online';
 const FALLBACK_FROM_NAME = 'Digital Certifica A1';
 const TEST_RECIPIENT_ENV = 'CAMPAIGN_TEST_RECIPIENT';
 
