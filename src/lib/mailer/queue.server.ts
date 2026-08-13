@@ -270,6 +270,25 @@ export async function processQueueInternal(
     }
   }
 
+  // Aquecimento do domínio: teto DIÁRIO que cresce com a idade do domínio.
+  {
+    const { checkWarmup } = await import('@/lib/email-hygiene/warmup.server');
+    const warm = await checkWarmup();
+    if (warm.blocked) {
+      return {
+        ...base,
+        throttled: true,
+        waitingSpacing: false,
+        quotaExhausted: false,
+        warmupBlocked: true,
+        warmupDay: warm.day,
+        warmupDailyLimit: warm.dailyLimit,
+        warmupSentToday: warm.sentToday,
+        warmupReason: warm.reason,
+      };
+    }
+  }
+
   // Trava rígida: cota da hora (com margem) esgotada -> nada sai.
   if (win.sentInWindow >= safeLimit) {
     return { ...base, throttled: true, waitingSpacing: false, quotaExhausted: true };
