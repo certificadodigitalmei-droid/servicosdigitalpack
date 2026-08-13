@@ -94,6 +94,47 @@ function EnvioMassa() {
     refetchIntervalInBackground: true,
   });
 
+  // Nome do remetente (editável e salvo no servidor).
+  const fetchSenderSettings = useServerFn(getEmailSenderSettings);
+  const saveSenderSettings = useServerFn(saveEmailSenderSettings);
+  const settingsQ = useQuery({
+    queryKey: ['email', 'sender-settings'],
+    queryFn: () => fetchSenderSettings({} as any),
+    staleTime: 60_000,
+  });
+  const [nameDraft, setNameDraft] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  useEffect(() => {
+    if (settingsQ.data?.from_name) setNameDraft(settingsQ.data.from_name);
+  }, [settingsQ.data?.from_name]);
+
+  const handleSaveName = async () => {
+    const s = settingsQ.data;
+    const name = nameDraft.trim();
+    if (!s || !name) {
+      toast.error('Informe o nome do remetente.');
+      return;
+    }
+    setSavingName(true);
+    try {
+      await saveSenderSettings({
+        data: {
+          from_email: s.from_email,
+          from_name: name,
+          reply_to: s.reply_to ?? '',
+          logo_url: s.logo_url ?? '',
+        },
+      });
+      await Promise.all([settingsQ.refetch(), senderQ.refetch()]);
+      await syncSenderFromServer();
+      toast.success(`Nome do remetente salvo: ${name}`);
+    } catch (e) {
+      toast.error((e as Error)?.message ?? 'Não foi possível salvar o nome.');
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   const [previewIdx, setPreviewIdx] = useState(0);
   const [designTick, setDesignTick] = useState(0);
 
