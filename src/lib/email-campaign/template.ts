@@ -508,28 +508,28 @@ export function renderText(d: CampaignDesign, vars: Vars): string {
     S(D.title),
     S(D.subtitle),
     '',
-    `${S(D.statusLabel || 'SITUAÇÃO DO CADASTRO')}: ${S(D.statusValue || 'PENDENTE')}`,
-
-    '',
     S(D.intro),
     '',
-    S(D.heroTitle),
-    '',
     S(D.cardTitle),
-    vars.NOME_EMPRESARIAL ? `- Razão Social: ${vars.NOME_EMPRESARIAL}` : '',
-    vars.NOME_TITULAR ? `- Nome: ${vars.NOME_TITULAR}` : '',
-    vars.REFERENCIA ? `- Protocolo: ${vars.REFERENCIA}` : '',
+    (vars.NOME_EMPRESARIAL || vars.NOME_TITULAR)
+      ? `- Nome: ${vars.NOME_EMPRESARIAL || vars.NOME_TITULAR}`
+      : '',
     vars.CNPJ ? `- CNPJ: ${formatCnpj(vars.CNPJ)}` : '',
-    vars.DATA_ABERTURA ? `- Data de Abertura: ${vars.DATA_ABERTURA}` : '',
-    vars.SITUACAO ? `- Situação: ${vars.SITUACAO}` : '',
+    vars.DATA_ABERTURA ? `- Data da abertura: ${vars.DATA_ABERTURA}` : '',
+    '- Validade: Expirado',
+    '- Situação: CNPJ sem Certificado Ativo',
     '',
-    S(D.warningTitle),
-    ...String(S(D.warningItems) || '')
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((l) => `- ${l}`),
-    '',
+    ...(D.showWarning
+      ? [
+          S(D.warningTitle),
+          ...String(S(D.warningItems) || '')
+            .split(/\r?\n/)
+            .map((l) => l.trim())
+            .filter(Boolean)
+            .map((l) => `- ${l}`),
+          '',
+        ]
+      : []),
     `${S(D.buttonLabel)}: ${S(D.buttonHref)}`,
     '',
     S(D.badgesText || ''),
