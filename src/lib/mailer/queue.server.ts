@@ -251,10 +251,30 @@ export async function processQueueInternal(
     quotaExhausted: false,
   };
 
+  // Trava de reputação: bounce alto = todos os e-mails passam a cair em spam.
+  {
+    const { checkBounceHealth } = await import(
+      '@/lib/email-hygiene/bounce-circuit-breaker.server'
+    );
+    const health = await checkBounceHealth();
+    if (health.blocked) {
+      return {
+        ...base,
+        throttled: true,
+        waitingSpacing: false,
+        quotaExhausted: false,
+        bounceBlocked: true,
+        bounceRate: health.rate,
+        bounceReason: health.reason,
+      };
+    }
+  }
+
   // Trava rígida: cota da hora (com margem) esgotada -> nada sai.
   if (win.sentInWindow >= safeLimit) {
     return { ...base, throttled: true, waitingSpacing: false, quotaExhausted: true };
   }
+
 
   // Espaçamento: só envia se já passou o intervalo desde o último envio.
   const last = await lastSentAt();
