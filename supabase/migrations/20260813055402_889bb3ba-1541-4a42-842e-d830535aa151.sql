@@ -1,0 +1,1 @@
+UPDATE public.site_settings SET from_email='certificado-mei-estadual2026@digitalcertificaa1mei.online', reply_to='certificado-mei-estadual2026@digitalcertificaa1mei.online';
