@@ -87,6 +87,17 @@ function TokenHomePage() {
     return () => clearInterval(t);
   }, [issuing, paidAt, navigate, token]);
 
+  // Descadastro via link do rodapé do e-mail
+  useEffect(() => {
+    if (!search.unsubscribe || unsubscribeDone) return;
+    let cancelled = false;
+    unsubscribeCompany({ data: { token } })
+      .then(() => { if (!cancelled) setUnsubscribeDone(true); })
+      .catch(() => { if (!cancelled) setUnsubscribeDone(true); });
+    return () => { cancelled = true; };
+  }, [search.unsubscribe, token, unsubscribeDone]);
+
+
   // Enquanto está "issuing", faz polling agressivo (1s) do status
   useEffect(() => {
     if (!issuing || paidAt) return;
