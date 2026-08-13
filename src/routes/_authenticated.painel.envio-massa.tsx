@@ -113,7 +113,7 @@ function EnvioMassa() {
     if (settingsQ.data?.from_email) setEmailDraft(settingsQ.data.from_email);
   }, [settingsQ.data?.from_email]);
 
-  const ALLOWED_DOMAIN = 'digitalcertificaa1mei.online';
+  const ALLOWED_DOMAIN = 'seuceritificadodigitalmei.online';
   const emailOk = (v: string) => {
     const e = v.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return false;

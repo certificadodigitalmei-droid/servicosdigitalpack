@@ -63,7 +63,7 @@ export function SpamScorePanel({ vars }: { vars: Record<string, string> }) {
           subject: substitute(i.subject, vars),
           html,
           text,
-          fromAddress: 'certificado-mei-estadual2026@digitalcertificaa1mei.online',
+          fromAddress: 'certificado-mei-estadual2026@seuceritificadodigitalmei.online',
         }),
       };
     });
