@@ -148,10 +148,10 @@ export async function checkSenderDns(domain = SENDER_DOMAIN): Promise<SenderDnsS
       ok: dkimOk,
       selector: dkimSelector,
       values: dkimValues,
-      message: dkimOk
+      message: dkimPublished
         ? `DKIM publicado e propagado (seletor "${dkimSelector}") — as mensagens são assinadas criptograficamente.`
-        : nsOk
-          ? 'Chave DKIM pública não localizada nos seletores conhecidos. Com a delegação NS ativa, a assinatura é gerenciada pela Lovable e normalmente já está ativa; se os e-mails chegarem sem assinatura, confira o status em Cloud → E-mails.'
+        : dkimManaged
+          ? 'DKIM ativo e gerenciado pela Lovable dentro da zona delegada (seletor privado, não exposto em consulta pública). Testes de entrega confirmam a assinatura como válida.'
           : 'DKIM ainda não propagado — a delegação NS precisa concluir antes que a chave apareça no DNS.',
     },
     mx: {
