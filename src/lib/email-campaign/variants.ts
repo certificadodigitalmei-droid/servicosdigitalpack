@@ -320,6 +320,27 @@ const RAW_VARIANTS: CampaignVariant[] = [
   },
 ];
 
+/** Todos os modelos seguem o mesmo padrão "lite": quadro de dados
+ *  (nome, CNPJ, data da abertura, validade, situação em amarelo),
+ *  sem hero, sem lista de impactos, sem selos e sem faixa de status. */
+const LITE_INTRO =
+  'Prezado(a) *{{NOME_TITULAR}}*,\n\nNa consulta ao CNPJ *{{CNPJ}}* não localizamos um Certificado Digital ativo. Confira os dados abaixo:';
+
+export const CAMPAIGN_VARIANTS: CampaignVariant[] = RAW_VARIANTS.map((v) => ({
+  ...v,
+  design: {
+    ...v.design,
+    intro: LITE_INTRO,
+    cardTitle: 'Dados do cadastro',
+    showHero: false,
+    showWarning: false,
+    showBadges: false,
+    showStatusBar: false,
+    showGovBar: false,
+    showSignature: false,
+  },
+}));
+
 export function getVariant(id: string): CampaignVariant | undefined {
   return CAMPAIGN_VARIANTS.find((v) => v.id === id);
 }
