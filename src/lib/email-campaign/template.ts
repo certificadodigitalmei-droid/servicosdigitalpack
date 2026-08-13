@@ -321,12 +321,11 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
 
   const cardRows: Array<[string, string]> = ([
-    ['Razão Social', vars.NOME_EMPRESARIAL || vars.NOME_TITULAR],
+    ['Nome', vars.NOME_EMPRESARIAL || vars.NOME_TITULAR],
     ['CNPJ', formatCnpj(vars.CNPJ || '')],
-    ['Protocolo', vars.REFERENCIA],
-    ['Data de Abertura', vars.DATA_ABERTURA],
+    ['Data da abertura', vars.DATA_ABERTURA],
     ['Validade', 'Expirado'],
-    ['Situação', vars.SITUACAO || 'Certificado Digital não localizado'],
+    ['Situação', 'CNPJ sem Certificado Ativo'],
   ] as Array<[string, string]>).filter(([, v]) => !!v);
 
   const keySize = (D.cardBodySize || D.bodySize) - 0.5;
