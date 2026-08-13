@@ -157,6 +157,13 @@ export async function checkSenderDns(domain = SENDER_DOMAIN): Promise<SenderDnsS
           ? 'MX publicado — retornos (bounces) chegam à infraestrutura de envio.'
           : 'MX ainda não propagado neste subdomínio.',
     },
-    allReady: nsOk && spfOk,
+    dmarc: {
+      ok: dmarcOk,
+      policy: dmarcPolicy,
+      foundAt: dmarcFoundAt,
+      values: dmarcValues,
+      message: dmarcMessage,
+    },
+    allReady: nsOk && spfOk && dmarcOk,
   };
 }
