@@ -49,21 +49,6 @@ export function getPublicBaseUrl(): string {
   return DEFAULT_PUBLIC_BASE_URL;
 }
 
-/**
- * Compatibilidade: módulos antigos importam `PUBLIC_BASE_URL` como constante.
- * Continua funcionando, mas agora reflete o domínio atual em tempo de leitura.
- */
-export const PUBLIC_BASE_URL = new Proxy(
-  {},
-  {
-    get(_t, prop) {
-      const value = getPublicBaseUrl();
-      const v = (value as any)[prop];
-      return typeof v === 'function' ? v.bind(value) : v;
-    },
-  },
-) as unknown as string;
-
 export function buildPublicUrl(token: string): string {
   return `${getPublicBaseUrl()}/acesso/${shortToken(token)}`;
 }
