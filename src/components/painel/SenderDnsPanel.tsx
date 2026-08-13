@@ -1,4 +1,5 @@
-import { CheckCircle2, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CheckCircle2, AlertTriangle, RefreshCw, Loader2, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SenderDnsStatus } from '@/lib/email-campaign/dns-status.server';
 
