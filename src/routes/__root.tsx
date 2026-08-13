@@ -133,6 +133,18 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  // Mantém o domínio público sincronizado automaticamente: ao abrir o site em
+  // um domínio próprio, ele vira a base dos links de e-mail/checkout.
+  useEffect(() => {
+    const origin = window.location.origin;
+    if (!isUsablePublicOrigin(origin)) return;
+    setRuntimePublicBaseUrl(origin);
+    if (sessionStorage.getItem("public-base-url-synced") === origin) return;
+    syncPublicBaseUrl({ data: { origin } })
+      .then(() => sessionStorage.setItem("public-base-url-synced", origin))
+      .catch(() => {});
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
@@ -140,3 +152,4 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
+
