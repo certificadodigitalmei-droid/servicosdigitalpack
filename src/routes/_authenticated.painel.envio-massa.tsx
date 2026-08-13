@@ -313,6 +313,7 @@ function EnvioMassa() {
               <SenderDnsPanel
                 data={dnsQ.data}
                 loading={dnsQ.isFetching}
+                intervalMs={DNS_REFRESH_MS}
                 onRefresh={() => dnsQ.refetch()}
               />
             </div>
