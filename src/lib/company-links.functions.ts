@@ -46,6 +46,8 @@ export const getLatestTestEmailCompany = createServerFn({ method: 'GET' })
       .maybeSingle();
     if (!role) throw new Error('Acesso não autorizado');
 
+    const { ensurePublicBaseUrl } = await import('@/lib/public-base-url.server');
+    await ensurePublicBaseUrl();
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const now = new Date().toISOString();
     const { data: links, error: linksError } = await supabaseAdmin

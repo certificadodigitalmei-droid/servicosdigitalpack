@@ -83,6 +83,8 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
     design.showAvatar = false;
 
     const vars = data.vars ?? {};
+    const { ensurePublicBaseUrl } = await import('@/lib/public-base-url.server');
+    await ensurePublicBaseUrl();
     const html = renderHtml(design, vars);
     const text = renderText(design, vars);
 

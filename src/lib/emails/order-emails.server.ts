@@ -45,6 +45,7 @@ function cleanPersonName(v?: string | null): string {
 }
 
 async function resolveContext(order: OrderRow) {
+  await ensurePublicBaseUrl()
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
 
   let link: string | undefined
