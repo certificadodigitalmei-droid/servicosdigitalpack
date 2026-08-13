@@ -168,3 +168,23 @@ export const markLinkLoaderShown = createServerFn({ method: 'POST' })
     return { ok: true };
   });
 
+export const unsubscribeCompany = createServerFn({ method: 'POST' })
+  .inputValidator((data) => z.object({ token: z.string().min(1).max(200) }).parse(data))
+  .handler(async ({ data }): Promise<{ ok: boolean }> => {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { data: link } = await supabaseAdmin
+      .from('company_links')
+      .select('company_id')
+      .or(`public_token.eq.${data.token},public_token.like.${data.token}%`)
+      .maybeSingle();
+    if (!link?.company_id) return { ok: false };
+
+    await supabaseAdmin
+      .from('companies')
+      .update({ unsubscribed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', link.company_id);
+
+    return { ok: true };
+  });
+
+
