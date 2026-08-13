@@ -1784,6 +1784,7 @@ export type Database = {
           product_amount: number | null
           product_description: string | null
           product_name: string | null
+          public_base_url: string | null
           recovery_discount_amount: number
           recovery_discount_enabled: boolean
           recovery_discount_hours: number
@@ -1802,6 +1803,7 @@ export type Database = {
           product_amount?: number | null
           product_description?: string | null
           product_name?: string | null
+          public_base_url?: string | null
           recovery_discount_amount?: number
           recovery_discount_enabled?: boolean
           recovery_discount_hours?: number
@@ -1820,6 +1822,7 @@ export type Database = {
           product_amount?: number | null
           product_description?: string | null
           product_name?: string | null
+          public_base_url?: string | null
           recovery_discount_amount?: number
           recovery_discount_enabled?: boolean
           recovery_discount_hours?: number

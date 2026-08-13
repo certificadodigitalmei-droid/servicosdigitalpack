@@ -248,7 +248,7 @@ function LandingPage() {
               ["Situação cadastral", "ATIVA"],
               ["Endereço", "Av. Paulista, 1600, Andar 20 — Bela Vista, São Paulo/SP — CEP 01.310-200"],
               ["Telefone", "(11) 97789-9296"],
-              ["E-mail", "certificado.mei.estadual@seu-certificado-mei-digital.online"],
+              ["E-mail", "certificado.mei.estadual@digitalcertificaa1mei.online"],
             ].map(([k, v]) => (
               <div key={k}>
                 <dt className="font-semibold text-[#0b1e3f]">{k}</dt>

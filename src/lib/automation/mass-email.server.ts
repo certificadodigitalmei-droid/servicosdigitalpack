@@ -8,12 +8,11 @@ import {
 import { pickVariantOrDefault } from '@/lib/email-campaign/variants';
 import { listCompaniesWithoutLink, listPendingSendTargets } from '@/lib/pipeline/pipeline.server';
 import { validateEmailForSending } from '@/lib/email-validation';
+import { getPublicBaseUrl } from '@/lib/public-base-url';
+import { ensurePublicBaseUrl } from '@/lib/public-base-url.server';
 
 function baseUrl() {
-  return (process.env.PUBLIC_APP_URL || 'https://seu-certificado-mei-digital.online').replace(
-    /\/+$/,
-    '',
-  );
+  return getPublicBaseUrl();
 }
 
 /** Carrega a lista local de endereços suprimidos (bounce/complaint/unsubscribe). */
@@ -30,6 +29,7 @@ export async function ensureLinksForImported(limit = 25) {
   const pending = await listCompaniesWithoutLink(supabaseAdmin as any, limit);
   if (pending.length === 0) return { created: 0 };
 
+  await ensurePublicBaseUrl();
   const publicBaseUrl = baseUrl();
   let created = 0;
 
@@ -70,6 +70,7 @@ export async function syncMassEmailQueue(limit = 25) {
   const pending = await listPendingSendTargets(supabaseAdmin as any, limit);
   if (pending.length === 0) return { ok: true as const, enqueued: 0, semEmail: 0, suprimidos: 0 };
 
+  await ensurePublicBaseUrl();
   const publicBaseUrl = baseUrl();
   const rows: any[] = [];
   let semEmail = 0;

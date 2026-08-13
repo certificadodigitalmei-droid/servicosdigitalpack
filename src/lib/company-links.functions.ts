@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
+import { getPublicBaseUrl } from '@/lib/public-base-url';
 
 export type ResolvedCompany = {
   cnpj: string | null;
@@ -45,6 +46,8 @@ export const getLatestTestEmailCompany = createServerFn({ method: 'GET' })
       .maybeSingle();
     if (!role) throw new Error('Acesso não autorizado');
 
+    const { ensurePublicBaseUrl } = await import('@/lib/public-base-url.server');
+    await ensurePublicBaseUrl();
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const now = new Date().toISOString();
     const { data: links, error: linksError } = await supabaseAdmin
@@ -76,7 +79,7 @@ export const getLatestTestEmailCompany = createServerFn({ method: 'GET' })
         uf: company.uf || '',
         municipio: company.municipio_descricao || '',
         public_token: link.public_token,
-        public_url: `https://seu-certificado-mei-digital.online/acesso/${link.public_token}`,
+        public_url: `${getPublicBaseUrl()}/acesso/${link.public_token}`,
       };
     }
 

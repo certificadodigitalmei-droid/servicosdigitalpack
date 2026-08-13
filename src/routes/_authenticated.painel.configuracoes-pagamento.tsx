@@ -25,7 +25,7 @@ import {
   deleteTestCompanies,
   type TestCompanyResult,
 } from '@/lib/payments/test-company.functions';
-import { PUBLIC_BASE_URL } from '@/lib/public-base-url';
+import { getPublicBaseUrl } from '@/lib/public-base-url';
 import { rowToVars, substitute } from '@/lib/email-campaign/template';
 import { sendCampaignEmail } from '@/lib/email-campaign/send.functions';
 import {
@@ -62,7 +62,7 @@ const PROVIDERS: Record<ProviderId, {
     docsUrl: 'https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/overview',
     defaultBase: 'https://api.mercadopago.com',
     webhookPath: '/api/public/webhook-mercadopago',
-    webhookOrigin: 'https://seu-certificado-mei-digital.online',
+    webhookOrigin: getPublicBaseUrl(),
     publicLabel: 'Public Key',
     secretLabel: 'Access Token',
     publicPlaceholder: 'APP_USR-... (ou TEST-...)',
@@ -211,8 +211,8 @@ function PaymentGatewaysPage() {
           MUNICIPIO: 'SAO PAULO',
           UF: 'SP',
           EMAIL: res.email,
-          LINK_PUBLICO: `${PUBLIC_BASE_URL}/acesso/${res.public_token}`,
-          LINK_CHECKOUT: `${PUBLIC_BASE_URL}/checkout/${res.public_token}`,
+          LINK_PUBLICO: `${getPublicBaseUrl()}/acesso/${res.public_token}`,
+          LINK_CHECKOUT: `${getPublicBaseUrl()}/checkout/${res.public_token}`,
           TOKEN: res.public_token,
         },
         {
@@ -571,7 +571,7 @@ function PaymentGatewaysPage() {
                   <p className="font-semibold">Cole exatamente esta URL no painel do Mercado Pago:</p>
                   <div className="mt-1 flex items-center gap-2">
                     <code className="flex-1 break-all rounded bg-white px-2 py-1 font-mono text-[11px] text-slate-800">
-                      {webhookUrlFor(form.provider_type, 'https://seu-certificado-mei-digital.online')}
+                      {webhookUrlFor(form.provider_type, getPublicBaseUrl())}
                     </code>
                     <Button
                       type="button"
@@ -579,7 +579,7 @@ function PaymentGatewaysPage() {
                       variant="outline"
                       onClick={() => {
                         navigator.clipboard.writeText(
-                          webhookUrlFor(form.provider_type, 'https://seu-certificado-mei-digital.online'),
+                          webhookUrlFor(form.provider_type, getPublicBaseUrl()),
                         );
                         toast.success('URL copiada');
                       }}

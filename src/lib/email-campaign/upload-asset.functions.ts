@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
+import { getPublicBaseUrl } from '@/lib/public-base-url';
 
 const InputSchema = z.object({
   dataUrl: z.string().min(10),
@@ -26,5 +27,5 @@ export const uploadEmailAsset = createServerFn({ method: 'POST' })
       .upload(key, bytes, { contentType: mime, upsert: false, cacheControl: '31536000' });
     if (error) throw new Error(error.message);
 
-    return { url: `https://seu-certificado-mei-digital.online/api/public/email-asset/${key}` };
+    return { url: `${getPublicBaseUrl()}/api/public/email-asset/${key}` };
   });

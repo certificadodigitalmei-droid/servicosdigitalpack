@@ -1,3 +1,4 @@
+import { toAbsolutePublicUrl } from '@/lib/public-base-url';
 import govbrAvatarAsset from '@/assets/govbr-logo-avatar.png.asset.json';
 
 export type CampaignDesign = {
@@ -99,9 +100,7 @@ export type CampaignDesign = {
 
 
 
-const AVATAR_URL = govbrAvatarAsset.url.startsWith('http')
-  ? govbrAvatarAsset.url
-  : `https://seu-certificado-mei-digital.online${govbrAvatarAsset.url}`;
+const AVATAR_URL = govbrAvatarAsset.url;
 
 /**
  * Padrão visual único das campanhas: mesmo estilo institucional dos e-mails
@@ -267,15 +266,8 @@ export function formatCnpj(cnpj: string): string {
   return clean.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
 }
 
-const EMAIL_SITE_ORIGIN = 'https://seu-certificado-mei-digital.online';
 function toAbsoluteUrl(u?: string): string {
-  if (!u) return '';
-  const s = String(u).trim();
-  if (!s) return '';
-  if (/^(https?:|data:|cid:)/i.test(s)) return s;
-  if (s.startsWith('//')) return `https:${s}`;
-  if (s.startsWith('/')) return `${EMAIL_SITE_ORIGIN}${s}`;
-  return `${EMAIL_SITE_ORIGIN}/${s}`;
+  return toAbsolutePublicUrl(u || '');
 }
 
 function minifyHtml(html: string): string {
