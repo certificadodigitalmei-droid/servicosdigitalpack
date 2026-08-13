@@ -8,7 +8,7 @@
 import { shortToken } from './short-token';
 
 /** Usado só enquanto o domínio real ainda não foi detectado/persistido. */
-export const DEFAULT_PUBLIC_BASE_URL = 'https://digitalcertificaa1mei.online';
+export const DEFAULT_PUBLIC_BASE_URL = 'https://certificadodigitalmeiestadual.online';
 
 function normalize(url: string): string {
   return url.trim().replace(/\/+$/, '');
