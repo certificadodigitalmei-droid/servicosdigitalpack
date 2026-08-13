@@ -25,6 +25,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { getEmailMetrics } from '@/lib/emails/email-metrics.functions';
+import { getCampaignSenderInfo } from '@/lib/email-campaign/send.functions';
 import {
   FilaUnicaCard,
   SendHealthCard,
@@ -70,6 +71,14 @@ function EnvioMassa() {
   const testRecipient = useStore(envioStore, (s) => s.testRecipient);
   const fromName = useStore(envioStore, (s) => s.fromName);
   const fromAddress = useStore(envioStore, (s) => s.fromAddress);
+
+  const fetchSenderInfo = useServerFn(getCampaignSenderInfo);
+  const senderQ = useQuery({
+    queryKey: ['campaign', 'sender-info'],
+    queryFn: () => fetchSenderInfo({} as any),
+    staleTime: 60_000,
+  });
+  const sender = senderQ.data;
 
   const [previewIdx, setPreviewIdx] = useState(0);
   const [designTick, setDesignTick] = useState(0);
@@ -273,8 +282,21 @@ function EnvioMassa() {
               />
             </div>
             <div>
-              <Label className="text-xs">Remetente</Label>
-              <Input value={`${fromName} <${fromAddress}>`} readOnly className="bg-slate-50 text-slate-600" />
+              <Label className="text-xs">Remetente (Lovable Cloud → E-mails)</Label>
+              <Input
+                value={
+                  sender
+                    ? `${sender.name} <${sender.email}>`
+                    : `${fromName} <${fromAddress}>`
+                }
+                readOnly
+                className="bg-slate-50 text-slate-600"
+              />
+              <p className="mt-1 text-[11px] text-slate-500">
+                Domínio de envio: <strong>{sender?.domain ?? '—'}</strong> · infraestrutura verificada:{' '}
+                <strong>{sender?.senderDomain ?? '—'}</strong>. Todos os disparos saem exclusivamente por este
+                domínio.
+              </p>
             </div>
           </div>
 
