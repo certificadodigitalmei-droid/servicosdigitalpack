@@ -168,3 +168,34 @@ export const markLinkLoaderShown = createServerFn({ method: 'POST' })
     return { ok: true };
   });
 
+export const unsubscribeCompany = createServerFn({ method: 'POST' })
+  .inputValidator((data) => z.object({ token: z.string().min(1).max(200) }).parse(data))
+  .handler(async ({ data }): Promise<{ ok: boolean }> => {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const now = new Date().toISOString();
+
+    // Marca o destinatário da campanha como descadastrado pelo token/link público.
+    await supabaseAdmin
+      .from('email_campaign_recipients')
+      .update({ unsubscribed_at: now, updated_at: now })
+      .or(`token.eq.${data.token},public_link.ilike.%${data.token}%`);
+
+    // Também marca a empresa importada, quando existir, para não voltar às filas.
+    const { data: link } = await supabaseAdmin
+      .from('company_links')
+      .select('company_id')
+      .or(`public_token.eq.${data.token},public_token.like.${data.token}%`)
+      .maybeSingle();
+
+    if (link?.company_id) {
+      await supabaseAdmin
+        .from('companies')
+        .update({ updated_at: now })
+        .eq('id', link.company_id);
+    }
+
+    return { ok: true };
+  });
+
+
+

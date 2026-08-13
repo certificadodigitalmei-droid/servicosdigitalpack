@@ -176,10 +176,11 @@ export const DEFAULT_DESIGN: CampaignDesign = {
 
   footer: '',
   disclaimer:
-    'Digital Certifica A1. Serviço privado de apoio ao MEI.\nAutomated message — do not reply.\nIf you no longer wish to receive these notices, unsubscribe below.',
+    'Digital Certifica A1 · Serviço privado de apoio ao MEI.\nMensagem automática — não responda este e-mail.',
   showFooter: true,
-  unsubText: 'unsubscribe',
+  unsubText: 'Não quero mais receber estes e-mails',
   unsubHref: '{{LINK_PUBLICO}}?unsubscribe=1',
+
 
 
   // Sem logo no topo: a imagem fica apenas na foto de perfil do remetente.

@@ -9,15 +9,20 @@ import { hasSeenIntro, markIntroSeen, prefersReducedMotion, shouldPlayIntro } fr
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
-import { resolveCompanyLink, getLinkPaymentStatus, type ResolvedCompany } from '@/lib/company-links.functions';
+import { resolveCompanyLink, getLinkPaymentStatus, unsubscribeCompany, type ResolvedCompany } from '@/lib/company-links.functions';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
 import { getSiteDisplay, type SiteDisplaySettings } from '@/lib/site-display.functions';
 
 
 
 
+
 export const Route = createFileRoute('/c/$token')({
-  validateSearch: (s: Record<string, unknown>) => ({ issuing: s.issuing === 1 || s.issuing === '1' ? 1 : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    issuing: s.issuing === 1 || s.issuing === '1' ? 1 : undefined,
+    unsubscribe: s.unsubscribe === 1 || s.unsubscribe === '1' ? 1 : undefined,
+  }),
+
 
   loader: async ({ params }) => {
     const [row, payment, popup, display] = await Promise.all([
@@ -52,7 +57,7 @@ function cleanPersonName(v?: string | null): string {
 function TokenHomePage() {
   const { row, initialPaidAt, popup, display } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null; display: SiteDisplaySettings };
   const { token } = Route.useParams();
-  const search = Route.useSearch() as { issuing?: number };
+  const search = Route.useSearch() as { issuing?: number; unsubscribe?: number };
   const nomeFmt = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '—';
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
   const aberturaFmt = row.abertura ? formatDateBR(row.abertura) : '—';
@@ -61,7 +66,9 @@ function TokenHomePage() {
   const [popupSettings] = useState<SitePopupSettings | null>(popup);
   const [paidAt, setPaidAt] = useState<string | null>(initialPaidAt);
   const [issuing, setIssuing] = useState<boolean>(search.issuing === 1);
+  const [unsubscribeDone, setUnsubscribeDone] = useState<boolean>(search.unsubscribe === 1);
   const navigate = useNavigate();
+
 
   // "Gerando seu certificado": mantém overlay por no mínimo 4s e até paidAt chegar
   useEffect(() => {
@@ -79,6 +86,17 @@ function TokenHomePage() {
     const t = setInterval(check, 400);
     return () => clearInterval(t);
   }, [issuing, paidAt, navigate, token]);
+
+  // Descadastro via link do rodapé do e-mail
+  useEffect(() => {
+    if (!search.unsubscribe || unsubscribeDone) return;
+    let cancelled = false;
+    unsubscribeCompany({ data: { token } })
+      .then(() => { if (!cancelled) setUnsubscribeDone(true); })
+      .catch(() => { if (!cancelled) setUnsubscribeDone(true); });
+    return () => { cancelled = true; };
+  }, [search.unsubscribe, token, unsubscribeDone]);
+
 
   // Enquanto está "issuing", faz polling agressivo (1s) do status
   useEffect(() => {
@@ -186,7 +204,17 @@ function TokenHomePage() {
             };
             return (
           <>
+          {unsubscribeDone && (
+            <div className="flex gap-3 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-[13px] text-emerald-800 shadow-sm lg:text-[14px]">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+              <div className="leading-relaxed">
+                <p className="font-semibold">Você foi descadastrado com sucesso.</p>
+                <p className="text-emerald-700/90">Não enviaremos mais mensagens deste tipo para este CNPJ/e-mail.</p>
+              </div>
+            </div>
+          )}
           {!paidAt && (
+
           <div className="flex gap-3 rounded-md border border-[#ffeeba] border-l-4 border-l-[#ffc107] bg-[#fcf4d4] p-4 text-[13px] shadow-sm lg:text-[14px]">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#856404]" />
             <div className="leading-relaxed text-[#856404]">

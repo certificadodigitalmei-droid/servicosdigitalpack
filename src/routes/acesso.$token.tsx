@@ -33,7 +33,7 @@ function AcessoPage() {
   const goToPage = () => {
     markIntroSeen(typeof window !== 'undefined' ? window.sessionStorage : null, token);
     markLinkLoaderShown({ data: { token } }).catch(() => {});
-    navigate({ to: '/c/$token', params: { token }, search: { issuing: undefined }, replace: true });
+    navigate({ to: '/c/$token', params: { token }, search: { issuing: undefined, unsubscribe: undefined }, replace: true });
   };
 
   useEffect(() => {

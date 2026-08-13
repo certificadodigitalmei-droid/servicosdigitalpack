@@ -73,7 +73,7 @@ function CheckoutPage() {
       try {
         const paid = await getLinkPaymentStatus({ data: { token } }).catch(() => ({ paid: false }));
         if (paid.paid) {
-          navigate({ to: '/c/$token', params: { token }, search: { issuing: undefined }, replace: true });
+          navigate({ to: '/c/$token', params: { token }, search: { issuing: undefined, unsubscribe: undefined }, replace: true });
           return;
         }
         const data = await resolveCompanyLink({ data: { token } });
