@@ -54,6 +54,12 @@ export function SenderDnsPanel({
           <Row label="DKIM" ok={data.dkim.ok} message={data.dkim.message} values={data.dkim.values} />
           <Row label="Delegação NS" ok={data.ns.ok} message={data.ns.message} values={data.ns.values} />
           <Row label="MX (retornos)" ok={data.mx.ok} message={data.mx.message} values={data.mx.values} />
+          <Row
+            label={`DMARC${data.dmarc.policy ? ` (p=${data.dmarc.policy})` : ''}`}
+            ok={data.dmarc.ok}
+            message={data.dmarc.message}
+            values={data.dmarc.values}
+          />
           {!data.allReady ? (
             <p className="rounded-md bg-amber-50 p-2 text-[11px] text-amber-800">
               Propagação pendente: a verificação DNS pode levar até 72 horas. Enquanto SPF e a delegação NS não
