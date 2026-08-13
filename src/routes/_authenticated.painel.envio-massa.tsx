@@ -347,6 +347,34 @@ function EnvioMassa() {
                 readOnly
                 className="bg-slate-50 text-slate-600"
               />
+              <div className="mt-2">
+                <Label className="text-xs">Nome exibido no e-mail</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    placeholder="Ex.: Central de Regularização MEI"
+                    maxLength={200}
+                    disabled={settingsQ.isLoading || savingName || running}
+                  />
+                  <Button
+                    onClick={handleSaveName}
+                    disabled={
+                      savingName ||
+                      running ||
+                      !nameDraft.trim() ||
+                      nameDraft.trim() === (settingsQ.data?.from_name ?? '')
+                    }
+                  >
+                    {savingName ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
+                    Salvar
+                  </Button>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Salve o nome antes de iniciar o envio — ele passa a valer para todos os disparos seguintes.
+                  {running ? ' Pare o envio para alterar o nome.' : ''}
+                </p>
+              </div>
               <p className="mt-1 text-[11px] text-slate-500">
                 Domínio de envio: <strong>{sender?.domain ?? '—'}</strong> · infraestrutura verificada:{' '}
                 <strong>{sender?.senderDomain ?? '—'}</strong>. Todos os disparos saem exclusivamente por este
