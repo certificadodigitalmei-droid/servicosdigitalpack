@@ -76,9 +76,11 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
     const html = renderHtml(design, vars);
     const text = renderText(design, vars);
 
+    // Remetente SEMPRE do domínio verificado no Lovable Cloud → E-mails.
+    // Overrides vindos do navegador são ignorados de propósito.
     const senderDefaults = await loadSenderSettings(context.supabase);
-    const fromName = data.fromName ?? senderDefaults.name;
-    const fromAddress = data.fromAddress ?? senderDefaults.email;
+    const fromName = senderDefaults.name;
+    const fromAddress = enforceSenderDomain(senderDefaults.email);
 
     const testOverride = (data.testRecipient || process.env[TEST_RECIPIENT_ENV] || '').trim();
     const recipient = data.testMode && testOverride ? testOverride : data.recipient;
@@ -101,88 +103,13 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
       // exatamente a entrega das empresas.
       label: 'campaign',
       idempotency_key: idempotencyKey,
-      reply_to: data.replyTo ?? fromAddress ?? "contato@digitalcertificaa1mei.online",
+      reply_to: enforceSenderDomain(data.replyTo || fromAddress),
     };
-
-    // Tenta rotear via workers Lovable adicionais (outras contas) para
-    // somar capacidade. Se todos falharem/estiverem indisponíveis, cai
-    // no envio local (LOVABLE_API_KEY deste projeto).
-    const { data: workers } = await (context.supabase as any)
-      .from('email_workers')
-      .select('*')
-      .eq('is_active', true)
-      .order('priority', { ascending: true })
-      .order('last_used_at', { ascending: true, nullsFirst: true });
-
-    let deliveredVia: 'local' | 'worker' = 'local';
-    let workerError: string | null = null;
-
-    const activeWorkers = workers ?? [];
-    const totalChannels = 1 + activeWorkers.length; // 0 = local; 1..N = workers
-    const idx = typeof data.channelIndex === 'number' ? data.channelIndex : -1;
-
-    // Fila ordenada de workers a tentar. Se channelIndex foi passado,
-    // começa por aquele canal específico; caso contrário, mantém a
-    // rotação por menor uso (comportamento anterior).
-    let workerOrder: any[] = activeWorkers;
-    let preferLocal = false;
-    if (idx >= 0 && totalChannels > 0) {
-      const chosen = idx % totalChannels;
-      if (chosen === 0) {
-        preferLocal = true;
-        workerOrder = activeWorkers; // se local falhar? mantemos os workers como fallback abaixo
-      } else {
-        const w = activeWorkers[chosen - 1];
-        workerOrder = [w, ...activeWorkers.filter((x: any) => x.id !== w.id)];
-      }
-    }
-
-    const tryWorker = async (w: any) => {
-      try {
-        const wPayload = {
-          ...payload,
-          from: w.from_email ? `${w.from_name || fromName} <${w.from_email}>` : payload.from,
-        };
-        const res = await fetch(w.worker_url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${w.worker_api_key}` },
-          body: JSON.stringify(wPayload),
-        });
-        if (res.ok) {
-          await (context.supabase as any).from('email_workers').update({
-            last_used_at: new Date().toISOString(),
-            last_success_at: new Date().toISOString(),
-            last_error: null,
-          }).eq('id', w.id);
-          return true;
-        }
-        const bodyText = await res.text();
-        workerError = `worker ${w.name}: HTTP ${res.status} ${bodyText.slice(0, 200)}`;
-        await (context.supabase as any).from('email_workers').update({
-          last_used_at: new Date().toISOString(),
-          last_error: workerError,
-          last_error_at: new Date().toISOString(),
-        }).eq('id', w.id);
-      } catch (e) {
-        workerError = `worker ${w.name}: ${(e as Error).message}`;
-        await (context.supabase as any).from('email_workers').update({
-          last_used_at: new Date().toISOString(),
-          last_error: workerError,
-          last_error_at: new Date().toISOString(),
-        }).eq('id', w.id);
-      }
-      return false;
-    };
-
-    if (!preferLocal && workerOrder.length > 0) {
-      for (const w of workerOrder) {
-        if (await tryWorker(w)) { deliveredVia = 'worker'; break; }
-      }
-    }
 
     try {
-      if (deliveredVia !== 'worker') {
+      {
         await sendLovableEmail(payload, { apiKey, sendUrl: process.env.LOVABLE_SEND_URL });
+
       }
       // Persiste registro durável do envio para deduplicar entre sessões.
       if (!data.testMode) {
