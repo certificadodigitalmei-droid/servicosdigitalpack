@@ -1,4 +1,5 @@
-import { CheckCircle2, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CheckCircle2, AlertTriangle, RefreshCw, Loader2, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SenderDnsStatus } from '@/lib/email-campaign/dns-status.server';
 
@@ -35,15 +36,67 @@ function Row({
   );
 }
 
+/** Formata uma duração em ms como "2 h 14 min" / "45 s". */
+function formatDuration(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return `${h} h ${m} min`;
+  if (m > 0) return `${m} min ${s.toString().padStart(2, '0')} s`;
+  return `${s} s`;
+}
+
+/** Prazo máximo típico de propagação de DNS. */
+const PROPAGATION_WINDOW_MS = 72 * 60 * 60 * 1000;
+const FIRST_SEEN_KEY = 'envio:dns-first-pending-at';
+
 export function SenderDnsPanel({
   data,
   loading,
   onRefresh,
+  intervalMs = 5 * 60_000,
 }: {
   data?: SenderDnsStatus;
   loading?: boolean;
   onRefresh?: () => void;
+  /** Intervalo da reverificação automática enquanto a propagação não conclui. */
+  intervalMs?: number;
 }) {
+  const pending = !!data && !data.allReady;
+  const [now, setNow] = useState(() => Date.now());
+
+  // Relógio de 1s apenas enquanto há propagação pendente.
+  useEffect(() => {
+    if (!pending) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [pending]);
+
+  // Marca quando a propagação pendente foi vista pela primeira vez (base da estimativa).
+  const [firstPendingAt, setFirstPendingAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !data) return;
+    if (!pending) {
+      window.localStorage.removeItem(FIRST_SEEN_KEY);
+      setFirstPendingAt(null);
+      return;
+    }
+    const stored = Number(window.localStorage.getItem(FIRST_SEEN_KEY));
+    if (stored > 0) {
+      setFirstPendingAt(stored);
+    } else {
+      const started = Date.parse(data.checkedAt) || Date.now();
+      window.localStorage.setItem(FIRST_SEEN_KEY, String(started));
+      setFirstPendingAt(started);
+    }
+  }, [pending, data]);
+
+  const checkedAtMs = data ? Date.parse(data.checkedAt) : 0;
+  const nextCheckIn = pending && checkedAtMs ? checkedAtMs + intervalMs - now : 0;
+  const etaRemaining =
+    pending && firstPendingAt ? firstPendingAt + PROPAGATION_WINDOW_MS - now : 0;
+
   return (
     <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
       <div className="mb-2 flex items-center justify-between">
@@ -55,6 +108,26 @@ export function SenderDnsPanel({
           Verificar
         </Button>
       </div>
+
+      {pending ? (
+        <div className="mb-2 flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] text-slate-600">
+          <Timer className="h-3 w-3 shrink-0 text-slate-400" />
+          <span>
+            {loading ? (
+              'Reverificando SPF e DKIM agora…'
+            ) : (
+              <>
+                Reverificação automática a cada {Math.round(intervalMs / 60_000)} min · próxima em{' '}
+                <strong>{formatDuration(Math.max(0, nextCheckIn))}</strong>
+              </>
+            )}
+            {etaRemaining > 0 ? (
+              <> · prazo estimado de propagação: até <strong>{formatDuration(etaRemaining)}</strong></>
+            ) : null}
+          </span>
+        </div>
+      ) : null}
+
 
       {!data ? (
         <p className="text-[11px] text-slate-500">

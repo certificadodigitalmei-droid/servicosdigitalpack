@@ -83,10 +83,14 @@ function EnvioMassa() {
   const sender = senderQ.data;
 
   const fetchDnsStatus = useServerFn(getSenderDnsStatus);
+  // Reverifica sozinho a cada 5 min enquanto a propagação (SPF/DKIM/NS) não conclui.
+  const DNS_REFRESH_MS = 5 * 60_000;
   const dnsQ = useQuery({
     queryKey: ['campaign', 'sender-dns'],
     queryFn: () => fetchDnsStatus({} as any),
-    staleTime: 5 * 60_000,
+    staleTime: DNS_REFRESH_MS,
+    refetchInterval: (q) => (q.state.data?.allReady ? false : DNS_REFRESH_MS),
+    refetchIntervalInBackground: true,
   });
 
   const [previewIdx, setPreviewIdx] = useState(0);
@@ -309,6 +313,7 @@ function EnvioMassa() {
               <SenderDnsPanel
                 data={dnsQ.data}
                 loading={dnsQ.isFetching}
+                intervalMs={DNS_REFRESH_MS}
                 onRefresh={() => dnsQ.refetch()}
               />
             </div>
