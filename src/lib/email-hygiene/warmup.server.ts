@@ -105,7 +105,7 @@ export async function checkWarmup(): Promise<WarmupStatus> {
       startedAt,
       dailyLimit: null,
       sentToday,
-      remainingToday: Number.POSITIVE_INFINITY === 0 ? 0 : 999_999,
+      remainingToday: 999_999,
       nextLimit: nextStage?.perDay ?? null,
       blocked: false,
       secondsToReset,
