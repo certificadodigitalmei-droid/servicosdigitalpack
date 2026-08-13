@@ -103,23 +103,44 @@ function EnvioMassa() {
     staleTime: 60_000,
   });
   const [nameDraft, setNameDraft] = useState('');
+  const [emailDraft, setEmailDraft] = useState('');
   const [savingName, setSavingName] = useState(false);
   useEffect(() => {
     if (settingsQ.data?.from_name) setNameDraft(settingsQ.data.from_name);
   }, [settingsQ.data?.from_name]);
+  useEffect(() => {
+    if (settingsQ.data?.from_email) setEmailDraft(settingsQ.data.from_email);
+  }, [settingsQ.data?.from_email]);
+
+  const ALLOWED_DOMAIN = 'digitalcertificaa1mei.online';
+  const emailOk = (v: string) => {
+    const e = v.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return false;
+    const d = e.split('@')[1] ?? '';
+    return d === ALLOWED_DOMAIN || d.endsWith(`.${ALLOWED_DOMAIN}`);
+  };
+
+  const dirtySender =
+    nameDraft.trim() !== (settingsQ.data?.from_name ?? '') ||
+    emailDraft.trim().toLowerCase() !== (settingsQ.data?.from_email ?? '');
 
   const handleSaveName = async () => {
     const s = settingsQ.data;
     const name = nameDraft.trim();
+    const email = emailDraft.trim().toLowerCase();
     if (!s || !name) {
       toast.error('Informe o nome do remetente.');
+      return;
+    }
+    if (!emailOk(email)) {
+      toast.error(`O e-mail do remetente precisa terminar em @${ALLOWED_DOMAIN}.`);
       return;
     }
     setSavingName(true);
     try {
       await saveSenderSettings({
         data: {
-          from_email: s.from_email,
+          from_email: email,
           from_name: name,
           reply_to: s.reply_to ?? '',
           logo_url: s.logo_url ?? '',
@@ -127,13 +148,14 @@ function EnvioMassa() {
       });
       await Promise.all([settingsQ.refetch(), senderQ.refetch()]);
       await syncSenderFromServer();
-      toast.success(`Nome do remetente salvo: ${name}`);
+      toast.success(`Remetente salvo: ${name} <${email}>`);
     } catch (e) {
-      toast.error((e as Error)?.message ?? 'Não foi possível salvar o nome.');
+      toast.error((e as Error)?.message ?? 'Não foi possível salvar o remetente.');
     } finally {
       setSavingName(false);
     }
   };
+
 
   const [previewIdx, setPreviewIdx] = useState(0);
   const [designTick, setDesignTick] = useState(0);
