@@ -2,7 +2,19 @@ import { CheckCircle2, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SenderDnsStatus } from '@/lib/email-campaign/dns-status.server';
 
-function Row({ label, ok, message, values }: { label: string; ok: boolean; message: string; values?: string[] }) {
+function Row({
+  label,
+  ok,
+  message,
+  values,
+  failLabel = 'Não propagado',
+}: {
+  label: string;
+  ok: boolean;
+  message: string;
+  values?: string[];
+  failLabel?: string;
+}) {
   return (
     <div className="flex items-start gap-2 rounded-md border border-slate-200 bg-white p-2">
       {ok ? (
