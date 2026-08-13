@@ -365,37 +365,28 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
   // "Promoções"/"Atualizações" do Gmail.
   // ---------------------------------------------------------------------
   if (D.plainMode !== false) {
-    const plainRows = cardRows
-      .map(([k, v]) => {
-        const isAlert = k === 'Situação' || k === 'Validade';
-        const color = isAlert ? '#b45309' : '#111111';
-        return `<tr>
-          <td style="padding:2px 12px 2px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">${esc(String(k))}:</td>
-          <td style="padding:2px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:${color};">${esc(String(v))}</td>
-        </tr>`;
-      })
-      .join('');
+    // Carta pessoal: HTML mínimo, sem tabelas de layout, sem cores, sem botão,
+    // sem banner e sem imagens. É o formato que o Gmail costuma entregar na
+    // aba Principal em vez de "Atualizações"/"Promoções".
+    const plainLines = cardRows
+      .map(([k, v]) => `${esc(String(k))}: ${esc(String(v))}`)
+      .join('<br>');
 
     return minifyHtml(`<!doctype html>
-<html lang="pt-BR" dir="ltr"><head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta name="color-scheme" content="light"/>
-<title>${title}</title>
-</head>
-<body style="margin:0;padding:16px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#111111;">
-<div style="max-width:560px;margin:0 auto;">
-  <p style="margin:0 0 14px 0;">${intro}</p>
-  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;">${plainRows}</table>
-  <p style="margin:0 0 16px 0;">Para verificar a situação e regularizar, acesse:<br/>
-    <a href="${buttonHref}" style="color:#1a4a8a;">${buttonHref}</a>
-  </p>
-  ${signature ? `<p style="margin:0 0 14px 0;">${signature}</p>` : ''}
-  <p style="margin:18px 0 0 0;font-size:12px;color:#777777;">${disclaimer}</p>
-  ${D.unsubText ? `<p style="margin:8px 0 0 0;font-size:12px;"><a href="${esc(S(D.unsubHref || '#'))}" style="color:#777777;">${esc(S(D.unsubText))}</a></p>` : ''}
+<html lang="pt-BR"><head><meta charset="utf-8"><title>${title}</title></head>
+<body>
+<div>
+<p>${intro}</p>
+<p>${plainLines}</p>
+<p>Para verificar a situação e regularizar, acesse:<br>
+<a href="${buttonHref}">${buttonHref}</a></p>
+${signature ? `<p>${signature}</p>` : ''}
+<p>${disclaimer}</p>
+${D.unsubText ? `<p><a href="${esc(S(D.unsubHref || '#'))}">${esc(S(D.unsubText))}</a></p>` : ''}
 </div>
 </body></html>`);
   }
+
 
   return minifyHtml(`<!doctype html>
 
