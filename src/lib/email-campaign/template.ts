@@ -146,15 +146,15 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   title: 'CNPJ sem certificado digital ativo',
   subtitle: 'Central de Emissão · MEI',
   heroTitle: 'Certificado Digital não localizado',
-  showHero: true,
+  showHero: false,
   intro:
-    'Prezado(a) *{{NOME_TITULAR}}*,\n\nNa consulta ao CNPJ *{{CNPJ}}*, não localizamos um Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
-  cardTitle: 'Dados do requerente',
+    'Prezado(a) *{{NOME_TITULAR}}*,\n\nNa consulta ao CNPJ *{{CNPJ}}* não localizamos um Certificado Digital ativo. Confira os dados abaixo:',
+  cardTitle: 'Dados do cadastro',
   showCard: true,
   buttonLabel: 'Regularizar meu CNPJ',
   buttonHref: '{{LINK_PUBLICO}}',
 
-  showWarning: true,
+  showWarning: false,
   warningTitle: 'Atenção · pontos em aberto no seu CNPJ',
   warningItems:
     'A emissão de nota fiscal pode ficar impedida sem o certificado ativo.\nA assinatura de contratos digitais com CNPJ pode ter validade limitada.\nLinhas de crédito empresarial podem ser restringidas em bancos e financeiras.\nA regularidade do CNPJ perante a Receita Federal pode ser afetada.\nO acesso a alguns sistemas do governo pode exigir o certificado digital.\nConsultas cadastrais podem apresentar o CNPJ com situação incompleta.',
@@ -184,10 +184,10 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   govBarBg: '#e2e8f0',
   govBarColor: '#334155',
 
-  showBadges: true,
+  showBadges: false,
   badgesText: 'SSL 256-bits · LGPD · Validade 12 meses',
 
-  showStatusBar: true,
+  showStatusBar: false,
   statusLabel: 'Situação do cadastro',
   statusValue: 'Pendente',
   statusNote: 'Certificado e-CNPJ não localizado.',
@@ -321,12 +321,11 @@ export function renderHtml(d: CampaignDesign, vars: Vars): string {
 
 
   const cardRows: Array<[string, string]> = ([
-    ['Razão Social', vars.NOME_EMPRESARIAL || vars.NOME_TITULAR],
+    ['Nome', vars.NOME_EMPRESARIAL || vars.NOME_TITULAR],
     ['CNPJ', formatCnpj(vars.CNPJ || '')],
-    ['Protocolo', vars.REFERENCIA],
-    ['Data de Abertura', vars.DATA_ABERTURA],
+    ['Data da abertura', vars.DATA_ABERTURA],
     ['Validade', 'Expirado'],
-    ['Situação', vars.SITUACAO || 'Certificado Digital não localizado'],
+    ['Situação', 'CNPJ sem Certificado Ativo'],
   ] as Array<[string, string]>).filter(([, v]) => !!v);
 
   const keySize = (D.cardBodySize || D.bodySize) - 0.5;
@@ -509,28 +508,28 @@ export function renderText(d: CampaignDesign, vars: Vars): string {
     S(D.title),
     S(D.subtitle),
     '',
-    `${S(D.statusLabel || 'SITUAÇÃO DO CADASTRO')}: ${S(D.statusValue || 'PENDENTE')}`,
-
-    '',
     S(D.intro),
     '',
-    S(D.heroTitle),
-    '',
     S(D.cardTitle),
-    vars.NOME_EMPRESARIAL ? `- Razão Social: ${vars.NOME_EMPRESARIAL}` : '',
-    vars.NOME_TITULAR ? `- Nome: ${vars.NOME_TITULAR}` : '',
-    vars.REFERENCIA ? `- Protocolo: ${vars.REFERENCIA}` : '',
+    (vars.NOME_EMPRESARIAL || vars.NOME_TITULAR)
+      ? `- Nome: ${vars.NOME_EMPRESARIAL || vars.NOME_TITULAR}`
+      : '',
     vars.CNPJ ? `- CNPJ: ${formatCnpj(vars.CNPJ)}` : '',
-    vars.DATA_ABERTURA ? `- Data de Abertura: ${vars.DATA_ABERTURA}` : '',
-    vars.SITUACAO ? `- Situação: ${vars.SITUACAO}` : '',
+    vars.DATA_ABERTURA ? `- Data da abertura: ${vars.DATA_ABERTURA}` : '',
+    '- Validade: Expirado',
+    '- Situação: CNPJ sem Certificado Ativo',
     '',
-    S(D.warningTitle),
-    ...String(S(D.warningItems) || '')
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((l) => `- ${l}`),
-    '',
+    ...(D.showWarning
+      ? [
+          S(D.warningTitle),
+          ...String(S(D.warningItems) || '')
+            .split(/\r?\n/)
+            .map((l) => l.trim())
+            .filter(Boolean)
+            .map((l) => `- ${l}`),
+          '',
+        ]
+      : []),
     `${S(D.buttonLabel)}: ${S(D.buttonHref)}`,
     '',
     S(D.badgesText || ''),
