@@ -98,7 +98,7 @@ const IMPACTO_CONSULTAS = 'Consultas cadastrais podem mostrar o CNPJ com situaç
 const IMPACTO_RECEITA = 'A Receita Federal recomenda manter o certificado digital atualizado.';
 const IMPACTO_REGULARIDADE = 'A regularidade da empresa pode ser prejudicada em situações que exigem o certificado.';
 
-export const CAMPAIGN_VARIANTS: CampaignVariant[] = [
+const RAW_VARIANTS: CampaignVariant[] = [
   {
     id: 'azul-alerta',
     name: 'Aviso — Regularidade do CNPJ',
