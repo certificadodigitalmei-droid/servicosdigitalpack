@@ -12,8 +12,11 @@
 // nunca retornadas ao frontend nem gravadas em log.
 
 export const MERCADOPAGO_DEFAULT_BASE = "https://api.mercadopago.com";
+// URL imutável do projeto: não muda se o projeto for renomeado e NÃO redireciona
+// para o domínio de marketing (o Mercado Pago não segue redirect 307 e o webhook
+// era perdido quando apontava para o subdomínio antigo .lovable.app).
 export const MERCADOPAGO_WEBHOOK_URL =
-  "https://servicosdigitalpack.lovable.app/api/public/webhook-mercadopago";
+  "https://project--8a8fa8c9-4225-4a51-a790-5ffe68f740c2.lovable.app/api/public/webhook-mercadopago";
 
 
 export type MercadoPagoPix = {
