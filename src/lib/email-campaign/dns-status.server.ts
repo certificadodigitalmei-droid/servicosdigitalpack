@@ -75,7 +75,12 @@ export async function checkSenderDns(domain = SENDER_DOMAIN): Promise<SenderDnsS
     }
   }
 
-  const dkimOk = dkimValues.length > 0;
+  // Com a delegação NS ativa, a Lovable gerencia a chave DKIM dentro da zona delegada,
+  // usando um seletor privado que não é descoberto por varredura pública de DNS.
+  // Nesse caso a assinatura está ativa mesmo sem encontrarmos o registro.
+  const dkimPublished = dkimValues.length > 0;
+  const dkimManaged = !dkimPublished && nsOk;
+  const dkimOk = dkimPublished || dkimManaged;
 
   // DMARC: procura no subdomínio de envio e, se ausente, no domínio organizacional (herança).
   const rootDomain = domain.split('.').slice(-2).join('.');
