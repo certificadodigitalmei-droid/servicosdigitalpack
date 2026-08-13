@@ -32,7 +32,7 @@ export const Route = createFileRoute('/checkout_/$token')({
     // Empresa que já pagou não acessa o checkout: vai direto para a página
     // do CNPJ, onde vê o certificado ativo e vinculado.
     if (paidStatus.paid) {
-      throw redirect({ to: '/c/$token', params: { token: params.token }, search: { issuing: undefined } });
+      throw redirect({ to: '/c/$token', params: { token: params.token }, search: { issuing: undefined, unsubscribe: undefined } });
     }
     const [row, popup, pricing] = await Promise.all([
       resolveCompanyLink({ data: { token: params.token } }),
