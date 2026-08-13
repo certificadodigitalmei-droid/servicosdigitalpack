@@ -57,7 +57,7 @@ function cleanPersonName(v?: string | null): string {
 function TokenHomePage() {
   const { row, initialPaidAt, popup, display } = Route.useLoaderData() as { row: ResolvedCompany; initialPaidAt: string | null; popup: SitePopupSettings | null; display: SiteDisplaySettings };
   const { token } = Route.useParams();
-  const search = Route.useSearch() as { issuing?: number };
+  const search = Route.useSearch() as { issuing?: number; unsubscribe?: number };
   const nomeFmt = cleanPersonName(row.nome) || cleanPersonName(row.razao_social) || '—';
   const cnpjFmt = row.cnpj ? formatCNPJ(row.cnpj) : '—';
   const aberturaFmt = row.abertura ? formatDateBR(row.abertura) : '—';
@@ -66,7 +66,9 @@ function TokenHomePage() {
   const [popupSettings] = useState<SitePopupSettings | null>(popup);
   const [paidAt, setPaidAt] = useState<string | null>(initialPaidAt);
   const [issuing, setIssuing] = useState<boolean>(search.issuing === 1);
+  const [unsubscribeDone, setUnsubscribeDone] = useState<boolean>(search.unsubscribe === 1);
   const navigate = useNavigate();
+
 
   // "Gerando seu certificado": mantém overlay por no mínimo 4s e até paidAt chegar
   useEffect(() => {
