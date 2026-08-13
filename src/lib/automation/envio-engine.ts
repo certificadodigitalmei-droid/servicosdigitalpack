@@ -202,7 +202,7 @@ const initial: State = {
   testMode: false,
   testRecipient: '',
   fromName: 'Digital Certifica A1',
-  fromAddress: 'certificado-mei-estadual2026@seuceritificadodigitalmei.online',
+  fromAddress: 'contato@certificadodigitalmeiestadual.online',
   replyTo: '',
   showFloating: true,
   heroImageUrl: '',

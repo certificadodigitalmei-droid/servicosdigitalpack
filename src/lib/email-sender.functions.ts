@@ -10,9 +10,9 @@ export type EmailSenderSettings = {
 };
 
 const DEFAULTS: EmailSenderSettings = {
-  from_email: 'certificado-mei-estadual2026@seuceritificadodigitalmei.online',
+  from_email: 'contato@certificadodigitalmeiestadual.online',
   from_name: 'Digital Certifica A1',
-  reply_to: 'certificado-mei-estadual2026@seuceritificadodigitalmei.online',
+  reply_to: 'contato@certificadodigitalmeiestadual.online',
   logo_url: null,
 };
 
@@ -47,7 +47,7 @@ async function assertAdmin(supabase: any, userId: string) {
 }
 
 /** Só é possível enviar por endereços do domínio verificado (SPF/DKIM/DMARC). */
-export const ALLOWED_SENDER_DOMAIN = 'seuceritificadodigitalmei.online';
+export const ALLOWED_SENDER_DOMAIN = 'certificadodigitalmeiestadual.online';
 
 const onAllowedDomain = (v: string) => {
   const d = v.trim().toLowerCase().split('@')[1] ?? '';
