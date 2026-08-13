@@ -630,6 +630,8 @@ export type Database = {
           send_profile: string
           status: string
           updated_at: string
+          warmup_enabled: boolean
+          warmup_started_at: string | null
         }
         Insert: {
           burst_concurrency?: number
@@ -646,6 +648,8 @@ export type Database = {
           send_profile?: string
           status?: string
           updated_at?: string
+          warmup_enabled?: boolean
+          warmup_started_at?: string | null
         }
         Update: {
           burst_concurrency?: number
@@ -662,6 +666,8 @@ export type Database = {
           send_profile?: string
           status?: string
           updated_at?: string
+          warmup_enabled?: boolean
+          warmup_started_at?: string | null
         }
         Relationships: []
       }
