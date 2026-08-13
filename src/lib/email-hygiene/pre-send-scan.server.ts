@@ -10,7 +10,7 @@ export type RiskVerdict = {
   ok: boolean;
   email: string;
   reason?: string;
-  code?: 'invalid' | 'disposable' | 'typo' | 'no_mx' | 'suppressed';
+  code?: 'invalid' | 'disposable' | 'typo' | 'no_mx' | 'suppressed' | 'role' | 'dead_mx';
 };
 
 /** Domínios digitados errado com frequência (bounce garantido). */
@@ -57,7 +57,76 @@ const TRUSTED_DOMAINS = new Set([
   'zipmail.com.br',
 ]);
 
+/**
+ * Caixas genéricas/automáticas: ninguém lê, muitas rejeitam por política e
+ * várias são armadilhas de spam (spam traps). Bounce e reclamação altíssimos.
+ */
+const ROLE_LOCALPARTS = new Set([
+  'noreply',
+  'no-reply',
+  'nao-responda',
+  'naoresponda',
+  'postmaster',
+  'abuse',
+  'spam',
+  'devnull',
+  'nobody',
+  'root',
+  'webmaster',
+  'hostmaster',
+  'mailer-daemon',
+  'bounce',
+  'bounces',
+  'undisclosed',
+  'test',
+  'teste',
+  'exemplo',
+  'example',
+  'sem',
+  'semmail',
+  'sememail',
+  'naotem',
+]);
+
 const mxCache = new Map<string, boolean>();
+const mxHostCache = new Map<string, boolean>();
+
+/** O host de MX responde em DNS? MX apontando para host morto = bounce certo. */
+async function mxHostResolves(domain: string): Promise<boolean> {
+  const cached = mxHostCache.get(domain);
+  if (cached !== undefined) return cached;
+  try {
+    const res = await fetch(
+      `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=MX`,
+      { headers: { accept: 'application/dns-json' } },
+    );
+    if (!res.ok) return true;
+    const json = (await res.json()) as { Answer?: Array<{ data?: string }> };
+    const hosts = (json.Answer ?? [])
+      .map((a) => (a.data ?? '').split(' ').pop()?.replace(/\.$/, '') ?? '')
+      .filter(Boolean);
+    if (hosts.length === 0) return true;
+
+    for (const host of hosts.slice(0, 3)) {
+      for (const type of ['A', 'AAAA'] as const) {
+        const r = await fetch(
+          `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(host)}&type=${type}`,
+          { headers: { accept: 'application/dns-json' } },
+        );
+        if (!r.ok) return true;
+        const j = (await r.json()) as { Answer?: unknown[] };
+        if ((j.Answer ?? []).length > 0) {
+          mxHostCache.set(domain, true);
+          return true;
+        }
+      }
+    }
+    mxHostCache.set(domain, false);
+    return false;
+  } catch {
+    return true; // falha de rede não penaliza o endereço
+  }
+}
 
 /** Consulta MX/A por DNS-over-HTTPS (compatível com o runtime do servidor). */
 async function domainHasMx(domain: string): Promise<boolean> {
@@ -100,6 +169,16 @@ export async function assessBounceRisk(rawEmail: string): Promise<RiskVerdict> {
   }
 
   const domain = email.split('@')[1] ?? '';
+  const localPart = (email.split('@')[0] ?? '').replace(/[._-]/g, '');
+
+  if (ROLE_LOCALPARTS.has(localPart) || ROLE_LOCALPARTS.has(email.split('@')[0] ?? '')) {
+    return {
+      ok: false,
+      email,
+      code: 'role',
+      reason: 'caixa genérica/automática (alto risco de bounce e spam trap)',
+    };
+  }
 
   if (TYPO_DOMAINS[domain]) {
     return {
@@ -125,6 +204,17 @@ export async function assessBounceRisk(rawEmail: string): Promise<RiskVerdict> {
   const hasMx = await domainHasMx(domain);
   if (!hasMx) {
     return { ok: false, email, code: 'no_mx', reason: `domínio sem servidor de e-mail (${domain})` };
+  }
+
+  // Verificação profunda: o servidor de e-mail apontado pelo MX existe mesmo?
+  const mxAlive = await mxHostResolves(domain);
+  if (!mxAlive) {
+    return {
+      ok: false,
+      email,
+      code: 'dead_mx',
+      reason: `servidor de e-mail do domínio não responde (${domain})`,
+    };
   }
 
   return { ok: true, email };
