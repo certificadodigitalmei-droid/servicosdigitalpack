@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
+import { getPublicBaseUrl } from '@/lib/public-base-url';
 
 export type ResolvedCompany = {
   cnpj: string | null;

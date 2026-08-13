@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
+import { getPublicBaseUrl } from '@/lib/public-base-url';
 
 const InputSchema = z.object({
   dataUrl: z.string().min(10),
