@@ -9,9 +9,10 @@ import { hasSeenIntro, markIntroSeen, prefersReducedMotion, shouldPlayIntro } fr
 import { SiteHeader, Breadcrumb, SiteFooter, Page } from '@/components/layout/SiteChrome';
 import { trackEvent } from '@/lib/track';
 import { formatCNPJ, formatDateBR } from '@/lib/format';
-import { resolveCompanyLink, getLinkPaymentStatus, type ResolvedCompany } from '@/lib/company-links.functions';
+import { resolveCompanyLink, getLinkPaymentStatus, unsubscribeCompany, type ResolvedCompany } from '@/lib/company-links.functions';
 import { getSitePopup, type SitePopupSettings } from '@/lib/site-popup.functions';
 import { getSiteDisplay, type SiteDisplaySettings } from '@/lib/site-display.functions';
+
 
 
 
