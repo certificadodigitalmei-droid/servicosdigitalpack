@@ -3,7 +3,7 @@
  * Usa DNS-over-HTTPS (Google) — funciona no runtime serverless.
  */
 
-export const SENDER_DOMAIN = 'notify.digitalcertificaa1mei.online';
+export const SENDER_DOMAIN = 'notify.seuceritificadodigitalmei.online';
 
 const DKIM_SELECTORS = [
   'lovable',
