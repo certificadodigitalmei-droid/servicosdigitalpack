@@ -24,7 +24,7 @@ function Row({
       )}
       <div className="min-w-0">
         <p className="text-xs font-semibold text-slate-800">
-          {label} · {ok ? 'Verificado' : 'Não propagado'}
+          {label} · {ok ? 'Verificado' : failLabel}
         </p>
         <p className="text-[11px] leading-snug text-slate-600">{message}</p>
         {values && values.length > 0 ? (
@@ -68,6 +68,7 @@ export function SenderDnsPanel({
           <Row label="MX (retornos)" ok={data.mx.ok} message={data.mx.message} values={data.mx.values} />
           <Row
             label={`DMARC${data.dmarc.policy ? ` (p=${data.dmarc.policy})` : ''}`}
+            failLabel={data.dmarc.values.length === 0 ? 'Ausente' : 'Mal configurado'}
             ok={data.dmarc.ok}
             message={data.dmarc.message}
             values={data.dmarc.values}
