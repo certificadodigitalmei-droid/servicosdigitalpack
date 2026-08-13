@@ -25,7 +25,7 @@ import {
   deleteTestCompanies,
   type TestCompanyResult,
 } from '@/lib/payments/test-company.functions';
-import { PUBLIC_BASE_URL } from '@/lib/public-base-url';
+import { getPublicBaseUrl } from '@/lib/public-base-url';
 import { rowToVars, substitute } from '@/lib/email-campaign/template';
 import { sendCampaignEmail } from '@/lib/email-campaign/send.functions';
 import {
@@ -211,8 +211,8 @@ function PaymentGatewaysPage() {
           MUNICIPIO: 'SAO PAULO',
           UF: 'SP',
           EMAIL: res.email,
-          LINK_PUBLICO: `${PUBLIC_BASE_URL}/acesso/${res.public_token}`,
-          LINK_CHECKOUT: `${PUBLIC_BASE_URL}/checkout/${res.public_token}`,
+          LINK_PUBLICO: `${getPublicBaseUrl()}/acesso/${res.public_token}`,
+          LINK_CHECKOUT: `${getPublicBaseUrl()}/checkout/${res.public_token}`,
           TOKEN: res.public_token,
         },
         {

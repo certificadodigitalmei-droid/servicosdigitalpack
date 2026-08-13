@@ -276,7 +276,7 @@ function pushLog(msg: string) {
 
 // Base URL de PRODUÇÃO usada nos links dos e-mails (o preview do editor
 // abre o Lovable — usar sempre o domínio publicado).
-import { PUBLIC_BASE_URL, buildPublicUrl, buildCheckoutUrl } from '@/lib/public-base-url';
+import { getPublicBaseUrl, buildPublicUrl, buildCheckoutUrl } from '@/lib/public-base-url';
 
 const normCnpj = (v: string | null | undefined) => (v || '').replace(/\D+/g, '');
 const normEmail = (v: string | null | undefined) => (v || '').trim().toLowerCase();
@@ -629,7 +629,7 @@ function buildVarsFor(item: QueueItem) {
       ? buildPublicUrl(item.publicToken)
       : item.publicUrl && /^https?:\/\//i.test(item.publicUrl)
         ? item.publicUrl
-        : `${PUBLIC_BASE_URL}/modelo`,
+        : `${getPublicBaseUrl()}/modelo`,
 
     TOKEN: item.publicToken || '',
 

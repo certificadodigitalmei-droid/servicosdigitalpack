@@ -217,7 +217,7 @@ export const sendFunnelCampaign = createServerFn({ method: 'POST' })
     await assertAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const { sendTemplateEmail } = await import('@/lib/email-templates/send-email');
-    const { PUBLIC_BASE_URL, buildPublicUrl } = await import('@/lib/public-base-url');
+    const { getPublicBaseUrl, buildPublicUrl } = await import('@/lib/public-base-url');
 
     const { data: pricing } = await supabaseAdmin
       .from('site_settings')
@@ -335,7 +335,7 @@ export const sendFunnelTestEmail = createServerFn({ method: 'POST' })
     await assertAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const { sendTemplateEmail } = await import('@/lib/email-templates/send-email');
-    const { PUBLIC_BASE_URL, buildPublicUrl } = await import('@/lib/public-base-url');
+    const { getPublicBaseUrl, buildPublicUrl } = await import('@/lib/public-base-url');
 
     const { data: pricing } = await supabaseAdmin
       .from('site_settings')
@@ -412,7 +412,7 @@ export const sendManualEmails = createServerFn({ method: 'POST' })
     await assertAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const { sendTemplateEmail } = await import('@/lib/email-templates/send-email');
-    const { PUBLIC_BASE_URL, buildPublicUrl } = await import('@/lib/public-base-url');
+    const { getPublicBaseUrl, buildPublicUrl } = await import('@/lib/public-base-url');
 
     const { data: pricing } = await supabaseAdmin
       .from('site_settings')
@@ -435,7 +435,7 @@ export const sendManualEmails = createServerFn({ method: 'POST' })
           templateData: {
             empresa: data.empresa || undefined,
             cnpj: data.cnpj || undefined,
-            link: data.link || PUBLIC_BASE_URL,
+            link: data.link || getPublicBaseUrl(),
             protocolo: `CD-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
             validade: '12 meses',
             dataSolicitacao: new Date().toLocaleDateString('pt-BR'),

@@ -76,7 +76,7 @@ export const getLatestTestEmailCompany = createServerFn({ method: 'GET' })
         uf: company.uf || '',
         municipio: company.municipio_descricao || '',
         public_token: link.public_token,
-        public_url: `https://seu-certificado-mei-digital.online/acesso/${link.public_token}`,
+        public_url: `${getPublicBaseUrl()}/acesso/${link.public_token}`,
       };
     }
 

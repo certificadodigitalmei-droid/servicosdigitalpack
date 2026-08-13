@@ -1,7 +1,7 @@
 // Server-only: dispara os e-mails transacionais do fluxo de pagamento.
 // Nunca importar em componentes de cliente.
 import { sendTemplateEmail } from '@/lib/email-templates/send-email'
-import { PUBLIC_BASE_URL } from '@/lib/public-base-url'
+import { getPublicBaseUrl } from '@/lib/public-base-url'
 
 const VALIDADE_PADRAO = '12 meses'
 
@@ -53,7 +53,7 @@ async function resolveContext(order: OrderRow) {
       .select('public_token')
       .eq('id', order.public_link_id)
       .maybeSingle()
-    if (data?.public_token) link = `${PUBLIC_BASE_URL}/acesso/${data.public_token}`
+    if (data?.public_token) link = `${getPublicBaseUrl()}/acesso/${data.public_token}`
   }
 
   return {
