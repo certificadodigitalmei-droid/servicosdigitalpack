@@ -27,6 +27,7 @@ import { useServerFn } from '@tanstack/react-start';
 import { getEmailMetrics } from '@/lib/emails/email-metrics.functions';
 import { getCampaignSenderInfo } from '@/lib/email-campaign/send.functions';
 import { getSenderDnsStatus } from '@/lib/email-campaign/dns-status.functions';
+import { getEmailSenderSettings, saveEmailSenderSettings } from '@/lib/email-sender.functions';
 import { SenderDnsPanel } from '@/components/painel/SenderDnsPanel';
 import {
   FilaUnicaCard,
@@ -92,6 +93,47 @@ function EnvioMassa() {
     refetchInterval: (q) => (q.state.data?.allReady ? false : DNS_REFRESH_MS),
     refetchIntervalInBackground: true,
   });
+
+  // Nome do remetente (editável e salvo no servidor).
+  const fetchSenderSettings = useServerFn(getEmailSenderSettings);
+  const saveSenderSettings = useServerFn(saveEmailSenderSettings);
+  const settingsQ = useQuery({
+    queryKey: ['email', 'sender-settings'],
+    queryFn: () => fetchSenderSettings({} as any),
+    staleTime: 60_000,
+  });
+  const [nameDraft, setNameDraft] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  useEffect(() => {
+    if (settingsQ.data?.from_name) setNameDraft(settingsQ.data.from_name);
+  }, [settingsQ.data?.from_name]);
+
+  const handleSaveName = async () => {
+    const s = settingsQ.data;
+    const name = nameDraft.trim();
+    if (!s || !name) {
+      toast.error('Informe o nome do remetente.');
+      return;
+    }
+    setSavingName(true);
+    try {
+      await saveSenderSettings({
+        data: {
+          from_email: s.from_email,
+          from_name: name,
+          reply_to: s.reply_to ?? '',
+          logo_url: s.logo_url ?? '',
+        },
+      });
+      await Promise.all([settingsQ.refetch(), senderQ.refetch()]);
+      await syncSenderFromServer();
+      toast.success(`Nome do remetente salvo: ${name}`);
+    } catch (e) {
+      toast.error((e as Error)?.message ?? 'Não foi possível salvar o nome.');
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   const [previewIdx, setPreviewIdx] = useState(0);
   const [designTick, setDesignTick] = useState(0);
@@ -305,6 +347,34 @@ function EnvioMassa() {
                 readOnly
                 className="bg-slate-50 text-slate-600"
               />
+              <div className="mt-2">
+                <Label className="text-xs">Nome exibido no e-mail</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    placeholder="Ex.: Central de Regularização MEI"
+                    maxLength={200}
+                    disabled={settingsQ.isLoading || savingName || running}
+                  />
+                  <Button
+                    onClick={handleSaveName}
+                    disabled={
+                      savingName ||
+                      running ||
+                      !nameDraft.trim() ||
+                      nameDraft.trim() === (settingsQ.data?.from_name ?? '')
+                    }
+                  >
+                    {savingName ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
+                    Salvar
+                  </Button>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Salve o nome antes de iniciar o envio — ele passa a valer para todos os disparos seguintes.
+                  {running ? ' Pare o envio para alterar o nome.' : ''}
+                </p>
+              </div>
               <p className="mt-1 text-[11px] text-slate-500">
                 Domínio de envio: <strong>{sender?.domain ?? '—'}</strong> · infraestrutura verificada:{' '}
                 <strong>{sender?.senderDomain ?? '—'}</strong>. Todos os disparos saem exclusivamente por este
