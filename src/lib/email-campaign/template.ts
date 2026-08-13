@@ -146,15 +146,15 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   title: 'CNPJ sem certificado digital ativo',
   subtitle: 'Central de Emissão · MEI',
   heroTitle: 'Certificado Digital não localizado',
-  showHero: true,
+  showHero: false,
   intro:
-    'Prezado(a) *{{NOME_TITULAR}}*,\n\nNa consulta ao CNPJ *{{CNPJ}}*, não localizamos um Certificado Digital ativo.\n\nVerifique a situação do cadastro abaixo:',
-  cardTitle: 'Dados do requerente',
+    'Prezado(a) *{{NOME_TITULAR}}*,\n\nNa consulta ao CNPJ *{{CNPJ}}* não localizamos um Certificado Digital ativo. Confira os dados abaixo:',
+  cardTitle: 'Dados do cadastro',
   showCard: true,
   buttonLabel: 'Regularizar meu CNPJ',
   buttonHref: '{{LINK_PUBLICO}}',
 
-  showWarning: true,
+  showWarning: false,
   warningTitle: 'Atenção · pontos em aberto no seu CNPJ',
   warningItems:
     'A emissão de nota fiscal pode ficar impedida sem o certificado ativo.\nA assinatura de contratos digitais com CNPJ pode ter validade limitada.\nLinhas de crédito empresarial podem ser restringidas em bancos e financeiras.\nA regularidade do CNPJ perante a Receita Federal pode ser afetada.\nO acesso a alguns sistemas do governo pode exigir o certificado digital.\nConsultas cadastrais podem apresentar o CNPJ com situação incompleta.',
