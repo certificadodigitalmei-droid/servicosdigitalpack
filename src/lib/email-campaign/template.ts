@@ -96,7 +96,15 @@ export type CampaignDesign = {
   statusLabel?: string;
   statusValue?: string;
   statusNote?: string;
+
+  /**
+   * Modo "carta simples": HTML mínimo, sem banner colorido, sem imagens e sem
+   * botão em bloco. É o formato com maior chance de cair na aba Principal do
+   * Gmail (em vez de Promoções/Atualizações).
+   */
+  plainMode?: boolean;
 };
+
 
 
 
