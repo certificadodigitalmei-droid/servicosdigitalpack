@@ -1,0 +1,1 @@
+UPDATE public.site_settings SET public_base_url = 'https://certificadodigitalmeiestadual.online', updated_at = now();
