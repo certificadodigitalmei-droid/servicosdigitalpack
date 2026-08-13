@@ -5,9 +5,19 @@ import { DEFAULT_DESIGN, renderHtml, renderText, type CampaignDesign, type Vars 
 import { recordEmailAudit } from '@/lib/emails/email-audit';
 
 const SENDER_DOMAIN = 'notify.digitalcertificaa1mei.online';
+export const ROOT_SENDER_DOMAIN = 'digitalcertificaa1mei.online';
 const FALLBACK_FROM_ADDRESS = 'certificado.mei.estadual@digitalcertificaa1mei.online';
 const FALLBACK_FROM_NAME = 'Digital Certifica A1';
 const TEST_RECIPIENT_ENV = 'CAMPAIGN_TEST_RECIPIENT';
+
+/** Garante que qualquer endereço usado pertença ao domínio verificado na Lovable. */
+function enforceSenderDomain(address?: string | null): string {
+  const addr = (address || '').trim().toLowerCase();
+  const domain = addr.split('@')[1] || '';
+  if (domain === ROOT_SENDER_DOMAIN || domain === SENDER_DOMAIN) return addr;
+  return FALLBACK_FROM_ADDRESS;
+}
+
 
 async function loadSenderSettings(supabase: any): Promise<{ name: string; email: string }> {
   const { data } = await supabase
