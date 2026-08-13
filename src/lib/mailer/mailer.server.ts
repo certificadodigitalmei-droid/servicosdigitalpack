@@ -7,7 +7,7 @@ import { EmailAPIError, sendLovableEmail } from '@lovable.dev/email-js';
 export const SENDER_DOMAIN = 'notify.digitalcertificaa1mei.online';
 
 const DEFAULT_FROM_NAME = 'Digital Certifica A1';
-const DEFAULT_FROM_EMAIL = 'certificado.mei.estadual@digitalcertificaa1mei.online';
+const DEFAULT_FROM_EMAIL = 'certificado-mei-estadual2026@digitalcertificaa1mei.online';
 
 export class MailError extends Error {
   constructor(
