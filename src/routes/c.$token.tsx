@@ -204,7 +204,17 @@ function TokenHomePage() {
             };
             return (
           <>
+          {unsubscribeDone && (
+            <div className="flex gap-3 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-[13px] text-emerald-800 shadow-sm lg:text-[14px]">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+              <div className="leading-relaxed">
+                <p className="font-semibold">Você foi descadastrado com sucesso.</p>
+                <p className="text-emerald-700/90">Não enviaremos mais mensagens deste tipo para este CNPJ/e-mail.</p>
+              </div>
+            </div>
+          )}
           {!paidAt && (
+
           <div className="flex gap-3 rounded-md border border-[#ffeeba] border-l-4 border-l-[#ffc107] bg-[#fcf4d4] p-4 text-[13px] shadow-sm lg:text-[14px]">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#856404]" />
             <div className="leading-relaxed text-[#856404]">
