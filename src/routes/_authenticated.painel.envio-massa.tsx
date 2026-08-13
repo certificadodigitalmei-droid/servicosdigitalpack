@@ -27,6 +27,7 @@ import { useServerFn } from '@tanstack/react-start';
 import { getEmailMetrics } from '@/lib/emails/email-metrics.functions';
 import { getCampaignSenderInfo } from '@/lib/email-campaign/send.functions';
 import { getSenderDnsStatus } from '@/lib/email-campaign/dns-status.functions';
+import { getEmailSenderSettings, saveEmailSenderSettings } from '@/lib/email-sender.functions';
 import { SenderDnsPanel } from '@/components/painel/SenderDnsPanel';
 import {
   FilaUnicaCard,
