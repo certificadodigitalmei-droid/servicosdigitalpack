@@ -46,12 +46,25 @@ async function assertAdmin(supabase: any, userId: string) {
   if (!data) throw new Error('forbidden: admin role required');
 }
 
+/** Só é possível enviar por endereços do domínio verificado (SPF/DKIM/DMARC). */
+export const ALLOWED_SENDER_DOMAIN = 'digitalcertificaa1mei.online';
+
+const onAllowedDomain = (v: string) => {
+  const d = v.trim().toLowerCase().split('@')[1] ?? '';
+  return d === ALLOWED_SENDER_DOMAIN || d.endsWith(`.${ALLOWED_SENDER_DOMAIN}`);
+};
+
 const saveSchema = z.object({
-  from_email: z.string().email('E-mail remetente inválido').max(200),
+  from_email: z
+    .string()
+    .email('E-mail remetente inválido')
+    .max(200)
+    .refine(onAllowedDomain, `O remetente precisa terminar em @${ALLOWED_SENDER_DOMAIN}`),
   from_name: z.string().min(1, 'Nome do remetente é obrigatório').max(200),
   reply_to: z.string().email('E-mail de resposta inválido').max(200).or(z.literal('')).optional().nullable(),
   logo_url: z.string().max(600).optional().nullable(),
 });
+
 
 export const saveEmailSenderSettings = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
