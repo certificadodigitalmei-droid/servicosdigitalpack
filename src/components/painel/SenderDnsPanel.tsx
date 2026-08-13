@@ -2,7 +2,19 @@ import { CheckCircle2, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SenderDnsStatus } from '@/lib/email-campaign/dns-status.server';
 
-function Row({ label, ok, message, values }: { label: string; ok: boolean; message: string; values?: string[] }) {
+function Row({
+  label,
+  ok,
+  message,
+  values,
+  failLabel = 'Não propagado',
+}: {
+  label: string;
+  ok: boolean;
+  message: string;
+  values?: string[];
+  failLabel?: string;
+}) {
   return (
     <div className="flex items-start gap-2 rounded-md border border-slate-200 bg-white p-2">
       {ok ? (
@@ -12,7 +24,7 @@ function Row({ label, ok, message, values }: { label: string; ok: boolean; messa
       )}
       <div className="min-w-0">
         <p className="text-xs font-semibold text-slate-800">
-          {label} · {ok ? 'Verificado' : 'Não propagado'}
+          {label} · {ok ? 'Verificado' : failLabel}
         </p>
         <p className="text-[11px] leading-snug text-slate-600">{message}</p>
         {values && values.length > 0 ? (
@@ -54,6 +66,13 @@ export function SenderDnsPanel({
           <Row label="DKIM" ok={data.dkim.ok} message={data.dkim.message} values={data.dkim.values} />
           <Row label="Delegação NS" ok={data.ns.ok} message={data.ns.message} values={data.ns.values} />
           <Row label="MX (retornos)" ok={data.mx.ok} message={data.mx.message} values={data.mx.values} />
+          <Row
+            label={`DMARC${data.dmarc.policy ? ` (p=${data.dmarc.policy})` : ''}`}
+            failLabel={data.dmarc.values.length === 0 ? 'Ausente' : 'Mal configurado'}
+            ok={data.dmarc.ok}
+            message={data.dmarc.message}
+            values={data.dmarc.values}
+          />
           {!data.allReady ? (
             <p className="rounded-md bg-amber-50 p-2 text-[11px] text-amber-800">
               Propagação pendente: a verificação DNS pode levar até 72 horas. Enquanto SPF e a delegação NS não
