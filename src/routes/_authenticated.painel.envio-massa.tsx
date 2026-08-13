@@ -26,6 +26,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { getEmailMetrics } from '@/lib/emails/email-metrics.functions';
 import { getCampaignSenderInfo } from '@/lib/email-campaign/send.functions';
+import { getSenderDnsStatus } from '@/lib/email-campaign/dns-status.functions';
+import { SenderDnsPanel } from '@/components/painel/SenderDnsPanel';
 import {
   FilaUnicaCard,
   SendHealthCard,
@@ -79,6 +81,13 @@ function EnvioMassa() {
     staleTime: 60_000,
   });
   const sender = senderQ.data;
+
+  const fetchDnsStatus = useServerFn(getSenderDnsStatus);
+  const dnsQ = useQuery({
+    queryKey: ['campaign', 'sender-dns'],
+    queryFn: () => fetchDnsStatus({} as any),
+    staleTime: 5 * 60_000,
+  });
 
   const [previewIdx, setPreviewIdx] = useState(0);
   const [designTick, setDesignTick] = useState(0);
@@ -297,6 +306,11 @@ function EnvioMassa() {
                 <strong>{sender?.senderDomain ?? '—'}</strong>. Todos os disparos saem exclusivamente por este
                 domínio.
               </p>
+              <SenderDnsPanel
+                data={dnsQ.data}
+                loading={dnsQ.isFetching}
+                onRefresh={() => dnsQ.refetch()}
+              />
             </div>
           </div>
 
