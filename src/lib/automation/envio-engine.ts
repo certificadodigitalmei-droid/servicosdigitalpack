@@ -74,13 +74,13 @@ export async function syncSenderFromServer() {
   try {
     const { getEmailSenderSettings } = await import('@/lib/email-sender.functions');
     const server = await getEmailSenderSettings();
-    const localName = loadSavedFromName();
-    const localAddress = loadSavedFromAddress();
+    // Remetente vem sempre do domínio configurado na Lovable (site_settings);
+    // overrides salvos no navegador não são mais aplicados.
     envioStore.set((s) => ({
       ...s,
-      fromName: localName || server.from_name || s.fromName,
-      fromAddress: localAddress || server.from_email || s.fromAddress,
-      replyTo: s.replyTo || server.reply_to || '',
+      fromName: server.from_name || s.fromName,
+      fromAddress: server.from_email || s.fromAddress,
+      replyTo: server.reply_to || '',
     }));
   } catch {
     // mantém defaults já carregados
