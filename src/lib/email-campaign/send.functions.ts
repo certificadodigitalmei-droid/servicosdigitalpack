@@ -160,3 +160,18 @@ export const sendCampaignEmail = createServerFn({ method: 'POST' })
       return { sent: false, reason: 'error', message: (error as Error).message };
     }
   });
+
+/** Remetente efetivo usado em todos os envios (domínio verificado na Lovable). */
+export const getCampaignSenderInfo = createServerFn({ method: 'GET' })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const s = await loadSenderSettings(context.supabase);
+    const email = enforceSenderDomain(s.email);
+    return {
+      name: s.name,
+      email,
+      domain: email.split('@')[1] || ROOT_SENDER_DOMAIN,
+      senderDomain: SENDER_DOMAIN,
+      provider: 'Lovable Cloud → E-mails',
+    };
+  });
