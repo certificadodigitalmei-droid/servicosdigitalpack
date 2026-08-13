@@ -2,6 +2,7 @@
 // Nunca importar em componentes de cliente.
 import { sendTemplateEmail } from '@/lib/email-templates/send-email'
 import { getPublicBaseUrl } from '@/lib/public-base-url'
+import { ensurePublicBaseUrl } from '@/lib/public-base-url.server'
 
 const VALIDADE_PADRAO = '12 meses'
 

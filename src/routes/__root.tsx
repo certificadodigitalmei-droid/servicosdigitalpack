@@ -12,6 +12,8 @@ import { Toaster } from "@/components/ui/toaster";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { isUsablePublicOrigin, setRuntimePublicBaseUrl } from "@/lib/public-base-url";
+import { syncPublicBaseUrl } from "@/lib/public-base-url.functions";
 
 function NotFoundComponent() {
   return (
