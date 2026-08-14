@@ -127,12 +127,12 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   textColor: '#1f2937',
   mutedColor: '#64748b',
 
-  buttonBg: '#1a4a8a',
-  buttonText: '#ffffff',
+  buttonBg: '#f8fafc',
+  buttonText: '#1e3a8a',
   buttonRadius: 6,
-  buttonPaddingY: 14,
-  buttonPaddingX: 30,
-  buttonSize: 14,
+  buttonPaddingY: 12,
+  buttonPaddingX: 28,
+  buttonSize: 13,
 
   align: 'left',
   containerWidth: 640,
@@ -159,7 +159,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
     'Prezado(a) *{{NOME_TITULAR}}*,\n\nNa consulta ao CNPJ *{{CNPJ}}* não localizamos um Certificado Digital ativo. Confira os dados abaixo:',
   cardTitle: 'Dados do cadastro',
   showCard: true,
-  buttonLabel: 'Regularizar meu CNPJ',
+  buttonLabel: 'Verificar situação do CNPJ',
   buttonHref: '{{LINK_PUBLICO}}',
 
   showWarning: false,
@@ -510,7 +510,7 @@ ${D.unsubText ? `<p><a href="${esc(S(D.unsubHref || '#'))}">${esc(S(D.unsubText)
 
 
     <tr><td align="center" class="l-pad" style="padding:0 ${px}px 44px ${px}px;">
-      <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;text-transform:uppercase;font-weight:700;font-size:${D.buttonSize}px;box-shadow:0 4px 6px -1px rgba(11,30,63,0.25);white-space:normal;mso-padding-alt:0;line-height:1.2;">${buttonLabel}</a>
+      <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;border:1px solid #cbd5e1;text-transform:none;font-weight:600;font-size:${D.buttonSize}px;white-space:normal;mso-padding-alt:0;line-height:1.4;">${buttonLabel}</a>
     </td></tr>
 
     ${D.showSignature ? `
