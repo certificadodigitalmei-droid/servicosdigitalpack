@@ -11,22 +11,33 @@ export type WarmupStage = {
   perDay: number;
 };
 
-/** Escada de aquecimento (conservadora, pensada para Gmail/Outlook). */
+/**
+ * Teto diário definitivo depois do aquecimento.
+ * O objetivo do projeto é 100 e-mails/dia TODOS os dias — volume estável e
+ * previsível é exatamente o que o Gmail lê como "remetente legítimo".
+ */
+export const DAILY_CAP = 100;
+
+/**
+ * Escada de aquecimento até 100/dia (conservadora, pensada para Gmail/Outlook).
+ * Volume constante e crescimento suave valem mais que volume alto.
+ */
 export const WARMUP_PLAN: WarmupStage[] = [
-  { fromDay: 1, perDay: 20 },
-  { fromDay: 4, perDay: 40 },
-  { fromDay: 8, perDay: 80 },
-  { fromDay: 15, perDay: 150 },
-  { fromDay: 22, perDay: 300 },
-  { fromDay: 29, perDay: 600 },
-  { fromDay: 36, perDay: 1200 },
+  { fromDay: 1, perDay: 15 },
+  { fromDay: 3, perDay: 25 },
+  { fromDay: 5, perDay: 40 },
+  { fromDay: 7, perDay: 55 },
+  { fromDay: 9, perDay: 70 },
+  { fromDay: 11, perDay: 85 },
+  { fromDay: 13, perDay: DAILY_CAP },
 ];
 
-/** A partir daqui o aquecimento termina e vale só o limite por hora. */
-export const WARMUP_DAYS = 42;
+/** A partir daqui o aquecimento termina e vale o teto diário fixo. */
+export const WARMUP_DAYS = 13;
 
-export function dailyLimitForDay(day: number): number | null {
-  if (day >= WARMUP_DAYS) return null; // aquecido
+/** Nunca devolve null: mesmo aquecido existe teto diário (proteção de reputação). */
+export function dailyLimitForDay(day: number): number {
+  if (day >= WARMUP_DAYS) return DAILY_CAP;
   let limit = WARMUP_PLAN[0].perDay;
   for (const stage of WARMUP_PLAN) if (day >= stage.fromDay) limit = stage.perDay;
   return limit;
