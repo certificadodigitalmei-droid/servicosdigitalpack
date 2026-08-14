@@ -270,23 +270,26 @@ export async function processQueueInternal(
     }
   }
 
-  // Aquecimento do domínio: teto DIÁRIO que cresce com a idade do domínio.
-  {
-    const { checkWarmup } = await import('@/lib/email-hygiene/warmup.server');
-    const warm = await checkWarmup();
-    if (warm.blocked) {
-      return {
-        ...base,
-        throttled: true,
-        waitingSpacing: false,
-        quotaExhausted: false,
-        warmupBlocked: true,
-        warmupDay: warm.day,
-        warmupDailyLimit: warm.dailyLimit,
-        warmupSentToday: warm.sentToday,
-        warmupReason: warm.reason,
-      };
-    }
+  // Ritmo humano: horário comercial + cota diária de aquecimento + intervalo
+  // variável. Substitui a rajada fixa de 1 e-mail por minuto (padrão de spam).
+  const { computePacing } = await import('@/lib/email-hygiene/pacing.server');
+  const pacing = await computePacing();
+  if (pacing.blocked) {
+    const warm = pacing.warmup;
+    return {
+      ...base,
+      throttled: true,
+      waitingSpacing: false,
+      quotaExhausted: false,
+      outsideWindow: !pacing.insideWindow,
+      warmupBlocked: warm.blocked,
+      warmupDay: warm.day,
+      warmupDailyLimit: warm.dailyLimit,
+      warmupSentToday: warm.sentToday,
+      warmupReason: pacing.reason,
+      pacingReason: pacing.reason,
+      spacingSec: pacing.spacingSec,
+    };
   }
 
   // Trava rígida: cota da hora (com margem) esgotada -> nada sai.
@@ -294,12 +297,13 @@ export async function processQueueInternal(
     return { ...base, throttled: true, waitingSpacing: false, quotaExhausted: true };
   }
 
-
-  // Espaçamento: só envia se já passou o intervalo desde o último envio.
+  // Espaçamento: nunca menor que o intervalo pedido pelo ritmo do dia.
+  const effectiveSpacing = Math.max(spacingSec, pacing.spacingSec);
   const last = await lastSentAt();
-  if (last !== null && Date.now() - last < spacingSec * 1000) {
-    return { ...base, throttled: true, waitingSpacing: true };
+  if (last !== null && Date.now() - last < effectiveSpacing * 1000) {
+    return { ...base, throttled: true, waitingSpacing: true, spacingSec: effectiveSpacing };
   }
+
 
 
   const nowIso = new Date().toISOString();
