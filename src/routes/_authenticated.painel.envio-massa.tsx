@@ -30,6 +30,7 @@ import { getSenderDnsStatus } from '@/lib/email-campaign/dns-status.functions';
 import { getEmailSenderSettings, saveEmailSenderSettings } from '@/lib/email-sender.functions';
 import { SenderDnsPanel } from '@/components/painel/SenderDnsPanel';
 import { SendGuardPanel } from '@/components/painel/SendGuardPanel';
+import { WarmupSetupCard } from '@/components/painel/WarmupSetupCard';
 import {
   FilaUnicaCard,
   SendHealthCard,
@@ -242,7 +243,10 @@ function EnvioMassa() {
       {/* 1 — Motor único do fluxo (consulta → importação → links → envio) */}
       <MotorFluxoCard />
 
-      {/* 1.1 — Proteção do envio (aquecimento, bounce, cota, saúde da fila) */}
+      {/* 1.1 — Configuração recomendada de aquecimento */}
+      <WarmupSetupCard />
+
+      {/* 1.2 — Proteção do envio (aquecimento, bounce, cota, saúde da fila) */}
       <SendGuardPanel />
 
 

@@ -1,0 +1,2 @@
+UPDATE public.site_settings SET public_base_url = 'https://seuceritificadodigitalmei.online', updated_at = now();
+UPDATE public.cloud_automation_settings SET paced_delay_sec = 300, hourly_batch_size = 12, import_batch_size = 15, send_profile = 'aquecimento', warmup_enabled = true, updated_at = now() WHERE id = 1;

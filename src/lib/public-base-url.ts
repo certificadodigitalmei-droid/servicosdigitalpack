@@ -8,7 +8,9 @@
 import { shortToken } from './short-token';
 
 /** Usado só enquanto o domínio real ainda não foi detectado/persistido. */
-export const DEFAULT_PUBLIC_BASE_URL = 'https://certificadodigitalmeiestadual.online';
+// Mantido igual ao domínio do remetente: alinhamento entre o domínio dos links
+// e o domínio que assina o e-mail (SPF/DKIM/DMARC) é o que mais reduz spam.
+export const DEFAULT_PUBLIC_BASE_URL = 'https://seuceritificadodigitalmei.online';
 
 function normalize(url: string): string {
   return url.trim().replace(/\/+$/, '');
