@@ -96,7 +96,9 @@ export async function checkWarmup(): Promise<WarmupStatus> {
     Math.floor((startOfLocalDay(now).getTime() - startOfLocalDay(new Date(startMs)).getTime()) / 86_400_000) + 1,
   );
 
-  const dailyLimit = dailyLimitForDay(day);
+  // Aquecimento desligado NÃO libera envio infinito: continua valendo o teto
+  // diário de 100, que é a meta estável do projeto.
+  const dailyLimit = enabled ? dailyLimitForDay(day) : DAILY_CAP;
   const nextStage = WARMUP_PLAN.find((s) => s.fromDay > day);
 
   const { count } = await supabaseAdmin
