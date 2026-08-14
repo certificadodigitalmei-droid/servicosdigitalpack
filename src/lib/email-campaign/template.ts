@@ -127,8 +127,8 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   textColor: '#1f2937',
   mutedColor: '#64748b',
 
-  buttonBg: '#f8fafc',
-  buttonText: '#1e3a8a',
+  buttonBg: '#2563eb',
+  buttonText: '#ffffff',
   buttonRadius: 6,
   buttonPaddingY: 12,
   buttonPaddingX: 28,
