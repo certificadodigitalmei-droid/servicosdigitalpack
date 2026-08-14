@@ -127,8 +127,8 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   textColor: '#1f2937',
   mutedColor: '#64748b',
 
-  buttonBg: '#f8fafc',
-  buttonText: '#1e3a8a',
+  buttonBg: '#2563eb',
+  buttonText: '#ffffff',
   buttonRadius: 6,
   buttonPaddingY: 12,
   buttonPaddingX: 28,
@@ -510,7 +510,7 @@ ${D.unsubText ? `<p><a href="${esc(S(D.unsubHref || '#'))}">${esc(S(D.unsubText)
 
 
     <tr><td align="center" class="l-pad" style="padding:0 ${px}px 44px ${px}px;">
-      <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;border:1px solid #cbd5e1;text-transform:none;font-weight:600;font-size:${D.buttonSize}px;white-space:normal;mso-padding-alt:0;line-height:1.4;">${buttonLabel}</a>
+      <a href="${buttonHref}" class="l-btn" style="display:inline-block;background:${D.buttonBg};color:${D.buttonText};text-decoration:none;padding:${D.buttonPaddingY}px ${D.buttonPaddingX}px;border-radius:${D.buttonRadius}px;border:1px solid ${D.buttonBg};text-transform:none;font-weight:600;font-size:${D.buttonSize}px;white-space:normal;mso-padding-alt:0;line-height:1.4;">${buttonLabel}</a>
     </td></tr>
 
     ${D.showSignature ? `
