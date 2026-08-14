@@ -185,11 +185,13 @@ function msToNextHour() {
 const initial: State = {
   /* ... */
   subject: 'RESTRIÇÃO NO SEU CNPJ MEI',
-  delaySec: 36, // Ritmo de 100/h (3600/100 = 36s)
-  batchLimit: 100, 
-  limitMode: 'hourly', 
-  dailyLimit: 2400, 
-  hourlyLimit: 100,
+  // Aquecimento: ritmo lento e espaçado (5 min entre disparos), limite diário
+  // controlado pela escada de warmup no servidor (15 → 100/dia).
+  delaySec: 300,
+  batchLimit: 15,
+  limitMode: 'daily',
+  dailyLimit: 100,
+  hourlyLimit: 12,
   hourlyRestMin: 0, 
 
 
