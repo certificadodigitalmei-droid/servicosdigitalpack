@@ -107,7 +107,7 @@ function RotacaoModelos() {
         subject: substitute(v.subject, PREVIEW_VARS),
         html: renderHtml(v.design, PREVIEW_VARS),
         text: renderText(v.design, PREVIEW_VARS),
-        fromAddress: 'contato@certificadodigitalmeiestadual.online',
+        fromAddress: 'contato@seuceritificadodigitalmei.online',
       });
     }
     return map;
