@@ -110,20 +110,6 @@ export async function checkWarmup(): Promise<WarmupStatus> {
 
   const sentToday = count ?? 0;
 
-  if (!enabled || dailyLimit === null) {
-    return {
-      enabled,
-      day,
-      totalDays: WARMUP_DAYS,
-      startedAt,
-      dailyLimit: null,
-      sentToday,
-      remainingToday: 999_999,
-      nextLimit: nextStage?.perDay ?? null,
-      blocked: false,
-      secondsToReset,
-    };
-  }
 
   const remainingToday = Math.max(0, dailyLimit - sentToday);
   const blocked = remainingToday <= 0;
