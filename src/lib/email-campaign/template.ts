@@ -127,12 +127,12 @@ export const DEFAULT_DESIGN: CampaignDesign = {
   textColor: '#1f2937',
   mutedColor: '#64748b',
 
-  buttonBg: '#1a4a8a',
-  buttonText: '#ffffff',
+  buttonBg: '#f8fafc',
+  buttonText: '#1e3a8a',
   buttonRadius: 6,
-  buttonPaddingY: 14,
-  buttonPaddingX: 30,
-  buttonSize: 14,
+  buttonPaddingY: 12,
+  buttonPaddingX: 28,
+  buttonSize: 13,
 
   align: 'left',
   containerWidth: 640,
