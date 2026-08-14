@@ -22,6 +22,14 @@ export type SendGuardStatus = {
     secondsToReset: number;
     exhausted: boolean;
   };
+  /** Ritmo do dia: janela comercial e intervalo entre disparos. */
+  pacing: {
+    insideWindow: boolean;
+    windowStartHour: number;
+    windowEndHour: number;
+    baseSpacingSec: number;
+    reason?: string;
+  };
   queue: {
     status: 'healthy' | 'warning' | 'blocked';
     reason: string | null;
