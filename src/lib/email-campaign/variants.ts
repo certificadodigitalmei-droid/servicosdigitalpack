@@ -126,7 +126,7 @@ const RAW_VARIANTS: CampaignVariant[] = [
         IMPACTO_REGULARIDADE,
         IMPACTO_RECEITA,
       ].join('\n'),
-      buttonLabel: 'Regularizar meu CNPJ agora',
+      buttonLabel: 'Verificar situação do CNPJ',
       statusValue: 'Em aberto',
       statusNote: 'Certificado e-CNPJ não localizado. Regularização recomendada.',
     },
