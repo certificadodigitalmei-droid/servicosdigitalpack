@@ -127,23 +127,21 @@ export function SendGuardPanel() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <GuardCard
             icon={<Flame className="h-3.5 w-3.5" />}
             title="Aquecimento"
             value={
               !g
                 ? '—'
-                : g.warmup.dailyLimit === null
-                  ? 'Concluído'
+                : g.warmup.day >= g.warmup.totalDays
+                  ? 'Aquecido'
                   : `Dia ${g.warmup.day}/${g.warmup.totalDays}`
             }
             detail={
               !g
                 ? 'carregando…'
-                : g.warmup.dailyLimit === null
-                  ? 'domínio aquecido: vale apenas o limite por hora.'
-                  : `${g.warmup.sentToday}/${g.warmup.dailyLimit} hoje · restam ${g.warmup.remainingToday} · nova cota em ${humanTime(g.warmup.secondsToReset)}`
+                : `${g.warmup.sentToday}/${g.warmup.dailyLimit ?? 100} hoje · restam ${g.warmup.remainingToday} · nova cota em ${humanTime(g.warmup.secondsToReset)}`
             }
             tone={!g ? 'ok' : g.warmup.blocked ? 'stop' : g.warmup.remainingToday <= 5 ? 'warn' : 'ok'}
           />
@@ -175,6 +173,26 @@ export function SendGuardPanel() {
           />
 
           <GuardCard
+            icon={<Gauge className="h-3.5 w-3.5" />}
+            title="Ritmo do dia"
+            value={
+              !g
+                ? '—'
+                : g.pacing.insideWindow
+                  ? `1 a cada ${Math.round(g.pacing.baseSpacingSec / 60)} min`
+                  : 'Fora do horário'
+            }
+            detail={
+              !g
+                ? 'carregando…'
+                : g.pacing.insideWindow
+                  ? `disparos entre ${g.pacing.windowStartHour}h e ${g.pacing.windowEndHour}h, com intervalo variável (parece envio humano).`
+                  : (g.pacing.reason ?? 'aguardando a janela de envio.')
+            }
+            tone={!g ? 'ok' : g.pacing.insideWindow ? 'ok' : 'warn'}
+          />
+
+          <GuardCard
             icon={<CheckCircle2 className="h-3.5 w-3.5" />}
             title="Saúde da fila"
             value={
@@ -190,8 +208,8 @@ export function SendGuardPanel() {
         </div>
 
         <p className="text-[11px] text-slate-500">
-          Atualiza a cada 20 s. O limite diário sobe sozinho conforme o domínio ganha idade (20 → 40 → 80 → 150 → 300
-          → 600 → 1200 por dia). Antes de cada disparo o endereço passa por varredura de sintaxe, domínio, servidor de
+          Atualiza a cada 20 s. Aquecimento até 100 e-mails por dia (15 → 25 → 40 → 55 → 70 → 85 → 100), sempre
+          dentro do horário comercial e com intervalo variável entre os disparos. Antes de cada disparo o endereço passa por varredura de sintaxe, domínio, servidor de
           e-mail e caixas genéricas — quem reprova é descartado e nunca mais é importado.
         </p>
       </CardContent>
