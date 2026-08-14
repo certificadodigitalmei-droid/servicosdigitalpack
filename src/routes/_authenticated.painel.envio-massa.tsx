@@ -30,6 +30,7 @@ import { getSenderDnsStatus } from '@/lib/email-campaign/dns-status.functions';
 import { getEmailSenderSettings, saveEmailSenderSettings } from '@/lib/email-sender.functions';
 import { SenderDnsPanel } from '@/components/painel/SenderDnsPanel';
 import { SendGuardPanel } from '@/components/painel/SendGuardPanel';
+import { WarmupSetupCard } from '@/components/painel/WarmupSetupCard';
 import {
   FilaUnicaCard,
   SendHealthCard,
