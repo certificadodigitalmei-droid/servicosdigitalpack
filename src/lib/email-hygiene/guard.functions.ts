@@ -22,6 +22,14 @@ export type SendGuardStatus = {
     secondsToReset: number;
     exhausted: boolean;
   };
+  /** Ritmo do dia: janela comercial e intervalo entre disparos. */
+  pacing: {
+    insideWindow: boolean;
+    windowStartHour: number;
+    windowEndHour: number;
+    baseSpacingSec: number;
+    reason?: string;
+  };
   queue: {
     status: 'healthy' | 'warning' | 'blocked';
     reason: string | null;
@@ -38,15 +46,17 @@ export type SendGuardStatus = {
 export const getSendGuardStatus = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<SendGuardStatus> => {
-    const [{ checkWarmup }, { checkBounceHealth }, pipeline] = await Promise.all([
+    const [{ checkWarmup }, { checkBounceHealth }, { computePacing }, pipeline] = await Promise.all([
       import('./warmup.server'),
       import('./bounce-circuit-breaker.server'),
+      import('./pacing.server'),
       import('@/lib/pipeline/pipeline.server'),
     ]);
 
-    const [warmup, bounce, report] = await Promise.all([
+    const [warmup, bounce, pacing, report] = await Promise.all([
       checkWarmup(),
       checkBounceHealth(),
+      computePacing(),
       pipeline.evaluateSendHealth(context.supabase),
     ]);
 
@@ -59,6 +69,7 @@ export const getSendGuardStatus = createServerFn({ method: 'GET' })
     if (warmup.blocked) blockers.push(warmup.reason ?? 'cota de aquecimento do dia atingida');
     if (report.status === 'blocked' && report.reason) blockers.push(report.reason);
 
+    if (!pacing.insideWindow && pacing.reason) warnings.push(pacing.reason);
     if (report.status === 'warning' && report.reason) warnings.push(report.reason);
     if (!bounce.blocked && bounce.rate > 0.01 && bounce.sent >= 10) {
       warnings.push(`bounce em ${(bounce.rate * 100).toFixed(1)}% (limite seguro 2%)`);
@@ -74,6 +85,13 @@ export const getSendGuardStatus = createServerFn({ method: 'GET' })
       warnings,
       warmup,
       bounce,
+      pacing: {
+        insideWindow: pacing.insideWindow,
+        windowStartHour: pacing.windowStartHour,
+        windowEndHour: pacing.windowEndHour,
+        baseSpacingSec: pacing.baseSpacingSec,
+        reason: pacing.reason,
+      },
       hourly: {
         limit: report.window.limit,
         safeLimit,
