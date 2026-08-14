@@ -159,7 +159,7 @@ export const DEFAULT_DESIGN: CampaignDesign = {
     'Prezado(a) *{{NOME_TITULAR}}*,\n\nNa consulta ao CNPJ *{{CNPJ}}* não localizamos um Certificado Digital ativo. Confira os dados abaixo:',
   cardTitle: 'Dados do cadastro',
   showCard: true,
-  buttonLabel: 'Regularizar meu CNPJ',
+  buttonLabel: 'Verificar situação do CNPJ',
   buttonHref: '{{LINK_PUBLICO}}',
 
   showWarning: false,
