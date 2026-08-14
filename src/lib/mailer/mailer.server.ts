@@ -4,10 +4,10 @@
 import { EmailAPIError, sendLovableEmail } from '@lovable.dev/email-js';
 
 /** Subdomínio verificado e delegado aos nameservers da Lovable. */
-export const SENDER_DOMAIN = 'notify.certificadodigitalmeiestadual.online';
+export const SENDER_DOMAIN = 'notify.seuceritificadodigitalmei.online';
 
 const DEFAULT_FROM_NAME = 'Digital Certifica A1';
-const DEFAULT_FROM_EMAIL = 'contato@certificadodigitalmeiestadual.online';
+const DEFAULT_FROM_EMAIL = 'contato@seuceritificadodigitalmei.online';
 
 export class MailError extends Error {
   constructor(

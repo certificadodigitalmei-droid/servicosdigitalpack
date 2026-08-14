@@ -4,9 +4,9 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { DEFAULT_DESIGN, renderHtml, renderText, type CampaignDesign, type Vars } from './template';
 import { recordEmailAudit } from '@/lib/emails/email-audit';
 
-const SENDER_DOMAIN = 'notify.certificadodigitalmeiestadual.online';
-export const ROOT_SENDER_DOMAIN = 'certificadodigitalmeiestadual.online';
-const FALLBACK_FROM_ADDRESS = 'contato@certificadodigitalmeiestadual.online';
+const SENDER_DOMAIN = 'notify.seuceritificadodigitalmei.online';
+export const ROOT_SENDER_DOMAIN = 'seuceritificadodigitalmei.online';
+const FALLBACK_FROM_ADDRESS = 'contato@seuceritificadodigitalmei.online';
 const FALLBACK_FROM_NAME = 'Digital Certifica A1';
 const TEST_RECIPIENT_ENV = 'CAMPAIGN_TEST_RECIPIENT';
 

@@ -10,11 +10,11 @@ import { ReauthenticationEmail } from '@/lib/email-templates/reauthentication'
 
 // Configuration
 const SITE_NAME = "certificadodigitalccmei"
-const SENDER_DOMAIN = "notify.certificadodigitalmeiestadual.online"
-const ROOT_DOMAIN = "certificadodigitalmeiestadual.online"
+const SENDER_DOMAIN = "notify.seuceritificadodigitalmei.online"
+const ROOT_DOMAIN = "seuceritificadodigitalmei.online"
 const SITE_URL = `https://${ROOT_DOMAIN}`
 const FALLBACK_FROM_NAME = "Digital Certifica A1"
-const FALLBACK_FROM_EMAIL = "contato@certificadodigitalmeiestadual.online"
+const FALLBACK_FROM_EMAIL = "contato@seuceritificadodigitalmei.online"
 
 async function loadSenderFromSettings(): Promise<{ name: string; email: string }> {
   try {
