@@ -152,6 +152,7 @@ function PanelLayout() {
         { title: 'Importação Automática', icon: CloudDownload, to: '/painel/importacao-automatica' },
         { title: 'Empresas Importadas', icon: Database, to: '/painel/empresas-importadas' },
         { title: 'Links Gerados', icon: LinkIcon, to: '/painel/links-gerados' },
+        { title: 'Planilha Lista', icon: ClipboardList, to: '/painel/planilha-lista' },
         { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
         
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
