@@ -28,6 +28,7 @@ import { Route as ApiInternalCasaDosDadosWorkerRouteImport } from './routes/api/
 import { Route as AuthenticatedPainelVisualPaginaRouteImport } from './routes/_authenticated.painel.visual-pagina'
 import { Route as AuthenticatedPainelPrecosRouteImport } from './routes/_authenticated.painel.precos'
 import { Route as AuthenticatedPainelPopUpSiteRouteImport } from './routes/_authenticated.painel.pop-up-site'
+import { Route as AuthenticatedPainelPlanilhaListaRouteImport } from './routes/_authenticated.painel.planilha-lista'
 import { Route as AuthenticatedPainelPagamentosRouteImport } from './routes/_authenticated.painel.pagamentos'
 import { Route as AuthenticatedPainelModelosEmailRouteImport } from './routes/_authenticated.painel.modelos-email'
 import { Route as AuthenticatedPainelLinksGeradosRouteImport } from './routes/_authenticated.painel.links-gerados'
@@ -151,6 +152,12 @@ const AuthenticatedPainelPopUpSiteRoute =
   AuthenticatedPainelPopUpSiteRouteImport.update({
     id: '/pop-up-site',
     path: '/pop-up-site',
+    getParentRoute: () => AuthenticatedPainelRoute,
+  } as any)
+const AuthenticatedPainelPlanilhaListaRoute =
+  AuthenticatedPainelPlanilhaListaRouteImport.update({
+    id: '/planilha-lista',
+    path: '/planilha-lista',
     getParentRoute: () => AuthenticatedPainelRoute,
   } as any)
 const AuthenticatedPainelPagamentosRoute =
@@ -314,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/painel/modelos-email': typeof AuthenticatedPainelModelosEmailRoute
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
+  '/painel/planilha-lista': typeof AuthenticatedPainelPlanilhaListaRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
   '/painel/visual-pagina': typeof AuthenticatedPainelVisualPaginaRoute
@@ -355,6 +363,7 @@ export interface FileRoutesByTo {
   '/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/painel/modelos-email': typeof AuthenticatedPainelModelosEmailRoute
   '/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
+  '/painel/planilha-lista': typeof AuthenticatedPainelPlanilhaListaRoute
   '/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/painel/precos': typeof AuthenticatedPainelPrecosRoute
   '/painel/visual-pagina': typeof AuthenticatedPainelVisualPaginaRoute
@@ -400,6 +409,7 @@ export interface FileRoutesById {
   '/_authenticated/painel/links-gerados': typeof AuthenticatedPainelLinksGeradosRoute
   '/_authenticated/painel/modelos-email': typeof AuthenticatedPainelModelosEmailRoute
   '/_authenticated/painel/pagamentos': typeof AuthenticatedPainelPagamentosRoute
+  '/_authenticated/painel/planilha-lista': typeof AuthenticatedPainelPlanilhaListaRoute
   '/_authenticated/painel/pop-up-site': typeof AuthenticatedPainelPopUpSiteRoute
   '/_authenticated/painel/precos': typeof AuthenticatedPainelPrecosRoute
   '/_authenticated/painel/visual-pagina': typeof AuthenticatedPainelVisualPaginaRoute
@@ -445,6 +455,7 @@ export interface FileRouteTypes {
     | '/painel/links-gerados'
     | '/painel/modelos-email'
     | '/painel/pagamentos'
+    | '/painel/planilha-lista'
     | '/painel/pop-up-site'
     | '/painel/precos'
     | '/painel/visual-pagina'
@@ -486,6 +497,7 @@ export interface FileRouteTypes {
     | '/painel/links-gerados'
     | '/painel/modelos-email'
     | '/painel/pagamentos'
+    | '/painel/planilha-lista'
     | '/painel/pop-up-site'
     | '/painel/precos'
     | '/painel/visual-pagina'
@@ -530,6 +542,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel/links-gerados'
     | '/_authenticated/painel/modelos-email'
     | '/_authenticated/painel/pagamentos'
+    | '/_authenticated/painel/planilha-lista'
     | '/_authenticated/painel/pop-up-site'
     | '/_authenticated/painel/precos'
     | '/_authenticated/painel/visual-pagina'
@@ -706,6 +719,13 @@ declare module '@tanstack/react-router' {
       path: '/pop-up-site'
       fullPath: '/painel/pop-up-site'
       preLoaderRoute: typeof AuthenticatedPainelPopUpSiteRouteImport
+      parentRoute: typeof AuthenticatedPainelRoute
+    }
+    '/_authenticated/painel/planilha-lista': {
+      id: '/_authenticated/painel/planilha-lista'
+      path: '/planilha-lista'
+      fullPath: '/painel/planilha-lista'
+      preLoaderRoute: typeof AuthenticatedPainelPlanilhaListaRouteImport
       parentRoute: typeof AuthenticatedPainelRoute
     }
     '/_authenticated/painel/pagamentos': {
@@ -904,6 +924,7 @@ interface AuthenticatedPainelRouteChildren {
   AuthenticatedPainelLinksGeradosRoute: typeof AuthenticatedPainelLinksGeradosRoute
   AuthenticatedPainelModelosEmailRoute: typeof AuthenticatedPainelModelosEmailRoute
   AuthenticatedPainelPagamentosRoute: typeof AuthenticatedPainelPagamentosRoute
+  AuthenticatedPainelPlanilhaListaRoute: typeof AuthenticatedPainelPlanilhaListaRoute
   AuthenticatedPainelPopUpSiteRoute: typeof AuthenticatedPainelPopUpSiteRoute
   AuthenticatedPainelPrecosRoute: typeof AuthenticatedPainelPrecosRoute
   AuthenticatedPainelVisualPaginaRoute: typeof AuthenticatedPainelVisualPaginaRoute
@@ -930,6 +951,7 @@ const AuthenticatedPainelRouteChildren: AuthenticatedPainelRouteChildren = {
   AuthenticatedPainelLinksGeradosRoute: AuthenticatedPainelLinksGeradosRoute,
   AuthenticatedPainelModelosEmailRoute: AuthenticatedPainelModelosEmailRoute,
   AuthenticatedPainelPagamentosRoute: AuthenticatedPainelPagamentosRoute,
+  AuthenticatedPainelPlanilhaListaRoute: AuthenticatedPainelPlanilhaListaRoute,
   AuthenticatedPainelPopUpSiteRoute: AuthenticatedPainelPopUpSiteRoute,
   AuthenticatedPainelPrecosRoute: AuthenticatedPainelPrecosRoute,
   AuthenticatedPainelVisualPaginaRoute: AuthenticatedPainelVisualPaginaRoute,

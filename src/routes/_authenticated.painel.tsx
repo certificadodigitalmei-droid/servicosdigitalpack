@@ -152,6 +152,7 @@ function PanelLayout() {
         { title: 'Importação Automática', icon: CloudDownload, to: '/painel/importacao-automatica' },
         { title: 'Empresas Importadas', icon: Database, to: '/painel/empresas-importadas' },
         { title: 'Links Gerados', icon: LinkIcon, to: '/painel/links-gerados' },
+        { title: 'Planilha Lista', icon: ClipboardList, to: '/painel/planilha-lista' },
         { title: 'Pagamentos', icon: DollarSign, to: '/painel/pagamentos' },
         
         { title: 'Envio em Massa', icon: Send, to: '/painel/envio-massa' },
@@ -185,6 +186,7 @@ function PanelLayout() {
     if (path === '/painel/empresas-importadas') return 'Empresas Importadas';
     if (path.startsWith('/painel/empresas-importadas/')) return 'Detalhes da Empresa';
     if (path === '/painel/links-gerados') return 'Links Gerados';
+    if (path === '/painel/planilha-lista') return 'Planilha Lista';
     if (path === '/painel/pagamentos') return 'Pagamentos';
     if (path === '/painel/configuracoes-pagamento') return 'Configurações de Pagamento';
     if (path === '/painel/precos') return 'Preços';
