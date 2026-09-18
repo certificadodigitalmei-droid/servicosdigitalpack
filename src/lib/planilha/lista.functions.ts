@@ -10,11 +10,6 @@ export type PlanilhaRow = {
   link: string;
 };
 
-/** Início/fim do dia (horário de Brasília, UTC-3) em ISO UTC. */
-function dayRangeBR(date: string): { from: string; to: string } {
-  return { from: `${date}T03:00:00.000Z`, to: `${date}T26:59:59.999Z`.replace('T26', 'T03') };
-}
-
 function nextDay(date: string): string {
   const d = new Date(`${date}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + 1);
@@ -80,5 +75,3 @@ export const listPlanilhaLista = createServerFn({ method: 'GET' })
 
     return { date: data.date, rows };
   });
-
-export { dayRangeBR };
