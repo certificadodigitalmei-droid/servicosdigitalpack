@@ -74,7 +74,7 @@ export const listPlanilhaLista = createServerFn({ method: 'GET' })
       if (!phone) continue; // somente celular válido
       const token = tokenByCompany.get(String(c.id));
       rows.push({
-        razaoSocial: cleanCompanyName(c.razao_social_original ?? c.nome_titular_exibicao ?? c.nome_fantasia),
+        razaoSocial: firstWordName(c.razao_social_original ?? c.nome_titular_exibicao ?? c.nome_fantasia),
         cnpj: String(c.cnpj ?? '').replace(/\D/g, ''),
         celular: formatPhoneBR(phone),
         link: token ? `${base}/c/${token}` : '',
