@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { resolveCompanyMobile } from '@/lib/whatsapp/ready-queue.server';
+import { cleanCompanyName } from '@/lib/format';
 
 export type PlanilhaRow = {
   razaoSocial: string;
@@ -66,7 +67,7 @@ export const listPlanilhaLista = createServerFn({ method: 'GET' })
       if (!phone) continue; // somente celular válido
       const token = tokenByCompany.get(String(c.id));
       rows.push({
-        razaoSocial: String(c.razao_social_original ?? c.nome_titular_exibicao ?? c.nome_fantasia ?? '').trim(),
+        razaoSocial: cleanCompanyName(c.razao_social_original ?? c.nome_titular_exibicao ?? c.nome_fantasia),
         cnpj: String(c.cnpj ?? '').replace(/\D/g, ''),
         celular: formatPhoneBR(phone),
         link: token ? `${base}/c/${token}` : '',
