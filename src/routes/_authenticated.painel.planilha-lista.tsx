@@ -1,0 +1,170 @@
+import { useCallback, useEffect, useState } from 'react';
+import { createFileRoute } from '@tanstack/react-router';
+import { useServerFn } from '@tanstack/react-start';
+import { Download, Loader2, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { toast } from 'sonner';
+import { formatCNPJ } from '@/lib/format';
+import { listPlanilhaLista, type PlanilhaRow } from '@/lib/planilha/lista.functions';
+
+export const Route = createFileRoute('/_authenticated/painel/planilha-lista')({
+  head: () => ({
+    meta: [
+      { title: 'Planilha Lista | Painel' },
+      {
+        name: 'description',
+        content: 'Baixe a planilha das empresas importadas por data com razão social, CNPJ, celular e link.',
+      },
+      { property: 'og:title', content: 'Planilha Lista | Painel' },
+      {
+        property: 'og:description',
+        content: 'Exporte razão social, CNPJ, celular e link das empresas importadas no dia escolhido.',
+      },
+      { property: 'og:type', content: 'website' },
+      { name: 'twitter:card', content: 'summary' },
+    ],
+  }),
+  component: PlanilhaListaPage,
+});
+
+function todayBR(): string {
+  const now = new Date();
+  const br = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  return br.toISOString().slice(0, 10);
+}
+
+function csvEscape(v: string): string {
+  const s = String(v ?? '');
+  return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function PlanilhaListaPage() {
+  const [date, setDate] = useState(todayBR());
+  const [rows, setRows] = useState<PlanilhaRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const fetchList = useServerFn(listPlanilhaLista);
+
+  const load = useCallback(
+    async (d: string) => {
+      setLoading(true);
+      try {
+        const r = await fetchList({ data: { date: d } });
+        setRows(r.rows);
+        if (!r.rows.length) toast.info('Nenhuma empresa importada nessa data.');
+      } catch (e: any) {
+        toast.error(e?.message ?? 'Falha ao carregar a lista.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchList],
+  );
+
+  useEffect(() => {
+    void load(todayBR());
+  }, [load]);
+
+  const download = () => {
+    if (!rows.length) {
+      toast.error('Nada para baixar.');
+      return;
+    }
+    const header = ['Razão Social', 'CNPJ', 'Número Celular', 'Link'];
+    const lines = [
+      header.join(';'),
+      ...rows.map((r) =>
+        [csvEscape(r.razaoSocial), csvEscape(formatCNPJ(r.cnpj) || r.cnpj), csvEscape(r.celular), csvEscape(r.link)].join(';'),
+      ),
+    ];
+    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lista-empresas-${date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5" /> Planilha Lista
+          </CardTitle>
+          <CardDescription>
+            Escolha a data de importação e baixe a planilha com razão social, CNPJ, celular e link do site.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="data">Data</Label>
+            <Input
+              id="data"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-[180px]"
+            />
+          </div>
+          <Button variant="outline" onClick={() => void load(date)} disabled={loading}>
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Buscar
+          </Button>
+          <Button onClick={download} disabled={loading || !rows.length}>
+            <Download className="mr-2 h-4 w-4" /> Baixar planilha
+          </Button>
+          <Badge variant="secondary">{rows.length} empresa(s)</Badge>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Prévia</CardTitle>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Razão Social</TableHead>
+                <TableHead>CNPJ</TableHead>
+                <TableHead>Número Celular</TableHead>
+                <TableHead>Link</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                    {loading ? 'Carregando...' : 'Nenhuma empresa nessa data.'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rows.map((r) => (
+                  <TableRow key={r.cnpj}>
+                    <TableCell className="max-w-[280px] truncate">{r.razaoSocial || '—'}</TableCell>
+                    <TableCell className="font-mono text-xs">{formatCNPJ(r.cnpj) || r.cnpj}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.celular}</TableCell>
+                    <TableCell className="max-w-[320px] truncate text-xs text-blue-600">{r.link || '—'}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
