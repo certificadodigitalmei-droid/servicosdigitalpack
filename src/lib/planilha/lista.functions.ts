@@ -23,6 +23,13 @@ function formatPhoneBR(e164: string): string {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
+function firstWordName(name?: string | null): string {
+  const clean = cleanCompanyName(name);
+  if (!clean || clean === '—') return '—';
+  const first = clean.split(/\s+/)[0] ?? '';
+  return first ? first : '—';
+}
+
 export const listPlanilhaLista = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).parse(data))
