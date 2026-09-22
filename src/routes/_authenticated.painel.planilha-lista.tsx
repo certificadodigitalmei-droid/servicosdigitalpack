@@ -81,11 +81,11 @@ function PlanilhaListaPage() {
       toast.error('Nada para baixar.');
       return;
     }
-    const header = ['Razão Social', 'CNPJ', 'Número Celular', 'Link'];
+    const header = ['phone', 'nome', 'cnpj', 'link'];
     const lines = [
       header.join(';'),
       ...rows.map((r) =>
-        [csvEscape(r.razaoSocial), csvEscape(formatCNPJ(r.cnpj) || r.cnpj), csvEscape(r.celular), csvEscape(r.link)].join(';'),
+        [csvEscape(r.celular), csvEscape(capitalize(r.razaoSocial)), csvEscape(shortCNPJ(r.cnpj)), csvEscape(r.link)].join(';'),
       ),
     ];
     const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
