@@ -62,10 +62,31 @@ function shortCNPJ(raw: string): string {
   return `${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
 
+const storageKey = (d: string) => `planilha-baixadas-${d}`;
+
+function loadDownloaded(d: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(storageKey(d));
+    const arr = raw ? (JSON.parse(raw) as string[]) : [];
+    return new Set(arr);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDownloaded(d: string, set: Set<string>) {
+  try {
+    localStorage.setItem(storageKey(d), JSON.stringify([...set]));
+  } catch {
+    /* sem espaço no navegador: segue sem gravar */
+  }
+}
+
 function PlanilhaListaPage() {
   const [date, setDate] = useState(todayBR());
   const [rows, setRows] = useState<PlanilhaRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [downloaded, setDownloaded] = useState<Set<string>>(() => loadDownloaded(todayBR()));
   const fetchList = useServerFn(listPlanilhaLista);
 
   const load = useCallback(
