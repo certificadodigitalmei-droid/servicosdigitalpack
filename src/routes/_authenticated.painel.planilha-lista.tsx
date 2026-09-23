@@ -47,7 +47,7 @@ function todayBR(): string {
 
 function csvEscape(v: string): string {
   const s = String(v ?? '');
-  return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 function capitalize(v: string): string {
