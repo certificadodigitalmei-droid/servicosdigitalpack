@@ -208,7 +208,7 @@ function PlanilhaListaPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Prévia</CardTitle>
+          <CardTitle className="text-base">Faltam baixar ({remaining.length})</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
@@ -221,14 +221,18 @@ function PlanilhaListaPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.length === 0 ? (
+              {remaining.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
-                    {loading ? 'Carregando...' : 'Nenhuma empresa nessa data.'}
+                    {loading
+                      ? 'Carregando...'
+                      : rows.length
+                        ? 'Tudo dessa data já foi baixado.'
+                        : 'Nenhuma empresa nessa data.'}
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((r) => (
+                remaining.map((r) => (
                   <TableRow key={r.cnpj}>
                     <TableCell className="max-w-[280px] truncate">{r.razaoSocial || '—'}</TableCell>
                     <TableCell className="font-mono text-xs">{formatCNPJ(r.cnpj) || r.cnpj}</TableCell>
@@ -241,6 +245,37 @@ function PlanilhaListaPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {downloadedRows.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Já baixadas ({downloadedRows.length})</CardTitle>
+            <CardDescription>Essas já saíram em planilhas anteriores e não entram nos próximos downloads.</CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Razão Social</TableHead>
+                  <TableHead>CNPJ</TableHead>
+                  <TableHead>Número Celular</TableHead>
+                  <TableHead>Link</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {downloadedRows.map((r) => (
+                  <TableRow key={r.cnpj} className="opacity-60">
+                    <TableCell className="max-w-[280px] truncate">{r.razaoSocial || '—'}</TableCell>
+                    <TableCell className="font-mono text-xs">{formatCNPJ(r.cnpj) || r.cnpj}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.celular}</TableCell>
+                    <TableCell className="max-w-[320px] truncate text-xs text-blue-600">{r.link || '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
