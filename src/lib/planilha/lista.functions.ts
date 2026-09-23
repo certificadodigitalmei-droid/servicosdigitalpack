@@ -35,7 +35,6 @@ export const listPlanilhaLista = createServerFn({ method: 'GET' })
   .inputValidator((data) => z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).parse(data))
   .handler(async ({ data }): Promise<{ date: string; rows: PlanilhaRow[] }> => {
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-    const { ensurePublicBaseUrl } = await import('@/lib/public-base-url.server');
     const db = supabaseAdmin as any;
 
     const from = `${data.date}T03:00:00.000Z`;
