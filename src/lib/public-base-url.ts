@@ -8,9 +8,16 @@
 import { shortToken } from './short-token';
 
 /** Usado só enquanto o domínio real ainda não foi detectado/persistido. */
-// Mantido igual ao domínio do remetente: alinhamento entre o domínio dos links
-// e o domínio que assina o e-mail (SPF/DKIM/DMARC) é o que mais reduz spam.
-export const DEFAULT_PUBLIC_BASE_URL = 'https://seuceritificadodigitalmei.online';
+/** Domínio base de TODOS os links públicos (site, e-mails, checkout). */
+export const DEFAULT_PUBLIC_BASE_URL = 'https://certificadodigitalmeiestadual.online';
+
+/**
+ * Domínio exclusivo dos links curtos (SMS/planilha): pequeno e chamativo.
+ * Ao clicar, /s/:code redireciona para o domínio normal acima.
+ * Nunca deve virar a base dos links do site/e-mails.
+ */
+export const SHORT_LINK_BASE_URL = 'https://www.meu-pj-mei.online';
+const SHORT_LINK_HOST = 'meu-pj-mei.online';
 
 function normalize(url: string): string {
   return url.trim().replace(/\/+$/, '');
@@ -26,6 +33,7 @@ export function isUsablePublicOrigin(origin: string | null | undefined): boolean
     if (h === 'localhost' || h === '127.0.0.1') return false;
     if (h.endsWith('.lovable.app') || h.endsWith('.lovableproject.com')) return false;
     if (h.endsWith('.lovable.dev')) return false;
+    if (h === SHORT_LINK_HOST || h.endsWith(`.${SHORT_LINK_HOST}`)) return false;
     return h.includes('.');
   } catch {
     return false;

@@ -35,12 +35,14 @@ export const listPlanilhaLista = createServerFn({ method: 'GET' })
   .inputValidator((data) => z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).parse(data))
   .handler(async ({ data }): Promise<{ date: string; rows: PlanilhaRow[] }> => {
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-    const { ensurePublicBaseUrl } = await import('@/lib/public-base-url.server');
     const db = supabaseAdmin as any;
 
     const from = `${data.date}T03:00:00.000Z`;
     const to = `${nextDay(data.date)}T02:59:59.999Z`;
-    const base = (await ensurePublicBaseUrl()).replace(/\/+$/, '');
+    // Links curtos saem sempre pelo domínio pequeno (meu-pj-mei.online);
+    // ao clicar, /s/:code leva para o site normal.
+    const { SHORT_LINK_BASE_URL } = await import('@/lib/public-base-url');
+    const base = SHORT_LINK_BASE_URL;
 
     const { data: companies } = await db
       .from('companies')
