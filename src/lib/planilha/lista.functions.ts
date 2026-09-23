@@ -40,7 +40,10 @@ export const listPlanilhaLista = createServerFn({ method: 'GET' })
 
     const from = `${data.date}T03:00:00.000Z`;
     const to = `${nextDay(data.date)}T02:59:59.999Z`;
-    const base = (await ensurePublicBaseUrl()).replace(/\/+$/, '');
+    // Links curtos saem sempre pelo domínio pequeno (meu-pj-mei.online);
+    // ao clicar, /s/:code leva para o site normal.
+    const { SHORT_LINK_BASE_URL } = await import('@/lib/public-base-url');
+    const base = SHORT_LINK_BASE_URL;
 
     const { data: companies } = await db
       .from('companies')
