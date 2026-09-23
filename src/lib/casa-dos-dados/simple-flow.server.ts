@@ -176,9 +176,9 @@ export async function runImportBatch(
   toEnrich = toEnrich.filter((c) => !blockedImportCnpjs.has(c.cnpj));
   skipped += beforeBlockFilter - toEnrich.length;
 
-  for (const { cnpj, raw: rawBase } of toEnrich) {
+  const processOne = async ({ cnpj, raw: rawBase }: (typeof toEnrich)[number]) => {
     // Para assim que atingir a quantidade pedida de empresas PRONTAS.
-    if (imported.length >= input.limit) break;
+    if (imported.length >= input.limit) return;
 
 
     const nBase = normalizeCasaDosDadosCompany(rawBase);
@@ -217,7 +217,7 @@ export async function runImportBatch(
           cnpj,
           error: `pulado: ${emailValidation.reason || 'e-mail inválido'}`,
         });
-        continue;
+        return;
       }
 
       // Varredura anti-bounce na importação: CNPJ/e-mail já descartados
@@ -232,7 +232,7 @@ export async function runImportBatch(
           .maybeSingle();
         if (blocked) {
           skipped++;
-          continue;
+          return;
         }
         if (validEmail) {
           const { assessBounceRisk, discardRiskyCompany } = await import(
@@ -247,7 +247,7 @@ export async function runImportBatch(
                 .insert({ cnpj, reason: verdict.reason ?? 'risco de bounce', source: 'pre_send_scan' } as any);
             } catch { /* já existe */ }
             failed.push({ cnpj, error: `descartado: ${verdict.reason ?? 'risco de bounce'}` });
-            continue;
+            return;
           }
         }
       }
@@ -349,12 +349,12 @@ export async function runImportBatch(
           source: 'importacao_simples',
         });
         failed.push({ cnpj, error: 'descartado: sem celular brasileiro válido' });
-        continue;
+        return;
       }
       const mobileE164 = mobileCheck.e164;
       if (await isPhoneBlocked(mobileE164)) {
         skipped++;
-        continue;
+        return;
       }
 
       const companyPayload: Record<string, unknown> = {
@@ -531,7 +531,20 @@ export async function runImportBatch(
     } catch (err: any) {
       failed.push({ cnpj, error: err?.message ?? String(err) });
     }
-  }
+  };
+
+  // Enriquecimento em paralelo (vários CNPJs ao mesmo tempo) — muito mais rápido.
+  const CONCURRENCY = 8;
+  let cursor = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, toEnrich.length) }, async () => {
+      while (cursor < toEnrich.length && imported.length < input.limit) {
+        const item = toEnrich[cursor++];
+        await processOne(item);
+      }
+    }),
+  );
+  if (imported.length > input.limit) imported.length = input.limit;
 
   return {
     ok: true,
