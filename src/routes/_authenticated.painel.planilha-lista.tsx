@@ -183,7 +183,7 @@ function PlanilhaListaPage() {
               id="data"
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={(e) => pickDate(e.target.value)}
               className="w-[180px]"
             />
           </div>
@@ -191,10 +191,18 @@ function PlanilhaListaPage() {
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Buscar
           </Button>
-          <Button onClick={download} disabled={loading || !rows.length}>
-            <Download className="mr-2 h-4 w-4" /> Baixar planilha
+          <Button onClick={() => download('all')} disabled={loading || !remaining.length}>
+            <Download className="mr-2 h-4 w-4" /> Baixar tudo ({remaining.length})
+          </Button>
+          <Button variant="secondary" onClick={() => download('batch')} disabled={loading || !remaining.length}>
+            <Download className="mr-2 h-4 w-4" /> Baixar 1000
+          </Button>
+          <Button variant="ghost" onClick={resetDownloaded} disabled={loading || !downloaded.size}>
+            Limpar marcação
           </Button>
           <Badge variant="secondary">{rows.length} empresa(s)</Badge>
+          <Badge variant="outline">{downloadedRows.length} já baixada(s)</Badge>
+          <Badge>{remaining.length} faltam</Badge>
         </CardContent>
       </Card>
 
