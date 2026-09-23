@@ -74,6 +74,7 @@ function shouldBypassGeoBlock(url: URL): boolean {
 const ALLOWED_PATH_PREFIXES = [
   "/c/",
   "/acesso/",
+  "/s/",
   "/certificado-mei/",
   "/checkout",
   "/auth",
