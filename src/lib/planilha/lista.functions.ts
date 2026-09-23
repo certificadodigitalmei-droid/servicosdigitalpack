@@ -44,15 +44,23 @@ export const listPlanilhaLista = createServerFn({ method: 'GET' })
     const { SHORT_LINK_BASE_URL } = await import('@/lib/public-base-url');
     const base = SHORT_LINK_BASE_URL;
 
-    const { data: companies } = await db
-      .from('companies')
-      .select('id,cnpj,razao_social_original,nome_titular_exibicao,nome_fantasia,ddd,telefones,whatsapp_phone_e164')
-      .gte('created_at', from)
-      .lte('created_at', to)
-      .order('created_at', { ascending: true })
-      .limit(5000);
-
-    const list = (companies ?? []) as any[];
+    // O banco devolve no máximo 1000 linhas por consulta: paginamos até trazer todas.
+    const list: any[] = [];
+    const PAGE = 1000;
+    for (let offset = 0; offset < 200000; offset += PAGE) {
+      const { data: companies, error } = await db
+        .from('companies')
+        .select('id,cnpj,razao_social_original,nome_titular_exibicao,nome_fantasia,ddd,telefones,whatsapp_phone_e164')
+        .gte('created_at', from)
+        .lte('created_at', to)
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(offset, offset + PAGE - 1);
+      if (error) throw new Error(error.message);
+      const batch = (companies ?? []) as any[];
+      list.push(...batch);
+      if (batch.length < PAGE) break;
+    }
     if (!list.length) return { date: data.date, rows: [] };
 
     const ids = list.map((c) => String(c.id));
