@@ -109,9 +109,19 @@ function PlanilhaListaPage() {
     void load(todayBR());
   }, [load]);
 
-  const download = () => {
-    if (!rows.length) {
-      toast.error('Nada para baixar.');
+  const pickDate = (d: string) => {
+    setDate(d);
+    setDownloaded(loadDownloaded(d));
+  };
+
+  // O que já foi baixado fica marcado e não se mistura com o que falta.
+  const remaining = rows.filter((r) => !downloaded.has(r.cnpj));
+  const downloadedRows = rows.filter((r) => downloaded.has(r.cnpj));
+
+  const download = (mode: 'all' | 'batch') => {
+    const slice = mode === 'all' ? remaining : remaining.slice(0, 1000);
+    if (!slice.length) {
+      toast.error(remaining.length ? 'Nada para baixar.' : 'Tudo dessa data já foi baixado.');
       return;
     }
     const toNumero = (p: string) => {
@@ -122,7 +132,7 @@ function PlanilhaListaPage() {
     const header = ['numero', 'nome', 'link'];
     const lines = [
       header.join(','),
-      ...rows.map((r) =>
+      ...slice.map((r) =>
         [csvEscape(toNumero(r.celular)), csvEscape(capitalize(r.razaoSocial)), csvEscape(r.link)].join(','),
       ),
     ];
@@ -131,9 +141,28 @@ function PlanilhaListaPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `lista-empresas-${date}.csv`;
+    a.download =
+      mode === 'all'
+        ? `lista-empresas-${date}-completa.csv`
+        : `lista-empresas-${date}-lote-${Math.floor(downloaded.size / 1000) + 1}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+
+    const next = new Set(downloaded);
+    for (const r of slice) next.add(r.cnpj);
+    setDownloaded(next);
+    saveDownloaded(date, next);
+    toast.success(
+      mode === 'all'
+        ? `Baixou tudo: ${slice.length} empresa(s).`
+        : `Baixou ${slice.length}. Faltam ${remaining.length - slice.length}.`,
+    );
+  };
+
+  const resetDownloaded = () => {
+    setDownloaded(new Set());
+    saveDownloaded(date, new Set());
+    toast.info('Marcação de baixadas limpa para essa data.');
   };
 
   return (
