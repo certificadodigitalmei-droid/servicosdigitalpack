@@ -47,7 +47,7 @@ function todayBR(): string {
 
 function csvEscape(v: string): string {
   const s = String(v ?? '');
-  return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 function capitalize(v: string): string {
@@ -93,14 +93,20 @@ function PlanilhaListaPage() {
       toast.error('Nada para baixar.');
       return;
     }
-    const header = ['phone', 'nome', 'cnpj', 'link'];
+    const toNumero = (p: string) => {
+      const d = String(p || '').replace(/\D/g, '');
+      if (!d) return '';
+      return d.startsWith('55') && d.length >= 12 ? d : `55${d}`;
+    };
+    const header = ['numero', 'nome', 'link'];
     const lines = [
-      header.join(';'),
+      header.join(','),
       ...rows.map((r) =>
-        [csvEscape(r.celular), csvEscape(capitalize(r.razaoSocial)), csvEscape(shortCNPJ(r.cnpj)), csvEscape(r.link)].join(';'),
+        [csvEscape(toNumero(r.celular)), csvEscape(capitalize(r.razaoSocial)), csvEscape(r.link)].join(','),
       ),
     ];
-    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    void shortCNPJ;
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
