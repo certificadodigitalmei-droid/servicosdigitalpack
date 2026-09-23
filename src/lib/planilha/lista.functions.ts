@@ -77,7 +77,7 @@ export const listPlanilhaLista = createServerFn({ method: 'GET' })
         razaoSocial: firstWordName(c.razao_social_original ?? c.nome_titular_exibicao ?? c.nome_fantasia),
         cnpj: String(c.cnpj ?? '').replace(/\D/g, ''),
         celular: formatPhoneBR(phone),
-        link: token ? `${base}/c/${token}` : '',
+        link: token ? `${base}/s/${token.slice(0, 8)}` : '',
       });
     }
 

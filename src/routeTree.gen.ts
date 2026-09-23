@@ -15,6 +15,7 @@ import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SCodeRouteImport } from './routes/s.$code'
 import { Route as CheckoutTokenRouteImport } from './routes/checkout_.$token'
 import { Route as CertificadoMeiTokenRouteImport } from './routes/certificado-mei.$token'
 import { Route as CTokenRouteImport } from './routes/c.$token'
@@ -80,6 +81,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SCodeRoute = SCodeRouteImport.update({
+  id: '/s/$code',
+  path: '/s/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutTokenRoute = CheckoutTokenRouteImport.update({
@@ -308,6 +314,7 @@ export interface FileRoutesByFullPath {
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
+  '/s/$code': typeof SCodeRoute
   '/painel/api-casa-dos-dados': typeof AuthenticatedPainelApiCasaDosDadosRoute
   '/painel/auditoria': typeof AuthenticatedPainelAuditoriaRoute
   '/painel/configuracoes-pagamento': typeof AuthenticatedPainelConfiguracoesPagamentoRoute
@@ -351,6 +358,7 @@ export interface FileRoutesByTo {
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
+  '/s/$code': typeof SCodeRoute
   '/painel/api-casa-dos-dados': typeof AuthenticatedPainelApiCasaDosDadosRoute
   '/painel/auditoria': typeof AuthenticatedPainelAuditoriaRoute
   '/painel/configuracoes-pagamento': typeof AuthenticatedPainelConfiguracoesPagamentoRoute
@@ -396,6 +404,7 @@ export interface FileRoutesById {
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout_/$token': typeof CheckoutTokenRoute
+  '/s/$code': typeof SCodeRoute
   '/_authenticated/painel/api-casa-dos-dados': typeof AuthenticatedPainelApiCasaDosDadosRoute
   '/_authenticated/painel/auditoria': typeof AuthenticatedPainelAuditoriaRoute
   '/_authenticated/painel/configuracoes-pagamento': typeof AuthenticatedPainelConfiguracoesPagamentoRoute
@@ -442,6 +451,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout/$token'
+    | '/s/$code'
     | '/painel/api-casa-dos-dados'
     | '/painel/auditoria'
     | '/painel/configuracoes-pagamento'
@@ -485,6 +495,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout/$token'
+    | '/s/$code'
     | '/painel/api-casa-dos-dados'
     | '/painel/auditoria'
     | '/painel/configuracoes-pagamento'
@@ -529,6 +540,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout_/$token'
+    | '/s/$code'
     | '/_authenticated/painel/api-casa-dos-dados'
     | '/_authenticated/painel/auditoria'
     | '/_authenticated/painel/configuracoes-pagamento'
@@ -573,6 +585,7 @@ export interface RootRouteChildren {
   CTokenRoute: typeof CTokenRoute
   CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
   CheckoutTokenRoute: typeof CheckoutTokenRoute
+  SCodeRoute: typeof SCodeRoute
   ApiInternalCasaDosDadosWorkerRoute: typeof ApiInternalCasaDosDadosWorkerRoute
   ApiPublicWebhookMercadopagoRoute: typeof ApiPublicWebhookMercadopagoRoute
   LovableEmailEventsRoute: typeof LovableEmailEventsRoute
@@ -628,6 +641,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/s/$code': {
+      id: '/s/$code'
+      path: '/s/$code'
+      fullPath: '/s/$code'
+      preLoaderRoute: typeof SCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout_/$token': {
@@ -986,6 +1006,7 @@ const rootRouteChildren: RootRouteChildren = {
   CTokenRoute: CTokenRoute,
   CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
   CheckoutTokenRoute: CheckoutTokenRoute,
+  SCodeRoute: SCodeRoute,
   ApiInternalCasaDosDadosWorkerRoute: ApiInternalCasaDosDadosWorkerRoute,
   ApiPublicWebhookMercadopagoRoute: ApiPublicWebhookMercadopagoRoute,
   LovableEmailEventsRoute: LovableEmailEventsRoute,
