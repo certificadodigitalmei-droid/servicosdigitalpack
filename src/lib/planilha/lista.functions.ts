@@ -82,12 +82,12 @@ export const listPlanilhaLista = createServerFn({ method: 'GET' })
     for (const c of list) {
       const phone = resolveCompanyMobile(c);
       if (!phone) continue; // somente celular válido
-      const token = tokenByCompany.get(String(c.id));
+      const cnpj = String(c.cnpj ?? '').replace(/\D/g, '');
       rows.push({
         razaoSocial: firstWordName(c.razao_social_original ?? c.nome_titular_exibicao ?? c.nome_fantasia),
-        cnpj: String(c.cnpj ?? '').replace(/\D/g, ''),
+        cnpj,
         celular: formatPhoneBR(phone),
-        link: token ? `${base}/s/${token.slice(0, 8)}` : '',
+        link: cnpj.length === 14 ? `${base}/cnpj/${cnpj}` : '',
       });
     }
 

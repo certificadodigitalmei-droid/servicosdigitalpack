@@ -75,6 +75,7 @@ const ALLOWED_PATH_PREFIXES = [
   "/c/",
   "/acesso/",
   "/s/",
+  "/cnpj/",
   "/certificado-mei/",
   "/checkout",
   "/auth",
