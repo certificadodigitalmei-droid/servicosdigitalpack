@@ -118,9 +118,10 @@ function PlanilhaListaPage() {
   // O que já foi baixado fica marcado e não se mistura com o que falta.
   const remaining = rows.filter((r) => !downloaded.has(r.cnpj));
   const downloadedRows = rows.filter((r) => downloaded.has(r.cnpj));
+  const qtyToDownload = Math.max(1, Math.min(Math.floor(qty) || 1, Math.max(remaining.length, 1)));
 
   const download = (mode: 'all' | 'batch' | 'qty') => {
-    const n = Math.max(1, Math.floor(qty) || 1);
+    const n = qtyToDownload;
     const slice =
       mode === 'all' ? remaining : mode === 'batch' ? remaining.slice(0, 1000) : remaining.slice(0, n);
     if (!slice.length) {
