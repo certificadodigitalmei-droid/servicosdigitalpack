@@ -86,6 +86,7 @@ function PlanilhaListaPage() {
   const [date, setDate] = useState(todayBR());
   const [rows, setRows] = useState<PlanilhaRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [qty, setQty] = useState(10);
   const [downloaded, setDownloaded] = useState<Set<string>>(() => loadDownloaded(todayBR()));
   const fetchList = useServerFn(listPlanilhaLista);
 
@@ -117,9 +118,12 @@ function PlanilhaListaPage() {
   // O que já foi baixado fica marcado e não se mistura com o que falta.
   const remaining = rows.filter((r) => !downloaded.has(r.cnpj));
   const downloadedRows = rows.filter((r) => downloaded.has(r.cnpj));
+  const qtyToDownload = Math.max(1, Math.min(Math.floor(qty) || 1, Math.max(remaining.length, 1)));
 
-  const download = (mode: 'all' | 'batch') => {
-    const slice = mode === 'all' ? remaining : remaining.slice(0, 1000);
+  const download = (mode: 'all' | 'batch' | 'qty') => {
+    const n = qtyToDownload;
+    const slice =
+      mode === 'all' ? remaining : mode === 'batch' ? remaining.slice(0, 1000) : remaining.slice(0, n);
     if (!slice.length) {
       toast.error(remaining.length ? 'Nada para baixar.' : 'Tudo dessa data já foi baixado.');
       return;
@@ -144,7 +148,9 @@ function PlanilhaListaPage() {
     a.download =
       mode === 'all'
         ? `lista-empresas-${date}-completa.csv`
-        : `lista-empresas-${date}-lote-${Math.floor(downloaded.size / 1000) + 1}.csv`;
+        : mode === 'batch'
+          ? `lista-empresas-${date}-lote-${Math.floor(downloaded.size / 1000) + 1}.csv`
+          : `lista-empresas-${date}-lote-${downloaded.size + 1}-com-${slice.length}.csv`;
     a.click();
     URL.revokeObjectURL(url);
 
@@ -197,6 +203,23 @@ function PlanilhaListaPage() {
           <Button variant="secondary" onClick={() => download('batch')} disabled={loading || !remaining.length}>
             <Download className="mr-2 h-4 w-4" /> Baixar 1000
           </Button>
+          <div className="flex items-end gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="qtd">Quantidade</Label>
+              <Input
+                id="qtd"
+                type="number"
+                min={1}
+                max={remaining.length || undefined}
+                value={qty}
+                onChange={(e) => setQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                className="w-[110px]"
+              />
+            </div>
+              <Button variant="secondary" onClick={() => download('qty')} disabled={loading || !remaining.length}>
+                <Download className="mr-2 h-4 w-4" /> Baixar {qtyToDownload}
+              </Button>
+          </div>
           <Button variant="ghost" onClick={resetDownloaded} disabled={loading || !downloaded.size}>
             Limpar marcação
           </Button>
