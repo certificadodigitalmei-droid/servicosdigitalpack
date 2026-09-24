@@ -147,7 +147,9 @@ function PlanilhaListaPage() {
     a.download =
       mode === 'all'
         ? `lista-empresas-${date}-completa.csv`
-        : `lista-empresas-${date}-lote-${Math.floor(downloaded.size / 1000) + 1}.csv`;
+        : mode === 'batch'
+          ? `lista-empresas-${date}-lote-${Math.floor(downloaded.size / 1000) + 1}.csv`
+          : `lista-empresas-${date}-lote-${downloaded.size + 1}-com-${slice.length}.csv`;
     a.click();
     URL.revokeObjectURL(url);
 
