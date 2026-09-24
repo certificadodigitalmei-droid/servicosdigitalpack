@@ -215,9 +215,9 @@ function PlanilhaListaPage() {
                 className="w-[110px]"
               />
             </div>
-            <Button variant="secondary" onClick={() => download('qty')} disabled={loading || !remaining.length}>
-              <Download className="mr-2 h-4 w-4" /> Baixar {Math.min(Math.max(1, Math.floor(qty) || 1), remaining.length || Math.max(1, Math.floor(qty) || 1))}
-            </Button>
+              <Button variant="secondary" onClick={() => download('qty')} disabled={loading || !remaining.length}>
+                <Download className="mr-2 h-4 w-4" /> Baixar {Math.min(Math.max(1, Math.floor(qty) || 1), Math.max(remaining.length, 1))}
+              </Button>
           </div>
           <Button variant="ghost" onClick={resetDownloaded} disabled={loading || !downloaded.size}>
             Limpar marcação
