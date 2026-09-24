@@ -17,10 +17,12 @@ export const Route = createFileRoute('/cnpj/$cnpj')({
 
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
         const db = supabaseAdmin as any;
+        // Aceita o CNPJ salvo com ou sem pontuação.
+        const fmt = `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12)}`;
         const { data: company } = await db
           .from('companies')
           .select('id')
-          .eq('cnpj', cnpj)
+          .or(`cnpj.eq.${cnpj},cnpj.eq.${fmt}`)
           .limit(1)
           .maybeSingle();
 
