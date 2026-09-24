@@ -86,6 +86,7 @@ function PlanilhaListaPage() {
   const [date, setDate] = useState(todayBR());
   const [rows, setRows] = useState<PlanilhaRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [qty, setQty] = useState(10);
   const [downloaded, setDownloaded] = useState<Set<string>>(() => loadDownloaded(todayBR()));
   const fetchList = useServerFn(listPlanilhaLista);
 
