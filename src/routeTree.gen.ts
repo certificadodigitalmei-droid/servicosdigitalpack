@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SCodeRouteImport } from './routes/s.$code'
+import { Route as CnpjCnpjRouteImport } from './routes/cnpj.$cnpj'
 import { Route as CheckoutTokenRouteImport } from './routes/checkout_.$token'
 import { Route as CertificadoMeiTokenRouteImport } from './routes/certificado-mei.$token'
 import { Route as CTokenRouteImport } from './routes/c.$token'
@@ -86,6 +87,11 @@ const IndexRoute = IndexRouteImport.update({
 const SCodeRoute = SCodeRouteImport.update({
   id: '/s/$code',
   path: '/s/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CnpjCnpjRoute = CnpjCnpjRouteImport.update({
+  id: '/cnpj/$cnpj',
+  path: '/cnpj/$cnpj',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutTokenRoute = CheckoutTokenRouteImport.update({
@@ -314,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
+  '/cnpj/$cnpj': typeof CnpjCnpjRoute
   '/s/$code': typeof SCodeRoute
   '/painel/api-casa-dos-dados': typeof AuthenticatedPainelApiCasaDosDadosRoute
   '/painel/auditoria': typeof AuthenticatedPainelAuditoriaRoute
@@ -358,6 +365,7 @@ export interface FileRoutesByTo {
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout/$token': typeof CheckoutTokenRoute
+  '/cnpj/$cnpj': typeof CnpjCnpjRoute
   '/s/$code': typeof SCodeRoute
   '/painel/api-casa-dos-dados': typeof AuthenticatedPainelApiCasaDosDadosRoute
   '/painel/auditoria': typeof AuthenticatedPainelAuditoriaRoute
@@ -404,6 +412,7 @@ export interface FileRoutesById {
   '/c/$token': typeof CTokenRoute
   '/certificado-mei/$token': typeof CertificadoMeiTokenRoute
   '/checkout_/$token': typeof CheckoutTokenRoute
+  '/cnpj/$cnpj': typeof CnpjCnpjRoute
   '/s/$code': typeof SCodeRoute
   '/_authenticated/painel/api-casa-dos-dados': typeof AuthenticatedPainelApiCasaDosDadosRoute
   '/_authenticated/painel/auditoria': typeof AuthenticatedPainelAuditoriaRoute
@@ -451,6 +460,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout/$token'
+    | '/cnpj/$cnpj'
     | '/s/$code'
     | '/painel/api-casa-dos-dados'
     | '/painel/auditoria'
@@ -495,6 +505,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout/$token'
+    | '/cnpj/$cnpj'
     | '/s/$code'
     | '/painel/api-casa-dos-dados'
     | '/painel/auditoria'
@@ -540,6 +551,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/certificado-mei/$token'
     | '/checkout_/$token'
+    | '/cnpj/$cnpj'
     | '/s/$code'
     | '/_authenticated/painel/api-casa-dos-dados'
     | '/_authenticated/painel/auditoria'
@@ -585,6 +597,7 @@ export interface RootRouteChildren {
   CTokenRoute: typeof CTokenRoute
   CertificadoMeiTokenRoute: typeof CertificadoMeiTokenRoute
   CheckoutTokenRoute: typeof CheckoutTokenRoute
+  CnpjCnpjRoute: typeof CnpjCnpjRoute
   SCodeRoute: typeof SCodeRoute
   ApiInternalCasaDosDadosWorkerRoute: typeof ApiInternalCasaDosDadosWorkerRoute
   ApiPublicWebhookMercadopagoRoute: typeof ApiPublicWebhookMercadopagoRoute
@@ -648,6 +661,13 @@ declare module '@tanstack/react-router' {
       path: '/s/$code'
       fullPath: '/s/$code'
       preLoaderRoute: typeof SCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cnpj/$cnpj': {
+      id: '/cnpj/$cnpj'
+      path: '/cnpj/$cnpj'
+      fullPath: '/cnpj/$cnpj'
+      preLoaderRoute: typeof CnpjCnpjRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout_/$token': {
@@ -1006,6 +1026,7 @@ const rootRouteChildren: RootRouteChildren = {
   CTokenRoute: CTokenRoute,
   CertificadoMeiTokenRoute: CertificadoMeiTokenRoute,
   CheckoutTokenRoute: CheckoutTokenRoute,
+  CnpjCnpjRoute: CnpjCnpjRoute,
   SCodeRoute: SCodeRoute,
   ApiInternalCasaDosDadosWorkerRoute: ApiInternalCasaDosDadosWorkerRoute,
   ApiPublicWebhookMercadopagoRoute: ApiPublicWebhookMercadopagoRoute,
