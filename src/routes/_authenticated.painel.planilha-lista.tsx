@@ -202,6 +202,23 @@ function PlanilhaListaPage() {
           <Button variant="secondary" onClick={() => download('batch')} disabled={loading || !remaining.length}>
             <Download className="mr-2 h-4 w-4" /> Baixar 1000
           </Button>
+          <div className="flex items-end gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="qtd">Quantidade</Label>
+              <Input
+                id="qtd"
+                type="number"
+                min={1}
+                max={remaining.length || undefined}
+                value={qty}
+                onChange={(e) => setQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                className="w-[110px]"
+              />
+            </div>
+            <Button variant="secondary" onClick={() => download('qty')} disabled={loading || !remaining.length}>
+              <Download className="mr-2 h-4 w-4" /> Baixar {Math.min(Math.max(1, Math.floor(qty) || 1), remaining.length || Math.max(1, Math.floor(qty) || 1))}
+            </Button>
+          </div>
           <Button variant="ghost" onClick={resetDownloaded} disabled={loading || !downloaded.size}>
             Limpar marcação
           </Button>
