@@ -120,7 +120,7 @@ function PlanilhaListaPage() {
   const downloadedRows = rows.filter((r) => downloaded.has(r.cnpj));
 
   const download = (mode: 'all' | 'batch' | 'qty') => {
-    const n = Math.max(1, Number.isFinite(qty) ? Math.floor(qty) : 1);
+    const n = Math.max(1, Math.floor(qty) || 1);
     const slice =
       mode === 'all' ? remaining : mode === 'batch' ? remaining.slice(0, 1000) : remaining.slice(0, n);
     if (!slice.length) {
