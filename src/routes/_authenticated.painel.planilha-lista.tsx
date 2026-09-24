@@ -118,8 +118,10 @@ function PlanilhaListaPage() {
   const remaining = rows.filter((r) => !downloaded.has(r.cnpj));
   const downloadedRows = rows.filter((r) => downloaded.has(r.cnpj));
 
-  const download = (mode: 'all' | 'batch') => {
-    const slice = mode === 'all' ? remaining : remaining.slice(0, 1000);
+  const download = (mode: 'all' | 'batch' | 'qty') => {
+    const n = Math.max(1, Number.isFinite(qty) ? Math.floor(qty) : 1);
+    const slice =
+      mode === 'all' ? remaining : mode === 'batch' ? remaining.slice(0, 1000) : remaining.slice(0, n);
     if (!slice.length) {
       toast.error(remaining.length ? 'Nada para baixar.' : 'Tudo dessa data já foi baixado.');
       return;
