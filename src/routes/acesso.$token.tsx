@@ -34,7 +34,7 @@ function AcessoPage() {
   // Pré-carrega a página da empresa enquanto a animação roda —
   // assim a abertura fica instantânea ao terminar.
   useEffect(() => {
-    router.preloadRoute({ to: '/c/$token', params: { token } }).catch(() => {});
+    router.preloadRoute({ to: '/c/$token', params: { token }, search: { issuing: undefined, unsubscribe: undefined } }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
