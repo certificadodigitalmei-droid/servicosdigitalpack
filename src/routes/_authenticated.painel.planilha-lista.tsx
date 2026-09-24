@@ -217,7 +217,7 @@ function PlanilhaListaPage() {
               />
             </div>
               <Button variant="secondary" onClick={() => download('qty')} disabled={loading || !remaining.length}>
-                <Download className="mr-2 h-4 w-4" /> Baixar {Math.min(Math.max(1, Math.floor(qty) || 1), Math.max(remaining.length, 1))}
+                <Download className="mr-2 h-4 w-4" /> Baixar {qtyToDownload}
               </Button>
           </div>
           <Button variant="ghost" onClick={resetDownloaded} disabled={loading || !downloaded.size}>
