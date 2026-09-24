@@ -16,8 +16,8 @@ export const DEFAULT_PUBLIC_BASE_URL = 'https://certificadodigitalmeiestadual.on
  * Ao clicar, /s/:code redireciona para o domínio normal acima.
  * Nunca deve virar a base dos links do site/e-mails.
  */
-export const SHORT_LINK_BASE_URL = 'https://meu-pj-mei.online';
-const SHORT_LINK_HOST = 'meu-pj-mei.online';
+export const SHORT_LINK_BASE_URL = 'https://www.portal-meu-mei.site';
+const SHORT_LINK_HOST = 'portal-meu-mei.site';
 
 function normalize(url: string): string {
   return url.trim().replace(/\/+$/, '');

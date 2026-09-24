@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
 import { GovConsultaLoader } from '@/components/GovConsultaLoader';
@@ -28,7 +28,15 @@ function AcessoPage() {
   const { row } = Route.useLoaderData() as { row: ResolvedCompany | null };
   const { token } = Route.useParams();
   const navigate = useNavigate();
+  const router = useRouter();
   const [showLoader, setShowLoader] = useState(false);
+
+  // Pré-carrega a página da empresa enquanto a animação roda —
+  // assim a abertura fica instantânea ao terminar.
+  useEffect(() => {
+    router.preloadRoute({ to: '/c/$token', params: { token }, search: { issuing: undefined, unsubscribe: undefined } }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const goToPage = () => {
     markIntroSeen(typeof window !== 'undefined' ? window.sessionStorage : null, token);
