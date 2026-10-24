@@ -43,9 +43,7 @@ function LandingPage() {
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-md bg-[#0b1e3f] text-white">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
+            <img src="/logo-site.png" alt="Logo" className="h-9 w-auto object-contain" />
             <div>
               <div className="text-sm font-bold leading-tight text-[#0b1e3f]">Digital Certifica A1</div>
               <div className="text-[11px] leading-tight text-slate-500">Certificado digital para o MEI</div>
