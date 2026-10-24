@@ -94,4 +94,3 @@ export function SiteFooter() {
 export function Page({ children }: { children: ReactNode }) {
   return <div className="min-h-screen bg-page flex flex-col overflow-x-hidden">{children}</div>;
 }
-Troca logo do site.
