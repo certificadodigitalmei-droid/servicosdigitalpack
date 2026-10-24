@@ -1,96 +1,363 @@
-import { Link } from "@tanstack/react-router";
-import { Menu, User, ChevronDown, Home, ChevronRight } from "lucide-react";
-import logoAsset from 
-import { formatCPFOrCNPJ } from "@/lib/format";
-import type { ReactNode } from "react";
+import { useEffect, useMemo, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
-interface HeaderProps {
-  userName?: string;
-  userDoc?: string;
+const AZUL = '#1351B4';
+const AMARELO = '#FFCD07';
+const heroMobile = '/tela-de-carregamento.png';
+
+function buildSteps(nome?: string | null) {
+  return [
+    'Consultando dispositivos…',
+    'Entrando no portal gov.br',
+    'Portal MEI',
+    nome ? `Olá, ${nome}` : 'Identificando titular',
+    'Buscando CNPJ',
+    'Cadastro encontrado',
+  ];
 }
 
-export function SiteHeader({ userName, userDoc }: HeaderProps) {
-  const displayName = userName?.trim().toUpperCase() || "Visitante";
-  const displayDoc = userDoc ? formatCPFOrCNPJ(userDoc) : "—";
+const STEP_MS = 700;
 
-  return (
-    <header className="w-full">
-      {/* 1. Top white bar with gov.br brand + user session info */}
-      <div className="border-b border-border bg-background">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-4 py-1.5">
-          <div className="flex shrink-0 items-center select-none" aria-label="gov.br">
-            <img
-              src="/logo-site.png"
-              alt="Digital Certifica A1"
-              className="h-10 w-auto object-contain pointer-events-none"
-              draggable={false}
-            />
-          </div>
+export function GovConsultaLoader({
+  cnpj: _cnpj,
+  nome,
+  onFinish,
+}: {
+  cnpj?: string | null;
+  nome?: string | null;
+  onFinish: () => void;
+}) {
+  const steps = useMemo(() => buildSteps(nome), [nome]);
+  const [step, setStep] = useState(0);
+  const [progress, setProgress] = useState(0);
 
+  useEffect(() => {
+    const total = steps.length * STEP_MS;
+    const startedAt = Date.now();
+    const tick = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      setProgress(Math.min(100, (elapsed / total) * 100));
+      setStep(Math.min(steps.length - 1, Math.floor(elapsed / STEP_MS)));
+      if (elapsed >= total) {
+        clearInterval(tick);
+        setTimeout(onFinish, 400);
+      }
+    }, 60);
+    return () => clearInterval(tick);
+  }, [onFinish, steps.length]);
 
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="min-w-0 text-right">
-              <div className="truncate text-[10.5px] font-bold text-foreground">
-                {displayName}
-              </div>
-              <div className="truncate text-[9px] text-muted-foreground">{displayDoc}</div>
-            </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-blue-soft text-brand-blue">
-              <User className="h-4 w-4" />
-            </div>
-            <ChevronDown className="h-3 w-3 text-muted-foreground" />
-          </div>
-        </div>
-      </div>
+  const currentLabel = steps[step] ?? steps[steps.length - 1];
 
-      {/* 2. Dark navy bar: Portal do Empreendedor */}
-      <div className="bg-[#002a4d] text-primary-foreground shadow-sm">
-        <div className="mx-auto flex max-w-[1280px] items-center gap-3 px-4 py-2.5">
-          <Menu className="h-5 w-5 cursor-pointer" />
-          <span className="text-[15px] font-bold tracking-tight">Digital Certifica A1</span>
-        </div>
-      </div>
-
-      {/* 3. Bright blue bar: Context title */}
-      <div className="bg-[#004884] text-primary-foreground">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-2">
-          <span className="text-[12.5px] font-medium opacity-95">Ambiente do Microempreendedor Individual</span>
-          <User className="h-4 w-4 opacity-80" />
-        </div>
-      </div>
-    </header>
-  );
-}
-
-export function Breadcrumb({ items }: { items: { label: string; to?: string }[] }) {
-  return (
-    <div className="bg-[#f8f9fa] border-b border-border/50 overflow-x-hidden">
-      <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-1 gap-y-0.5 px-3 py-2 text-[11px] text-[#005690] sm:px-4">
-        <span className="inline-flex items-center text-muted-foreground">
-          <Home className="h-3 w-3" />
+  const FloatingCTA = (
+    <>
+      <button
+        type="button"
+        disabled
+        aria-live="polite"
+        className="relative flex h-[56px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-full px-6 py-0 text-white shadow-[0_14px_40px_-10px_rgba(19,81,180,0.65)] ring-1 ring-white/10"
+        style={{ background: AZUL }}
+      >
+        <span
+          className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_1.8s_infinite]"
+          style={{
+            background:
+              'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%)',
+          }}
+        />
+        <Loader2 className="h-[18px] w-[18px] shrink-0 animate-spin" />
+        <span
+          key={currentLabel}
+          className="animate-fade-in truncate font-semibold tracking-tight text-[15px]"
+        >
+          {currentLabel}
         </span>
+      </button>
 
-        {items.map((it, i) => (
-          <span key={i} className="flex items-center gap-1">
-            <ChevronRight className="h-2.5 w-2.5 text-muted-foreground/60" />
-            {it.to ? (
-              <Link to={it.to} className="hover:underline">
-                {it.label}
-              </Link>
-            ) : (
-              <span className="text-muted-foreground">{it.label}</span>
-            )}
-          </span>
-        ))}
+      <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/80 shadow-sm ring-1 ring-black/5">
+        <div
+          className="h-full rounded-full transition-[width] duration-100 ease-linear"
+          style={{
+            width: `${progress}%`,
+            background: `linear-gradient(90deg, ${AZUL}, ${AMARELO})`,
+          }}
+        />
       </div>
+    </>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-white animate-fade-in overflow-hidden">
+      <div className="relative h-full w-full md:hidden">
+        <img
+          src={heroMobile}
+          alt="gov.br"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+        <div
+          className="absolute left-1/2 w-[86%] max-w-[440px] -translate-x-1/2"
+          style={{ top: '60%' }}
+        >
+          {FloatingCTA}
+        </div>
+      </div>
+
+      <div className="relative hidden h-full w-full md:grid md:grid-cols-2">
+        <div className="relative h-full w-full overflow-hidden bg-white">
+          <img
+            src={heroMobile}
+            alt="gov.br"
+            className="absolute inset-0 h-full w-full object-cover object-center"
+          />
+        </div>
+
+        <div className="relative flex h-full w-full items-center justify-center bg-white px-10">
+          <div className="w-full max-w-[440px]">
+            {FloatingCTA}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 }
 
-export function SiteFooter() {
-  return null;
-}
 
-export function Page({ children }: { children: ReactNode }) {
-  return <div className="min-h-screen bg-page flex flex-col overflow-x-hidden">{children}</div>;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"}]}
