@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Menu, User, ChevronDown, Home, ChevronRight } from "lucide-react";
-import logoAsset from "@/assets/govbr-logo-2.png.asset.json";
+import logoAsset from 
 import { formatCPFOrCNPJ } from "@/lib/format";
 import type { ReactNode } from "react";
 
@@ -20,8 +20,8 @@ export function SiteHeader({ userName, userDoc }: HeaderProps) {
         <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-4 py-1.5">
           <div className="flex shrink-0 items-center select-none" aria-label="gov.br">
             <img
-              src={logoAsset.url}
-              alt="gov.br"
+              src="/logo-site.png"
+              alt="Digital Certifica A1"
               className="h-10 w-auto object-contain pointer-events-none"
               draggable={false}
             />
@@ -94,3 +94,4 @@ export function SiteFooter() {
 export function Page({ children }: { children: ReactNode }) {
   return <div className="min-h-screen bg-page flex flex-col overflow-x-hidden">{children}</div>;
 }
+Troca logo do site.
