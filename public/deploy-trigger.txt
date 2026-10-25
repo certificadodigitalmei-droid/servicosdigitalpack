@@ -1,1 +1,1 @@
-Acionar deploy
+Acionar deploy apos reconexao
